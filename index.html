@@ -589,6 +589,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .dbtn{background:var(--rl);color:var(--red);border:none;border-radius:var(--r6);padding:7px 13px;font-size:11px;font-weight:700;cursor:pointer;}
 .dbtn:hover{background:var(--red);color:#fff;}
 .dbtn.full{background:var(--red);color:#fff;}
+/* ── INSTALL BUTTON ── */
+.install-btn{display:none;align-items:center;gap:8px;background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.25);border-radius:100px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;backdrop-filter:blur(8px);}
+.install-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);}
+.install-btn.visible{display:flex;}
+.install-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.install-ios{display:none;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.45);margin-top:8px;}
+.install-ios.visible{display:flex;}
+.install-ios svg{width:13px;height:13px;stroke:rgba(255,255,255,.5);fill:none;stroke-width:2;stroke-linecap:round;}
 </style>
 </head>
 <body>
@@ -610,6 +618,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
     <div class="lcta">
       <button class="btn ba" onclick="showAuth('su')">Start for free</button>
       <button class="btn bgw" onclick="showAuth('si')">I have an account</button>
+      <button class="install-btn" id="install-btn" onclick="triggerInstall()">
+        <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/><path d="M3 21h18"/></svg>
+        Install App
+      </button>
+    </div>
+    <div class="install-ios" id="install-ios">
+      <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/></svg>
+      On iOS: tap Share then "Add to Home Screen"
     </div>
   </div>
   <div class="lstrip">
@@ -1779,6 +1795,34 @@ function delAcc(){
   if(!confirm('Permanently delete your account and ALL data? This cannot be undone.'))return;
   dbDeleteUser(cu);
   delete acc[cu];LS.s('pd1_acc',acc);LS.d('pd1_cur');cu=null;show('sl');
+}
+</script>
+<script>
+// ── PWA INSTALL ──
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  const btn=document.getElementById('install-btn');
+  if(btn)btn.classList.add('visible');
+});
+window.addEventListener('appinstalled',()=>{
+  deferredPrompt=null;
+  const btn=document.getElementById('install-btn');
+  if(btn)btn.classList.remove('visible');
+});
+function triggerInstall(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});
+  }
+}
+// Show iOS hint on Safari iOS (no beforeinstallprompt support)
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandalone=window.navigator.standalone===true;
+if(isIOS&&!isInStandalone){
+  const hint=document.getElementById('install-ios');
+  if(hint)hint.classList.add('visible');
 }
 </script>
 <script>
