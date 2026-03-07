@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "builds": [{ "src": "**/*", "use": "@vercel/static" }],
+  "routes": [
+    { "src": "/sw.js", "headers": { "Cache-Control": "no-cache", "Service-Worker-Allowed": "/" }, "dest": "/sw.js" },
+    { "src": "/manifest.json", "dest": "/manifest.json" },
+    { "src": "/icons/(.*)", "dest": "/icons/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
