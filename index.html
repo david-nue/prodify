@@ -42,6 +42,68 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .screen.off{opacity:0;pointer-events:none;transform:translateY(8px);}
 
 /* ── RESPONSIVE ── */
+/* ── BOTTOM TAB BAR (mobile only) ── */
+.btab-bar{display:none;}
+@media(max-width:600px){
+  /* Hide sidebar on mobile */
+  .sb{display:none;}
+  /* Push content to fill full width */
+  .main{width:100%;}
+  /* Bottom tab bar */
+  .btab-bar{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:300;
+    background:var(--surf);border-top:1px solid var(--bdr);
+    padding:6px 0 max(6px,env(safe-area-inset-bottom));
+    gap:0;
+  }
+  .btab{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:4px 0;background:none;border:none;cursor:pointer;
+    color:var(--ink3);transition:color .15s;min-height:44px;
+  }
+  .btab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .btab span{font-size:10px;font-weight:600;letter-spacing:.2px;}
+  .btab.act{color:var(--a2);}
+  /* FAB */
+  .fab{
+    display:flex;position:fixed;bottom:72px;right:18px;z-index:400;
+    width:52px;height:52px;border-radius:50%;background:var(--a2);color:#fff;
+    align-items:center;justify-content:center;border:none;cursor:pointer;
+    box-shadow:0 4px 18px rgba(58,125,94,.4);transition:transform .15s,background .15s;
+  }
+  .fab:active{transform:scale(.93);}
+  .fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
+  /* FAB menu */
+  .fab-menu{
+    display:none;position:fixed;bottom:132px;right:14px;z-index:400;
+    flex-direction:column;gap:8px;align-items:flex-end;
+  }
+  .fab-menu.open{display:flex;}
+  .fab-item{
+    display:flex;align-items:center;gap:10px;background:var(--surf);
+    border:1px solid var(--bdr);border-radius:100px;padding:8px 16px 8px 12px;
+    box-shadow:var(--sh2);cursor:pointer;white-space:nowrap;font-size:13px;font-weight:600;
+    color:var(--ink);transition:background .14s;
+  }
+  .fab-item:active{background:var(--surf2);}
+  .fab-item svg{width:16px;height:16px;stroke:var(--a2);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
+  /* Add bottom padding so content isn't hidden behind tab bar */
+  .pages{padding-bottom:62px;}
+  /* Mobile canvas stacked view */
+  .canvas-wrap{display:none;}
+  .wtray{display:none;}
+  .canvas-topbar{left:0;}
+  .ctb-stats{display:none;}
+  .mobile-stack{display:flex !important;}
+}
+
+@media(min-width:601px){
+  .btab-bar{display:none !important;}
+  .fab{display:none !important;}
+  .fab-menu{display:none !important;}
+  .mobile-stack{display:none !important;}
+}
+
 @media(max-width:600px){
   /* Landing */
   .lnav{padding:14px 16px;}
@@ -63,10 +125,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .wtray-lbl{display:none;}
   .canvas-wrap{left:36px;}
   /* Full pages — key fix: make them scrollable */
-  .fullpg{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;}
+  .fullpg{flex:1;display:flex;flex-direction:column;overflow:hidden;}
   .fphdr{padding:10px 12px 0;flex-wrap:wrap;gap:6px;flex-shrink:0;}
   .fptit{font-size:17px;}
-  .fpscroll{padding:8px 12px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
+  .fpscroll{padding:8px 12px 24px;overflow-y:scroll;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
   /* Settings rows — stack on small screens */
   .setrow{flex-wrap:wrap;gap:8px;padding:11px 14px;}
   .setrow>div{flex:1;min-width:0;}
@@ -91,7 +153,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .ar{width:100%;}
   .profgrid{grid-template-columns:1fr;}
   .calgrid{grid-template-columns:repeat(4,1fr);}
-  .fpscroll{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .fpscroll{overflow-y:scroll;-webkit-overflow-scrolling:touch;min-height:0;}
   .setrow{flex-wrap:wrap;gap:8px;}
 }
 @media(min-width:601px) and (max-width:900px){
@@ -268,6 +330,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
    CANVAS PAGE — widget dashboard
 ════════════════════════════════ */
 #pg-canvas{display:flex;flex-direction:column;}
+.mobile-stack{display:none;flex-direction:column;gap:12px;padding:12px 14px 80px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
+.mstack-card{background:var(--surf);border-radius:var(--r14);border:1px solid var(--bdr);overflow:hidden;}
+.mstack-card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0;}
+.mstack-card-title{font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;}
 
 /* WIDGET TRAY — left vertical bar */
 .wtray{
@@ -534,10 +600,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* ════════════════════════════════
    FULL PAGES
 ════════════════════════════════ */
-.fullpg{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;}
+.fullpg{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .fphdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0;flex-shrink:0;}
 .fptit{font-size:22px;font-weight:800;letter-spacing:-.5px;}
-.fpscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 22px 22px;display:flex;flex-direction:column;gap:11px;min-height:0;}
+.fpscroll{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:12px 22px 22px;display:flex;flex-direction:column;gap:11px;min-height:0;}
 .fpscroll::-webkit-scrollbar{width:3px;}
 .fpscroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 
@@ -791,6 +857,21 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
           <div style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">Built by <span style="color:var(--ink3);">David Nueva</span></div>
           <div class="canvas" id="canvas"></div>
         </div>
+        <!-- MOBILE STACKED VIEW -->
+        <div class="mobile-stack" id="mobile-stack">
+          <div class="mstack-card">
+            <div class="mstack-card-hd"><span class="mstack-card-title">Tasks</span><button class="btn ba bsm" onclick="openMo('mo-tsk')">+ Add</button></div>
+            <div id="ms-tasks" style="padding:8px 14px 12px;"></div>
+          </div>
+          <div class="mstack-card">
+            <div class="mstack-card-hd"><span class="mstack-card-title">Focus Timer</span></div>
+            <div id="ms-timer" style="padding:8px 14px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;"></div>
+          </div>
+          <div class="mstack-card">
+            <div class="mstack-card-hd"><span class="mstack-card-title">Journal</span></div>
+            <div id="ms-journal" style="padding:8px 14px 12px;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- SUBJECTS PAGE -->
@@ -838,9 +919,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
       </div>
 
       <!-- SETTINGS PAGE -->
-      <div class="pg off fullpg" id="pg-settings">
-        <div class="fphdr"><div class="fptit">Settings</div></div>
-        <div class="fpscroll">
+      <div class="pg off" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px;">
+        <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:11px;">
+        <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;">Settings</div>
           <div class="setsec"><div class="setsect">Account</div>
             <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc">Change how you appear in Prodify</div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
             <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="set-un"></div></div></div>
@@ -878,11 +959,55 @@ create policy "public" on users for all using (true);</pre>
           <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
             Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David Nueva</span>
           </div>
-        </div>
+        </div></div>
       </div>
 
     </div>
   </div>
+
+  <!-- BOTTOM TAB BAR (mobile only) -->
+  <nav class="btab-bar" id="btab-bar">
+    <button class="btab act" id="bt-canvas" onclick="goPg('canvas',this);setTab('canvas')">
+      <svg viewBox="0 0 22 22"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="btab" id="bt-subjects" onclick="goPg('subjects',this);setTab('subjects')">
+      <svg viewBox="0 0 22 22"><path d="M4 7h14M4 12h10M4 17h12"/></svg>
+      <span>Projects</span>
+    </button>
+    <button class="btab" id="bt-calendar" onclick="goPg('calendar',this);setTab('calendar')">
+      <svg viewBox="0 0 22 22"><rect x="3" y="4" width="16" height="15" rx="2.5"/><path d="M3 9h16M8 2v3M14 2v3"/></svg>
+      <span>Calendar</span>
+    </button>
+    <button class="btab" id="bt-profile" onclick="goPg('profile',this);setTab('profile')">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="8" r="3.5"/><path d="M2 19c0-4 4-7 9-7s9 3 9 7"/></svg>
+      <span>Profile</span>
+    </button>
+    <button class="btab" id="bt-settings" onclick="goPg('settings',this);setTab('settings')">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="3"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.9 4.9l1.4 1.4M15.7 15.7l1.4 1.4M19.1 4.9l-1.4 1.4M8.3 15.7l-1.4 1.4"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- FAB (mobile only) -->
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-item" onclick="openMo('mo-tsk');closeFab()">
+      <svg viewBox="0 0 16 16"><path d="M3 8h10M8 3v10"/></svg>Add Task
+    </div>
+    <div class="fab-item" onclick="addJournalMobile();closeFab()">
+      <svg viewBox="0 0 16 16"><path d="M4 3h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM5 7h6M5 10h4"/></svg>Journal Entry
+    </div>
+    <div class="fab-item" onclick="openMo('mo-sub');closeFab()">
+      <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M8 5v6M5 8h6"/></svg>New Project
+    </div>
+    <div class="fab-item" onclick="openMo('mo-ev');closeFab()">
+      <svg viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M2 6h12M5 1v2M11 1v2"/></svg>Add Event
+    </div>
+  </div>
+  <button class="fab" id="fab" onclick="toggleFab()">
+    <svg viewBox="0 0 24 24" id="fab-icon"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
 </div>
 
 <!-- MODALS -->
@@ -1072,11 +1197,94 @@ function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.to
 function goPg(id,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
   document.querySelectorAll('.sbb').forEach(b=>b.classList.toggle('act',b.dataset&&b.dataset.p===id));
-  if(id==='canvas')renderFixedQuote();
+  if(id==='canvas'){renderFixedQuote();if(isMobile())renderMobileStack();}
   if(id==='profile')renderProfile();
   if(id==='calendar')renderFullCal();
   if(id==='settings')renderSettings();
   if(id==='subjects')renderSubFull();
+}
+
+// ── MOBILE HELPERS ──
+function isMobile(){return window.innerWidth<=600;}
+function setTab(id){
+  document.querySelectorAll('.btab').forEach(b=>b.classList.toggle('act',b.id==='bt-'+id));
+}
+let fabOpen=false;
+function toggleFab(){
+  fabOpen=!fabOpen;
+  document.getElementById('fab-menu').classList.toggle('open',fabOpen);
+  const icon=document.getElementById('fab-icon');
+  icon.style.transform=fabOpen?'rotate(45deg)':'rotate(0deg)';
+  icon.style.transition='transform .2s';
+}
+function closeFab(){
+  fabOpen=false;
+  document.getElementById('fab-menu').classList.remove('open');
+  const icon=document.getElementById('fab-icon');
+  if(icon)icon.style.transform='rotate(0deg)';
+}
+// close fab when tapping outside
+document.addEventListener('click',e=>{
+  if(fabOpen&&!e.target.closest('.fab')&&!e.target.closest('.fab-menu'))closeFab();
+});
+function addJournalMobile(){
+  goPg('canvas',null);setTab('canvas');
+  setTimeout(()=>{
+    const ta=document.querySelector('.jwta');
+    if(ta){ta.focus();ta.scrollIntoView({behavior:'smooth',block:'center'});}
+  },300);
+}
+function renderMobileStack(){
+  // Tasks summary
+  const tEl=document.getElementById('ms-tasks');
+  if(tEl){
+    const all=tasks.slice(0,5);
+    if(!all.length){tEl.innerHTML='<div style="font-size:12px;color:var(--ink4);padding:4px 0;">No tasks yet. Tap + to add one.</div>';}
+    else{
+      tEl.innerHTML=all.map(t=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr);">
+          <div style="width:8px;height:8px;border-radius:50%;background:${t.status==='done'?'var(--a2)':t.priority==='high'?'var(--red)':'var(--bdr)'};flex-shrink:0;"></div>
+          <span style="font-size:13px;color:${t.status==='done'?'var(--ink3)':'var(--ink)'};text-decoration:${t.status==='done'?'line-through':'none'};flex:1;">${esc(t.text)}</span>
+          <span style="font-size:10px;color:var(--ink4);">${t.status}</span>
+        </div>`).join('')
+      +(tasks.length>5?`<div style="font-size:11px;color:var(--ink3);padding-top:6px;">${tasks.length-5} more tasks...</div>`:'');
+    }
+  }
+  // Timer quick view
+  const tmEl=document.getElementById('ms-timer');
+  if(tmEl){
+    const modes=['Pomodoro','Short Break','Long Break'];
+    const custom=Object.values(TMS)[0]?.custom||[25*60,5*60,15*60];
+    const mode=Object.values(TMS)[0]?.mode||0;
+    const sec=Object.values(TMS)[0]?.sec||(custom[mode]);
+    tmEl.innerHTML=`
+      <div style="text-align:center;">
+        <div style="font-size:36px;font-weight:800;letter-spacing:-2px;color:var(--ink);">${fmtSec(sec)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${modes[mode]}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${modes.map((m,i)=>`<button onclick="setTMode(Object.keys(TMS)[0]||'t1',${i});renderMobileStack()" style="background:${i===mode?'var(--a2)':'var(--surf2)'};color:${i===mode?'#fff':'var(--ink)'};border:1px solid ${i===mode?'var(--a2)':'var(--bdr)'};border-radius:100px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">${m}</button>`).join('')}
+      </div>`;
+  }
+  // Journal quick entry
+  const jEl=document.getElementById('ms-journal');
+  if(jEl){
+    const recent=journal.slice(0,2);
+    jEl.innerHTML=`
+      <textarea id="ms-jta" placeholder="How's your day?" rows="2" style="width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--ink);outline:none;resize:none;font-family:inherit;"></textarea>
+      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+        ${MLAB.map((m,i)=>`<button onclick="curMood=${i};document.querySelectorAll('.ms-mo').forEach(b=>b.style.transform=b.dataset.m=='${i}'?'scale(1.2)':'scale(1)')" class="ms-mo" data-m="${i}" style="font-size:18px;background:none;border:1.5px solid transparent;border-radius:8px;padding:3px 5px;cursor:pointer;transition:transform .12s;">${m.e}</button>`).join('')}
+        <button onclick="addJournalFromMobile()" style="margin-left:auto;background:var(--a2);color:#fff;border:none;border-radius:100px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;">Save</button>
+      </div>
+      ${recent.length?'<div style="margin-top:8px;border-top:1px solid var(--bdr);padding-top:8px;">'+recent.map(j=>`<div style="font-size:12px;color:var(--ink2);padding:3px 0;">${MLAB[j.mood]?.e||''} ${esc(j.text).slice(0,60)}${j.text.length>60?'...':''}</div>`).join('')+'</div>':''}`;
+  }
+}
+function addJournalFromMobile(){
+  const ta=document.getElementById('ms-jta');
+  if(!ta||!ta.value.trim())return;
+  const now=new Date();
+  journal.unshift({id:Date.now(),text:ta.value.trim(),mood:curMood,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  ta.value='';persist();renderMobileStack();
 }
 
 // ═══════════════════════════════════════
@@ -1169,6 +1377,7 @@ function launch(){
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
+  if(isMobile())setTimeout(renderMobileStack,200);
 }
 (function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
 
@@ -1176,6 +1385,7 @@ function launch(){
 // PERSIST
 // ═══════════════════════════════════════
 function persist(){
+  if(isMobile()&&document.getElementById('pg-canvas')&&!document.getElementById('pg-canvas').classList.contains('off'))renderMobileStack();
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
