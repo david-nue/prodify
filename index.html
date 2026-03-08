@@ -2818,6 +2818,7 @@ async function dbSaveUser(username,data){
       widgets:JSON.stringify(data.widgets||[]),
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(data.prefs||{}),
+      updated_at:new Date().toISOString(),
     },{onConflict:'username'});
   }catch(e){console.warn('[Prodify] Supabase save failed',e);}
 }
@@ -2855,6 +2856,7 @@ const MLAB=[
   {e:'🔥',l:'Pumped'},
   {e:'🧘',l:'Calm'},
   {e:'😤',l:'Frustrated'},
+  {e:'🥰',l:'In Love'},
 ];
 let qIdx=Math.floor(Math.random()*QQ.length);
 
@@ -3645,6 +3647,45 @@ function doSO(){
 // ═══════════════════════════════════════
 // LAUNCH
 // ═══════════════════════════════════════
+let _realtimeChannel=null;
+
+function reloadFromCloud(row){
+  // called when Supabase Realtime pushes a change from another device
+  if(!row||row.username!==cu)return;
+  tasks=JSON.parse(row.tasks||'[]');
+  journal=JSON.parse(row.journal||'[]');
+  subjects=JSON.parse(row.subjects||'[]');
+  calEvs=JSON.parse(row.cal_evs||'[]');
+  notes=JSON.parse(row.notes||'{}');
+  prefs=JSON.parse(row.prefs||'{}');
+  const d=acc[cu];
+  d.tasks=tasks;d.journal=journal;d.subjects=subjects;
+  d.calEvs=calEvs;d.notes=notes;d.prefs=prefs;
+  LS.s('pd1_acc',acc);
+  // re-render everything
+  renderAllTaskW();
+  renderAllJournalW();
+  renderAllSubW();
+  renderFullCal();
+  widgets.forEach(w=>fillWBody(w));
+  updateAllStatsW();
+  updateFixedStats();
+  if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
+}
+
+function startRealtime(){
+  if(!sbReady||!cu)return;
+  if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(e){}}
+  _realtimeChannel=sb.channel('prod-sync-'+cu)
+    .on('postgres_changes',{
+      event:'UPDATE',schema:'public',table:'users',
+      filter:'username=eq.'+cu
+    },payload=>{
+      reloadFromCloud(payload.new);
+    })
+    .subscribe();
+}
+
 function launch(){
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
@@ -3658,6 +3699,7 @@ function launch(){
   renderFixedQuote();
   updateFixedStats();
   if(isMobile())setTimeout(initMobApp,100);
+  setTimeout(startRealtime,1000);
 }
 (function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
 
