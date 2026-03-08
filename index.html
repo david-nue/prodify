@@ -74,13 +74,11 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
    MOBILE FULL-SCREEN UI
 ══════════════════════════════════════ */
 /* Mobile screen wrapper — hidden on desktop */
-.mob-app{display:none;position:fixed;inset:0;z-index:2;flex-direction:column;background:var(--bg);}
+.mob-app{display:none;position:fixed;inset:0;z-index:2;flex-direction:column;background:var(--bg);overflow:hidden;}
 
 /* Each mobile page */
 .mob-page{
-  display:none;flex:1;flex-direction:column;
-  overflow:hidden;position:absolute;inset:0;bottom:62px;top:0;
-  transition:opacity .22s,transform .22s cubic-bezier(.16,1,.3,1);
+  display:none;flex:1;flex-direction:column;overflow:hidden;
 }
 .mob-page.active{display:flex;}
 .mob-page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;}
@@ -375,8 +373,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* ── MOBILE BOTTOM NAV ── */
 .mob-nav{
   display:flex;background:var(--surf);border-top:1px solid var(--bdr);
-  flex-shrink:0;padding-bottom:max(6px,env(safe-area-inset-bottom));
-  height:62px;
+  flex-shrink:0;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+  min-height:62px;
 }
 .mob-nav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -386,6 +385,66 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .mob-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.2px;}
 .mob-nav-btn.act{color:var(--a2);}
+
+/* ── MOBILE AVATAR DROPDOWN ── */
+.mob-av{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--a);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;cursor:pointer;
+  border:2px solid transparent;transition:border-color .15s;
+  position:relative;overflow:visible;flex-shrink:0;
+}
+.mob-av.open{border-color:var(--a2);}
+.mob-av-letter{pointer-events:none;line-height:1;}
+.mob-av-img{width:100%;height:100%;border-radius:50%;object-fit:cover;position:absolute;inset:0;}
+.mob-av-dd{
+  position:absolute;top:calc(100% + 10px);right:0;width:220px;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:18px;
+  box-shadow:var(--sh4);overflow:hidden;z-index:800;
+  opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;
+  transition:opacity .18s,transform .18s;
+}
+.mob-av.open .mob-av-dd{opacity:1;transform:none;pointer-events:all;}
+.mob-av-hd{
+  display:flex;align-items:center;gap:12px;padding:16px;
+  border-bottom:1px solid var(--bdr);
+}
+.mob-av-hd-circle{
+  width:44px;height:44px;border-radius:50%;background:var(--a);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;flex-shrink:0;position:relative;overflow:hidden;
+}
+.mob-av-hd-img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:50%;}
+.mob-av-hd-name{font-size:14px;font-weight:700;color:var(--ink);}
+.mob-av-hd-user{font-size:12px;color:var(--ink3);}
+.mob-av-body{padding:6px;}
+.mob-av-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  font-size:13px;font-weight:600;color:var(--ink2);
+  cursor:pointer;border:none;background:none;width:100%;text-align:left;
+  transition:background .12s;
+}
+.mob-av-item:active{background:var(--warm);}
+.mob-av-item-ic{
+  width:28px;height:28px;border-radius:8px;background:var(--warm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.mob-av-item-ic svg{width:14px;height:14px;stroke:var(--ink2);fill:none;stroke-width:1.8;stroke-linecap:round;}
+.mob-av-div{height:1px;background:var(--bdr);margin:4px 8px;}
+.mob-av-item.danger{color:var(--red);}
+.mob-av-item.danger:active{background:var(--rl);}
+.mob-av-item.danger .mob-av-item-ic{background:var(--rl);}
+.mob-av-item.danger .mob-av-item-ic svg{stroke:var(--red);}
+/* photo upload overlay on avatar */
+.mob-av-upload{
+  position:absolute;inset:0;border-radius:50%;
+  background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .15s;cursor:pointer;
+}
+.mob-av-hd-circle:hover .mob-av-upload{opacity:1;}
+.mob-av-upload svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
 
 /* ── MOBILE ADD TASK MODAL ── */
 .mob-add-modal{
@@ -1356,9 +1415,41 @@ create policy "public" on users for all using (true);</pre>
           <div class="mob-topbar-title" id="mob-greet-name">Hey 👋</div>
           <div class="mob-topbar-sub" id="mob-greet-date"></div>
         </div>
-        <button class="mob-topbar-btn" onclick="mobGoPage('settings')">
-          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13"/></svg>
-        </button>
+        <div class="mob-av" id="mob-av" onclick="toggleMobAv(event)">
+          <span class="mob-av-letter" id="mob-av-letter">?</span>
+          <img class="mob-av-img" id="mob-av-img" style="display:none"/>
+          <div class="mob-av-dd" id="mob-av-dd">
+            <div class="mob-av-hd">
+              <div class="mob-av-hd-circle" id="mob-av-hd-circle">
+                <span id="mob-av-hd-letter">?</span>
+                <img class="mob-av-hd-img" id="mob-av-hd-img" style="display:none"/>
+                <label class="mob-av-upload" title="Change photo">
+                  <svg viewBox="0 0 16 16"><path d="M13 10v3H3v-3M8 2v8M5 5l3-3 3 3"/></svg>
+                  <input type="file" accept="image/*" style="display:none" onchange="mobAvatarUpload(event)"/>
+                </label>
+              </div>
+              <div>
+                <div class="mob-av-hd-name" id="mob-av-hd-name">User</div>
+                <div class="mob-av-hd-user" id="mob-av-hd-user">@user</div>
+              </div>
+            </div>
+            <div class="mob-av-body">
+              <button class="mob-av-item" onclick="mobAvatarGo('profile')">
+                <span class="mob-av-item-ic"><svg viewBox="0 0 14 14"><circle cx="7" cy="5" r="2.5"/><path d="M2 12c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg></span>
+                View Profile
+              </button>
+              <button class="mob-av-item" onclick="mobAvatarGo('settings')">
+                <span class="mob-av-item-ic"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="1.5"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.8 2.8l1 1M10.2 10.2l1 1M11.2 2.8l-1 1M3.8 10.2l-1 1"/></svg></span>
+                Settings
+              </button>
+              <div class="mob-av-div"></div>
+              <button class="mob-av-item danger" onclick="doSO()">
+                <span class="mob-av-item-ic"><svg viewBox="0 0 14 14"><path d="M9 3h3a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H9M6 9.5L9 7 6 4.5M9 7H1"/></svg></span>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <!-- Quote -->
       <div class="mob-home-quote">
@@ -1501,10 +1592,49 @@ create policy "public" on users for all using (true);</pre>
     </div>
   </div>
 
+  <!-- PROFILE PAGE (mobile) -->
+  <div class="mob-page" id="mpg-profile">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Profile</div>
+    </div>
+    <div class="mob-page-scroll" style="padding:0 16px 24px;">
+      <!-- banner -->
+      <div class="profbanner" style="margin:0 0 16px;border-radius:18px;overflow:hidden;">
+        <div class="pborb"></div>
+        <div class="pbav" id="mob-pbav">?</div>
+        <div class="pbinfo">
+          <div class="pbname" id="mob-pbnm"></div>
+          <div class="pbuser" id="mob-pbun"></div>
+          <div class="pbjoin" id="mob-pbjn"></div>
+        </div>
+      </div>
+      <!-- stats -->
+      <div class="profcard" style="border-radius:14px;margin-bottom:10px;">
+        <div class="pct">Task Overview</div>
+        <div class="pstrow">
+          <div class="pst"><div class="pstv" id="mob-pp-tot">0</div><div class="pstl">Total</div></div>
+          <div class="pst"><div class="pstv" id="mob-pp-dn">0</div><div class="pstl">Done</div></div>
+          <div class="pst"><div class="pstv" id="mob-pp-rt">—</div><div class="pstl">Rate</div></div>
+        </div>
+      </div>
+      <div class="profcard" style="border-radius:14px;margin-bottom:10px;">
+        <div class="pct">Journal Moods</div>
+        <div class="mhist" id="mob-mhist"></div>
+      </div>
+      <div class="profcard" style="border-radius:14px;margin-bottom:10px;">
+        <div class="pct">Project Progress</div>
+        <div class="spl" id="mob-spllist"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS PAGE (mobile) -->
   <div class="mob-page" id="mpg-settings">
     <div class="mob-topbar">
-      <div class="mob-topbar-title">Settings</div>
+      <div>
+        <button onclick="mobGoPage('home')" style="background:none;border:none;color:var(--a2);font-size:13px;font-weight:700;cursor:pointer;padding:0 0 4px;">← Back</button>
+        <div class="mob-topbar-title">Settings</div>
+      </div>
     </div>
     <div class="mob-page-scroll" style="padding:0 16px 24px;">
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
@@ -1519,7 +1649,7 @@ create policy "public" on users for all using (true);</pre>
       </div>
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Data</div>
-        <div class="setrow"><div><div class="setlbl">Clear tasks</div></div><button class="dbtn" onclick="clrTasks()">Clear</button></div>
+        <div class="setrow"><div><div class="setlbl">Clear all tasks</div></div><button class="dbtn" onclick="clrTasks()">Clear</button></div>
         <div class="setrow"><div><div class="setlbl">Clear journal</div></div><button class="dbtn" onclick="clrJournal()">Clear</button></div>
         <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
       </div>
@@ -1553,7 +1683,7 @@ create policy "public" on users for all using (true);</pre>
     </button>
     <button class="mob-nav-btn" id="mnb-calendar" onclick="mobGoPage('calendar')">
       <svg viewBox="0 0 22 22"><rect x="3" y="4" width="16" height="15" rx="2"/><path d="M3 9h16M8 2v3M14 2v3"/></svg>
-      <span>Cal</span>
+      <span>Calendar</span>
     </button>
   </nav>
 
@@ -1837,6 +1967,7 @@ function mobGoPage(page){
   else if(page==='journal')mobRenderJournal();
   else if(page==='projects')mobRenderProjects();
   else if(page==='calendar')mobRenderCalendar();
+  else if(page==='profile')mobRenderProfile();
   else if(page==='settings')mobRenderSettings();
 }
 
@@ -2229,9 +2360,108 @@ function mobRenderSettings(){
   if(tog)tog.classList.toggle('on',!!prefs.dark);
 }
 
+// ── PROFILE PAGE ──
+function mobRenderProfile(){
+  if(!cu)return;
+  const d=acc[cu];if(!d)return;
+  const nm=d.display_name||cu;
+  const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  el('mob-pbav',nm[0].toUpperCase());
+  el('mob-pbnm',nm);
+  el('mob-pbun','@'+cu);
+  el('mob-pbjn',d.joined_at?'Joined '+new Date(d.joined_at).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'');
+  const tot=tasks.length,dn=tasks.filter(t=>t.col==='done').length;
+  el('mob-pp-tot',tot);el('mob-pp-dn',dn);
+  el('mob-pp-rt',tot?Math.round(dn/tot*100)+'%':'—');
+  // mood history
+  const mh=document.getElementById('mob-mhist');
+  if(mh){
+    const counts=Array(MLAB.length).fill(0);
+    journal.forEach(j=>counts[j.mood]=(counts[j.mood]||0)+1);
+    mh.innerHTML=MLAB.map((m,i)=>counts[i]?`<span style="font-size:18px;" title="${m.l} ×${counts[i]}">${m.e}</span>`:'').join('');
+    if(!journal.length)mh.innerHTML='<span style="font-size:12px;color:var(--ink4);">No entries yet</span>';
+  }
+  // project progress
+  const spl=document.getElementById('mob-spllist');
+  if(spl){
+    if(!subjects.length){spl.innerHTML='<div style="font-size:12px;color:var(--ink4);padding:4px 0;">No projects yet</div>';return;}
+    spl.innerHTML=subjects.map(s=>`
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:12px;font-weight:600;color:var(--ink);">${s.name}</span>
+          <span style="font-size:12px;font-weight:700;color:var(--a2);">${s.progress}%</span>
+        </div>
+        <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${s.progress}%;background:${s.color||'var(--a2)'};border-radius:3px;"></div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+// ── AVATAR DROPDOWN ──
+function toggleMobAv(e){
+  e.stopPropagation();
+  const av=document.getElementById('mob-av');
+  av.classList.toggle('open');
+}
+document.addEventListener('click',function(e){
+  const av=document.getElementById('mob-av');
+  if(av&&!av.contains(e.target))av.classList.remove('open');
+});
+function mobAvatarGo(page){
+  const av=document.getElementById('mob-av');
+  if(av)av.classList.remove('open');
+  mobGoPage(page);
+}
+function mobUpdateAvatar(){
+  if(!cu)return;
+  const d=acc[cu];if(!d)return;
+  const nm=d.display_name||cu;
+  const letter=nm[0].toUpperCase();
+  // top-right avatar
+  const avLetter=document.getElementById('mob-av-letter');
+  const avImg=document.getElementById('mob-av-img');
+  const avHdLetter=document.getElementById('mob-av-hd-letter');
+  const avHdImg=document.getElementById('mob-av-hd-img');
+  const avHdName=document.getElementById('mob-av-hd-name');
+  const avHdUser=document.getElementById('mob-av-hd-user');
+  if(avHdName)avHdName.textContent=nm;
+  if(avHdUser)avHdUser.textContent='@'+cu;
+  const photo=prefs.avatarPhoto||null;
+  if(photo){
+    if(avLetter)avLetter.style.display='none';
+    if(avImg){avImg.src=photo;avImg.style.display='block';}
+    if(avHdLetter)avHdLetter.style.display='none';
+    if(avHdImg){avHdImg.src=photo;avHdImg.style.display='block';}
+  } else {
+    if(avLetter){avLetter.textContent=letter;avLetter.style.display='';}
+    if(avImg)avImg.style.display='none';
+    if(avHdLetter){avHdLetter.textContent=letter;avHdLetter.style.display='';}
+    if(avHdImg)avHdImg.style.display='none';
+  }
+}
+function mobAvatarUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    prefs.avatarPhoto=ev.target.result;
+    persist();
+    mobUpdateAvatar();
+    // also sync desktop avatar if possible
+    const sbavt=document.getElementById('sbavt');
+    const ddav=document.getElementById('ddav');
+    if(sbavt)sbavt.innerHTML=`<img src="${prefs.avatarPhoto}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+    if(ddav)ddav.innerHTML=`<img src="${prefs.avatarPhoto}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+  };
+  reader.readAsDataURL(file);
+  const av=document.getElementById('mob-av');
+  if(av)av.classList.remove('open');
+}
+
 // ── INIT ──
 function initMobApp(){
   if(!isMobile())return;
+  mobUpdateAvatar();
   mobRenderHome();
   mobTimerRender();
   mobRenderJournal();
@@ -2253,6 +2483,7 @@ function mobSyncIfVisible(){
   else if(_mobPage==='journal')mobRenderJournal();
   else if(_mobPage==='projects')mobRenderProjects();
   else if(_mobPage==='calendar')mobRenderCalendar();
+  else if(_mobPage==='profile')mobRenderProfile();
 }
 
 // AUTH
