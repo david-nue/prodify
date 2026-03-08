@@ -3823,6 +3823,7 @@ async function pullFromCloud(){
   try{
     const dbUser=await dbGetUser(cu);
     if(!dbUser)return;
+    const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
     acc[cu]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||acc[cu]?.displayName||'',
@@ -3838,8 +3839,13 @@ async function pullFromCloud(){
     LS.s('pd1_acc',acc);
     tasks=acc[cu].tasks;journal=acc[cu].journal;subjects=acc[cu].subjects;
     calEvs=acc[cu].calEvs;widgets=acc[cu].widgets;notes=acc[cu].notes;prefs=acc[cu].prefs;
-    renderAllTaskW();renderAllJournalW();renderAllSubW();
-    renderFullCal();widgets.forEach(w=>fillWBody(w));
+    const newWidgetIds=widgets.map(x=>x.id).sort().join(',');
+    if(oldWidgetIds!==newWidgetIds){
+      renderCanvas();
+    } else {
+      renderAllTaskW();renderAllJournalW();renderAllSubW();
+      renderFullCal();widgets.forEach(w=>fillWBody(w));
+    }
     updateAllStatsW();updateFixedStats();
     if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
   }catch(e){}
@@ -3900,16 +3906,23 @@ function launch(){
           joined:acc[cu]?.joined||Date.now(),
         };
         LS.s('pd1_acc',acc);
-        // Re-apply everything from fresh cloud data
+        // Re-apply data from cloud — rebuild canvas if widget list changed
         const d=acc[cu];
+        const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
         tasks=d.tasks;journal=d.journal;subjects=d.subjects;
         calEvs=d.calEvs;widgets=d.widgets;notes=d.notes;prefs=d.prefs;
+        const newWidgetIds=widgets.map(x=>x.id).sort().join(',');
         applyTheme();
-        renderCanvas();
         renderFixedQuote();
         updateFixedStats();
-        renderAllTaskW();renderAllJournalW();renderAllSubW();
-        renderFullCal();widgets.forEach(w=>fillWBody(w));
+        if(oldWidgetIds!==newWidgetIds){
+          // Widget list changed — full rebuild
+          renderCanvas();
+        } else {
+          // Same widgets — just refresh content, don't rebuild DOM
+          renderAllTaskW();renderAllJournalW();renderAllSubW();
+          renderFullCal();widgets.forEach(w=>fillWBody(w));
+        }
         updateAllStatsW();
         if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
         dbSaveUser(cu,acc[cu]);
@@ -4134,7 +4147,7 @@ function startResize(e,id){
     w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX-startX)));
     w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY-startY)));
     el.style.width=w.w+'px';el.style.height=w.h+'px';
-    if(isTimer)scaleTimer(w.id,w.w,w.h);
+
   };
   const mu=()=>{
     el.classList.remove('wresize');persist();
@@ -4289,9 +4302,8 @@ function buildTimerW(body,w){
             <input class="tmseg" id="tmm-${w.id}" type="text" maxlength="2" placeholder="00"/>
             <span class="tmsep">:</span>
             <input class="tmseg" id="tms-${w.id}" type="text" maxlength="2" placeholder="00"/>
+            <button class="tmbtn" style="margin-left:4px;background:var(--a2);color:#fff;border-color:var(--a2);" onclick="tmConfirmEdit('${w.id}')">Set</button>
           </div>
-          <div           <button class="tmbtn" style="background:var(--a2);color:#fff;border-color:var(--a2);margin-left:6px;" onclick="tmConfirmEdit('${w.id}')">Set</button>
-        </div>
       </div>
       <div class="tmctrl">
         <button class="tmbtn" onclick="resetTimer('${w.id}')">Reset</button>
