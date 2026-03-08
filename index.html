@@ -160,7 +160,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   cursor:pointer;transition:all .14s;text-align:center;
 }
 .mob-ttab.act{background:var(--a2);border-color:var(--a2);color:#fff;}
-.mob-tasks-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;display:flex;flex-direction:column;gap:12px;}
+.mob-tasks-list{flex:1;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:12px 10px 80px;display:flex;flex-direction:row;gap:10px;align-items:flex-start;}
 .mob-task-card{
   background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;
   padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;
@@ -185,9 +185,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-task-priority.medium{background:var(--aml);color:var(--amb);}
 .mob-task-del{background:none;border:none;color:var(--ink4);cursor:pointer;padding:4px;font-size:16px;margin-left:auto;}
 .mob-tasks-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
-.mob-kcol{background:var(--surf2);border-radius:14px;border:1px solid var(--bdr);overflow:hidden;}
+.mob-kcol{background:var(--surf2);border-radius:14px;border:1px solid var(--bdr);overflow:hidden;min-width:240px;width:240px;flex-shrink:0;max-height:calc(100vh - 200px);display:flex;flex-direction:column;}
 .mob-kcol-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
 .mob-kcol-cnt{background:var(--surf);border:1px solid var(--bdr);border-radius:100px;padding:1px 7px;font-size:10px;color:var(--ink3);font-weight:700;}
+.mob-kcol-cards{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .mob-kcol-empty{padding:10px 14px;font-size:12px;color:var(--ink4);text-align:center;}
 .mob-kcard{background:var(--surf);border-radius:10px;margin:6px 8px;padding:10px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--bdr);}
 .mob-kcard.dragging{opacity:.4;}
@@ -1709,16 +1710,20 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   border:1.5px solid var(--bdr);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   color:var(--ink3);transition:all .13s;position:relative;flex-shrink:0;
+  overflow:visible;z-index:10;
 }
 .wb:hover{background:var(--al);border-color:var(--a2);color:var(--a2);}
 .wb svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.wbtip{
+.wbtip{display:none;}
+.wb:hover .wbtip{display:none;}
+/* global tooltip */
+#g-tip{
   position:fixed;
   background:var(--ink);color:var(--bg);border-radius:var(--r6);
   padding:4px 9px;font-size:11px;font-weight:700;white-space:nowrap;
-  opacity:0;pointer-events:none;transition:opacity .14s;z-index:9999;
+  pointer-events:none;z-index:99999;
+  box-shadow:var(--sh2);opacity:0;transition:opacity .12s;
 }
-.wb:hover .wbtip{opacity:1;}
 .wtdiv{width:22px;height:1px;background:var(--bdr);margin:3px 0;}
 .wt-clr{color:var(--red)!important;border-color:var(--rl)!important;}
 .wt-clr:hover{background:var(--rl)!important;border-color:var(--red)!important;}
@@ -2048,6 +2053,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 </style>
 </head>
 <body>
+<div id="g-tip"></div>
 
 <!-- LANDING -->
 <div class="screen" id="sl">
@@ -2529,6 +2535,7 @@ create policy "public" on users for all using (true);</pre>
         <button class="mob-tmode on" id="mmt-0" onclick="mobSetMode(0)">Pomodoro</button>
         <button class="mob-tmode" id="mmt-1" onclick="mobSetMode(1)">Short Break</button>
         <button class="mob-tmode" id="mmt-2" onclick="mobSetMode(2)">Long Break</button>
+        <button class="mob-tmode" id="mmt-3" onclick="mobSetMode(3)">Custom ✎</button>
       </div>
       <div class="mob-timer-ring">
         <svg id="mob-timer-svg" viewBox="0 0 260 260" width="260" height="260">
@@ -2536,7 +2543,7 @@ create policy "public" on users for all using (true);</pre>
           <circle cx="130" cy="130" r="110" fill="none" stroke="var(--a2)" stroke-width="10"
             stroke-dasharray="691.15 691.15" stroke-dashoffset="172.79"
             stroke-linecap="round" id="mob-timer-circ"
-            style="transition:stroke-dasharray .5s;"/>
+            style="transition:stroke-dasharray .5s;" transform="rotate(-90,130,130)"/>
         </svg>
         <div class="mob-timer-center" onclick="mobTimerEdit()" style="cursor:pointer;" title="Tap to edit time">
           <div class="mob-timer-time" id="mob-timer-time">25:00</div>
@@ -2792,6 +2799,29 @@ function initSupabase(){
   }
 }
 
+// ── GLOBAL TOOLTIP ──
+(function(){
+  const tip=document.getElementById('g-tip');
+  if(!tip)return;
+  document.addEventListener('mouseover',e=>{
+    const wb=e.target.closest('.wb');
+    if(!wb)return;
+    const t=wb.querySelector('.wbtip');
+    if(!t)return;
+    const rect=wb.getBoundingClientRect();
+    tip.textContent=t.textContent.trim();
+    tip.style.opacity='0';tip.style.display='block';
+    tip.style.left=(rect.right+10)+'px';
+    tip.style.top=(rect.top+rect.height/2-tip.offsetHeight/2)+'px';
+    tip.style.opacity='1';
+  });
+  document.addEventListener('mouseout',e=>{
+    const wb=e.target.closest('.wb');
+    if(!wb)return;
+    if(!wb.contains(e.relatedTarget)){tip.style.opacity='0';setTimeout(()=>{if(tip.style.opacity==='0')tip.style.display='none';},120);}
+  });
+})();
+
 // Load Supabase and resolve a promise so boot can wait for it
 let _sbLoadResolve;
 const sbLoaded=new Promise(r=>{_sbLoadResolve=r;});
@@ -2897,7 +2927,7 @@ let dragTaskId=null, calOff=0, nextZ=10;
 let curMood=0;
 // per-widget timer state (not persisted)
 const TMS={};
-const TMODES=[{l:'Pomodoro',s:25*60},{l:'Short Break',s:5*60},{l:'Long Break',s:15*60}];
+const TMODES=[{l:'Pomodoro',s:25*60,locked:true},{l:'Short',s:5*60,locked:true},{l:'Long',s:15*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
 // ═══════════════════════════════════════
 // HELPERS
@@ -2968,10 +2998,11 @@ let _mobMood = 0;
 // Timer state (standalone, independent of desktop)
 let _mobTimerMode = 0;
 let _mobTimerSec = 25*60;
+let _mobTimerCustom=[25*60,5*60,15*60,20*60];
 let _mobTimerRunning = false;
 let _mobTimerIv = null;
 let _mobTimerSessions = 0;
-const MOB_TMODES = [{l:'Pomodoro',s:25*60},{l:'Short Break',s:5*60},{l:'Long Break',s:15*60}];
+const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Short Break',s:5*60,locked:true},{l:'Long Break',s:15*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
 function isMobile(){return window.innerWidth<=600;}
 
@@ -3098,6 +3129,10 @@ function mobRenderTasks(){
       <div class="mob-kcol-hd" style="color:${color}">
         <span>${label}</span><span class="mob-kcol-cnt">${colTasks.length}</span>
       </div>`;
+    html+=`<div class="mob-kcol-cards" 
+      ondragover="event.preventDefault();this.classList.add('dov')"
+      ondragleave="event.relatedTarget&&!this.contains(event.relatedTarget)?this.classList.remove('dov'):null"
+      ondrop="mobKDrop(event,'${key}');this.classList.remove('dov')">`;
     if(!colTasks.length){
       html+=`<div class="mob-kcol-empty">Empty</div>`;
     } else {
@@ -3106,7 +3141,10 @@ function mobRenderTasks(){
         const priColor=t.priority==='high'?'var(--red)':t.priority==='medium'?'var(--amb)':'';
         html+=`<div class="mob-kcard" draggable="true"
           ondragstart="mobKDragStart(event,${t.id})"
-          ondragend="mobKDragEnd()">
+          ondragend="mobKDragEnd()"
+          ontouchstart="mobKTouchStart(event,${t.id})"
+          ontouchmove="mobKTouchMove(event)"
+          ontouchend="mobKTouchEnd(event)">
           <div class="mob-kcard-body">
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
             <div class="mob-kcard-meta">
@@ -3114,18 +3152,11 @@ function mobRenderTasks(){
               <span class="mob-kcard-date">${t.date||''}</span>
             </div>
           </div>
-          <div class="mob-kcard-actions">
-            <button class="mob-kcard-move" onclick="event.stopPropagation();mobMoveTask(${t.id},'prev')">&#8592;</button>
-            <button class="mob-kcard-move" onclick="event.stopPropagation();mobMoveTask(${t.id},'next')">&#8594;</button>
-            <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
-          </div>
+          <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
         </div>`;
       });
     }
-    html+=`<div class="mob-kcol-drop"
-      ondragover="event.preventDefault();this.classList.add('dov')"
-      ondragleave="this.classList.remove('dov')"
-      ondrop="mobKDrop(event,'${key}')"></div>`;
+    html+='</div>';
     html+='</div>';
   });
   list.innerHTML=html;
@@ -3139,15 +3170,57 @@ function mobMoveTask(id,dir){
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
 let _mobKDragId=null;
+let _mobKTouchId=null,_mobKTouchEl=null,_mobKClone=null;
 function mobKDragStart(e,id){_mobKDragId=id;e.dataTransfer.effectAllowed='move';}
-function mobKDragEnd(){_mobKDragId=null;document.querySelectorAll('.mob-kcol-drop').forEach(d=>d.classList.remove('dov'));}
+function mobKDragEnd(){_mobKDragId=null;document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));}
 function mobKDrop(e,col){
   e.preventDefault();
-  document.querySelectorAll('.mob-kcol-drop').forEach(d=>d.classList.remove('dov'));
+  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
   if(_mobKDragId===null)return;
   const t=tasks.find(x=>x.id===_mobKDragId);
   if(t&&t.col!==col){t.col=col;persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();}
   _mobKDragId=null;
+}
+function mobKTouchStart(e,id){
+  _mobKTouchId=id;
+  _mobKTouchEl=e.currentTarget;
+  // create floating clone
+  const rect=_mobKTouchEl.getBoundingClientRect();
+  _mobKClone=_mobKTouchEl.cloneNode(true);
+  _mobKClone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:.85;z-index:9999;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2);border-radius:10px;`;
+  document.body.appendChild(_mobKClone);
+  _mobKTouchEl.style.opacity='0.3';
+}
+function mobKTouchMove(e){
+  if(!_mobKTouchId||!_mobKClone)return;
+  e.preventDefault();
+  const t=e.touches[0];
+  _mobKClone.style.left=(t.clientX-80)+'px';
+  _mobKClone.style.top=(t.clientY-30)+'px';
+  // highlight target column
+  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  const col=under?.closest('.mob-kcol-cards');
+  if(col)col.classList.add('dov');
+}
+function mobKTouchEnd(e){
+  if(!_mobKTouchId)return;
+  const t=e.changedTouches[0];
+  if(_mobKClone){_mobKClone.remove();_mobKClone=null;}
+  if(_mobKTouchEl)_mobKTouchEl.style.opacity='';
+  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  const colEl=under?.closest('[ondrop]');
+  if(colEl){
+    const onDrop=colEl.getAttribute('ondrop');
+    const m=onDrop?.match(/'([^']+)'\)/);
+    if(m){
+      const col=m[1];
+      const task=tasks.find(x=>x.id===_mobKTouchId);
+      if(task&&task.col!==col){task.col=col;persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();}
+    }
+  }
+  _mobKTouchId=null;_mobKTouchEl=null;
 }
 function mobToggleTask(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
@@ -3190,7 +3263,7 @@ function mobTimerRender(){
   const hintEl=document.getElementById('mob-timer-hint');
   if(timeEl)timeEl.textContent=mobFmtSec(_mobTimerSec);
   if(lblEl)lblEl.textContent=MOB_TMODES[_mobTimerMode].l;
-  if(hintEl)hintEl.textContent=_mobTimerRunning?'':'tap to edit';
+  if(hintEl)hintEl.textContent=_mobTimerRunning?'':(MOB_TMODES[_mobTimerMode]&&MOB_TMODES[_mobTimerMode].locked?'fixed':'tap to edit');
   // ring
   if(circEl){
     const R=110,circ=2*Math.PI*R;
@@ -3204,10 +3277,10 @@ function mobTimerRender(){
     startBtn.classList.toggle('pause',_mobTimerRunning);
   }
   // mode buttons
-  MOB_TMODES.forEach((_,i)=>{
+  for(let i=0;i<MOB_TMODES.length;i++){
     const btn=document.getElementById('mmt-'+i);
-    if(btn)btn.classList.toggle('on',i===_mobTimerMode);
-  });
+    if(btn){btn.classList.toggle('on',i===_mobTimerMode);btn.style.fontStyle=(!MOB_TMODES[i].locked)?'italic':'';}
+  }
   // sessions
   const sessEl=document.getElementById('mob-timer-sessions');
   if(sessEl){
@@ -3217,11 +3290,12 @@ function mobTimerRender(){
 function mobSetMode(m){
   if(_mobTimerRunning)return;
   _mobTimerMode=m;
-  _mobTimerSec=MOB_TMODES[m].s;
+  _mobTimerSec=_mobTimerCustom[m]||MOB_TMODES[m].s;
   mobTimerRender();
 }
 function mobTimerEdit(){
   if(_mobTimerRunning)return;
+  if(MOB_TMODES[_mobTimerMode]&&MOB_TMODES[_mobTimerMode].locked)return;
   const cur=mobFmtSec(_mobTimerSec);
   const val=prompt(`Set time for ${MOB_TMODES[_mobTimerMode].l} (mm:ss or minutes):`,cur);
   if(!val)return;
@@ -3234,7 +3308,7 @@ function mobTimerEdit(){
   }
   if(isNaN(secs)||secs<10||secs>3600){alert('Please enter a valid time (10 seconds to 60 minutes)');return;}
   // update the mode default too so reset uses this value
-  MOB_TMODES[_mobTimerMode].s=secs;
+  _mobTimerCustom[_mobTimerMode]=secs;
   _mobTimerSec=secs;
   mobTimerRender();
 }
@@ -3249,8 +3323,8 @@ function mobTimerToggle(){
         clearInterval(_mobTimerIv);_mobTimerRunning=false;
         _mobTimerSessions=(_mobTimerSessions+1)%5;
         _mobTimerSec=0;
-        // vibrate on completion
         if(navigator.vibrate)navigator.vibrate([300,100,300]);
+        playAlarm();
       }
       mobTimerRender();
     },1000);
@@ -3259,7 +3333,7 @@ function mobTimerToggle(){
 }
 function mobTimerReset(){
   clearInterval(_mobTimerIv);_mobTimerRunning=false;
-  _mobTimerSec=MOB_TMODES[_mobTimerMode].s;
+  _mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
   mobTimerRender();
 }
 
@@ -4207,10 +4281,11 @@ function renderJournalW(wid){
 /* ── TIMER ── */
 function buildTimerW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
-  if(!TMS[w.id])TMS[w.id]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,5*60,15*60]};
+  if(!TMS[w.id])TMS[w.id]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,5*60,15*60,20*60]};
   const ts=TMS[w.id];
-  if(!ts.custom)ts.custom=[25*60,5*60,15*60];
-  ts.custom[0]=25*60; // pomodoro locked
+  if(!ts.custom||ts.custom.length<4)ts.custom=[25*60,5*60,15*60,20*60];
+  // restore locked modes
+  ts.custom[0]=25*60;ts.custom[1]=5*60;ts.custom[2]=15*60;
   const R=60,CX=70,CY=70,circ=2*Math.PI*R;
   const total=ts.custom[ts.mode];
   const dash=circ*(ts.sec/total);
@@ -4225,6 +4300,7 @@ function buildTimerW(body,w){
           <circle cx="70" cy="70" r="60" fill="none" stroke="var(--bdr)" stroke-width="6"/>
           <circle cx="70" cy="70" r="60" fill="none" stroke="var(--a2)" stroke-width="6"
             stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ/4}" stroke-linecap="round"
+            transform="rotate(-90,70,70)"
             id="tmcirc-${w.id}" style="transition:stroke-dasharray .5s;"/>
         </svg>
         <div class="tmdis" onclick="tmStartEdit('${w.id}')" title="Click to edit time">
@@ -4267,7 +4343,8 @@ function scaleTimer(wid,ww,wh){
   el.style.transformOrigin='top center';
 }
 function tmStartEdit(wid){
-  const ts=TMS[wid];if(!ts||ts.mode===0)return; // pomodoro locked
+  const ts=TMS[wid];if(!ts)return;
+  if(TMODES[ts.mode]&&TMODES[ts.mode].locked)return; // fixed modes
   if(ts.running)return; // cant edit while running
   const timeEl=$('tmtime-'+wid);
   const inpEl=$('tminputs-'+wid);
@@ -4345,7 +4422,7 @@ function tickTimer(wid){
   const tEl=$('tmtime-'+wid);if(tEl)tEl.textContent=fmtSec(ts.sec);
   const cEl=$('tmcirc-'+wid);
   if(cEl){const circ=2*Math.PI*60;const d=circ*(ts.sec/ts.custom[ts.mode]);cEl.setAttribute('stroke-dasharray',`${d} ${circ}`);}
-  if(ts.sec<=0){clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);}
+  if(ts.sec<=0){clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;playAlarm();const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);}
 }
 function resetTimer(wid){
   const ts=TMS[wid];if(!ts)return;
