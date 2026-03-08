@@ -223,10 +223,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 
 /* ── TIMER PAGE ── */
-.mob-timer-wrap{
-  flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:20px;gap:20px;
-}
+.mob-timer-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px 20px;gap:20px;}
 .mob-timer-modes{
   display:flex;gap:4px;background:var(--surf2);border-radius:100px;padding:4px;
 }
@@ -2532,28 +2529,26 @@ create policy "public" on users for all using (true);</pre>
       <div class="mob-topbar-title">Focus Timer</div>
     </div>
     <div class="mob-timer-wrap">
-      <div class="mob-timer-modes">
-        <button class="mob-tmode on" id="mmt-0" onclick="mobSetMode(0)">Pomodoro</button>
-        <button class="mob-tmode" id="mmt-1" onclick="mobSetMode(1)">Short Break</button>
-        <button class="mob-tmode" id="mmt-2" onclick="mobSetMode(2)">Long Break</button>
-        <button class="mob-tmode" id="mmt-3" onclick="mobSetMode(3)">Custom ✎</button>
+      <div class="tmmodes" style="width:100%;gap:6px;">
+        <button class="tmm on" id="mmt-0" onclick="mobSetMode(0)">Pomodoro</button>
+        <button class="tmm" id="mmt-1" onclick="mobSetMode(1)">Short</button>
+        <button class="tmm" id="mmt-2" onclick="mobSetMode(2)">Long</button>
+        <button class="tmm" id="mmt-3" onclick="mobSetMode(3)">Custom</button>
       </div>
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;">
-        <div class="mob-timer-time" id="mob-timer-time" onclick="mobTimerEdit()">25:00</div>
-        <div class="mob-timer-inputs" id="mob-timer-inputs">
-          <div class="mob-timer-segs">
-            <input class="mob-tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00"/>
-            <span class="mob-tmsep">:</span>
-            <input class="mob-tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00"/>
-            <span class="mob-tmsep">:</span>
-            <input class="mob-tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00"/>
-          </div>
-          <button class="mob-timer-setbtn" onclick="mobTimerConfirmEdit()">Set</button>
+      <div class="tmdis" style="flex:0 0 auto;gap:10px;">
+        <div class="mob-timer-time tmtime tmtime-edit" style="font-size:clamp(64px,18vw,96px);" id="mob-timer-time" onclick="mobTimerEdit()">25:00</div>
+        <div class="tminputs" id="mob-timer-inputs">
+          <input class="tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00"/>
+          <span class="tmsep">:</span>
+          <input class="tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00"/>
+          <span class="tmsep">:</span>
+          <input class="tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00"/>
+          <button class="tm-setbtn" onclick="mobTimerConfirmEdit()">Set</button>
         </div>
       </div>
-      <div class="mob-timer-ctrl">
-        <button class="mob-timer-reset" onclick="mobTimerReset()">Reset</button>
-        <button class="mob-timer-start" id="mob-timer-start" onclick="mobTimerToggle()">Start</button>
+      <div class="tmctrl">
+        <button class="tm-resetbtn" onclick="mobTimerReset()">↺</button>
+        <button class="tm-startbtn" id="mob-timer-start" onclick="mobTimerToggle()">Start</button>
       </div>
       <div class="mob-timer-sessions" id="mob-timer-sessions">
         <div class="mob-timer-dot"></div>
@@ -3262,7 +3257,7 @@ function mobTimerRender(){
   if(timeEl&&timeEl.style.display!=='none')timeEl.textContent=mobFmtSec(_mobTimerSec);
   if(startBtn){
     startBtn.textContent=_mobTimerRunning?'Pause':'Start';
-    startBtn.classList.toggle('pause',_mobTimerRunning);
+    startBtn.classList.toggle('stop',_mobTimerRunning);
   }
   // mode buttons
   for(let i=0;i<MOB_TMODES.length;i++){
@@ -4032,8 +4027,19 @@ function addW(type,opts={}){
   const wrap=$('canvas-wrap')||document.querySelector('.canvas-wrap');
   const sx=wrap?wrap.scrollLeft:0,sy=wrap?wrap.scrollTop:0;
   const cw=wrap?wrap.clientWidth:800,ch=wrap?wrap.clientHeight:600;
-  const x=opts.x!==undefined?opts.x:sx+Math.max(20,20+Math.random()*(cw-def.w-40));
-  const y=opts.y!==undefined?opts.y:sy+Math.max(20,20+Math.random()*(ch-def.h-40));
+  let x,y;
+  if(opts.x!==undefined){x=opts.x;}
+  else{
+    // Cascade from top-left: each widget offset slightly from previous
+    const count=widgets.length;
+    const pad=20, step=28;
+    x=sx+pad+(count*step);
+    y=sy+pad+(count*step);
+    // Keep within viewport
+    if(x+def.w>sx+cw-pad)x=sx+pad;
+    if(y+def.h>sy+ch-pad)y=sy+pad;
+  }
+  if(opts.y!==undefined)y=opts.y;
   const id='w'+Date.now().toString(36);
   const ent={id,type,x:Math.round(x),y:Math.round(y),w:opts.w||def.w,h:opts.h||def.h,title:opts.title||def.title,z:nextZ++,noteId:opts.noteId||null};
   if(type==='note'&&!ent.noteId){ent.noteId=id;notes[id]={title:'',content:''};}
