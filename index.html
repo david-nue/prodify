@@ -3886,13 +3886,17 @@ function launch(){
   if(!u){show('sl');return;}
   cu=u;
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
+  console.log('[BOOT] localStorage widgets:', JSON.stringify((acc[u].widgets||[]).map(w=>w.type)));
+  console.log('[BOOT] localStorage tasks count:', (acc[u].tasks||[]).length);
   // Always launch immediately from localStorage — single render, no flicker
   launch();
+  console.log('[BOOT] after launch(), widgets global:', JSON.stringify(widgets.map(w=>w.type)), 'tasks:', tasks.length);
   // Then silently sync from Supabase in background
   try{
     await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
     if(!sbReady||!cu)return;
     const dbUser=await dbGetUser(cu);
+    console.log('[BOOT] dbUser found:', !!dbUser, 'sbReady:', sbReady);
     if(!dbUser)return;
     // Capture local BEFORE any overwrite
     const loc=acc[cu]||{};
@@ -3915,9 +3919,12 @@ function launch(){
     const mN=Object.keys(cN).length>=Object.keys(lN).length?cN:lN;
     const mP=Object.keys(cP).length>0?cP:lP;
     // Only re-render if data actually changed
+    console.log('[BOOT] lT(local tasks):', lT.length, 'cT(cloud tasks):', cT.length, '→ using:', mT.length);
+    console.log('[BOOT] lW(local widgets):', JSON.stringify(lW.map(w=>w.type)), 'cW(cloud widgets):', JSON.stringify(cW.map(w=>w.type)), '→ using:', JSON.stringify(mW.map(w=>w.type)));
     const changed=JSON.stringify(mT)!==JSON.stringify(lT)||
                   JSON.stringify(mW)!==JSON.stringify(lW)||
                   JSON.stringify(mJ)!==JSON.stringify(lJ);
+    console.log('[BOOT] changed:', changed);
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
       tasks:mT,journal:mJ,subjects:mS,calEvs:mC,widgets:mW,notes:mN,prefs:mP,joined:loc.joined||Date.now()};
     LS.s('pd1_acc',acc);
