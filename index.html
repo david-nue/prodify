@@ -2770,7 +2770,7 @@ function initSupabase(){
     sbReady = true;
     console.log('[Prodify] Supabase connected.');
     // If user is already logged in (auto-login ran before Supabase loaded), sync now
-    if(cu) pullFromCloud();
+    // Supabase ready — realtime listener will start on next visibilitychange
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -3679,35 +3679,20 @@ async function pullFromCloud(){
   }catch(e){}
 }
 
+let _hiddenAt=0;
 function startRealtime(){
-  // Pull when this tab becomes visible again (e.g. user was on mobile, comes back to desktop)
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible')pullFromCloud();
+    if(document.visibilityState==='hidden'){
+      _hiddenAt=Date.now();
+    } else if(document.visibilityState==='visible'){
+      // Only pull if we've been away for more than 10 seconds
+      // (means user likely switched device and came back)
+      if(_hiddenAt&&Date.now()-_hiddenAt>10000)pullFromCloud();
+    }
   });
 }
 
-async function launch(){
-  // Always pull latest from Supabase so all devices start in sync
-  if(sbReady){
-    try{
-      const dbUser=await dbGetUser(cu);
-      if(dbUser){
-        acc[cu]={
-          passHash:dbUser.pass_hash,
-          displayName:dbUser.display_name||acc[cu]?.displayName||'',
-          tasks:JSON.parse(dbUser.tasks||'[]'),
-          journal:JSON.parse(dbUser.journal||'[]'),
-          subjects:JSON.parse(dbUser.subjects||'[]'),
-          calEvs:JSON.parse(dbUser.cal_evs||'[]'),
-          widgets:JSON.parse(dbUser.widgets||'[]'),
-          notes:JSON.parse(dbUser.notes||'{}'),
-          prefs:JSON.parse(dbUser.prefs||'{}'),
-          joined:acc[cu]?.joined||Date.now(),
-        };
-        LS.s('pd1_acc',acc);
-      }
-    }catch(e){console.warn('[Prodify] launch fetch failed',e);}
-  }
+function launch(){
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
@@ -3720,9 +3705,9 @@ async function launch(){
   renderFixedQuote();
   updateFixedStats();
   if(isMobile())setTimeout(initMobApp,100);
-  setTimeout(startRealtime,1000);
+  startRealtime();
 }
-(async function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)await launch();else show('sn');}})();
+(function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
 
 // ═══════════════════════════════════════
 // PERSIST
