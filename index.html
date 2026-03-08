@@ -3095,11 +3095,11 @@ function mobToggleTask(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
   const order=['todo','inprog','done'];
   t.col=order[(order.indexOf(t.col)+1)%order.length];
-  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();
+  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();renderFullCal&&renderFullCal();
 }
 function mobDelTask(id){
   tasks=tasks.filter(t=>t.id!==id);
-  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();
+  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
 function openMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
@@ -3254,10 +3254,12 @@ function mobSaveJournal(){
   mobRenderJournal();
   mobRenderHome();
   updateAllStatsW();updateFixedStats();
+  if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
 function mobDelJournal(id){
   journal=journal.filter(j=>j.id!==id);
   persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
+  if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
 
 // ── PROJECTS ──
@@ -3289,12 +3291,12 @@ function mobRenderProjects(){
 }
 function mobUpdProj(id,val){
   updGrade(id,val);
-  setTimeout(mobRenderProjects,100);
+  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
 function mobDelProj(id){
   if(!confirm('Delete this project?'))return;
   delSub(id);
-  setTimeout(mobRenderProjects,100);
+  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
 
 // ── CALENDAR ──
@@ -3368,13 +3370,14 @@ function mobAddCalEv(){
   if(inp)inp.value='';
   mobRenderCalendar();
   mobRenderHome();
-  // also refresh desktop cal widget
   widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  if(typeof renderFullCal==='function')renderFullCal();
 }
 function mobDelCalEv(id){
   calEvs=calEvs.filter(e=>e.id!==id);
   persist();mobRenderCalendar();mobRenderHome();
   widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  if(typeof renderFullCal==='function')renderFullCal();
 }
 
 // ── SETTINGS ──
