@@ -540,58 +540,19 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 
 @media(max-width:600px){
-  /* ── LANDING — mobile full height ── */
-  #sl{
-    overflow-y:auto;overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
-    min-height:100dvh;min-height:100vh;
-  }
-  .lnav{padding:12px 16px;flex-shrink:0;}
-  .lhero{
-    flex:0 0 auto;
-    padding:28px 20px 24px;
-    gap:12px;
-    justify-content:flex-start;
-    min-height:auto;
-  }
-  .ltag{font-size:9px;margin-bottom:0;}
-  .lh1{font-size:clamp(36px,10vw,64px);letter-spacing:-2px;line-height:.95;}
-  .lsub{font-size:13px;color:rgba(255,255,255,.4);margin-top:0;max-width:100%;line-height:1.6;}
-  .lcta{
-    margin-top:0;
-    flex-wrap:wrap;gap:8px;
-    justify-content:stretch;width:100%;
-  }
-  .lcta .btn,.install-btn{
-    flex:1 1 calc(50% - 4px);
-    min-width:120px;
-    text-align:center;
-    justify-content:center;
-    padding:13px 10px;
-  }
-  .install-ios{justify-content:center;}
-  .lstrip{
-    flex-shrink:0;
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    border-top:1px solid rgba(255,255,255,.07);
-  }
-  .ls{padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);}
-  .ls:nth-child(2n){border-right:none;}
-  .ls:nth-child(1),.ls:nth-child(2){border-bottom:1px solid rgba(255,255,255,.06);}
-  .ls-l{font-size:9px;}
-  .ls-v{font-size:14px;font-weight:700;}
+  /* ── LANDING: hide desktop version, show mobile version ── */
+  #sl .sl-desktop{display:none !important;}
+  #sl .sl-mobile{display:flex !important;}
 
   /* ── AUTH — full screen on mobile ── */
-  #sa{flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #sa{flex-direction:column;}
   .al{display:none;}
   .ar{
-    width:100%;
-    flex:1;
-    padding:max(48px,env(safe-area-inset-top)) 24px max(32px,env(safe-area-inset-bottom));
+    width:100%;flex:1;
+    padding:max(52px,env(safe-area-inset-top)) 24px max(36px,env(safe-area-inset-bottom));
     overflow-y:auto;-webkit-overflow-scrolling:touch;
     display:flex;flex-direction:column;
-    justify-content:center;
+    justify-content:center;min-height:100%;
   }
   .abk{margin-bottom:22px;}
   .auh{font-size:24px;}
@@ -1181,40 +1142,97 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 <!-- LANDING -->
 <div class="screen" id="sl">
-  <div class="lo1"></div><div class="lo2"></div>
-  <nav class="lnav">
-    <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
-    <div style="display:flex;gap:9px;">
-      <button class="btn bgw" onclick="showAuth('si')">Sign in</button>
-      <button class="btn bw" onclick="showAuth('su')">Get started</button>
+
+  <!-- ═══ DESKTOP LANDING (hidden on mobile) ═══ -->
+  <div class="sl-desktop" style="display:contents;">
+    <div class="lo1"></div><div class="lo2"></div>
+    <nav class="lnav">
+      <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
+      <div style="display:flex;gap:9px;">
+        <button class="btn bgw" onclick="showAuth('si')">Sign in</button>
+        <button class="btn bw" onclick="showAuth('su')">Get started</button>
+      </div>
+    </nav>
+    <div class="lhero">
+      <div class="ltag">Your Productivity Space</div>
+      <h1 class="lh1">Work smarter,<br/><em>live clearer</em></h1>
+      <p class="lsub">Tasks, journal, projects &amp; calendar — one flexible workspace built around how you actually work.</p>
+      <div class="lcta">
+        <button class="btn ba" onclick="showAuth('su')">Start for free</button>
+        <button class="btn bgw" onclick="showAuth('si')">I have an account</button>
+        <button class="install-btn" id="install-btn" onclick="triggerInstall()">
+          <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/><path d="M3 21h18"/></svg>
+          Install App
+        </button>
+      </div>
+      <div class="install-ios" id="install-ios">
+        <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/></svg>
+        On iOS: tap Share then "Add to Home Screen"
+      </div>
     </div>
-  </nav>
-  <div class="lhero">
-    <div class="ltag">Your Productivity Space</div>
-    <h1 class="lh1">Work smarter,<br/><em>live clearer</em></h1>
-    <p class="lsub">Tasks, journal, projects &amp; calendar — one flexible workspace built around how you actually work.</p>
-    <div class="lcta">
-      <button class="btn ba" onclick="showAuth('su')">Start for free</button>
-      <button class="btn bgw" onclick="showAuth('si')">I have an account</button>
-      <button class="install-btn" id="install-btn" onclick="triggerInstall()">
-        <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/><path d="M3 21h18"/></svg>
-        Install App
-      </button>
+    <div class="lstrip">
+      <div class="ls"><div class="ls-l">Widgets</div><div class="ls-v">Drag &amp; Resize</div></div>
+      <div class="ls"><div class="ls-l">Focus Timer</div><div class="ls-v">Pomodoro</div></div>
+      <div class="ls"><div class="ls-l">Projects</div><div class="ls-v">Goal Tracking</div></div>
+      <div class="ls"><div class="ls-l">Journal</div><div class="ls-v">Mood Tracking</div></div>
     </div>
-    <div class="install-ios" id="install-ios">
-      <svg viewBox="0 0 24 24"><path d="M12 3v13M5 16l7 7 7-7"/></svg>
-      On iOS: tap Share then "Add to Home Screen"
+    <div style="text-align:center;padding:14px;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.3px;">
+      Designed &amp; built by <span style="color:rgba(255,255,255,.45);font-weight:600;">David Nueva</span>
     </div>
   </div>
-  <div class="lstrip">
-    <div class="ls"><div class="ls-l">Widgets</div><div class="ls-v">Drag &amp; Resize</div></div>
-    <div class="ls"><div class="ls-l">Focus Timer</div><div class="ls-v">Pomodoro</div></div>
-    <div class="ls"><div class="ls-l">Projects</div><div class="ls-v">Goal Tracking</div></div>
-    <div class="ls"><div class="ls-l">Journal</div><div class="ls-v">Mood Tracking</div></div>
+
+  <!-- ═══ MOBILE LANDING (hidden on desktop, shown on mobile) ═══ -->
+  <div class="sl-mobile" style="display:none;position:absolute;inset:0;flex-direction:column;background:#111009;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div style="position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.18) 0%,transparent 65%);top:-100px;right:-100px;pointer-events:none;"></div>
+
+    <!-- Top nav -->
+    <nav style="display:flex;align-items:center;justify-content:space-between;padding:max(20px,env(safe-area-inset-top)) 20px 16px;flex-shrink:0;position:relative;z-index:1;">
+      <div class="logo" style="color:#fff;font-size:18px;">Pro<b>dify</b></div>
+      <button class="btn bgw" style="padding:9px 18px;font-size:13px;" onclick="showAuth('si')">Sign in</button>
+    </nav>
+
+    <!-- Hero -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px 28px;text-align:center;position:relative;z-index:1;gap:16px;">
+      <div style="border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:100px;padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Your Productivity Space</div>
+
+      <h1 style="font-size:clamp(38px,12vw,62px);font-weight:800;line-height:.93;letter-spacing:-2px;color:#fff;margin:0;">Work smarter,<br/><em style="font-style:normal;color:#4A9D74;">live clearer</em></h1>
+
+      <p style="font-size:14px;color:rgba(255,255,255,.38);max-width:280px;line-height:1.65;margin:0;">Tasks, journal, projects &amp; calendar — one workspace built around how you work.</p>
+
+      <!-- CTA buttons — stacked, full width -->
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;">
+        <button onclick="showAuth('su')" style="background:var(--a2);color:#fff;border:none;border-radius:100px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;width:100%;letter-spacing:-.1px;">Start for free</button>
+        <button onclick="showAuth('si')" style="background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.15);border-radius:100px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;width:100%;letter-spacing:-.1px;">I have an account</button>
+      </div>
+
+      <div style="font-size:10px;color:rgba(255,255,255,.18);letter-spacing:.3px;">
+        Designed &amp; built by <span style="color:rgba(255,255,255,.35);font-weight:600;">David Nueva</span>
+      </div>
+    </div>
+
+    <!-- Features — scrollable strip at bottom -->
+    <div style="flex-shrink:0;border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;-webkit-overflow-scrolling:touch;display:flex;scrollbar-width:none;">
+      <div style="display:flex;flex-shrink:0;min-width:100%;">
+        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Widgets</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Drag &amp; Resize</div>
+        </div>
+        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Focus Timer</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Pomodoro</div>
+        </div>
+        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Projects</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Goal Tracking</div>
+        </div>
+        <div style="flex:1;padding:14px 16px;">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Journal</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Mood Tracking</div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div style="text-align:center;padding:14px;font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.3px;">
-    Designed &amp; built by <span style="color:rgba(255,255,255,.45);font-weight:600;">David Nueva</span>
-  </div>
+
 </div>
 
 <!-- AUTH -->
