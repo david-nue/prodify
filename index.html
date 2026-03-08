@@ -3676,7 +3676,7 @@ function reloadFromCloud(row){
 }
 
 let _syncPollInterval=null;
-let _lastSyncHash='';
+let _lastSyncHash=0;
 
 function startRealtime(){
   if(!sbReady||!cu)return;
@@ -3702,12 +3702,12 @@ async function syncFromCloud(){
   try{
     const dbUser=await dbGetUser(cu);
     if(!dbUser)return;
-    // Use updated_at to detect changes — skip if nothing changed
-    const hash=dbUser.updated_at||'';
-    if(hash&&hash===_lastSyncHash)return;
-    _lastSyncHash=hash;
-    // Don't overwrite if this device just saved (within 2 seconds)
-    if(_lastSaveTime&&Date.now()-_lastSaveTime<2000)return;
+    const cloudTime=dbUser.updated_at?new Date(dbUser.updated_at).getTime():0;
+    // Skip if we've seen this version before
+    if(cloudTime&&cloudTime===_lastSyncHash)return;
+    // Only pull if cloud is strictly newer than our last save
+    if(cloudTime<=_lastSaveTime)return;
+    _lastSyncHash=cloudTime;
     reloadFromCloud(dbUser);
   }catch(e){}
 }
@@ -3761,6 +3761,7 @@ function persist(){
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
   LS.s('pd1_acc',acc);
   _lastSaveTime=Date.now();
+  _lastSyncHash=_lastSaveTime;// treat our own save as "seen"
   dbSaveUser(cu,d);
   // sync mobile if visible
   if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
