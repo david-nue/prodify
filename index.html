@@ -2770,7 +2770,7 @@ function initSupabase(){
     sbReady = true;
     console.log('[Prodify] Supabase connected.');
     // If user is already logged in (auto-login ran before Supabase loaded), sync now
-    if(cu) syncFromCloud();
+    if(cu) pullFromCloud();
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -3649,67 +3649,41 @@ function doSO(){
 // ═══════════════════════════════════════
 // LAUNCH
 // ═══════════════════════════════════════
-let _realtimeChannel=null;
-
-function reloadFromCloud(row){
-  // called when Supabase Realtime pushes a change from another device
-  if(!row||row.username!==cu)return;
-  tasks=JSON.parse(row.tasks||'[]');
-  journal=JSON.parse(row.journal||'[]');
-  subjects=JSON.parse(row.subjects||'[]');
-  calEvs=JSON.parse(row.cal_evs||'[]');
-  notes=JSON.parse(row.notes||'{}');
-  prefs=JSON.parse(row.prefs||'{}');
-  const d=acc[cu];
-  d.tasks=tasks;d.journal=journal;d.subjects=subjects;
-  d.calEvs=calEvs;d.notes=notes;d.prefs=prefs;
-  LS.s('pd1_acc',acc);
-  // re-render everything
-  renderAllTaskW();
-  renderAllJournalW();
-  renderAllSubW();
-  renderFullCal();
-  widgets.forEach(w=>fillWBody(w));
-  updateAllStatsW();
-  updateFixedStats();
-  if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
-}
-
-let _syncPollInterval=null;
-let _lastSyncHash=0;
-
-function startRealtime(){
-  if(!sbReady||!cu)return;
-  // Try Supabase Realtime (requires replication enabled on table)
-  try{
-    if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(e){}}
-    _realtimeChannel=sb.channel('prod-sync-'+cu)
-      .on('postgres_changes',{
-        event:'UPDATE',schema:'public',table:'users',
-        filter:'username=eq.'+cu
-      },payload=>{
-        reloadFromCloud(payload.new);
-      })
-      .subscribe();
-  }catch(e){}
-  // Also poll every 5 seconds as reliable fallback
-  if(_syncPollInterval)clearInterval(_syncPollInterval);
-  _syncPollInterval=setInterval(syncFromCloud,5000);
-}
-
-async function syncFromCloud(){
+// ── CROSS-DEVICE SYNC ──
+// Pull from cloud when tab becomes visible (user switching devices)
+// Never poll — polling caused data deletion
+async function pullFromCloud(){
   if(!sbReady||!cu)return;
   try{
     const dbUser=await dbGetUser(cu);
     if(!dbUser)return;
-    const cloudTime=dbUser.updated_at?new Date(dbUser.updated_at).getTime():0;
-    // Skip if we've seen this version before
-    if(cloudTime&&cloudTime===_lastSyncHash)return;
-    // Only pull if cloud is strictly newer than our last save
-    if(cloudTime<=_lastSaveTime)return;
-    _lastSyncHash=cloudTime;
-    reloadFromCloud(dbUser);
+    acc[cu]={
+      passHash:dbUser.pass_hash,
+      displayName:dbUser.display_name||acc[cu]?.displayName||'',
+      tasks:JSON.parse(dbUser.tasks||'[]'),
+      journal:JSON.parse(dbUser.journal||'[]'),
+      subjects:JSON.parse(dbUser.subjects||'[]'),
+      calEvs:JSON.parse(dbUser.cal_evs||'[]'),
+      widgets:JSON.parse(dbUser.widgets||'[]'),
+      notes:JSON.parse(dbUser.notes||'{}'),
+      prefs:JSON.parse(dbUser.prefs||'{}'),
+      joined:acc[cu]?.joined||Date.now(),
+    };
+    LS.s('pd1_acc',acc);
+    tasks=acc[cu].tasks;journal=acc[cu].journal;subjects=acc[cu].subjects;
+    calEvs=acc[cu].calEvs;widgets=acc[cu].widgets;notes=acc[cu].notes;prefs=acc[cu].prefs;
+    renderAllTaskW();renderAllJournalW();renderAllSubW();
+    renderFullCal();widgets.forEach(w=>fillWBody(w));
+    updateAllStatsW();updateFixedStats();
+    if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
   }catch(e){}
+}
+
+function startRealtime(){
+  // Pull when this tab becomes visible again (e.g. user was on mobile, comes back to desktop)
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')pullFromCloud();
+  });
 }
 
 async function launch(){
@@ -3753,17 +3727,13 @@ async function launch(){
 // ═══════════════════════════════════════
 // PERSIST
 // ═══════════════════════════════════════
-let _lastSaveTime=0;
 function persist(){
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
   LS.s('pd1_acc',acc);
-  _lastSaveTime=Date.now();
-  _lastSyncHash=_lastSaveTime;// treat our own save as "seen"
   dbSaveUser(cu,d);
-  // sync mobile if visible
   if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
 }
 
