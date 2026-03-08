@@ -81,7 +81,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .mob-widget-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);}
 .mob-widget-close{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:15px;padding:0;line-height:1;}
-.mob-widget-body{padding:8px 12px 12px;flex:1;}
+.mob-widget-body{padding:8px 12px 12px;flex:1;min-height:80px;}
+.mob-widget.mob-timer-card .mob-widget-body{min-height:280px;padding:8px 8px 12px;}
 .btab-bar{display:none;}
 @media(max-width:600px){
   /* Hide sidebar on mobile */
@@ -163,8 +164,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .canvas-topbar{left:0;height:44px;}
   .canvas-topbar>div:first-child{display:none !important;}
   .ctb-quote{border-right:none;padding:0 16px;}
-  .ctb-qtext{font-size:13px;}
-  .ctb-qauthor{font-size:11px;}
+  .ctb-qtext{font-size:12px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ctb-qauthor{font-size:10px;}
+  .canvas-topbar{height:auto;min-height:44px;padding:6px 0;}
   /* Full pages — key fix: make them scrollable */
   .fullpg{flex:1;display:flex;flex-direction:column;overflow:hidden;}
   .fphdr{padding:10px 12px 0;flex-wrap:wrap;gap:6px;flex-shrink:0;}
@@ -627,8 +629,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .cwlbl{font-size:11px;font-weight:700;color:var(--ink2);}
 .cwib{width:22px;height:22px;background:var(--surf);border:1px solid var(--bdr);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .cwib svg{width:9px;height:9px;stroke:var(--ink2);fill:none;stroke-width:2;stroke-linecap:round;}
-.cwdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:7px;flex:1;overflow:hidden;}
-.cwd{background:var(--surf2);border-radius:var(--r10);border:1px solid var(--bdr);padding:5px;display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden;}
+.cwdays{display:flex;gap:6px;padding:7px;flex:1;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+.cwd{background:var(--surf2);border-radius:var(--r10);border:1px solid var(--bdr);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:calc(100% / 3.5);flex-shrink:0;scroll-snap-align:start;overflow:hidden;}
+.cwd.tod{border-color:var(--a2);background:var(--al);}
 .cwd.tod{border-color:var(--a2);}
 .cwdn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);}
 .cwdnum{font-size:15px;font-weight:800;line-height:1;color:var(--ink);}
@@ -1239,6 +1242,7 @@ let dragTaskId=null, calOff=0, nextZ=10;
 let curMood=0;
 // per-widget timer state (not persisted)
 const TMS={};
+const TMODES=[{l:'Pomodoro',s:25*60},{l:'Short Break',s:5*60},{l:'Long Break',s:15*60}];
 
 // ═══════════════════════════════════════
 // HELPERS
@@ -1338,7 +1342,8 @@ function renderMobileCanvas(){
   mobileWidgets.forEach(w=>{
     const isLarge=!!MOB_LARGE[w.type];
     const card=document.createElement('div');
-    card.className='mob-widget'+(isLarge?' mob-widget-full':'');
+    const timerClass2=w.type==='timer'?' mob-timer-card':'';
+    card.className='mob-widget'+(isLarge?' mob-widget-full':'')+timerClass2;
     card.id=w.id;
     const titles={tasks:'Tasks',journal:'Journal',timer:'Timer',note:'Note',subjects:'Projects',calendar:'Calendar'};
     card.innerHTML=`<div class="mob-widget-hd"><span class="mob-widget-title">${titles[w.type]||w.type}</span><button class="mob-widget-close" onclick="removeMobileWidget('${w.id}','${w.type}')">&#x2715;</button></div><div class="mob-widget-body" id="mwb-${w.id}"></div>`;
@@ -1454,7 +1459,7 @@ function launch(){
 // PERSIST
 // ═══════════════════════════════════════
 function persist(){
-  if(isMobile()&&document.getElementById('pg-canvas')&&!document.getElementById('pg-canvas').classList.contains('off'))renderMobileCanvas();
+  if(isMobile()&&document.getElementById('pg-canvas')&&!document.getElementById('pg-canvas').classList.contains('off')&&!document.activeElement?.closest('.mob-widget'))renderMobileCanvas();
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
@@ -1700,7 +1705,7 @@ function renderTaskCols(wid){
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
-    el.innerHTML=cols[c].map(t=>`<div class="tc" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()">
+    el.innerHTML=cols[c].map(t=>`<div class="tc" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" ontouchstart="touchDragStart(event,${t.id})">
       <button class="tcdel" onclick="delTask(${t.id})">&times;</button>
       <div class="tct">${esc(t.text)}</div>
       <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span><span class="tcd">${t.date}</span></div>
@@ -1709,6 +1714,39 @@ function renderTaskCols(wid){
 }
 function dstart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=$('tc-'+id);if(el)el.classList.add('dragging');},0);}
 function dend(){dragTaskId=null;document.querySelectorAll('.tc').forEach(e=>e.classList.remove('dragging'));document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));}
+// Touch drag for mobile tasks
+let _touchDragId=null,_touchDragEl=null,_touchClone=null;
+function touchDragStart(e,id){
+  _touchDragId=id;
+  _touchDragEl=$('tc-'+id);
+  if(_touchDragEl)_touchDragEl.style.opacity='0.4';
+  e.preventDefault();
+}
+function touchDragMove(e){
+  if(!_touchDragId)return;
+  e.preventDefault();
+  const t=e.touches[0];
+  const target=document.elementFromPoint(t.clientX,t.clientY);
+  const col=target?.closest('.twbody');
+  document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
+  if(col)col.classList.add('dov');
+}
+function touchDragEnd(e){
+  if(!_touchDragId)return;
+  const t=e.changedTouches[0];
+  const target=document.elementFromPoint(t.clientX,t.clientY);
+  const colEl=target?.closest('.twbody');
+  if(colEl){
+    const col=colEl.id.replace(/^col-/,'').replace(/-[^-]+$/,'');
+    const task=tasks.find(x=>x.id===_touchDragId);
+    if(task&&task.col!==col){task.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+  }
+  if(_touchDragEl)_touchDragEl.style.opacity='';
+  document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
+  _touchDragId=null;_touchDragEl=null;
+}
+document.addEventListener('touchmove',touchDragMove,{passive:false});
+document.addEventListener('touchend',touchDragEnd);
 function dov(e,col,wid){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));$('col-'+col+'-'+wid).classList.add('dov');}
 function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');}
 function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}dragTaskId=null;}
@@ -1750,7 +1788,6 @@ function renderJournalW(wid){
 }
 
 /* ── TIMER ── */
-const TMODES=[{l:'Pomodoro',s:25*60},{l:'Short Break',s:5*60},{l:'Long Break',s:15*60}];
 function buildTimerW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   if(!TMS[w.id])TMS[w.id]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,5*60,15*60]};
@@ -1801,9 +1838,15 @@ function buildTimerW(body,w){
 function scaleTimer(wid,ww,wh){
   const el=document.getElementById('tmi-'+wid);
   if(!el)return;
-  // tminner natural size ~220w x 260h; scale uniformly to fill available space
+  // if mobile widget (w=0), use parent container size
+  if(!ww||!wh){
+    const parent=el.closest('.mob-widget-body')||el.parentElement;
+    if(parent){ww=parent.clientWidth||280;wh=parent.clientHeight||300;}
+    else{ww=280;wh=300;}
+  }
   const s=Math.min((ww-10)/220,(wh-44)/260);
-  el.style.transform='scale('+Math.min(1,Math.max(0.6,s))+')';
+  el.style.transform='scale('+Math.min(1.4,Math.max(0.6,s))+')';
+  el.style.transformOrigin='top center';
 }
 function tmStartEdit(wid){
   const ts=TMS[wid];if(!ts||ts.mode===0)return; // pomodoro locked
@@ -1896,9 +1939,22 @@ function buildNoteW(body,w){
     <textarea class="noteta" placeholder="Start writing..."  oninput="saveNote('${nid}','content',this.value)">${esc(n.content)}</textarea>
   </div>`;
 }
+let _noteTimer=null;
 function saveNote(nid,field,val){
   if(!notes[nid])notes[nid]={title:'',content:''};
-  notes[nid][field]=val;persist();
+  notes[nid][field]=val;
+  // debounce — don't persist on every keystroke (would rebuild DOM and lose focus)
+  clearTimeout(_noteTimer);
+  _noteTimer=setTimeout(()=>persistSilent(),800);
+}
+function persistSilent(){
+  // save without triggering mobile canvas re-render
+  const _orig=isMobile;
+  try{
+    const d=getData();
+    localStorage.setItem('pd1_acc',JSON.stringify(d));
+    if(typeof SB_URL!=='undefined')syncToCloud().catch(()=>{});
+  }catch(e){}
 }
 
 /* ── STATS ── */
@@ -1990,7 +2046,7 @@ function renderSubFull(){
 }
 function addSub(){
   const name=$('sn-i').value.trim();if(!name)return;
-  subjects.push({id:Date.now(),name,lead:$('st-i').value.trim(),progress:parseFloat($('sg-i').value)||0,color:$('sc-i').value,created:Date.now()});
+  subjects.push({id:Date.now(),name,lead:$('st-i').value.trim(),progress:Math.min(100,Math.max(0,parseFloat($('sg-i').value)||0)),color:$('sc-i').value,created:Date.now()});
   persist();renderSubFull();renderAllSubW();updateAllStatsW();closeMo('mo-sub');
   ['sn-i','st-i','sg-i'].forEach(id=>$(id).value='');updateEvSubSel();
 }
