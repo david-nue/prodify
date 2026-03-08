@@ -3686,7 +3686,28 @@ function startRealtime(){
     .subscribe();
 }
 
-function launch(){
+async function launch(){
+  // Always pull latest from Supabase so all devices start in sync
+  if(sbReady){
+    try{
+      const dbUser=await dbGetUser(cu);
+      if(dbUser){
+        acc[cu]={
+          passHash:dbUser.pass_hash,
+          displayName:dbUser.display_name||acc[cu]?.displayName||'',
+          tasks:JSON.parse(dbUser.tasks||'[]'),
+          journal:JSON.parse(dbUser.journal||'[]'),
+          subjects:JSON.parse(dbUser.subjects||'[]'),
+          calEvs:JSON.parse(dbUser.cal_evs||'[]'),
+          widgets:JSON.parse(dbUser.widgets||'[]'),
+          notes:JSON.parse(dbUser.notes||'{}'),
+          prefs:JSON.parse(dbUser.prefs||'{}'),
+          joined:acc[cu]?.joined||Date.now(),
+        };
+        LS.s('pd1_acc',acc);
+      }
+    }catch(e){console.warn('[Prodify] launch fetch failed',e);}
+  }
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
@@ -3701,7 +3722,7 @@ function launch(){
   if(isMobile())setTimeout(initMobApp,100);
   setTimeout(startRealtime,1000);
 }
-(function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
+(async function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)await launch();else show('sn');}})();
 
 // ═══════════════════════════════════════
 // PERSIST
