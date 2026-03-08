@@ -74,7 +74,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
    MOBILE FULL-SCREEN UI
 ══════════════════════════════════════ */
 /* Mobile screen wrapper — hidden on desktop */
-.mob-app{display:none;position:fixed;inset:0;z-index:2;flex-direction:column;background:var(--bg);overflow:hidden;}
+.mob-app{display:none;position:fixed;inset:0;z-index:1;flex-direction:column;background:var(--bg);overflow:hidden;}
 
 /* Each mobile page */
 .mob-page{
@@ -526,8 +526,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .wtray{display:none !important;}
   .canvas-topbar{display:none !important;}
   .mobile-stack{display:none !important;}
-  .mob-app{display:flex !important;}
-  /* Hide the main desktop pages container on mobile */
+  /* mob-app shown/hidden via JS show() — not CSS */
   .pages{display:none !important;}
   .sb{display:none !important;}
 }
@@ -1524,7 +1523,7 @@ create policy "public" on users for all using (true);</pre>
             stroke-linecap="round" id="mob-timer-circ"
             style="transition:stroke-dasharray .5s;"/>
         </svg>
-        <div class="mob-timer-center">
+        <div class="mob-timer-center" onclick="mobTimerEdit()" style="cursor:pointer;" title="Tap to edit time">
           <div class="mob-timer-time" id="mob-timer-time">25:00</div>
           <div class="mob-timer-label" id="mob-timer-lbl">Pomodoro</div>
           <div class="mob-timer-hint" id="mob-timer-hint">tap to edit</div>
@@ -1893,7 +1892,15 @@ function fmtSec(s){const m=Math.floor(s/60),sc=s%60;return `${String(m).padStart
 // ═══════════════════════════════════════
 // SCREENS & PAGES
 // ═══════════════════════════════════════
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('off',s.id!==id));}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('off',s.id!==id));
+  // on mobile, mob-app replaces the desktop #app content
+  const mobApp=document.getElementById('mob-app');
+  if(mobApp&&isMobile()){
+    if(id==='app'){mobApp.style.display='flex';}
+    else{mobApp.style.display='none';}
+  }
+}
 
 function goPg(id,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
@@ -2123,7 +2130,7 @@ function mobTimerRender(){
   const hintEl=document.getElementById('mob-timer-hint');
   if(timeEl)timeEl.textContent=mobFmtSec(_mobTimerSec);
   if(lblEl)lblEl.textContent=MOB_TMODES[_mobTimerMode].l;
-  if(hintEl)hintEl.textContent=_mobTimerMode===0?'locked · 25:00':'tap to edit';
+  if(hintEl)hintEl.textContent=_mobTimerRunning?'':'tap to edit';
   // ring
   if(circEl){
     const R=110,circ=2*Math.PI*R;
@@ -2151,6 +2158,24 @@ function mobSetMode(m){
   if(_mobTimerRunning)return;
   _mobTimerMode=m;
   _mobTimerSec=MOB_TMODES[m].s;
+  mobTimerRender();
+}
+function mobTimerEdit(){
+  if(_mobTimerRunning)return;
+  const cur=mobFmtSec(_mobTimerSec);
+  const val=prompt(`Set time for ${MOB_TMODES[_mobTimerMode].l} (mm:ss or minutes):`,cur);
+  if(!val)return;
+  let secs=0;
+  if(val.includes(':')){
+    const [m,s]=val.split(':').map(Number);
+    secs=m*60+(s||0);
+  } else {
+    secs=Math.round(parseFloat(val)*60);
+  }
+  if(isNaN(secs)||secs<10||secs>3600){alert('Please enter a valid time (10 seconds to 60 minutes)');return;}
+  // update the mode default too so reset uses this value
+  MOB_TMODES[_mobTimerMode].s=secs;
+  _mobTimerSec=secs;
   mobTimerRender();
 }
 function mobTimerToggle(){
@@ -2558,7 +2583,12 @@ function doName(){
   const n=$('nin').value.trim();if(!n)return;
   acc[cu].displayName=n;LS.s('pd1_acc',acc);launch();
 }
-function doSO(){LS.d('pd1_cur');cu=null;closeDD();show('sl');}
+function doSO(){
+  LS.d('pd1_cur');cu=null;closeDD();
+  const mobApp=document.getElementById('mob-app');
+  if(mobApp)mobApp.style.display='none';
+  show('sl');
+}
 
 // ═══════════════════════════════════════
 // LAUNCH
