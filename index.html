@@ -2769,6 +2769,8 @@ function initSupabase(){
     sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim());
     sbReady = true;
     console.log('[Prodify] Supabase connected.');
+    // If user is already logged in (auto-login ran before Supabase loaded), sync now
+    if(cu) syncFromCloud();
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -3673,17 +3675,41 @@ function reloadFromCloud(row){
   if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
 }
 
+let _syncPollInterval=null;
+let _lastSyncHash='';
+
 function startRealtime(){
   if(!sbReady||!cu)return;
-  if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(e){}}
-  _realtimeChannel=sb.channel('prod-sync-'+cu)
-    .on('postgres_changes',{
-      event:'UPDATE',schema:'public',table:'users',
-      filter:'username=eq.'+cu
-    },payload=>{
-      reloadFromCloud(payload.new);
-    })
-    .subscribe();
+  // Try Supabase Realtime (requires replication enabled on table)
+  try{
+    if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(e){}}
+    _realtimeChannel=sb.channel('prod-sync-'+cu)
+      .on('postgres_changes',{
+        event:'UPDATE',schema:'public',table:'users',
+        filter:'username=eq.'+cu
+      },payload=>{
+        reloadFromCloud(payload.new);
+      })
+      .subscribe();
+  }catch(e){}
+  // Also poll every 5 seconds as reliable fallback
+  if(_syncPollInterval)clearInterval(_syncPollInterval);
+  _syncPollInterval=setInterval(syncFromCloud,5000);
+}
+
+async function syncFromCloud(){
+  if(!sbReady||!cu)return;
+  try{
+    const dbUser=await dbGetUser(cu);
+    if(!dbUser)return;
+    // Use updated_at to detect changes — skip if nothing changed
+    const hash=dbUser.updated_at||'';
+    if(hash&&hash===_lastSyncHash)return;
+    _lastSyncHash=hash;
+    // Don't overwrite if this device just saved (within 2 seconds)
+    if(_lastSaveTime&&Date.now()-_lastSaveTime<2000)return;
+    reloadFromCloud(dbUser);
+  }catch(e){}
 }
 
 async function launch(){
@@ -3727,12 +3753,14 @@ async function launch(){
 // ═══════════════════════════════════════
 // PERSIST
 // ═══════════════════════════════════════
+let _lastSaveTime=0;
 function persist(){
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
   LS.s('pd1_acc',acc);
+  _lastSaveTime=Date.now();
   dbSaveUser(cu,d);
   // sync mobile if visible
   if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
