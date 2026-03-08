@@ -70,19 +70,63 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .mob-quick-btn svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:1.8;stroke-linecap:round;}
 /* ── MOBILE WIDGET CARDS ── */
-.mob-widget{
-  background:var(--surf);border:1px solid var(--bdr);border-radius:14px;
-  overflow:hidden;display:flex;flex-direction:column;
+/* ── MOBILE SNAP GRID ── */
+.mob-grid-wrap{
+  display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:10px 10px 80px;margin-top:44px;
 }
-.mob-widget-full{grid-column:span 2;}
+.mob-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  width:100%;
+}
+/* Widget size classes */
+.mw-2x1{grid-column:span 2;grid-row:span 1;}
+.mw-4x1{grid-column:span 4;grid-row:span 1;}
+.mw-2x2{grid-column:span 2;grid-row:span 2;}
+.mw-4x2{grid-column:span 4;grid-row:span 2;}
+.mw-4x3{grid-column:span 4;grid-row:span 3;}
+
+/* Fixed heights */
+.mob-widget{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:16px;
+  overflow:hidden;display:flex;flex-direction:column;
+  position:relative;transition:box-shadow .2s,transform .2s;
+}
+.mob-widget.mw-2x1{min-height:100px;}
+.mob-widget.mw-4x1{min-height:100px;}
+.mob-widget.mw-2x2{min-height:210px;}
+.mob-widget.mw-4x2{min-height:300px;}
+.mob-widget.mw-4x3{min-height:420px;}
+
+/* Edit/wiggle mode */
+.mob-grid.edit-mode .mob-widget{animation:mobWiggle .35s infinite alternate;}
+.mob-grid.edit-mode .mob-widget:active{animation:none;transform:scale(1.04);box-shadow:var(--sh3);}
+@keyframes mobWiggle{0%{transform:rotate(-.6deg);}100%{transform:rotate(.6deg);}}
+
 .mob-widget-hd{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 12px 0;flex-shrink:0;
 }
-.mob-widget-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);}
-.mob-widget-close{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:15px;padding:0;line-height:1;}
-.mob-widget-body{padding:8px 12px 12px;flex:1;min-height:80px;}
-.mob-widget.mob-timer-card .mob-widget-body{min-height:280px;padding:8px 8px 12px;}
+.mob-widget-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);}
+.mob-widget-close{
+  display:none;background:var(--red);color:#fff;border:none;cursor:pointer;
+  width:20px;height:20px;border-radius:50%;font-size:12px;line-height:1;
+  align-items:center;justify-content:center;flex-shrink:0;
+  position:absolute;top:-6px;left:-6px;z-index:10;
+}
+.mob-grid.edit-mode .mob-widget-close{display:flex;}
+.mob-widget-body{padding:6px 10px 10px;flex:1;overflow:hidden;min-height:0;}
+
+/* Edit mode button */
+.mob-edit-btn{
+  display:none;position:fixed;bottom:72px;left:18px;z-index:400;
+  background:var(--surf);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:8px 16px;font-size:12px;font-weight:700;color:var(--ink2);
+  box-shadow:var(--sh2);cursor:pointer;transition:all .15s;
+}
+.mob-edit-btn.editing{background:var(--a2);color:#fff;border-color:var(--a2);}
 .btab-bar{display:none;}
 @media(max-width:600px){
   /* Hide sidebar on mobile */
@@ -129,12 +173,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .fab-item svg{width:16px;height:16px;stroke:var(--a2);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
   /* Add bottom padding so content isn't hidden behind tab bar */
   .pages{padding-bottom:62px;}
-  /* Mobile canvas stacked view */
+  /* Mobile canvas snap-grid */
   .canvas-wrap{display:none;}
   .wtray{display:none;}
   .canvas-topbar{left:0;}
   .ctb-stats{display:none;}
-  .mobile-stack{display:flex !important;}
+  .mobile-stack{display:none !important;}
+  .mob-grid-wrap{display:flex !important;flex-direction:column;}
+  .mob-edit-btn{display:block !important;}
 }
 
 @media(min-width:601px){
@@ -142,6 +188,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .fab{display:none !important;}
   .fab-menu{display:none !important;}
   .mobile-stack{display:none !important;}
+  .mob-grid-wrap{display:none !important;}
+  .mob-edit-btn{display:none !important;}
 }
 
 @media(max-width:600px){
@@ -901,10 +949,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
           <div style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">Built by <span style="color:var(--ink3);">David Nueva</span></div>
           <div class="canvas" id="canvas"></div>
         </div>
-        <!-- MOBILE CANVAS -->
-        <div class="mobile-stack" id="mobile-stack">
-          <div id="mob-canvas-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-          <div id="mob-canvas-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 20px;text-align:center;">
+        <!-- MOBILE SNAP-GRID CANVAS -->
+        <div class="mob-grid-wrap" id="mob-grid-wrap">
+          <div class="mob-grid" id="mob-canvas-grid"></div>
+          <div id="mob-canvas-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 20px;text-align:center;">
             <div style="font-size:36px;">⊞</div>
             <div style="font-size:16px;font-weight:700;color:var(--ink);">Your canvas is empty</div>
             <div style="font-size:13px;color:var(--ink3);">Tap the <strong>+</strong> button to add widgets</div>
@@ -1004,6 +1052,7 @@ create policy "public" on users for all using (true);</pre>
   </div>
 
   <!-- BOTTOM TAB BAR (mobile only) -->
+  <button class="mob-edit-btn" id="mob-edit-btn" onclick="toggleMobEdit()">Edit</button>
   <nav class="btab-bar" id="btab-bar">
     <button class="btab act" id="bt-canvas" onclick="goPg('canvas',this);setTab('canvas')">
       <svg viewBox="0 0 22 22"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -1294,33 +1343,48 @@ function closeMobilePicker(){
 }
 
 // Mobile canvas widget management
-const MOB_LARGE={'tasks':1,'journal':1,'subjects':1,'calendar':1};
+/* ── MOBILE SNAP-GRID WIDGET SIZES ──
+   timer  → mw-4x3 (full width, extra tall)
+   tasks  → mw-4x2 (full width, tall)
+   journal→ mw-4x2 (full width, tall)
+   cal    → mw-4x2 (full width, tall)
+   subjects→mw-4x2 (full width, tall)
+   note   → mw-2x2 (half width)
+   ────────────────────────────────── */
+const MOB_SIZE={tasks:'mw-4x2',journal:'mw-4x2',timer:'mw-4x3',note:'mw-2x2',subjects:'mw-4x2',calendar:'mw-4x2'};
+const MOB_TITLES={tasks:'Tasks',journal:'Journal',timer:'Timer',note:'Note',subjects:'Projects',calendar:'Calendar'};
+let _mobEditing=false;
+function getMobSizeClass(type){return MOB_SIZE[type]||'mw-4x2';}
+function toggleMobEdit(){
+  _mobEditing=!_mobEditing;
+  const grid=document.getElementById('mob-canvas-grid');
+  const btn=document.getElementById('mob-edit-btn');
+  if(grid)grid.classList.toggle('edit-mode',_mobEditing);
+  if(btn){btn.textContent=_mobEditing?'Done':'Edit';btn.classList.toggle('editing',_mobEditing);}
+}
 function addMobileWidget(type){
   const grid=document.getElementById('mob-canvas-grid');
   const empty=document.getElementById('mob-canvas-empty');
   if(!grid)return;
   const id='mw-'+type+(type==='note'?'-'+Date.now():'');
-  const isLarge=!!MOB_LARGE[type];
+  const sizeClass=getMobSizeClass(type);
   const card=document.createElement('div');
-  card.className='mob-widget'+(isLarge?' mob-widget-full':'');
+  card.className='mob-widget '+sizeClass;
   card.id=id;
-  const titles={tasks:'Tasks',journal:'Journal',timer:'Timer',note:'Note',subjects:'Projects',calendar:'Calendar'};
-  card.innerHTML=`<div class="mob-widget-hd"><span class="mob-widget-title">${titles[type]||type}</span><button class="mob-widget-close" onclick="removeMobileWidget('${id}','${type}')">&#x2715;</button></div><div class="mob-widget-body" id="mwb-${id}"></div>`;
+  card.innerHTML=`<button class="mob-widget-close" onclick="removeMobileWidget('${id}','${type}')">&#x2715;</button><div class="mob-widget-hd"><span class="mob-widget-title">${MOB_TITLES[type]||type}</span></div><div class="mob-widget-body" id="mwb-${id}"></div>`;
   grid.appendChild(card);
-  empty.style.display='none';
-  // fill with widget content using existing builders
+  if(empty)empty.style.display='none';
   const fakeW={id,type,noteId:type==='note'?id:null};
-  if(type==='note'){notes[id]={title:'',content:''};}
+  if(type==='note'){notes[id]={title:'',content:''}}
   const body=document.getElementById('mwb-'+id);
   if(body){
     if(type==='tasks')buildTaskW(body,fakeW);
     else if(type==='journal')buildJournalW(body,fakeW);
-    else if(type==='timer'){buildTimerW(body,fakeW);}
+    else if(type==='timer')buildTimerW(body,fakeW);
     else if(type==='note')buildNoteW(body,fakeW);
     else if(type==='subjects')buildSubjectsW(body,fakeW);
     else if(type==='calendar')buildCalW(body,fakeW);
   }
-  // store in widgets so data persists
   const ent={id,type,x:0,y:0,w:0,h:0,mobile:true,noteId:type==='note'?id:null};
   widgets.push(ent);persist();
 }
@@ -1340,13 +1404,11 @@ function renderMobileCanvas(){
   grid.innerHTML='';
   const mobileWidgets=widgets.filter(w=>w.mobile);
   mobileWidgets.forEach(w=>{
-    const isLarge=!!MOB_LARGE[w.type];
+    const sizeClass=getMobSizeClass(w.type);
     const card=document.createElement('div');
-    const timerClass2=w.type==='timer'?' mob-timer-card':'';
-    card.className='mob-widget'+(isLarge?' mob-widget-full':'')+timerClass2;
+    card.className='mob-widget '+sizeClass;
     card.id=w.id;
-    const titles={tasks:'Tasks',journal:'Journal',timer:'Timer',note:'Note',subjects:'Projects',calendar:'Calendar'};
-    card.innerHTML=`<div class="mob-widget-hd"><span class="mob-widget-title">${titles[w.type]||w.type}</span><button class="mob-widget-close" onclick="removeMobileWidget('${w.id}','${w.type}')">&#x2715;</button></div><div class="mob-widget-body" id="mwb-${w.id}"></div>`;
+    card.innerHTML=`<button class="mob-widget-close" onclick="removeMobileWidget('${w.id}','${w.type}')">&#x2715;</button><div class="mob-widget-hd"><span class="mob-widget-title">${MOB_TITLES[w.type]||w.type}</span></div><div class="mob-widget-body" id="mwb-${w.id}"></div>`;
     grid.appendChild(card);
     const body=document.getElementById('mwb-'+w.id);
     if(body){
@@ -1359,8 +1421,8 @@ function renderMobileCanvas(){
     }
   });
   if(empty)empty.style.display=mobileWidgets.length?'none':'flex';
+  if(_mobEditing&&grid)grid.classList.add('edit-mode');
 }
-
 // ═══════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════
