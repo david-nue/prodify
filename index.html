@@ -160,7 +160,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   cursor:pointer;transition:all .14s;text-align:center;
 }
 .mob-ttab.act{background:var(--a2);border-color:var(--a2);color:#fff;}
-.mob-tasks-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.mob-tasks-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;display:flex;flex-direction:column;gap:12px;}
 .mob-task-card{
   background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;
   padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;
@@ -185,6 +185,25 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-task-priority.medium{background:var(--aml);color:var(--amb);}
 .mob-task-del{background:none;border:none;color:var(--ink4);cursor:pointer;padding:4px;font-size:16px;margin-left:auto;}
 .mob-tasks-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+.mob-kcol{background:var(--surf2);border-radius:14px;border:1px solid var(--bdr);overflow:hidden;}
+.mob-kcol-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
+.mob-kcol-cnt{background:var(--surf);border:1px solid var(--bdr);border-radius:100px;padding:1px 7px;font-size:10px;color:var(--ink3);font-weight:700;}
+.mob-kcol-empty{padding:10px 14px;font-size:12px;color:var(--ink4);text-align:center;}
+.mob-kcard{background:var(--surf);border-radius:10px;margin:6px 8px;padding:10px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--bdr);}
+.mob-kcard.dragging{opacity:.4;}
+.mob-kcard-body{flex:1;min-width:0;}
+.mob-kcard-text{font-size:13px;color:var(--ink);line-height:1.4;margin-bottom:3px;}
+.mob-kcard-text.done{color:var(--ink3);text-decoration:line-through;}
+.mob-kcard-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.mob-kcard-pri{font-size:9px;font-weight:700;padding:2px 6px;border-radius:100px;}
+.mob-kcard-date{font-size:10px;color:var(--ink4);}
+.mob-kcard-actions{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+.mob-kcard-move{background:none;border:1px solid var(--bdr);border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink3);font-size:12px;}
+.mob-kcard-move:active{border-color:var(--a2);color:var(--a2);}
+.mob-kcard-del{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
+.mob-kcard-del:active{color:var(--red);}
+.mob-kcol-drop{height:3px;margin:4px 8px 6px;border-radius:2px;transition:all .15s;}
+.mob-kcol-drop.dov{height:32px;background:var(--al);border:2px dashed var(--a2);border-radius:8px;}
 /* Quick add bar */
 .mob-qadd{
   display:flex;gap:8px;padding:10px 16px;background:var(--surf);
@@ -1694,10 +1713,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .wb:hover{background:var(--al);border-color:var(--a2);color:var(--a2);}
 .wb svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .wbtip{
-  position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);
+  position:fixed;
   background:var(--ink);color:var(--bg);border-radius:var(--r6);
   padding:4px 9px;font-size:11px;font-weight:700;white-space:nowrap;
-  opacity:0;pointer-events:none;transition:opacity .14s;z-index:400;
+  opacity:0;pointer-events:none;transition:opacity .14s;z-index:9999;
 }
 .wb:hover .wbtip{opacity:1;}
 .wtdiv{width:22px;height:1px;background:var(--bdr);margin:3px 0;}
@@ -1763,7 +1782,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   user-select:none;
   transition:box-shadow .16s,border-color .16s;
 }
-.widget:hover{box-shadow:var(--sh3);}
+.widget:hover{box-shadow:var(--sh3);border-color:var(--a2);}
 .widget.wdrag{box-shadow:var(--sh4);border-color:var(--a2);z-index:1000!important;opacity:.96;}
 .widget.wresize{box-shadow:var(--sh4);border-color:var(--a2);}
 
@@ -1792,6 +1811,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .widget:hover .wrsz,.widget.wresize .wrsz{opacity:1;}
 .wrsz svg{width:8px;height:8px;stroke:var(--ink3);fill:none;stroke-width:2;stroke-linecap:round;}
 .wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.wcolor-pick{width:14px;height:14px;border:none;border-radius:50%;padding:0;cursor:pointer;opacity:0;transition:opacity .13s;background:none;flex-shrink:0;}
+.widget:hover .wcolor-pick{opacity:1;}
 
 /* ── TASK WIDGET ── */
 .twadd{padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;gap:5px;background:var(--surf2);flex-wrap:wrap;}
@@ -2231,15 +2252,15 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
     </button>
     <div class="sb-bot">
       <div class="sbdiv"></div>
-      <button class="sbb" data-p="settings" onclick="goPg('settings',this)" title="Settings">
-        <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1"/></svg>
-        <span class="sbtip">Settings</span>
-      </button>
+
       <div class="sbav" id="sbav" onclick="toggleDD()">
         <span id="sbavt">S</span>
         <div class="sbdd" id="sbdd">
           <div class="ddhd">
+            <label for="dd-photo-input" style="cursor:pointer;" title="Change photo">
             <div class="ddav" id="ddav">S</div>
+          </label>
+          <input type="file" id="dd-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
             <div class="ddnm" id="ddnm">User</div>
             <div class="ddun" id="ddun">@user</div>
           </div>
@@ -2494,12 +2515,6 @@ create policy "public" on users for all using (true);</pre>
         <svg viewBox="0 0 14 14"><path d="M7 1v12M1 7h12"/></svg>
         Add
       </button>
-    </div>
-    <div class="mob-tasks-tabs">
-      <button class="mob-ttab act" id="mtt-todo" onclick="mobTaskTab('todo')">To Do</button>
-      <button class="mob-ttab" id="mtt-inprog" onclick="mobTaskTab('inprog')">In Progress</button>
-      <button class="mob-ttab" id="mtt-done" onclick="mobTaskTab('done')">Done</button>
-      <button class="mob-ttab" id="mtt-all" onclick="mobTaskTab('all')">All</button>
     </div>
     <div class="mob-tasks-list" id="mob-tasks-list"></div>
   </div>
@@ -3063,38 +3078,76 @@ function mobRenderHome(){
 }
 
 // ── TASKS ──
-function mobTaskTab(tab){
-  _mobTaskTab=tab;
-  ['todo','inprog','done','all'].forEach(t=>{
-    const btn=document.getElementById('mtt-'+t);
-    if(btn)btn.classList.toggle('act',t===tab);
-  });
-  mobRenderTasks();
-}
+function mobTaskTab(tab){_mobTaskTab=tab;mobRenderTasks();}
 function mobRenderTasks(){
   const list=document.getElementById('mob-tasks-list');
   if(!list)return;
-  const filtered = _mobTaskTab==='all' ? tasks : tasks.filter(t=>t.col===_mobTaskTab);
-  if(!filtered.length){
-    const labels={todo:'No tasks to do 🎉',inprog:'Nothing in progress',done:'Nothing done yet',all:'No tasks yet'};
-    list.innerHTML=`<div class="mob-tasks-empty">${labels[_mobTaskTab]||'No tasks'}<br><span style="font-size:11px;">Tap Add to create your first task</span></div>`;
+  if(!tasks.length){
+    list.innerHTML='<div class="mob-tasks-empty">No tasks yet<br><span style="font-size:11px;">Tap Add to create your first task</span></div>';
     return;
   }
-  const colLabel={todo:'To Do',inprog:'In Progress',done:'Done'};
-  const colColor={todo:'#B87333',inprog:'var(--a2)',done:'var(--ink3)'};
-  list.innerHTML = filtered.map(t=>`
-    <div class="mob-task-card" onclick="mobToggleTask(${t.id})">
-      <div class="mob-task-card-dot${t.col==='done'?' done':''}"></div>
-      <div class="mob-task-card-body">
-        <div class="mob-task-card-text${t.col==='done'?' done':''}">${t.text}</div>
-        <div class="mob-task-card-meta">
-          <span class="mob-task-card-col" style="color:${colColor[t.col]||'var(--ink4)'}">${colLabel[t.col]||t.col}</span>
-          ${t.priority==='high'?'<span class="mob-task-priority high">High</span>':''}
-          ${t.priority==='medium'?'<span class="mob-task-priority medium">Med</span>':''}
-        </div>
-      </div>
-      <button class="mob-task-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
-    </div>`).join('');
+  const cols=[
+    {key:'todo',label:'To Do',color:'#B87333'},
+    {key:'inprog',label:'In Progress',color:'var(--a2)'},
+    {key:'done',label:'Done',color:'var(--ink3)'},
+  ];
+  let html='';
+  cols.forEach(({key,label,color})=>{
+    const colTasks=sortByPriority(tasks.filter(t=>t.col===key));
+    html+=`<div class="mob-kcol">
+      <div class="mob-kcol-hd" style="color:${color}">
+        <span>${label}</span><span class="mob-kcol-cnt">${colTasks.length}</span>
+      </div>`;
+    if(!colTasks.length){
+      html+=`<div class="mob-kcol-empty">Empty</div>`;
+    } else {
+      colTasks.forEach(t=>{
+        const priBg=t.priority==='high'?'var(--rl)':t.priority==='medium'?'var(--aml)':'';
+        const priColor=t.priority==='high'?'var(--red)':t.priority==='medium'?'var(--amb)':'';
+        html+=`<div class="mob-kcard" draggable="true"
+          ondragstart="mobKDragStart(event,${t.id})"
+          ondragend="mobKDragEnd()">
+          <div class="mob-kcard-body">
+            <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
+            <div class="mob-kcard-meta">
+              ${t.priority&&t.priority!=='low'?`<span class="mob-kcard-pri" style="background:${priBg};color:${priColor}">${t.priority==='high'?'High':'Med'}</span>`:''}
+              <span class="mob-kcard-date">${t.date||''}</span>
+            </div>
+          </div>
+          <div class="mob-kcard-actions">
+            <button class="mob-kcard-move" onclick="event.stopPropagation();mobMoveTask(${t.id},'prev')">&#8592;</button>
+            <button class="mob-kcard-move" onclick="event.stopPropagation();mobMoveTask(${t.id},'next')">&#8594;</button>
+            <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
+          </div>
+        </div>`;
+      });
+    }
+    html+=`<div class="mob-kcol-drop"
+      ondragover="event.preventDefault();this.classList.add('dov')"
+      ondragleave="this.classList.remove('dov')"
+      ondrop="mobKDrop(event,'${key}')"></div>`;
+    html+='</div>';
+  });
+  list.innerHTML=html;
+}
+function mobMoveTask(id,dir){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const order=['todo','inprog','done'];
+  const idx=order.indexOf(t.col);
+  if(dir==='next'&&idx<2)t.col=order[idx+1];
+  else if(dir==='prev'&&idx>0)t.col=order[idx-1];
+  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
+}
+let _mobKDragId=null;
+function mobKDragStart(e,id){_mobKDragId=id;e.dataTransfer.effectAllowed='move';}
+function mobKDragEnd(){_mobKDragId=null;document.querySelectorAll('.mob-kcol-drop').forEach(d=>d.classList.remove('dov'));}
+function mobKDrop(e,col){
+  e.preventDefault();
+  document.querySelectorAll('.mob-kcol-drop').forEach(d=>d.classList.remove('dov'));
+  if(_mobKDragId===null)return;
+  const t=tasks.find(x=>x.id===_mobKDragId);
+  if(t&&t.col!==col){t.col=col;persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();}
+  _mobKDragId=null;
 }
 function mobToggleTask(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
@@ -3454,7 +3507,7 @@ function mobUpdateAvatar(){
   const nm=d.display_name||cu;
   const letter=nm[0].toUpperCase();
   // top-right avatar
-  const avLetter=document.getElementById('mob-av-letter');
+  const avLetter=document.getElementById('mob-av-inner');
   const avImg=document.getElementById('mob-av-img');
   const avHdLetter=document.getElementById('mob-av-hd-letter');
   const avHdImg=document.getElementById('mob-av-hd-img');
@@ -3642,6 +3695,55 @@ async function mobDoSI(){
 // sync showAuth to also switch mobile tabs
 const _origShowAuth=typeof showAuth==='function'?showAuth:null;
 
+// ── PHOTO UPLOAD ──
+function handlePhotoUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    prefs.avatarPhoto=ev.target.result;
+    persist();
+    applyAvatar();
+  };
+  reader.readAsDataURL(file);
+}
+function applyAvatar(){
+  const photo=prefs.avatarPhoto;
+  const initials=(acc[cu]?.displayName||cu||'?')[0].toUpperCase();
+  ['sbavt','ddav'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(photo){
+      el.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    } else {
+      el.textContent=initials;
+    }
+  });
+  // mobile avatar
+  const mav=document.getElementById('mob-av-inner');
+  if(mav){
+    if(photo){mav.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
+    else{mav.textContent=initials;}
+  }
+}
+
+// ── ALARM ──
+function playAlarm(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const play=(freq,start,dur)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;o.type='sine';
+      g.gain.setValueAtTime(0,ctx.currentTime+start);
+      g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+start+0.01);
+      g.gain.linearRampToValueAtTime(0,ctx.currentTime+start+dur);
+      o.start(ctx.currentTime+start);
+      o.stop(ctx.currentTime+start+dur+0.05);
+    };
+    play(880,0,.15);play(880,.2,.15);play(1100,.4,.3);
+    setTimeout(()=>ctx.close(),1500);
+  }catch(e){}
+}
+
 function doSO(){
   LS.d('pd1_cur');cu=null;closeDD();
   const mobApp=document.getElementById('mob-app');
@@ -3700,8 +3802,8 @@ function launch(){
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
   const nm=d.displayName||cu,av=nm[0].toUpperCase();
-  ['sbavt','ddav'].forEach(id=>$(id).textContent=av);
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
+  setTimeout(applyAvatar,50);
   $('ev-d').value=new Date().toISOString().slice(0,10);
   applyTheme();show('app');goPg('canvas',null);
   renderCanvas();
@@ -3883,6 +3985,14 @@ function renderCanvas(){
   widgets.forEach(w=>buildWidgetEl(w));
 }
 
+function setWidgetColor(id,color){
+  const w=widgets.find(x=>x.id===id);if(!w)return;
+  w.color=color;persist();
+  const el=document.getElementById(id);if(!el)return;
+  el.style.borderColor=color;
+  const wh=document.getElementById('wh-'+id);
+  if(wh)wh.style.borderBottomColor=color;
+}
 function bringToFront(id){
   const w=widgets.find(x=>x.id===id);if(!w)return;
   w.z=nextZ++;$(id).style.zIndex=w.z;persist();
@@ -3893,9 +4003,13 @@ function buildWidgetEl(w){
   const el=document.createElement('div');
   el.className='widget';el.id=w.id;
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
+  const wcolor=w.color||'';
+  el.style.borderColor=wcolor||'';
+  if(wcolor)el.querySelector&&(el.style.setProperty('--wc',wcolor));
   el.innerHTML=`
-    <div class="whead" id="wh-${w.id}">
+    <div class="whead" id="wh-${w.id}" style="${wcolor?'border-bottom-color:'+wcolor+';':''}">
       <span class="whtit">${esc(w.title)}</span>
+      <input type="color" class="wcolor-pick" value="${wcolor||'#3A7D5E'}" title="Widget color" onchange="setWidgetColor('${w.id}',this.value)" onclick="event.stopPropagation()"/>
       <button class="wclose" onclick="removeW('${w.id}')" title="Remove">&#x2715;</button>
     </div>
     <div class="wbody" id="wb-${w.id}"></div>
@@ -3997,10 +4111,13 @@ function addTask(wid){
 }
 function delTask(id){tasks=tasks.filter(t=>t.id!==id);persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
+const PRIORITY_ORDER={high:0,medium:1,low:2,undefined:3};
+function sortByPriority(arr){return arr.slice().sort((a,b)=>(PRIORITY_ORDER[a.priority]??3)-(PRIORITY_ORDER[b.priority]??3));}
 function renderTaskCols(wid){
   if(!$('col-todo-'+wid))return;
   const cols={todo:[],inprog:[],done:[]};
   tasks.forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
+  Object.keys(cols).forEach(k=>{cols[k]=sortByPriority(cols[k]);});
   ['todo','inprog','done'].forEach(c=>{
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
