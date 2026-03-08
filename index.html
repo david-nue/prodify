@@ -3894,17 +3894,28 @@ function launch(){
     if(sbReady&&cu){
       const dbUser=await dbGetUser(cu);
       if(dbUser){
+        // Capture local values BEFORE overwriting acc[cu]
+        const loc=acc[cu]||{};
+        const lT=loc.tasks||[], lJ=loc.journal||[], lS=loc.subjects||[];
+        const lC=loc.calEvs||[], lW=loc.widgets||[], lN=loc.notes||{}, lP=loc.prefs||{};
+        const cT=JSON.parse(dbUser.tasks||'[]');
+        const cJ=JSON.parse(dbUser.journal||'[]');
+        const cS=JSON.parse(dbUser.subjects||'[]');
+        const cC=JSON.parse(dbUser.cal_evs||'[]');
+        const cW=JSON.parse(dbUser.widgets||'[]');
+        const cN=JSON.parse(dbUser.notes||'{}');
+        const cP=JSON.parse(dbUser.prefs||'{}');
         acc[cu]={
           passHash:dbUser.pass_hash,
-          displayName:dbUser.display_name||acc[cu].displayName||'',
-          tasks:(()=>{const c=JSON.parse(dbUser.tasks||'[]'),l=acc[cu]?.tasks||[];return c.length>=l.length?c:l;})(),
-          journal:(()=>{const c=JSON.parse(dbUser.journal||'[]'),l=acc[cu]?.journal||[];return c.length>=l.length?c:l;})(),
-          subjects:(()=>{const c=JSON.parse(dbUser.subjects||'[]'),l=acc[cu]?.subjects||[];return c.length>=l.length?c:l;})(),
-          calEvs:(()=>{const c=JSON.parse(dbUser.cal_evs||'[]'),l=acc[cu]?.calEvs||[];return c.length>=l.length?c:l;})(),
-          widgets:(()=>{const c=JSON.parse(dbUser.widgets||'[]'),l=acc[cu]?.widgets||[];return c.length>=l.length?c:l;})(),
-          notes:(()=>{const c=JSON.parse(dbUser.notes||'{}'),l=acc[cu]?.notes||{};return Object.keys(c).length>=Object.keys(l).length?c:l;})(),
-          prefs:(()=>{const c=JSON.parse(dbUser.prefs||'{}');return Object.keys(c).length>0?c:(acc[cu]?.prefs||{});})(),
-          joined:acc[cu]?.joined||Date.now(),
+          displayName:dbUser.display_name||loc.displayName||'',
+          tasks:cT.length>=lT.length?cT:lT,
+          journal:cJ.length>=lJ.length?cJ:lJ,
+          subjects:cS.length>=lS.length?cS:lS,
+          calEvs:cC.length>=lC.length?cC:lC,
+          widgets:cW.length>=lW.length?cW:lW,
+          notes:Object.keys(cN).length>=Object.keys(lN).length?cN:lN,
+          prefs:Object.keys(cP).length>0?cP:lP,
+          joined:loc.joined||Date.now(),
         };
         LS.s('pd1_acc',acc);
         const d=acc[cu];
@@ -4415,13 +4426,12 @@ function saveNote(nid,field,val){
   _noteTimer=setTimeout(()=>persistSilent(),800);
 }
 function persistSilent(){
-  // save without triggering mobile canvas re-render
-  const _orig=isMobile;
-  try{
-    const d=getData();
-    localStorage.setItem('pd1_acc',JSON.stringify(d));
-    if(typeof SB_URL!=='undefined')syncToCloud().catch(()=>{});
-  }catch(e){}
+  if(!cu)return;
+  const d=acc[cu];
+  d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
+  d.widgets=widgets;d.notes=notes;d.prefs=prefs;
+  LS.s('pd1_acc',acc);
+  dbSaveUser(cu,d);
 }
 
 /* ── STATS ── */
