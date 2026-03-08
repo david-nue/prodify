@@ -154,15 +154,17 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .al{display:none;}
   .ar{width:100%;padding:24px 18px;}
   .auh{font-size:20px;}
-  /* App shell */
+  /* App shell — mobile */
   .sb{display:none !important;}
-  .sbi{width:30px;height:30px;font-size:11px;}
-  .sbn{display:none;}
-  .canvas-topbar{left:0;}
-  .ctb-stats{display:none;}
-  .wtray{width:36px;}
-  .wtray-lbl{display:none;}
-  .canvas-wrap{left:36px;}
+  .wtray{display:none !important;}
+  .canvas-wrap{display:none !important;}
+  /* Topbar: hide stats, hide sidebar spacer, quote full width */
+  .ctb-stats{display:none !important;}
+  .canvas-topbar{left:0;height:44px;}
+  .canvas-topbar>div:first-child{display:none !important;}
+  .ctb-quote{border-right:none;padding:0 16px;}
+  .ctb-qtext{font-size:13px;}
+  .ctb-qauthor{font-size:11px;}
   /* Full pages — key fix: make them scrollable */
   .fullpg{flex:1;display:flex;flex-direction:column;overflow:hidden;}
   .fphdr{padding:10px 12px 0;flex-wrap:wrap;gap:6px;flex-shrink:0;}
@@ -369,7 +371,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
    CANVAS PAGE — widget dashboard
 ════════════════════════════════ */
 #pg-canvas{display:flex;flex-direction:column;}
-.mobile-stack{display:none;flex-direction:column;gap:12px;padding:12px 14px 80px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;}
+.mobile-stack{display:none;flex-direction:column;gap:12px;padding:12px 14px 80px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;margin-top:44px;}
 .mstack-card{background:var(--surf);border-radius:var(--r14);border:1px solid var(--bdr);overflow:hidden;}
 .mstack-card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0;}
 .mstack-card-title{font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;}
@@ -626,7 +628,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .cwib{width:22px;height:22px;background:var(--surf);border:1px solid var(--bdr);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .cwib svg{width:9px;height:9px;stroke:var(--ink2);fill:none;stroke-width:2;stroke-linecap:round;}
 .cwdays{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding:7px;flex:1;overflow:hidden;}
-.cwd{background:var(--surf2);border-radius:var(--r10);border:1px solid var(--bdr);padding:5px;display:flex;flex-direction:column;gap:2px;min-height:0;}
+.cwd{background:var(--surf2);border-radius:var(--r10);border:1px solid var(--bdr);padding:5px;display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden;}
 .cwd.tod{border-color:var(--a2);}
 .cwdn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink3);}
 .cwdnum{font-size:15px;font-weight:800;line-height:1;color:var(--ink);}
@@ -1961,8 +1963,7 @@ function renderCalW(wid){
     const evs=calEvs.filter(e=>e.date===k);
     return `<div class="cwd${isT?' tod':''}">
       <div class="cwdn">${dn[i]}</div><div class="cwdnum">${d.getDate()}</div>
-      ${evs.slice(0,2).map(ev=>`<div class="cwev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete?'))delEv(${ev.id})">${esc(ev.title)}</div>`).join('')}
-      ${evs.length>2?`<div class="cwevmore">+${evs.length-2} more</div>`:''}
+      <div style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 32px);">${evs.map(ev=>`<div class="cwev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete?'))delEv(${ev.id})">${esc(ev.title)}</div>`).join('')}</div>
       <div class="cwaddbtn" onclick="$('ev-d').value='${k}';openMo('mo-ev')">+</div>
     </div>`;
   }).join('');
