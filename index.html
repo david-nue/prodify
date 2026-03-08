@@ -1883,31 +1883,32 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── TIMER WIDGET ── */
 /* tmbody holds a single inner wrapper that scales as one unit */
-.tmbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;gap:12px;}
-.tmmodes{display:flex;width:100%;gap:4px;}
-.tmm{flex:1;padding:6px 3px;font-size:10px;font-weight:700;border-radius:var(--r6);border:1.5px solid var(--bdr);background:none;color:var(--ink3);cursor:pointer;transition:all .12s;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tmm.on{background:var(--al);color:var(--a2);border-color:var(--a2);}
-.tmdis{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;width:100%;}
-/* display mode */
-.tmtime{font-size:clamp(44px,9vw,72px);font-weight:800;letter-spacing:-3px;color:var(--ink);line-height:1;text-align:center;}
-.tmtime-hint{display:none;}
-.tmtime.tmtime-edit{cursor:pointer;color:var(--a2);}
-/* edit mode */
-.tminputs{display:none;align-items:center;gap:2px;}
-.tminputs.show{display:flex;}
+.tmbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 10px;gap:10px;}
+.tmmodes{display:flex;width:100%;gap:3px;}
+.tmm{flex:1;padding:5px 2px;font-size:9.5px;font-weight:700;border-radius:6px;border:1.5px solid var(--bdr);background:none;color:var(--ink4);cursor:pointer;transition:all .12s;text-align:center;overflow:hidden;white-space:nowrap;}
+.tmm.on{background:var(--a2);color:#fff;border-color:var(--a2);}
+.tmdis{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:6px;}
+.tmtime{font-size:clamp(42px,10cqw,68px);font-weight:800;letter-spacing:-3px;color:var(--ink);line-height:1;text-align:center;font-variant-numeric:tabular-nums;}
+.tmtime.tmtime-edit{cursor:pointer;}
+.tmtime.tmtime-edit:hover{color:var(--a2);}
 .tmtime.hide{display:none;}
-.tmseg{width:36px;background:transparent;border:none;border-bottom:2px solid var(--a2);outline:none;font-size:24px;font-weight:800;letter-spacing:-1px;color:var(--ink);text-align:center;padding:0;}
-.tmseg::placeholder{color:var(--ink4);}
-.tmsep{font-size:22px;font-weight:800;color:var(--ink3);line-height:1;}
-.tmdonebtn{margin-top:4px;background:var(--a2);color:#fff;border:none;border-radius:100px;padding:3px 12px;font-size:10px;font-weight:700;cursor:pointer;}
-.tmlbl{font-size:10px;color:var(--ink3);font-weight:600;margin-top:2px;}
-.tmctrl{display:flex;gap:7px;}
-.tmbtn{padding:6px 14px;border-radius:var(--r6);border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;}
-.tmbtn:hover{border-color:var(--a2);color:var(--a2);}
-.tmbtn.go{background:var(--a);color:#fff;border-color:var(--a);}
+.tminputs{display:none;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap;}
+.tminputs.show{display:flex;}
+.tmseg{width:38px;background:var(--surf2);border:1.5px solid var(--a2);border-radius:6px;outline:none;font-size:20px;font-weight:800;color:var(--ink);text-align:center;padding:3px 2px;-moz-appearance:textfield;}
+.tmseg::-webkit-outer-spin-button,.tmseg::-webkit-inner-spin-button{-webkit-appearance:none;}
+.tmsep{font-size:20px;font-weight:800;color:var(--ink3);line-height:1;}
+.tm-setbtn{margin-left:4px;padding:4px 10px;border-radius:6px;border:none;background:var(--a2);color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+.tmctrl{display:flex;align-items:center;gap:8px;}
+.tm-resetbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--bdr);background:none;color:var(--ink3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.tm-resetbtn:hover{border-color:var(--ink3);color:var(--ink);}
+.tm-startbtn{padding:8px 24px;border-radius:20px;border:none;background:var(--a2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .12s;min-width:80px;}
+.tm-startbtn:hover{background:var(--a);}
+.tm-startbtn.stop{background:var(--red);}
+.tmbtn{padding:5px 12px;border-radius:6px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;}
+.tmbtn.go{background:var(--a2);color:#fff;border-color:var(--a2);}
 .tmbtn.stop{background:var(--red);color:#fff;border-color:var(--red);}
-.tmsess{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
-.tmsd{width:9px;height:9px;border-radius:50%;background:var(--bdr);}
+.tmsess{display:flex;gap:5px;}
+.tmsd{width:8px;height:8px;border-radius:50%;background:var(--bdr);}
 .tmsd.dn{background:var(--a2);}
 
 /* ── NOTE WIDGET ── */
@@ -3906,23 +3907,13 @@ function launch(){
           joined:acc[cu]?.joined||Date.now(),
         };
         LS.s('pd1_acc',acc);
-        // Re-apply data from cloud — rebuild canvas if widget list changed
         const d=acc[cu];
-        const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
         tasks=d.tasks;journal=d.journal;subjects=d.subjects;
         calEvs=d.calEvs;widgets=d.widgets;notes=d.notes;prefs=d.prefs;
-        const newWidgetIds=widgets.map(x=>x.id).sort().join(',');
         applyTheme();
+        renderCanvas();
         renderFixedQuote();
         updateFixedStats();
-        if(oldWidgetIds!==newWidgetIds){
-          // Widget list changed — full rebuild
-          renderCanvas();
-        } else {
-          // Same widgets — just refresh content, don't rebuild DOM
-          renderAllTaskW();renderAllJournalW();renderAllSubW();
-          renderFullCal();widgets.forEach(w=>fillWBody(w));
-        }
         updateAllStatsW();
         if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
         dbSaveUser(cu,acc[cu]);
@@ -4288,35 +4279,32 @@ function buildTimerW(body,w){
   // restore locked modes
   ts.custom[0]=25*60;ts.custom[1]=5*60;ts.custom[2]=15*60;
 
+  const canEdit=TMODES[ts.mode]&&!TMODES[ts.mode].locked;
   body.innerHTML=`
     <div class="tmbody">
-      <div class="tminner" id="tmi-${w.id}">
       <div class="tmmodes">
         ${TMODES.map((m,i)=>`<button class="tmm${i===ts.mode?' on':''}" onclick="setTMode('${w.id}',${i})">${m.l}</button>`).join('')}
       </div>
-      <div class="tmdis" id="tmdis-${w.id}">
-          <div class="tmtime${TMODES[ts.mode]&&!TMODES[ts.mode].locked?' tmtime-edit':''}" id="tmtime-${w.id}" onclick="tmStartEdit('${w.id}')">${fmtSec(ts.sec)}</div>
-          <div class="tminputs" id="tminputs-${w.id}">
-            <input class="tmseg" id="tmh-${w.id}" type="text" maxlength="2" placeholder="00"/>
-            <span class="tmsep">:</span>
-            <input class="tmseg" id="tmm-${w.id}" type="text" maxlength="2" placeholder="00"/>
-            <span class="tmsep">:</span>
-            <input class="tmseg" id="tms-${w.id}" type="text" maxlength="2" placeholder="00"/>
-            <button class="tmbtn" style="margin-left:4px;background:var(--a2);color:#fff;border-color:var(--a2);" onclick="tmConfirmEdit('${w.id}')">Set</button>
-          </div>
+      <div class="tmdis">
+        <div class="tmtime${canEdit?' tmtime-edit':''}" id="tmtime-${w.id}" onclick="tmStartEdit('${w.id}')">${fmtSec(ts.sec)}</div>
+        <div class="tminputs" id="tminputs-${w.id}">
+          <input class="tmseg" id="tmh-${w.id}" type="number" min="0" max="99" placeholder="00"/>
+          <span class="tmsep">:</span>
+          <input class="tmseg" id="tmm-${w.id}" type="number" min="0" max="59" placeholder="00"/>
+          <span class="tmsep">:</span>
+          <input class="tmseg" id="tms-${w.id}" type="number" min="0" max="59" placeholder="00"/>
+          <button class="tm-setbtn" onclick="tmConfirmEdit('${w.id}')">Set</button>
+        </div>
       </div>
       <div class="tmctrl">
-        <button class="tmbtn" onclick="resetTimer('${w.id}')">Reset</button>
-        <button class="tmbtn ${ts.running?'stop':'go'}" id="tmbtn-${w.id}" onclick="toggleTimer('${w.id}')">${ts.running?'Pause':'Start'}</button>
-
+        <button class="tm-resetbtn" onclick="resetTimer('${w.id}')">↺</button>
+        <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="toggleTimer('${w.id}')">${ts.running?'Pause':'Start'}</button>
       </div>
       <div class="tmsess" id="tmsess-${w.id}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
       </div>
-      </div>
     </div>`;
   if(ts.running){clearInterval(ts.iv);ts.iv=setInterval(()=>tickTimer(w.id),1000);}
-  setTimeout(()=>scaleTimer(w.id,w.w,w.h),0);
 }
 function scaleTimer(wid,ww,wh){
   const el=document.getElementById('tmi-'+wid);
@@ -4390,8 +4378,8 @@ function setTMode(wid,m){
 }
 function toggleTimer(wid){
   const ts=TMS[wid];if(!ts)return;
-  if(ts.running){clearInterval(ts.iv);ts.running=false;const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.className='tmbtn go';}}
-  else{ts.running=true;ts.iv=setInterval(()=>tickTimer(wid),1000);const b=$('tmbtn-'+wid);if(b){b.textContent='Pause';b.className='tmbtn stop';}}
+  if(ts.running){clearInterval(ts.iv);ts.running=false;const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.classList.remove('stop');}}
+  else{ts.running=true;ts.iv=setInterval(()=>tickTimer(wid),1000);const b=$('tmbtn-'+wid);if(b){b.textContent='Pause';b.classList.add('stop');}}
 }
 function tickTimer(wid){
   const ts=TMS[wid];if(!ts)return;
