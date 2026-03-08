@@ -3880,57 +3880,59 @@ function launch(){
   if(isMobile())setTimeout(initMobApp,100);
   startRealtime();
 }
-// Boot: wait for Supabase, then load from cloud as source of truth
+// Boot: load local first, sync cloud silently after
 (async function boot(){
   const u=LS.g('pd1_cur',null);
   if(!u){show('sl');return;}
-  // Show app immediately with local data while cloud loads
   cu=u;
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
+  // Always launch immediately from localStorage — single render, no flicker
   launch();
-  // Wait for Supabase (max 5s), then sync from cloud
+  // Then silently sync from Supabase in background
   try{
-    await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,5000))]);
-    if(sbReady&&cu){
-      const dbUser=await dbGetUser(cu);
-      if(dbUser){
-        // Capture local values BEFORE overwriting acc[cu]
-        const loc=acc[cu]||{};
-        const lT=loc.tasks||[], lJ=loc.journal||[], lS=loc.subjects||[];
-        const lC=loc.calEvs||[], lW=loc.widgets||[], lN=loc.notes||{}, lP=loc.prefs||{};
-        const cT=JSON.parse(dbUser.tasks||'[]');
-        const cJ=JSON.parse(dbUser.journal||'[]');
-        const cS=JSON.parse(dbUser.subjects||'[]');
-        const cC=JSON.parse(dbUser.cal_evs||'[]');
-        const cW=JSON.parse(dbUser.widgets||'[]');
-        const cN=JSON.parse(dbUser.notes||'{}');
-        const cP=JSON.parse(dbUser.prefs||'{}');
-        acc[cu]={
-          passHash:dbUser.pass_hash,
-          displayName:dbUser.display_name||loc.displayName||'',
-          tasks:cT.length>=lT.length?cT:lT,
-          journal:cJ.length>=lJ.length?cJ:lJ,
-          subjects:cS.length>=lS.length?cS:lS,
-          calEvs:cC.length>=lC.length?cC:lC,
-          widgets:cW.length>=lW.length?cW:lW,
-          notes:Object.keys(cN).length>=Object.keys(lN).length?cN:lN,
-          prefs:Object.keys(cP).length>0?cP:lP,
-          joined:loc.joined||Date.now(),
-        };
-        LS.s('pd1_acc',acc);
-        const d=acc[cu];
-        tasks=d.tasks;journal=d.journal;subjects=d.subjects;
-        calEvs=d.calEvs;widgets=d.widgets;notes=d.notes;prefs=d.prefs;
-        applyTheme();
-        renderCanvas();
-        renderFixedQuote();
-        updateFixedStats();
-        updateAllStatsW();
-        if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
-        dbSaveUser(cu,acc[cu]);
-      }
+    await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
+    if(!sbReady||!cu)return;
+    const dbUser=await dbGetUser(cu);
+    if(!dbUser)return;
+    // Capture local BEFORE any overwrite
+    const loc=acc[cu]||{};
+    const lT=tasks.slice(), lJ=journal.slice(), lS=subjects.slice();
+    const lC=calEvs.slice(), lW=widgets.slice();
+    const lN=JSON.parse(JSON.stringify(notes)), lP=JSON.parse(JSON.stringify(prefs));
+    const cT=JSON.parse(dbUser.tasks||'[]');
+    const cJ=JSON.parse(dbUser.journal||'[]');
+    const cS=JSON.parse(dbUser.subjects||'[]');
+    const cC=JSON.parse(dbUser.cal_evs||'[]');
+    const cW=JSON.parse(dbUser.widgets||'[]');
+    const cN=JSON.parse(dbUser.notes||'{}');
+    const cP=JSON.parse(dbUser.prefs||'{}');
+    // Pick best: if cloud has same or more items, trust cloud, else keep local
+    const mT=cT.length>=lT.length?cT:lT;
+    const mJ=cJ.length>=lJ.length?cJ:lJ;
+    const mS=cS.length>=lS.length?cS:lS;
+    const mC=cC.length>=lC.length?cC:lC;
+    const mW=cW.length>=lW.length?cW:lW;
+    const mN=Object.keys(cN).length>=Object.keys(lN).length?cN:lN;
+    const mP=Object.keys(cP).length>0?cP:lP;
+    // Only re-render if data actually changed
+    const changed=JSON.stringify(mT)!==JSON.stringify(lT)||
+                  JSON.stringify(mW)!==JSON.stringify(lW)||
+                  JSON.stringify(mJ)!==JSON.stringify(lJ);
+    acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
+      tasks:mT,journal:mJ,subjects:mS,calEvs:mC,widgets:mW,notes:mN,prefs:mP,joined:loc.joined||Date.now()};
+    LS.s('pd1_acc',acc);
+    tasks=mT;journal=mJ;subjects=mS;calEvs=mC;widgets=mW;notes=mN;prefs=mP;
+    if(changed){
+      applyTheme();
+      renderCanvas();
+      renderFixedQuote();
+      updateFixedStats();
+      updateAllStatsW();
+      if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
     }
-  }catch(e){console.warn('[Prodify] boot sync failed',e);}
+    // Push merged data back so cloud stays current
+    dbSaveUser(cu,acc[cu]);
+  }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
 })();
 
