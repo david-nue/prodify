@@ -2535,20 +2535,20 @@ create policy "public" on users for all using (true);</pre>
         <button class="tmm" id="mmt-2" onclick="mobSetMode(2)">Long</button>
         <button class="tmm" id="mmt-3" onclick="mobSetMode(3)">Custom</button>
       </div>
-      <div class="tmdis" style="flex:0 0 auto;gap:10px;">
-        <div class="mob-timer-time tmtime tmtime-edit" style="font-size:clamp(64px,18vw,96px);" id="mob-timer-time" onclick="mobTimerEdit()">25:00</div>
-        <div class="tminputs" id="mob-timer-inputs">
-          <input class="tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00"/>
-          <span class="tmsep">:</span>
-          <input class="tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00"/>
-          <span class="tmsep">:</span>
-          <input class="tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00"/>
-          <button class="tm-setbtn" onclick="mobTimerConfirmEdit()">Set</button>
+      <div class="tmdis" style="flex:1;justify-content:center;">
+        <div id="mob-timer-time" class="tmtime tmtime-edit" style="font-size:clamp(72px,22vw,120px);letter-spacing:-6px;" onclick="mobTimerEdit()">25:00</div>
+        <div class="tminputs" id="mob-timer-inputs" style="gap:6px;">
+          <input class="tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00" style="width:52px;font-size:32px;"/>
+          <span class="tmsep" style="font-size:28px;">:</span>
+          <input class="tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00" style="width:52px;font-size:32px;"/>
+          <span class="tmsep" style="font-size:28px;">:</span>
+          <input class="tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00" style="width:52px;font-size:32px;"/>
+          <button class="tm-setbtn" style="padding:8px 16px;font-size:15px;" onclick="mobTimerConfirmEdit()">Set</button>
         </div>
       </div>
-      <div class="tmctrl">
-        <button class="tm-resetbtn" onclick="mobTimerReset()">↺</button>
-        <button class="tm-startbtn" id="mob-timer-start" onclick="mobTimerToggle()">Start</button>
+      <div class="tmctrl" style="gap:16px;">
+        <button class="tm-resetbtn" style="width:48px;height:48px;font-size:22px;" onclick="mobTimerReset()">↺</button>
+        <button class="tm-startbtn" id="mob-timer-start" style="padding:14px 40px;font-size:17px;min-width:120px;" onclick="mobTimerToggle()">Start</button>
       </div>
       <div class="mob-timer-sessions" id="mob-timer-sessions">
         <div class="mob-timer-dot"></div>
@@ -2617,7 +2617,11 @@ create policy "public" on users for all using (true);</pre>
       <!-- banner -->
       <div class="profbanner" style="margin:0 0 16px;border-radius:18px;overflow:hidden;">
         <div class="pborb"></div>
-        <div class="pbav" id="mob-pbav">?</div>
+        <div class="pbav" id="mob-pbav" onclick="document.getElementById('mob-photo-inp').click()" style="cursor:pointer;position:relative;" title="Tap to change photo">
+          <div id="mob-pbav-inner" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:50%;">?</div>
+          <div style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--a2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;border:2px solid var(--surf);">✎</div>
+        </div>
+        <input type="file" id="mob-photo-inp" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
         <div class="pbinfo">
           <div class="pbname" id="mob-pbnm"></div>
           <div class="pbuser" id="mob-pbun"></div>
@@ -3254,7 +3258,9 @@ function mobFmtSec(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart
 function mobTimerRender(){
   const timeEl=document.getElementById('mob-timer-time');
   const startBtn=document.getElementById('mob-timer-start');
-  if(timeEl&&timeEl.style.display!=='none')timeEl.textContent=mobFmtSec(_mobTimerSec);
+  if(timeEl&&!timeEl.classList.contains('hide'))timeEl.textContent=mobFmtSec(_mobTimerSec);
+  // show/hide edit cursor based on mode
+  if(timeEl)timeEl.classList.toggle('tmtime-edit',!MOB_TMODES[_mobTimerMode]?.locked&&!_mobTimerRunning);
   if(startBtn){
     startBtn.textContent=_mobTimerRunning?'Pause':'Start';
     startBtn.classList.toggle('stop',_mobTimerRunning);
@@ -3283,7 +3289,7 @@ function mobTimerEdit(){
   document.getElementById('mob-tmh').value=String(Math.floor(_mobTimerSec/3600)).padStart(2,'0');
   document.getElementById('mob-tmm').value=String(Math.floor((_mobTimerSec%3600)/60)).padStart(2,'0');
   document.getElementById('mob-tms').value=String(_mobTimerSec%60).padStart(2,'0');
-  t.style.display='none';i.style.display='flex';
+  t.classList.add('hide');i.classList.add('show');
   setTimeout(()=>{const mi=document.getElementById('mob-tmm');if(mi){mi.focus();mi.select();}},50);
 }
 function mobTimerConfirmEdit(){
@@ -3292,8 +3298,8 @@ function mobTimerConfirmEdit(){
   const s=parseInt(document.getElementById('mob-tms')?.value)||0;
   _mobTimerCustom[_mobTimerMode]=Math.max(10,h*3600+m*60+s);
   _mobTimerSec=_mobTimerCustom[_mobTimerMode];
-  document.getElementById('mob-timer-time').style.display='';
-  document.getElementById('mob-timer-inputs').style.display='none';
+  document.getElementById('mob-timer-time').classList.remove('hide');
+  document.getElementById('mob-timer-inputs').classList.remove('show');
   mobTimerRender();
 }
 function mobTimerToggle(){
@@ -3775,7 +3781,12 @@ function applyAvatar(){
       el.textContent=initials;
     }
   });
-  // mobile avatar
+  // mobile avatars
+  const mobPbav=document.getElementById('mob-pbav-inner');
+  if(mobPbav){
+    if(photo){mobPbav.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
+    else{mobPbav.textContent=initials;}
+  }
   const mav=document.getElementById('mob-av-inner');
   if(mav){
     if(photo){mav.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
