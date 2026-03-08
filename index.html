@@ -2458,6 +2458,7 @@ create policy "public" on users for all using (true);</pre>
       <div class="mob-stats-row" id="mob-stats-row">
         <div class="mob-stat"><div class="mob-stat-v" id="mst-tasks">0</div><div class="mob-stat-l">Tasks</div></div>
         <div class="mob-stat"><div class="mob-stat-v" id="mst-done" style="color:var(--a2)">0</div><div class="mob-stat-l">Done</div></div>
+        <div class="mob-stat"><div class="mob-stat-v" id="mst-hi" style="color:var(--red)">0</div><div class="mob-stat-l">High Priority</div></div>
         <div class="mob-stat"><div class="mob-stat-v" id="mst-journal">0</div><div class="mob-stat-l">Journal</div></div>
         <div class="mob-stat"><div class="mob-stat-v" id="mst-proj">0</div><div class="mob-stat-l">Projects</div></div>
       </div>
@@ -2993,8 +2994,10 @@ function mobRenderHome(){
   // stats
   const done = tasks.filter(t=>t.col==='done').length;
   const el = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  const hi = tasks.filter(t=>t.priority==='high'&&t.col!=='done').length;
   el('mst-tasks',tasks.length);
   el('mst-done',done);
+  el('mst-hi',hi);
   el('mst-journal',journal.length);
   el('mst-proj',subjects.length);
   // today events
@@ -3713,6 +3716,7 @@ function updateFixedStats(){
   const i=$('cs-ip');if(i)i.textContent=ip;
   const h=$('cs-hi');if(h)h.textContent=hi;
   const j=$('cs-jn');if(j)j.textContent=journal.length;
+  const mhi=document.getElementById('mst-hi');if(mhi)mhi.textContent=hi;
 }
 
 // ═══════════════════════════════════════
