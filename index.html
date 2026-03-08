@@ -230,17 +230,20 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-timer-modes{
   display:flex;gap:4px;background:var(--surf2);border-radius:100px;padding:4px;
 }
-.mob-tmode{
-  border:none;border-radius:100px;padding:8px 18px;font-size:13px;font-weight:700;
-  color:var(--ink3);background:transparent;cursor:pointer;transition:all .14s;
-}
+.mob-tmode{flex:1;padding:9px 2px;font-size:11px;font-weight:700;border-radius:var(--r10);border:1.5px solid var(--bdr);background:none;color:var(--ink3);cursor:pointer;transition:all .12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mob-tmode.on{background:var(--surf);color:var(--ink);box-shadow:var(--sh1);}
 .mob-timer-ring{position:relative;display:flex;align-items:center;justify-content:center;}
 .mob-timer-ring svg{display:block;}
 .mob-timer-center{position:absolute;text-align:center;}
-.mob-timer-time{font-size:56px;font-weight:800;letter-spacing:-3px;color:var(--ink);line-height:1;}
+.mob-timer-time{font-size:88px;font-weight:800;letter-spacing:-5px;color:var(--ink);line-height:1;cursor:pointer;}
+.mob-timer-inputs{display:none;flex-direction:column;align-items:center;gap:12px;}
+.mob-timer-segs{display:flex;align-items:center;gap:8px;}
+.mob-tmseg{width:70px;text-align:center;font-size:40px;font-weight:800;border:2px solid var(--a2);border-radius:var(--r10);background:var(--surf2);color:var(--ink);padding:8px 4px;outline:none;}
+.mob-tmsep{font-size:40px;font-weight:800;color:var(--ink3);line-height:1;}
+.mob-timer-setbtn{padding:12px 40px;border-radius:var(--r10);border:none;background:var(--a2);color:#fff;font-size:16px;font-weight:700;cursor:pointer;}
 .mob-timer-label{font-size:13px;color:var(--ink3);margin-top:6px;}
-.mob-timer-hint{font-size:11px;color:var(--ink4);margin-top:3px;}
+.mob-timer-hint{display:none;}
+.mob-timer-label{display:none;}
 .mob-timer-ctrl{display:flex;gap:10px;align-items:center;}
 .mob-timer-reset{
   background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
@@ -1880,17 +1883,15 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── TIMER WIDGET ── */
 /* tmbody holds a single inner wrapper that scales as one unit */
-.tmbody{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;}
-.tminner{display:flex;flex-direction:column;align-items:center;gap:10px;transform-origin:center center;}
-.tmmodes{display:flex;gap:3px;background:var(--surf2);border-radius:100px;padding:3px;}
-.tmm{background:none;border:none;border-radius:100px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;transition:all .13s;}
-.tmm.on{background:var(--surf);color:var(--ink);box-shadow:var(--sh1);}
-.tmring{position:relative;flex-shrink:0;width:140px;height:140px;}
-.tmring svg{position:absolute;top:0;left:0;width:140px;height:140px;}
-.tmdis{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;cursor:pointer;width:120px;}
+.tmbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;gap:12px;}
+.tmmodes{display:flex;width:100%;gap:4px;}
+.tmm{flex:1;padding:6px 3px;font-size:10px;font-weight:700;border-radius:var(--r6);border:1.5px solid var(--bdr);background:none;color:var(--ink3);cursor:pointer;transition:all .12s;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tmm.on{background:var(--al);color:var(--a2);border-color:var(--a2);}
+.tmdis{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;width:100%;}
 /* display mode */
-.tmtime{font-size:26px;font-weight:800;letter-spacing:-1.5px;color:var(--ink);line-height:1;white-space:nowrap;}
-.tmtime-hint{font-size:9px;color:var(--ink4);font-weight:600;margin-top:3px;letter-spacing:.5px;white-space:nowrap;}
+.tmtime{font-size:clamp(44px,9vw,72px);font-weight:800;letter-spacing:-3px;color:var(--ink);line-height:1;text-align:center;}
+.tmtime-hint{display:none;}
+.tmtime.tmtime-edit{cursor:pointer;color:var(--a2);}
 /* edit mode */
 .tminputs{display:none;align-items:center;gap:2px;}
 .tminputs.show{display:flex;}
@@ -1901,11 +1902,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .tmdonebtn{margin-top:4px;background:var(--a2);color:#fff;border:none;border-radius:100px;padding:3px 12px;font-size:10px;font-weight:700;cursor:pointer;}
 .tmlbl{font-size:10px;color:var(--ink3);font-weight:600;margin-top:2px;}
 .tmctrl{display:flex;gap:7px;}
-.tmbtn{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:7px 18px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);transition:all .14s;}
-.tmbtn:hover{border-color:var(--ink3);}
-.tmbtn.go{background:var(--a2);color:#fff;border-color:var(--a2);}
-.tmbtn.go:hover{background:var(--a);}
-.tmbtn.stop{background:var(--rl);color:var(--red);border-color:var(--rl);}
+.tmbtn{padding:6px 14px;border-radius:var(--r6);border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;}
+.tmbtn:hover{border-color:var(--a2);color:var(--a2);}
+.tmbtn.go{background:var(--a);color:#fff;border-color:var(--a);}
+.tmbtn.stop{background:var(--red);color:#fff;border-color:var(--red);}
 .tmsess{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
 .tmsd{width:9px;height:9px;border-radius:50%;background:var(--bdr);}
 .tmsd.dn{background:var(--a2);}
@@ -2537,18 +2537,17 @@ create policy "public" on users for all using (true);</pre>
         <button class="mob-tmode" id="mmt-2" onclick="mobSetMode(2)">Long Break</button>
         <button class="mob-tmode" id="mmt-3" onclick="mobSetMode(3)">Custom ✎</button>
       </div>
-      <div class="mob-timer-ring">
-        <svg id="mob-timer-svg" viewBox="0 0 260 260" width="260" height="260">
-          <circle cx="130" cy="130" r="110" fill="none" stroke="var(--bdr)" stroke-width="10"/>
-          <circle cx="130" cy="130" r="110" fill="none" stroke="var(--a2)" stroke-width="10"
-            stroke-dasharray="691.15 691.15" stroke-dashoffset="172.79"
-            stroke-linecap="round" id="mob-timer-circ"
-            style="transition:stroke-dasharray .5s;" transform="rotate(-90,130,130)"/>
-        </svg>
-        <div class="mob-timer-center" onclick="mobTimerEdit()" style="cursor:pointer;" title="Tap to edit time">
-          <div class="mob-timer-time" id="mob-timer-time">25:00</div>
-          <div class="mob-timer-label" id="mob-timer-lbl">Pomodoro</div>
-          <div class="mob-timer-hint" id="mob-timer-hint">tap to edit</div>
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div class="mob-timer-time" id="mob-timer-time" onclick="mobTimerEdit()">25:00</div>
+        <div class="mob-timer-inputs" id="mob-timer-inputs">
+          <div class="mob-timer-segs">
+            <input class="mob-tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00"/>
+            <span class="mob-tmsep">:</span>
+            <input class="mob-tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00"/>
+            <span class="mob-tmsep">:</span>
+            <input class="mob-tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00"/>
+          </div>
+          <button class="mob-timer-setbtn" onclick="mobTimerConfirmEdit()">Set</button>
         </div>
       </div>
       <div class="mob-timer-ctrl">
@@ -3257,21 +3256,8 @@ function mobSubmitTask(){
 function mobFmtSec(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
 function mobTimerRender(){
   const timeEl=document.getElementById('mob-timer-time');
-  const lblEl=document.getElementById('mob-timer-lbl');
-  const circEl=document.getElementById('mob-timer-circ');
   const startBtn=document.getElementById('mob-timer-start');
-  const hintEl=document.getElementById('mob-timer-hint');
-  if(timeEl)timeEl.textContent=mobFmtSec(_mobTimerSec);
-  if(lblEl)lblEl.textContent=MOB_TMODES[_mobTimerMode].l;
-  if(hintEl)hintEl.textContent=_mobTimerRunning?'':(MOB_TMODES[_mobTimerMode]&&MOB_TMODES[_mobTimerMode].locked?'fixed':'tap to edit');
-  // ring
-  if(circEl){
-    const R=110,circ=2*Math.PI*R;
-    const pct=_mobTimerSec/MOB_TMODES[_mobTimerMode].s;
-    const dash=circ*pct;
-    circEl.setAttribute('stroke-dasharray',`${dash} ${circ}`);
-    circEl.setAttribute('stroke-dashoffset',`${circ/4}`);
-  }
+  if(timeEl&&timeEl.style.display!=='none')timeEl.textContent=mobFmtSec(_mobTimerSec);
   if(startBtn){
     startBtn.textContent=_mobTimerRunning?'Pause':'Start';
     startBtn.classList.toggle('pause',_mobTimerRunning);
@@ -3279,7 +3265,7 @@ function mobTimerRender(){
   // mode buttons
   for(let i=0;i<MOB_TMODES.length;i++){
     const btn=document.getElementById('mmt-'+i);
-    if(btn){btn.classList.toggle('on',i===_mobTimerMode);btn.style.fontStyle=(!MOB_TMODES[i].locked)?'italic':'';}
+    if(btn)btn.classList.toggle('on',i===_mobTimerMode);
   }
   // sessions
   const sessEl=document.getElementById('mob-timer-sessions');
@@ -3294,22 +3280,23 @@ function mobSetMode(m){
   mobTimerRender();
 }
 function mobTimerEdit(){
-  if(_mobTimerRunning)return;
-  if(MOB_TMODES[_mobTimerMode]&&MOB_TMODES[_mobTimerMode].locked)return;
-  const cur=mobFmtSec(_mobTimerSec);
-  const val=prompt(`Set time for ${MOB_TMODES[_mobTimerMode].l} (mm:ss or minutes):`,cur);
-  if(!val)return;
-  let secs=0;
-  if(val.includes(':')){
-    const [m,s]=val.split(':').map(Number);
-    secs=m*60+(s||0);
-  } else {
-    secs=Math.round(parseFloat(val)*60);
-  }
-  if(isNaN(secs)||secs<10||secs>3600){alert('Please enter a valid time (10 seconds to 60 minutes)');return;}
-  // update the mode default too so reset uses this value
-  _mobTimerCustom[_mobTimerMode]=secs;
-  _mobTimerSec=secs;
+  if(_mobTimerRunning||MOB_TMODES[_mobTimerMode]?.locked)return;
+  const t=document.getElementById('mob-timer-time'),i=document.getElementById('mob-timer-inputs');
+  if(!t||!i)return;
+  document.getElementById('mob-tmh').value=String(Math.floor(_mobTimerSec/3600)).padStart(2,'0');
+  document.getElementById('mob-tmm').value=String(Math.floor((_mobTimerSec%3600)/60)).padStart(2,'0');
+  document.getElementById('mob-tms').value=String(_mobTimerSec%60).padStart(2,'0');
+  t.style.display='none';i.style.display='flex';
+  setTimeout(()=>{const mi=document.getElementById('mob-tmm');if(mi){mi.focus();mi.select();}},50);
+}
+function mobTimerConfirmEdit(){
+  const h=parseInt(document.getElementById('mob-tmh')?.value)||0;
+  const m=parseInt(document.getElementById('mob-tmm')?.value)||0;
+  const s=parseInt(document.getElementById('mob-tms')?.value)||0;
+  _mobTimerCustom[_mobTimerMode]=Math.max(10,h*3600+m*60+s);
+  _mobTimerSec=_mobTimerCustom[_mobTimerMode];
+  document.getElementById('mob-timer-time').style.display='';
+  document.getElementById('mob-timer-inputs').style.display='none';
   mobTimerRender();
 }
 function mobTimerToggle(){
@@ -3903,13 +3890,13 @@ function launch(){
         acc[cu]={
           passHash:dbUser.pass_hash,
           displayName:dbUser.display_name||acc[cu].displayName||'',
-          tasks:JSON.parse(dbUser.tasks||'[]'),
-          journal:JSON.parse(dbUser.journal||'[]'),
-          subjects:JSON.parse(dbUser.subjects||'[]'),
-          calEvs:JSON.parse(dbUser.cal_evs||'[]'),
-          widgets:JSON.parse(dbUser.widgets||'[]'),
-          notes:JSON.parse(dbUser.notes||'{}'),
-          prefs:JSON.parse(dbUser.prefs||'{}'),
+          tasks:(()=>{const c=JSON.parse(dbUser.tasks||'[]'),l=acc[cu]?.tasks||[];return c.length>=l.length?c:l;})(),
+          journal:(()=>{const c=JSON.parse(dbUser.journal||'[]'),l=acc[cu]?.journal||[];return c.length>=l.length?c:l;})(),
+          subjects:(()=>{const c=JSON.parse(dbUser.subjects||'[]'),l=acc[cu]?.subjects||[];return c.length>=l.length?c:l;})(),
+          calEvs:(()=>{const c=JSON.parse(dbUser.cal_evs||'[]'),l=acc[cu]?.calEvs||[];return c.length>=l.length?c:l;})(),
+          widgets:(()=>{const c=JSON.parse(dbUser.widgets||'[]'),l=acc[cu]?.widgets||[];return c.length>=l.length?c:l;})(),
+          notes:(()=>{const c=JSON.parse(dbUser.notes||'{}'),l=acc[cu]?.notes||{};return Object.keys(c).length>=Object.keys(l).length?c:l;})(),
+          prefs:(()=>{const c=JSON.parse(dbUser.prefs||'{}');return Object.keys(c).length>0?c:(acc[cu]?.prefs||{});})(),
           joined:acc[cu]?.joined||Date.now(),
         };
         LS.s('pd1_acc',acc);
@@ -3925,6 +3912,7 @@ function launch(){
         renderFullCal();widgets.forEach(w=>fillWBody(w));
         updateAllStatsW();
         if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
+        dbSaveUser(cu,acc[cu]);
       }
     }
   }catch(e){console.warn('[Prodify] boot sync failed',e);}
@@ -4286,25 +4274,15 @@ function buildTimerW(body,w){
   if(!ts.custom||ts.custom.length<4)ts.custom=[25*60,5*60,15*60,20*60];
   // restore locked modes
   ts.custom[0]=25*60;ts.custom[1]=5*60;ts.custom[2]=15*60;
-  const R=60,CX=70,CY=70,circ=2*Math.PI*R;
-  const total=ts.custom[ts.mode];
-  const dash=circ*(ts.sec/total);
+
   body.innerHTML=`
     <div class="tmbody">
       <div class="tminner" id="tmi-${w.id}">
       <div class="tmmodes">
         ${TMODES.map((m,i)=>`<button class="tmm${i===ts.mode?' on':''}" onclick="setTMode('${w.id}',${i})">${m.l}</button>`).join('')}
       </div>
-      <div class="tmring">
-        <svg viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r="60" fill="none" stroke="var(--bdr)" stroke-width="6"/>
-          <circle cx="70" cy="70" r="60" fill="none" stroke="var(--a2)" stroke-width="6"
-            stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ/4}" stroke-linecap="round"
-            transform="rotate(-90,70,70)"
-            id="tmcirc-${w.id}" style="transition:stroke-dasharray .5s;"/>
-        </svg>
-        <div class="tmdis" onclick="tmStartEdit('${w.id}')" title="Click to edit time">
-          <div class="tmtime" id="tmtime-${w.id}">${fmtSec(ts.sec)}</div>
+      <div class="tmdis" id="tmdis-${w.id}">
+          <div class="tmtime${TMODES[ts.mode]&&!TMODES[ts.mode].locked?' tmtime-edit':''}" id="tmtime-${w.id}" onclick="tmStartEdit('${w.id}')">${fmtSec(ts.sec)}</div>
           <div class="tminputs" id="tminputs-${w.id}">
             <input class="tmseg" id="tmh-${w.id}" type="text" maxlength="2" placeholder="00"/>
             <span class="tmsep">:</span>
@@ -4312,13 +4290,13 @@ function buildTimerW(body,w){
             <span class="tmsep">:</span>
             <input class="tmseg" id="tms-${w.id}" type="text" maxlength="2" placeholder="00"/>
           </div>
-          <div class="tmtime-hint" id="tmhint-${w.id}">${ts.mode===0?'locked · 25:00':'tap to edit'}</div>
+          <div           <button class="tmbtn" style="background:var(--a2);color:#fff;border-color:var(--a2);margin-left:6px;" onclick="tmConfirmEdit('${w.id}')">Set</button>
         </div>
       </div>
       <div class="tmctrl">
         <button class="tmbtn" onclick="resetTimer('${w.id}')">Reset</button>
         <button class="tmbtn ${ts.running?'stop':'go'}" id="tmbtn-${w.id}" onclick="toggleTimer('${w.id}')">${ts.running?'Pause':'Start'}</button>
-        <button class="tmbtn" id="tmsetbtn-${w.id}" onclick="tmConfirmEdit('${w.id}')" style="display:none;background:var(--a2);color:#fff;border-color:var(--a2);">Set</button>
+
       </div>
       <div class="tmsess" id="tmsess-${w.id}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
@@ -4344,13 +4322,9 @@ function scaleTimer(wid,ww,wh){
 }
 function tmStartEdit(wid){
   const ts=TMS[wid];if(!ts)return;
-  if(TMODES[ts.mode]&&TMODES[ts.mode].locked)return; // fixed modes
-  if(ts.running)return; // cant edit while running
+  if(TMODES[ts.mode]?.locked||ts.running)return;
   const timeEl=$('tmtime-'+wid);
   const inpEl=$('tminputs-'+wid);
-  const hintEl=$('tmhint-'+wid);
-  const setBtnEl=$('tmsetbtn-'+wid);
-  const startBtnEl=$('tmbtn-'+wid);
   if(!timeEl||!inpEl)return;
   // fill inputs with current time
   const h=Math.floor(ts.sec/3600);
@@ -4361,9 +4335,6 @@ function tmStartEdit(wid){
   $('tms-'+wid).value=String(s).padStart(2,'0');
   timeEl.classList.add('hide');
   inpEl.classList.add('show');
-  if(hintEl)hintEl.style.display='none';
-  if(setBtnEl)setBtnEl.style.display='';
-  if(startBtnEl)startBtnEl.style.display='none';
   // auto-select minutes field
   setTimeout(()=>{const mi=$('tmm-'+wid);if(mi){mi.focus();mi.select();}},50);
   // tab between fields
@@ -4389,14 +4360,8 @@ function tmConfirmEdit(wid){
 function tmCancelEdit(wid){
   const timeEl=$('tmtime-'+wid);
   const inpEl=$('tminputs-'+wid);
-  const hintEl=$('tmhint-'+wid);
-  const setBtnEl=$('tmsetbtn-'+wid);
-  const startBtnEl=$('tmbtn-'+wid);
   if(timeEl)timeEl.classList.remove('hide');
   if(inpEl)inpEl.classList.remove('show');
-  if(hintEl)hintEl.style.display='';
-  if(setBtnEl)setBtnEl.style.display='none';
-  if(startBtnEl)startBtnEl.style.display='';
 }
 function setTMode(wid,m){
   const ts=TMS[wid];if(!ts)return;
@@ -4420,8 +4385,6 @@ function tickTimer(wid){
   const ts=TMS[wid];if(!ts)return;
   ts.sec--;
   const tEl=$('tmtime-'+wid);if(tEl)tEl.textContent=fmtSec(ts.sec);
-  const cEl=$('tmcirc-'+wid);
-  if(cEl){const circ=2*Math.PI*60;const d=circ*(ts.sec/ts.custom[ts.mode]);cEl.setAttribute('stroke-dasharray',`${d} ${circ}`);}
   if(ts.sec<=0){clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;playAlarm();const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);}
 }
 function resetTimer(wid){
