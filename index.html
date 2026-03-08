@@ -2777,12 +2777,14 @@ function initSupabase(){
   }
 }
 
-// Load Supabase CDN dynamically so it never blocks the app
+// Load Supabase and resolve a promise so boot can wait for it
+let _sbLoadResolve;
+const sbLoaded=new Promise(r=>{_sbLoadResolve=r;});
 (function(){
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-  s.onload=()=>initSupabase();
-  s.onerror=()=>console.warn('[Prodify] Supabase CDN failed to load, using local storage.');
+  s.onload=()=>{initSupabase();_sbLoadResolve(true);};
+  s.onerror=()=>{sbReady=false;_sbLoadResolve(false);};
   document.head.appendChild(s);
 })();
 
@@ -2820,9 +2822,8 @@ async function dbSaveUser(username,data){
       widgets:JSON.stringify(data.widgets||[]),
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(data.prefs||{}),
-      updated_at:new Date().toISOString(),
     },{onConflict:'username'});
-  }catch(e){console.warn('[Prodify] Supabase save failed',e);}
+  }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
 }
 async function dbDeleteUser(username){
   if(!sbReady) return;
@@ -3550,6 +3551,7 @@ async function doSU(){
   if(!ok)return;
   const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},joined:Date.now()};
   // Check Supabase for existing username first
+  if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
     const existing=await dbGetUser(u);
     if(existing){fe('sue','Username taken.');return;}
@@ -3562,7 +3564,8 @@ async function doSU(){
 async function doSI(){
   const u=$('si-u').value.trim().toLowerCase(),p=$('si-p').value;
   ce('sie','sipe');
-  // Try Supabase first
+  // Wait for Supabase then try
+  if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
     const dbUser=await dbGetUser(u);
     if(!dbUser){fe('sie','No account found.');return;}
@@ -3707,7 +3710,50 @@ function launch(){
   if(isMobile())setTimeout(initMobApp,100);
   startRealtime();
 }
-(function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
+// Boot: wait for Supabase, then load from cloud as source of truth
+(async function boot(){
+  const u=LS.g('pd1_cur',null);
+  if(!u){show('sl');return;}
+  // Show app immediately with local data while cloud loads
+  cu=u;
+  if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
+  launch();
+  // Wait for Supabase (max 5s), then sync from cloud
+  try{
+    await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,5000))]);
+    if(sbReady&&cu){
+      const dbUser=await dbGetUser(cu);
+      if(dbUser){
+        acc[cu]={
+          passHash:dbUser.pass_hash,
+          displayName:dbUser.display_name||acc[cu].displayName||'',
+          tasks:JSON.parse(dbUser.tasks||'[]'),
+          journal:JSON.parse(dbUser.journal||'[]'),
+          subjects:JSON.parse(dbUser.subjects||'[]'),
+          calEvs:JSON.parse(dbUser.cal_evs||'[]'),
+          widgets:JSON.parse(dbUser.widgets||'[]'),
+          notes:JSON.parse(dbUser.notes||'{}'),
+          prefs:JSON.parse(dbUser.prefs||'{}'),
+          joined:acc[cu]?.joined||Date.now(),
+        };
+        LS.s('pd1_acc',acc);
+        // Re-apply everything from fresh cloud data
+        const d=acc[cu];
+        tasks=d.tasks;journal=d.journal;subjects=d.subjects;
+        calEvs=d.calEvs;widgets=d.widgets;notes=d.notes;prefs=d.prefs;
+        applyTheme();
+        renderCanvas();
+        renderFixedQuote();
+        updateFixedStats();
+        renderAllTaskW();renderAllJournalW();renderAllSubW();
+        renderFullCal();widgets.forEach(w=>fillWBody(w));
+        updateAllStatsW();
+        if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
+      }
+    }
+  }catch(e){console.warn('[Prodify] boot sync failed',e);}
+  startRealtime();
+})();
 
 // ═══════════════════════════════════════
 // PERSIST
