@@ -70,63 +70,352 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .mob-quick-btn svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:1.8;stroke-linecap:round;}
 /* ── MOBILE WIDGET CARDS ── */
-/* ── MOBILE SNAP GRID ── */
-.mob-grid-wrap{
-  display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:10px 10px 80px;margin-top:44px;
-}
-.mob-grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-  width:100%;
-}
-/* Widget size classes */
-.mw-2x1{grid-column:span 2;grid-row:span 1;}
-.mw-4x1{grid-column:span 4;grid-row:span 1;}
-.mw-2x2{grid-column:span 2;grid-row:span 2;}
-.mw-4x2{grid-column:span 4;grid-row:span 2;}
-.mw-4x3{grid-column:span 4;grid-row:span 3;}
+/* ══════════════════════════════════════
+   MOBILE FULL-SCREEN UI
+══════════════════════════════════════ */
+/* Mobile screen wrapper — hidden on desktop */
+.mob-app{display:none;position:fixed;inset:0;z-index:2;flex-direction:column;background:var(--bg);}
 
-/* Fixed heights */
-.mob-widget{
-  background:var(--surf);border:1px solid var(--bdr);border-radius:16px;
-  overflow:hidden;display:flex;flex-direction:column;
-  position:relative;transition:box-shadow .2s,transform .2s;
+/* Each mobile page */
+.mob-page{
+  display:none;flex:1;flex-direction:column;
+  overflow:hidden;position:absolute;inset:0;bottom:62px;top:0;
+  transition:opacity .22s,transform .22s cubic-bezier(.16,1,.3,1);
 }
-.mob-widget.mw-2x1{min-height:100px;}
-.mob-widget.mw-4x1{min-height:100px;}
-.mob-widget.mw-2x2{min-height:210px;}
-.mob-widget.mw-4x2{min-height:300px;}
-.mob-widget.mw-4x3{min-height:420px;}
+.mob-page.active{display:flex;}
+.mob-page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;}
 
-/* Edit/wiggle mode */
-.mob-grid.edit-mode .mob-widget{animation:mobWiggle .35s infinite alternate;}
-.mob-grid.edit-mode .mob-widget:active{animation:none;transform:scale(1.04);box-shadow:var(--sh3);}
-@keyframes mobWiggle{0%{transform:rotate(-.6deg);}100%{transform:rotate(.6deg);}}
-
-.mob-widget-hd{
+/* Mobile top bar */
+.mob-topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 12px 0;flex-shrink:0;
+  padding:16px 18px 10px;flex-shrink:0;
+  padding-top:max(16px,env(safe-area-inset-top));
 }
-.mob-widget-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3);}
-.mob-widget-close{
-  display:none;background:var(--red);color:#fff;border:none;cursor:pointer;
-  width:20px;height:20px;border-radius:50%;font-size:12px;line-height:1;
-  align-items:center;justify-content:center;flex-shrink:0;
-  position:absolute;top:-6px;left:-6px;z-index:10;
+.mob-topbar-title{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.5px;}
+.mob-topbar-sub{font-size:12px;color:var(--ink3);margin-top:1px;}
+.mob-topbar-btn{
+  background:var(--a2);color:#fff;border:none;border-radius:100px;
+  padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:5px;
 }
-.mob-grid.edit-mode .mob-widget-close{display:flex;}
-.mob-widget-body{padding:6px 10px 10px;flex:1;overflow:hidden;min-height:0;}
+.mob-topbar-btn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
 
-/* Edit mode button */
-.mob-edit-btn{
-  display:none;position:fixed;bottom:72px;left:18px;z-index:400;
-  background:var(--surf);border:1.5px solid var(--bdr);border-radius:100px;
-  padding:8px 16px;font-size:12px;font-weight:700;color:var(--ink2);
-  box-shadow:var(--sh2);cursor:pointer;transition:all .15s;
+/* ── HOME PAGE ── */
+.mob-home-greet{padding:0 18px 14px;}
+.mob-home-hi{font-size:20px;font-weight:800;color:var(--ink);}
+.mob-home-date{font-size:12px;color:var(--ink3);margin-top:2px;}
+.mob-home-quote{
+  margin:0 16px 14px;background:var(--surf);border:1px solid var(--bdr);
+  border-radius:16px;padding:14px 16px;
 }
-.mob-edit-btn.editing{background:var(--a2);color:#fff;border-color:var(--a2);}
+.mob-home-qt{font-size:13px;color:var(--ink2);line-height:1.6;font-style:italic;}
+.mob-home-qa{font-size:10px;color:var(--ink4);margin-top:4px;font-weight:600;}
+.mob-stats-row{display:flex;gap:8px;padding:0 16px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.mob-stat{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:14px;
+  padding:12px 14px;flex-shrink:0;min-width:72px;text-align:center;
+}
+.mob-stat-v{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-1px;}
+.mob-stat-l{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.mob-section{margin:0 16px 14px;}
+.mob-section-hd{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+}
+.mob-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);}
+.mob-section-link{font-size:12px;font-weight:700;color:var(--a2);background:none;border:none;cursor:pointer;padding:0;}
+.mob-card{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;}
+/* today event row */
+.mob-ev-row{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  border-bottom:1px solid var(--bdr);
+}
+.mob-ev-row:last-child{border-bottom:none;}
+.mob-ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mob-ev-title{font-size:13px;color:var(--ink);flex:1;}
+.mob-ev-time{font-size:11px;color:var(--ink4);}
+/* task preview row */
+.mob-task-row{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  border-bottom:1px solid var(--bdr);cursor:pointer;
+}
+.mob-task-row:last-child{border-bottom:none;}
+.mob-task-row:active{background:var(--surf2);}
+.mob-task-chk{
+  width:20px;height:20px;border-radius:50%;border:2px solid var(--bdr);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .14s;
+}
+.mob-task-chk.done{background:var(--a2);border-color:var(--a2);}
+.mob-task-chk.done::after{content:'✓';font-size:10px;color:#fff;font-weight:800;}
+.mob-task-txt{font-size:13px;color:var(--ink);flex:1;line-height:1.4;}
+.mob-task-txt.done{color:var(--ink3);text-decoration:line-through;}
+.mob-task-col{font-size:10px;color:var(--ink4);font-weight:600;}
+.mob-task-hi{font-size:9px;font-weight:700;color:var(--red);background:var(--rl);padding:2px 6px;border-radius:100px;}
+
+/* ── TASKS PAGE ── */
+.mob-tasks-tabs{
+  display:flex;gap:6px;padding:0 16px 12px;flex-shrink:0;
+}
+.mob-ttab{
+  flex:1;padding:9px 4px;border-radius:10px;border:1.5px solid var(--bdr);
+  background:var(--surf);font-size:11px;font-weight:700;color:var(--ink3);
+  cursor:pointer;transition:all .14s;text-align:center;
+}
+.mob-ttab.act{background:var(--a2);border-color:var(--a2);color:#fff;}
+.mob-tasks-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.mob-task-card{
+  background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;
+  padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start;
+  cursor:pointer;transition:border-color .14s,transform .1s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mob-task-card:active{border-color:var(--a2);transform:scale(.99);}
+.mob-task-card-dot{
+  width:22px;height:22px;border-radius:50%;border:2px solid var(--bdr);
+  flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;
+  transition:all .14s;
+}
+.mob-task-card-dot.done{background:var(--a2);border-color:var(--a2);}
+.mob-task-card-dot.done::after{content:'✓';font-size:11px;color:#fff;font-weight:800;}
+.mob-task-card-body{flex:1;min-width:0;}
+.mob-task-card-text{font-size:14px;color:var(--ink);line-height:1.4;margin-bottom:4px;}
+.mob-task-card-text.done{color:var(--ink3);text-decoration:line-through;}
+.mob-task-card-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.mob-task-card-col{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px;}
+.mob-task-priority{font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;}
+.mob-task-priority.high{background:var(--rl);color:var(--red);}
+.mob-task-priority.medium{background:var(--aml);color:var(--amb);}
+.mob-task-del{background:none;border:none;color:var(--ink4);cursor:pointer;padding:4px;font-size:16px;margin-left:auto;}
+.mob-tasks-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+/* Quick add bar */
+.mob-qadd{
+  display:flex;gap:8px;padding:10px 16px;background:var(--surf);
+  border-top:1px solid var(--bdr);flex-shrink:0;align-items:center;
+}
+.mob-qadd-input{
+  flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:10px 16px;font-size:14px;color:var(--ink);outline:none;
+}
+.mob-qadd-input:focus{border-color:var(--a2);}
+.mob-qadd-input::placeholder{color:var(--ink4);}
+.mob-qadd-btn{
+  background:var(--a2);color:#fff;border:none;border-radius:50%;
+  width:40px;height:40px;font-size:22px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+
+/* ── TIMER PAGE ── */
+.mob-timer-wrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:20px;gap:20px;
+}
+.mob-timer-modes{
+  display:flex;gap:4px;background:var(--surf2);border-radius:100px;padding:4px;
+}
+.mob-tmode{
+  border:none;border-radius:100px;padding:8px 18px;font-size:13px;font-weight:700;
+  color:var(--ink3);background:transparent;cursor:pointer;transition:all .14s;
+}
+.mob-tmode.on{background:var(--surf);color:var(--ink);box-shadow:var(--sh1);}
+.mob-timer-ring{position:relative;display:flex;align-items:center;justify-content:center;}
+.mob-timer-ring svg{display:block;}
+.mob-timer-center{position:absolute;text-align:center;}
+.mob-timer-time{font-size:56px;font-weight:800;letter-spacing:-3px;color:var(--ink);line-height:1;}
+.mob-timer-label{font-size:13px;color:var(--ink3);margin-top:6px;}
+.mob-timer-hint{font-size:11px;color:var(--ink4);margin-top:3px;}
+.mob-timer-ctrl{display:flex;gap:10px;align-items:center;}
+.mob-timer-reset{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:13px 28px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;
+}
+.mob-timer-start{
+  background:var(--a2);border:none;border-radius:100px;
+  padding:13px 36px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;
+  transition:background .14s;
+}
+.mob-timer-start.pause{background:var(--red);}
+.mob-timer-sessions{display:flex;gap:8px;}
+.mob-timer-dot{width:10px;height:10px;border-radius:50%;background:var(--bdr);transition:background .2s;}
+.mob-timer-dot.done{background:var(--a2);}
+
+/* ── JOURNAL PAGE ── */
+.mob-journal-composer{
+  background:var(--surf);border-bottom:1px solid var(--bdr);
+  padding:14px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;
+}
+.mob-journal-ta{
+  width:100%;background:var(--surf2);border:1.5px solid var(--bdr);
+  border-radius:14px;padding:12px 14px;font-size:14px;color:var(--ink);
+  outline:none;resize:none;line-height:1.6;min-height:80px;
+}
+.mob-journal-ta:focus{border-color:var(--a2);}
+.mob-journal-ta::placeholder{color:var(--ink4);}
+.mob-journal-moods{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;}
+.mob-journal-moods::-webkit-scrollbar{display:none;}
+.mob-jmood{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:1.5px solid transparent;border-radius:12px;
+  padding:6px 8px;cursor:pointer;flex-shrink:0;transition:all .13s;min-width:48px;
+}
+.mob-jmood.on{background:var(--al);border-color:var(--a2);}
+.mob-jmood-e{font-size:22px;}
+.mob-jmood-l{font-size:9px;font-weight:700;color:var(--ink3);}
+.mob-jmood.on .mob-jmood-l{color:var(--a2);}
+.mob-journal-foot{display:flex;align-items:center;justify-content:flex-end;}
+.mob-journal-save{
+  background:var(--a2);color:#fff;border:none;border-radius:100px;
+  padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;
+}
+.mob-journal-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.mob-journal-entry{
+  padding:14px 16px;border-bottom:1px solid var(--bdr);
+}
+.mob-journal-entry:last-child{border-bottom:none;}
+.mob-je-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.mob-je-emoji{font-size:22px;}
+.mob-je-mood{font-size:12px;font-weight:700;color:var(--ink2);}
+.mob-je-date{font-size:11px;color:var(--ink4);margin-left:auto;}
+.mob-je-del{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:16px;padding:0 0 0 8px;}
+.mob-je-del:active{color:var(--red);}
+.mob-je-text{font-size:13px;color:var(--ink2);line-height:1.65;}
+.mob-journal-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+
+/* ── PROJECTS PAGE ── */
+.mob-proj-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.mob-proj-card{
+  background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;
+  padding:16px;margin-bottom:10px;
+}
+.mob-proj-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.mob-proj-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.mob-proj-name{font-size:16px;font-weight:700;color:var(--ink);flex:1;}
+.mob-proj-grade{font-size:18px;font-weight:800;}
+.mob-proj-lead{font-size:12px;color:var(--ink3);margin-bottom:10px;}
+.mob-proj-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.mob-proj-bar-bg{flex:1;height:7px;background:var(--bdr);border-radius:4px;overflow:hidden;}
+.mob-proj-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.mob-proj-pct{font-size:12px;font-weight:700;color:var(--ink3);min-width:32px;text-align:right;}
+.mob-proj-btns{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.mob-proj-pbt{
+  border:1.5px solid var(--bdr);background:var(--surf2);border-radius:100px;
+  padding:6px 12px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer;
+  transition:all .13s;
+}
+.mob-proj-pbt.act{background:var(--a2);border-color:var(--a2);color:#fff;}
+.mob-proj-del{
+  margin-left:auto;background:none;border:none;
+  color:var(--ink4);cursor:pointer;font-size:18px;padding:4px;
+}
+.mob-proj-del:active{color:var(--red);}
+.mob-proj-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+
+/* ── CALENDAR PAGE ── */
+.mob-cal-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px 12px;flex-shrink:0;
+}
+.mob-cal-nav-btn{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.mob-cal-nav-btn svg{width:16px;height:16px;stroke:var(--ink2);fill:none;stroke-width:2;stroke-linecap:round;}
+.mob-cal-week-lbl{font-size:13px;font-weight:700;color:var(--ink2);}
+.mob-cal-days{
+  display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;flex-shrink:0;
+}
+.mob-cal-days::-webkit-scrollbar{display:none;}
+.mob-cal-day{
+  flex-shrink:0;width:52px;background:var(--surf);border:1.5px solid var(--bdr);
+  border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer;
+  transition:all .14s;
+}
+.mob-cal-day.today{border-color:var(--a2);background:var(--al);}
+.mob-cal-day.sel{background:var(--a2);border-color:var(--a2);}
+.mob-cal-day-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);}
+.mob-cal-day.today .mob-cal-day-name,.mob-cal-day.sel .mob-cal-day-name{color:var(--a2);}
+.mob-cal-day.sel .mob-cal-day-name{color:rgba(255,255,255,.8);}
+.mob-cal-day-num{font-size:18px;font-weight:800;color:var(--ink);margin:4px 0;}
+.mob-cal-day.sel .mob-cal-day-num{color:#fff;}
+.mob-cal-day-dots{display:flex;justify-content:center;gap:2px;height:6px;}
+.mob-cal-day-dot{width:4px;height:4px;border-radius:50%;background:var(--a2);}
+.mob-cal-day.sel .mob-cal-day-dot{background:rgba(255,255,255,.7);}
+.mob-cal-events{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.mob-cal-date-hd{
+  font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;
+  padding-bottom:8px;border-bottom:1px solid var(--bdr);
+}
+.mob-cal-ev-card{
+  background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;
+  padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;
+}
+.mob-cal-ev-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0;background:var(--a2);}
+.mob-cal-ev-title{font-size:14px;font-weight:600;color:var(--ink);flex:1;}
+.mob-cal-ev-del{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:18px;padding:4px;}
+.mob-cal-ev-del:active{color:var(--red);}
+.mob-cal-empty{text-align:center;padding:32px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+/* Add event inline */
+.mob-cal-add{
+  display:flex;gap:8px;padding:10px 16px;background:var(--surf);
+  border-top:1px solid var(--bdr);flex-shrink:0;
+}
+.mob-cal-add-input{
+  flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:10px 16px;font-size:14px;color:var(--ink);outline:none;
+}
+.mob-cal-add-input:focus{border-color:var(--a2);}
+.mob-cal-add-input::placeholder{color:var(--ink4);}
+.mob-cal-add-btn{
+  background:var(--a2);color:#fff;border:none;border-radius:50%;
+  width:40px;height:40px;font-size:22px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ── MOBILE BOTTOM NAV ── */
+.mob-nav{
+  display:flex;background:var(--surf);border-top:1px solid var(--bdr);
+  flex-shrink:0;padding-bottom:max(6px,env(safe-area-inset-bottom));
+  height:62px;
+}
+.mob-nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;background:none;border:none;cursor:pointer;color:var(--ink3);
+  transition:color .15s;padding:6px 0;-webkit-tap-highlight-color:transparent;
+}
+.mob-nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.mob-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.2px;}
+.mob-nav-btn.act{color:var(--a2);}
+
+/* ── MOBILE ADD TASK MODAL ── */
+.mob-add-modal{
+  display:none;position:fixed;inset:0;z-index:600;
+  align-items:flex-end;
+}
+.mob-add-modal.open{display:flex;}
+.mob-add-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);}
+.mob-add-sheet{
+  position:relative;width:100%;background:var(--surf);
+  border-radius:24px 24px 0 0;padding:20px 20px 32px;
+  display:flex;flex-direction:column;gap:12px;z-index:1;
+}
+.mob-add-title{font-size:18px;font-weight:800;color:var(--ink);}
+.mob-add-input{
+  width:100%;background:var(--surf2);border:1.5px solid var(--bdr);
+  border-radius:14px;padding:14px;font-size:15px;color:var(--ink);
+  outline:none;
+}
+.mob-add-input:focus{border-color:var(--a2);}
+.mob-add-input::placeholder{color:var(--ink4);}
+.mob-add-row{display:flex;gap:8px;}
+.mob-add-sel{
+  flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;
+  padding:10px 14px;font-size:13px;color:var(--ink);outline:none;
+}
+.mob-add-submit{
+  background:var(--a2);color:#fff;border:none;border-radius:100px;
+  padding:14px;font-size:15px;font-weight:700;cursor:pointer;width:100%;
+}
 .btab-bar{display:none;}
 @media(max-width:600px){
   /* Hide sidebar on mobile */
@@ -173,14 +462,15 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .fab-item svg{width:16px;height:16px;stroke:var(--a2);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
   /* Add bottom padding so content isn't hidden behind tab bar */
   .pages{padding-bottom:62px;}
-  /* Mobile canvas snap-grid */
-  .canvas-wrap{display:none;}
-  .wtray{display:none;}
-  .canvas-topbar{left:0;}
-  .ctb-stats{display:none;}
+  /* Mobile: show dedicated mobile app, hide desktop canvas */
+  .canvas-wrap{display:none !important;}
+  .wtray{display:none !important;}
+  .canvas-topbar{display:none !important;}
   .mobile-stack{display:none !important;}
-  .mob-grid-wrap{display:flex !important;flex-direction:column;}
-  .mob-edit-btn{display:block !important;}
+  .mob-app{display:flex !important;}
+  /* Hide the main desktop pages container on mobile */
+  .pages{display:none !important;}
+  .sb{display:none !important;}
 }
 
 @media(min-width:601px){
@@ -188,8 +478,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .fab{display:none !important;}
   .fab-menu{display:none !important;}
   .mobile-stack{display:none !important;}
-  .mob-grid-wrap{display:none !important;}
-  .mob-edit-btn{display:none !important;}
+  .mob-app{display:none !important;}
 }
 
 @media(max-width:600px){
@@ -1052,74 +1341,242 @@ create policy "public" on users for all using (true);</pre>
   </div>
 
   <!-- BOTTOM TAB BAR (mobile only) -->
-  <button class="mob-edit-btn" id="mob-edit-btn" onclick="toggleMobEdit()">Edit</button>
-  <nav class="btab-bar" id="btab-bar">
-    <button class="btab act" id="bt-canvas" onclick="goPg('canvas',this);setTab('canvas')">
-      <svg viewBox="0 0 22 22"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-      <span>Canvas</span>
-    </button>
-    <button class="btab" id="bt-subjects" onclick="goPg('subjects',this);setTab('subjects')">
-      <svg viewBox="0 0 22 22"><path d="M4 7h14M4 12h10M4 17h12"/></svg>
-      <span>Projects</span>
-    </button>
-    <button class="btab" id="bt-calendar" onclick="goPg('calendar',this);setTab('calendar')">
-      <svg viewBox="0 0 22 22"><rect x="3" y="4" width="16" height="15" rx="2.5"/><path d="M3 9h16M8 2v3M14 2v3"/></svg>
-      <span>Calendar</span>
-    </button>
-    <button class="btab" id="bt-profile" onclick="goPg('profile',this);setTab('profile')">
-      <svg viewBox="0 0 22 22"><circle cx="11" cy="8" r="3.5"/><path d="M2 19c0-4 4-7 9-7s9 3 9 7"/></svg>
-      <span>Profile</span>
-    </button>
-  </nav>
+</div>
 
-  <!-- MOBILE WIDGET PICKER -->
-  <div class="mob-picker-overlay" id="mob-picker-overlay" onclick="closeMobilePicker()"></div>
-  <div class="mob-picker" id="mob-picker">
-    <div class="mob-picker-hd">
-      <span style="font-size:15px;font-weight:800;">Add Widget</span>
-      <button onclick="closeMobilePicker()" style="background:none;border:none;color:var(--ink3);font-size:20px;cursor:pointer;padding:0 4px;">&#x2715;</button>
-    </div>
-    <div class="mob-picker-grid">
-      <button class="mob-pick-item mob-pick-full" onclick="addW('tasks')">
-        <svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h9M3 15h11"/></svg>
-        <span>Tasks</span>
-      </button>
-      <button class="mob-pick-item mob-pick-full" onclick="addW('journal')">
-        <svg viewBox="0 0 20 20"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M6 7h8M6 11h8M6 15h5"/></svg>
-        <span>Journal</span>
-      </button>
-      <button class="mob-pick-item" onclick="addW('timer')">
-        <svg viewBox="0 0 20 20"><circle cx="10" cy="11" r="7"/><path d="M10 7v4l3 2M7 2h6"/></svg>
-        <span>Timer</span>
-      </button>
-      <button class="mob-pick-item" onclick="addW('note')">
-        <svg viewBox="0 0 20 20"><path d="M4 3h12a1 1 0 0 1 1 1v11l-4 3H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M17 15h-3v3"/></svg>
-        <span>Note</span>
-      </button>
-      <button class="mob-pick-item mob-pick-full" onclick="addW('subjects')">
-        <svg viewBox="0 0 20 20"><path d="M3 6h14M3 11h10M3 16h12"/></svg>
-        <span>Projects</span>
-      </button>
-      <button class="mob-pick-item mob-pick-full" onclick="addW('calendar')">
-        <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="15" rx="2"/><path d="M2 8h16M7 2v3M13 2v3"/></svg>
-        <span>Calendar</span>
-      </button>
-    </div>
-    <div style="border-top:1px solid var(--bdr);padding:10px 16px;display:flex;flex-direction:column;gap:6px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:2px;">Quick Actions</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="mob-quick-btn" onclick="goPg('profile',null);setTab('profile');closeMobilePicker()">
-          <svg viewBox="0 0 16 16"><circle cx="8" cy="5" r="3"/><path d="M1 15c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>Profile
+<!-- ══════════════════════════════════════
+     MOBILE FULL-SCREEN APP
+══════════════════════════════════════ -->
+<div class="mob-app" id="mob-app">
+
+  <!-- HOME PAGE -->
+  <div class="mob-page active" id="mpg-home">
+    <div class="mob-page-scroll">
+      <div class="mob-topbar">
+        <div>
+          <div class="mob-topbar-title" id="mob-greet-name">Hey 👋</div>
+          <div class="mob-topbar-sub" id="mob-greet-date"></div>
+        </div>
+        <button class="mob-topbar-btn" onclick="mobGoPage('settings')">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13"/></svg>
         </button>
-        <button class="mob-quick-btn" onclick="goPg('settings',null);setTab('settings');closeMobilePicker()">
-          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13"/></svg>Settings
-        </button>
+      </div>
+      <!-- Quote -->
+      <div class="mob-home-quote">
+        <div class="mob-home-qt" id="mob-qt"></div>
+        <div class="mob-home-qa" id="mob-qa"></div>
+      </div>
+      <!-- Stats row -->
+      <div class="mob-stats-row" id="mob-stats-row">
+        <div class="mob-stat"><div class="mob-stat-v" id="mst-tasks">0</div><div class="mob-stat-l">Tasks</div></div>
+        <div class="mob-stat"><div class="mob-stat-v" id="mst-done" style="color:var(--a2)">0</div><div class="mob-stat-l">Done</div></div>
+        <div class="mob-stat"><div class="mob-stat-v" id="mst-journal">0</div><div class="mob-stat-l">Journal</div></div>
+        <div class="mob-stat"><div class="mob-stat-v" id="mst-proj">0</div><div class="mob-stat-l">Projects</div></div>
+      </div>
+      <!-- Today's events -->
+      <div class="mob-section">
+        <div class="mob-section-hd">
+          <span class="mob-section-title">Today</span>
+          <button class="mob-section-link" onclick="mobGoPage('calendar')">See calendar →</button>
+        </div>
+        <div class="mob-card" id="mob-today-evs"></div>
+      </div>
+      <!-- Pending tasks -->
+      <div class="mob-section">
+        <div class="mob-section-hd">
+          <span class="mob-section-title" id="mob-tasks-hd-lbl">Tasks</span>
+          <button class="mob-section-link" onclick="mobGoPage('tasks')">See all →</button>
+        </div>
+        <div class="mob-card" id="mob-home-tasks"></div>
+      </div>
+      <!-- Last journal -->
+      <div class="mob-section" id="mob-last-journal-sec" style="display:none;">
+        <div class="mob-section-hd"><span class="mob-section-title">Last Entry</span><button class="mob-section-link" onclick="mobGoPage('journal')">Journal →</button></div>
+        <div class="mob-card" id="mob-last-journal"></div>
       </div>
     </div>
   </div>
-  <button class="fab" id="fab" onclick="toggleMobilePicker()">
-    <svg viewBox="0 0 24 24" id="fab-icon"><path d="M12 5v14M5 12h14"/></svg>
-  </button>
+
+  <!-- TASKS PAGE -->
+  <div class="mob-page" id="mpg-tasks">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Tasks</div>
+      <button class="mob-topbar-btn" onclick="openMobAddTask()">
+        <svg viewBox="0 0 14 14"><path d="M7 1v12M1 7h12"/></svg>
+        Add
+      </button>
+    </div>
+    <div class="mob-tasks-tabs">
+      <button class="mob-ttab act" id="mtt-todo" onclick="mobTaskTab('todo')">To Do</button>
+      <button class="mob-ttab" id="mtt-inprog" onclick="mobTaskTab('inprog')">In Progress</button>
+      <button class="mob-ttab" id="mtt-done" onclick="mobTaskTab('done')">Done</button>
+      <button class="mob-ttab" id="mtt-all" onclick="mobTaskTab('all')">All</button>
+    </div>
+    <div class="mob-tasks-list" id="mob-tasks-list"></div>
+  </div>
+
+  <!-- TIMER PAGE -->
+  <div class="mob-page" id="mpg-timer">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Focus Timer</div>
+    </div>
+    <div class="mob-timer-wrap">
+      <div class="mob-timer-modes">
+        <button class="mob-tmode on" id="mmt-0" onclick="mobSetMode(0)">Pomodoro</button>
+        <button class="mob-tmode" id="mmt-1" onclick="mobSetMode(1)">Short Break</button>
+        <button class="mob-tmode" id="mmt-2" onclick="mobSetMode(2)">Long Break</button>
+      </div>
+      <div class="mob-timer-ring">
+        <svg id="mob-timer-svg" viewBox="0 0 260 260" width="260" height="260">
+          <circle cx="130" cy="130" r="110" fill="none" stroke="var(--bdr)" stroke-width="10"/>
+          <circle cx="130" cy="130" r="110" fill="none" stroke="var(--a2)" stroke-width="10"
+            stroke-dasharray="691.15 691.15" stroke-dashoffset="172.79"
+            stroke-linecap="round" id="mob-timer-circ"
+            style="transition:stroke-dasharray .5s;"/>
+        </svg>
+        <div class="mob-timer-center">
+          <div class="mob-timer-time" id="mob-timer-time">25:00</div>
+          <div class="mob-timer-label" id="mob-timer-lbl">Pomodoro</div>
+          <div class="mob-timer-hint" id="mob-timer-hint">tap to edit</div>
+        </div>
+      </div>
+      <div class="mob-timer-ctrl">
+        <button class="mob-timer-reset" onclick="mobTimerReset()">Reset</button>
+        <button class="mob-timer-start" id="mob-timer-start" onclick="mobTimerToggle()">Start</button>
+      </div>
+      <div class="mob-timer-sessions" id="mob-timer-sessions">
+        <div class="mob-timer-dot"></div>
+        <div class="mob-timer-dot"></div>
+        <div class="mob-timer-dot"></div>
+        <div class="mob-timer-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL PAGE -->
+  <div class="mob-page" id="mpg-journal">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Journal</div>
+    </div>
+    <div class="mob-journal-composer">
+      <textarea class="mob-journal-ta" id="mob-jta" rows="3" placeholder="How's your day going?"></textarea>
+      <div class="mob-journal-moods" id="mob-jmoods"></div>
+      <div class="mob-journal-foot">
+        <button class="mob-journal-save" onclick="mobSaveJournal()">Save Entry</button>
+      </div>
+    </div>
+    <div class="mob-journal-list" id="mob-journal-list"></div>
+  </div>
+
+  <!-- PROJECTS PAGE -->
+  <div class="mob-page" id="mpg-projects">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Projects</div>
+      <button class="mob-topbar-btn" onclick="openMo('mo-sub')">
+        <svg viewBox="0 0 14 14"><path d="M7 1v12M1 7h12"/></svg>
+        Add
+      </button>
+    </div>
+    <div class="mob-proj-list" id="mob-proj-list"></div>
+  </div>
+
+  <!-- CALENDAR PAGE -->
+  <div class="mob-page" id="mpg-calendar">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Calendar</div>
+    </div>
+    <div class="mob-cal-nav">
+      <button class="mob-cal-nav-btn" onclick="mobCalShift(-1)">
+        <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>
+      </button>
+      <span class="mob-cal-week-lbl" id="mob-cal-week-lbl"></span>
+      <button class="mob-cal-nav-btn" onclick="mobCalShift(1)">
+        <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg>
+      </button>
+    </div>
+    <div class="mob-cal-days" id="mob-cal-days"></div>
+    <div class="mob-cal-events" id="mob-cal-events"></div>
+    <div class="mob-cal-add">
+      <input class="mob-cal-add-input" id="mob-cal-input" placeholder="Add event for this day…" onkeydown="if(event.key==='Enter')mobAddCalEv()"/>
+      <button class="mob-cal-add-btn" onclick="mobAddCalEv()">+</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE (mobile) -->
+  <div class="mob-page" id="mpg-settings">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Settings</div>
+    </div>
+    <div class="mob-page-scroll" style="padding:0 16px 24px;">
+      <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div class="setsect">Account</div>
+        <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="mob-set-name"></div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
+        <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="mob-set-un"></div></div></div>
+        <div class="setrow"><div><div class="setlbl">Change Password</div></div><button class="bol bsm" onclick="openMo('mo-pw')">Change</button></div>
+      </div>
+      <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div class="setsect">Appearance</div>
+        <div class="setrow"><div><div class="setlbl">Dark Mode</div></div><button class="tog" id="mob-tog-dk" onclick="togDark(this);document.getElementById('tog-dk').classList.toggle('on',prefs.dark)"></button></div>
+      </div>
+      <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div class="setsect">Data</div>
+        <div class="setrow"><div><div class="setlbl">Clear tasks</div></div><button class="dbtn" onclick="clrTasks()">Clear</button></div>
+        <div class="setrow"><div><div class="setlbl">Clear journal</div></div><button class="dbtn" onclick="clrJournal()">Clear</button></div>
+        <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
+      </div>
+      <div style="text-align:center;padding:16px 0;font-size:11px;color:var(--ink4);">
+        Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David Nueva</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="mob-nav" id="mob-nav">
+    <button class="mob-nav-btn act" id="mnb-home" onclick="mobGoPage('home')">
+      <svg viewBox="0 0 22 22"><path d="M3 9.5L11 3l8 6.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M8 20v-8h6v8"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-tasks" onclick="mobGoPage('tasks')">
+      <svg viewBox="0 0 22 22"><path d="M4 6h14M4 11h9M4 16h11"/><path d="M15 9l1.5 1.5L19 8" stroke-width="2"/></svg>
+      <span>Tasks</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-timer" onclick="mobGoPage('timer')">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="13" r="7"/><path d="M11 9v4l3 2M8 2h6"/></svg>
+      <span>Timer</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-journal" onclick="mobGoPage('journal')">
+      <svg viewBox="0 0 22 22"><rect x="3" y="2" width="16" height="18" rx="2"/><path d="M7 7h8M7 11h8M7 15h5"/></svg>
+      <span>Journal</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-projects" onclick="mobGoPage('projects')">
+      <svg viewBox="0 0 22 22"><rect x="2" y="7" width="8" height="13" rx="1.5"/><rect x="12" y="2" width="8" height="18" rx="1.5"/></svg>
+      <span>Projects</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-calendar" onclick="mobGoPage('calendar')">
+      <svg viewBox="0 0 22 22"><rect x="3" y="4" width="16" height="15" rx="2"/><path d="M3 9h16M8 2v3M14 2v3"/></svg>
+      <span>Cal</span>
+    </button>
+  </nav>
+
+  <!-- ADD TASK MODAL -->
+  <div class="mob-add-modal" id="mob-add-modal">
+    <div class="mob-add-overlay" onclick="closeMobAddTask()"></div>
+    <div class="mob-add-sheet">
+      <div class="mob-add-title">New Task</div>
+      <input class="mob-add-input" id="mob-add-task-input" placeholder="What needs to be done?" />
+      <div class="mob-add-row">
+        <select class="mob-add-sel" id="mob-add-task-pri">
+          <option value="low">Low priority</option>
+          <option value="medium" selected>Medium priority</option>
+          <option value="high">High priority</option>
+        </select>
+        <select class="mob-add-sel" id="mob-add-task-col">
+          <option value="todo">To Do</option>
+          <option value="inprog">In Progress</option>
+        </select>
+      </div>
+      <button class="mob-add-submit" onclick="mobSubmitTask()">Add Task</button>
+    </div>
+  </div>
 
 </div>
 
@@ -1342,191 +1799,462 @@ function closeMobilePicker(){
   if(icon){icon.style.transform='rotate(0deg)';}
 }
 
-// Mobile canvas widget management
-/* ── MOBILE SNAP-GRID WIDGET SIZES ──
-   timer  → mw-4x3 (full width, extra tall)
-   tasks  → mw-4x2 (full width, tall)
-   journal→ mw-4x2 (full width, tall)
-   cal    → mw-4x2 (full width, tall)
-   subjects→mw-4x2 (full width, tall)
-   note   → mw-2x2 (half width)
-   ────────────────────────────────── */
-const MOB_SIZE={tasks:'mw-4x2',journal:'mw-4x2',timer:'mw-4x3',note:'mw-2x2',subjects:'mw-4x2',calendar:'mw-4x2'};
-const MOB_TITLES={tasks:'Tasks',journal:'Journal',timer:'Timer',note:'Note',subjects:'Projects',calendar:'Calendar'};
-let _mobEditing=false;
-function getMobSizeClass(type){return MOB_SIZE[type]||'mw-4x2';}
-function toggleMobEdit(){
-  _mobEditing=!_mobEditing;
-  const grid=document.getElementById('mob-canvas-grid');
-  const btn=document.getElementById('mob-edit-btn');
-  if(grid)grid.classList.toggle('edit-mode',_mobEditing);
-  if(btn){btn.textContent=_mobEditing?'Done':'Edit';btn.classList.toggle('editing',_mobEditing);}
-  if(_mobEditing)initMobDrag();else removeMobDrag();
+// ══════════════════════════════════════
+// MOBILE APP — full-screen pages
+// ══════════════════════════════════════
+let _mobPage = 'home';
+let _mobCalOff = 0;
+let _mobSelDay = null;
+let _mobTaskTab = 'todo';
+let _mobMood = 0;
+
+// Timer state (standalone, independent of desktop)
+let _mobTimerMode = 0;
+let _mobTimerSec = 25*60;
+let _mobTimerRunning = false;
+let _mobTimerIv = null;
+let _mobTimerSessions = 0;
+const MOB_TMODES = [{l:'Pomodoro',s:25*60},{l:'Short Break',s:5*60},{l:'Long Break',s:15*60}];
+
+function isMobile(){return window.innerWidth<=600;}
+
+function mobGoPage(page){
+  if(!isMobile())return;
+  // deactivate current
+  const cur = document.getElementById('mpg-'+_mobPage);
+  if(cur)cur.classList.remove('active');
+  const curBtn = document.getElementById('mnb-'+_mobPage);
+  if(curBtn)curBtn.classList.remove('act');
+  _mobPage = page;
+  // activate new
+  const next = document.getElementById('mpg-'+page);
+  if(next)next.classList.add('active');
+  const nextBtn = document.getElementById('mnb-'+page);
+  if(nextBtn)nextBtn.classList.add('act');
+  // render page content
+  if(page==='home')mobRenderHome();
+  else if(page==='tasks')mobRenderTasks();
+  else if(page==='journal')mobRenderJournal();
+  else if(page==='projects')mobRenderProjects();
+  else if(page==='calendar')mobRenderCalendar();
+  else if(page==='settings')mobRenderSettings();
 }
-/* ── MOBILE DRAG-TO-REORDER ── */
-let _mobDrag=null,_mobDragOver=null;
-function initMobDrag(){
-  const grid=document.getElementById('mob-canvas-grid');if(!grid)return;
-  Array.from(grid.children).forEach(card=>{
-    card.setAttribute('draggable','true');
-    card.addEventListener('dragstart',_onMobDragStart);
-    card.addEventListener('dragover',_onMobDragOver);
-    card.addEventListener('drop',_onMobDrop);
-    card.addEventListener('dragend',_onMobDragEnd);
-    // touch
-    card.addEventListener('touchstart',_onMobTouchStart,{passive:true});
-  });
-}
-function removeMobDrag(){
-  const grid=document.getElementById('mob-canvas-grid');if(!grid)return;
-  Array.from(grid.children).forEach(card=>{
-    card.setAttribute('draggable','false');
-    card.removeEventListener('dragstart',_onMobDragStart);
-    card.removeEventListener('dragover',_onMobDragOver);
-    card.removeEventListener('drop',_onMobDrop);
-    card.removeEventListener('dragend',_onMobDragEnd);
-  });
-}
-function _onMobDragStart(e){
-  _mobDrag=this;
-  this.style.opacity='0.4';
-  e.dataTransfer.effectAllowed='move';
-}
-function _onMobDragOver(e){
-  e.preventDefault();
-  if(_mobDrag&&this!==_mobDrag){
-    _mobDragOver=this;
-    const grid=this.parentNode;
-    const kids=Array.from(grid.children);
-    const fromIdx=kids.indexOf(_mobDrag);
-    const toIdx=kids.indexOf(this);
-    if(fromIdx<toIdx)grid.insertBefore(_mobDrag,this.nextSibling);
-    else grid.insertBefore(_mobDrag,this);
-  }
-}
-function _onMobDrop(e){e.preventDefault();}
-function _onMobDragEnd(){
-  this.style.opacity='';
-  _mobDrag=null;_mobDragOver=null;
-  // save new widget order
-  const grid=document.getElementById('mob-canvas-grid');if(!grid)return;
-  const newOrder=Array.from(grid.children).map(c=>c.id);
-  widgets=widgets.filter(w=>!w.mobile).concat(
-    newOrder.map(id=>widgets.find(w=>w.id===id)).filter(Boolean)
-  );
-  persist();
-}
-// Touch drag
-let _mtouchId=null,_mtouchEl=null,_mtouchClone=null,_mtouchOX=0,_mtouchOY=0;
-function _onMobTouchStart(e){
-  if(!_mobEditing)return;
-  const touch=e.touches[0];
-  _mtouchEl=this;
-  _mtouchOX=touch.clientX-this.getBoundingClientRect().left;
-  _mtouchOY=touch.clientY-this.getBoundingClientRect().top;
-  _mtouchClone=this.cloneNode(true);
-  _mtouchClone.style.cssText='position:fixed;z-index:9999;opacity:.85;pointer-events:none;width:'+this.offsetWidth+'px;transition:none;';
-  document.body.appendChild(_mtouchClone);
-  this.style.opacity='0.3';
-  document.addEventListener('touchmove',_onMobTouchMove,{passive:false});
-  document.addEventListener('touchend',_onMobTouchEnd,{once:true});
-}
-function _onMobTouchMove(e){
-  if(!_mtouchEl||!_mtouchClone)return;
-  e.preventDefault();
-  const touch=e.touches[0];
-  _mtouchClone.style.left=(touch.clientX-_mtouchOX)+'px';
-  _mtouchClone.style.top=(touch.clientY-_mtouchOY)+'px';
-  // find element under touch
-  _mtouchClone.style.display='none';
-  const under=document.elementFromPoint(touch.clientX,touch.clientY);
-  _mtouchClone.style.display='';
-  const target=under?.closest('.mob-widget');
-  if(target&&target!==_mtouchEl){
-    const grid=_mtouchEl.parentNode;
-    const kids=Array.from(grid.children);
-    const fromIdx=kids.indexOf(_mtouchEl);
-    const toIdx=kids.indexOf(target);
-    if(fromIdx<toIdx)grid.insertBefore(_mtouchEl,target.nextSibling);
-    else grid.insertBefore(_mtouchEl,target);
-  }
-}
-function _onMobTouchEnd(){
-  if(_mtouchEl)_mtouchEl.style.opacity='';
-  if(_mtouchClone)_mtouchClone.remove();
-  _mtouchEl=null;_mtouchClone=null;
-  document.removeEventListener('touchmove',_onMobTouchMove);
-  _onMobDragEnd.call({parentNode:document.getElementById('mob-canvas-grid'),id:null});
-  // re-save order
-  const grid=document.getElementById('mob-canvas-grid');if(!grid)return;
-  const newOrder=Array.from(grid.children).map(c=>c.id);
-  widgets=widgets.filter(w=>!w.mobile).concat(
-    newOrder.map(id=>widgets.find(w=>w.id===id)).filter(Boolean)
-  );
-  persist();
-}
-function addMobileWidget(type){
-  const grid=document.getElementById('mob-canvas-grid');
-  const empty=document.getElementById('mob-canvas-empty');
-  if(!grid)return;
-  const id='mw-'+type+(type==='note'?'-'+Date.now():'');
-  const sizeClass=getMobSizeClass(type);
-  const card=document.createElement('div');
-  card.className='mob-widget '+sizeClass;
-  card.id=id;
-  card.innerHTML=`<button class="mob-widget-close" onclick="removeMobileWidget('${id}','${type}')">&#x2715;</button><div class="mob-widget-hd"><span class="mob-widget-title">${MOB_TITLES[type]||type}</span></div><div class="mob-widget-body" id="mwb-${id}"></div>`;
-  grid.appendChild(card);
-  if(empty)empty.style.display='none';
-  const fakeW={id,type,noteId:type==='note'?id:null};
-  if(type==='note'){notes[id]={title:'',content:''}}
-  const body=document.getElementById('mwb-'+id);
-  if(body){
-    if(type==='tasks')buildTaskW(body,fakeW);
-    else if(type==='journal')buildJournalW(body,fakeW);
-    else if(type==='timer')buildTimerW(body,fakeW);
-    else if(type==='note')buildNoteW(body,fakeW);
-    else if(type==='subjects')buildSubjectsW(body,fakeW);
-    else if(type==='calendar')buildCalW(body,fakeW);
-  }
-  const ent={id,type,x:0,y:0,w:0,h:0,mobile:true,noteId:type==='note'?id:null};
-  widgets.push(ent);persist();
-}
-function removeMobileWidget(id,type){
-  const el=document.getElementById(id);if(el)el.remove();
-  widgets=widgets.filter(w=>w.id!==id);
-  if(TMS[id]){clearInterval(TMS[id].iv);delete TMS[id];}
-  persist();
-  const grid=document.getElementById('mob-canvas-grid');
-  const empty=document.getElementById('mob-canvas-empty');
-  if(grid&&empty&&grid.children.length===0)empty.style.display='flex';
-}
-function renderMobileCanvas(){
-  const grid=document.getElementById('mob-canvas-grid');
-  const empty=document.getElementById('mob-canvas-empty');
-  if(!grid)return;
-  grid.innerHTML='';
-  const mobileWidgets=widgets.filter(w=>w.mobile);
-  mobileWidgets.forEach(w=>{
-    const sizeClass=getMobSizeClass(w.type);
-    const card=document.createElement('div');
-    card.className='mob-widget '+sizeClass;
-    card.id=w.id;
-    card.innerHTML=`<button class="mob-widget-close" onclick="removeMobileWidget('${w.id}','${w.type}')">&#x2715;</button><div class="mob-widget-hd"><span class="mob-widget-title">${MOB_TITLES[w.type]||w.type}</span></div><div class="mob-widget-body" id="mwb-${w.id}"></div>`;
-    grid.appendChild(card);
-    const body=document.getElementById('mwb-'+w.id);
-    if(body){
-      if(w.type==='tasks')buildTaskW(body,w);
-      else if(w.type==='journal')buildJournalW(body,w);
-      else if(w.type==='timer')buildTimerW(body,w);
-      else if(w.type==='note')buildNoteW(body,w);
-      else if(w.type==='subjects')buildSubjectsW(body,w);
-      else if(w.type==='calendar')buildCalW(body,w);
+
+// ── HOME ──
+function mobRenderHome(){
+  // greeting
+  const nm = document.getElementById('mob-greet-name');
+  if(nm) nm.textContent = 'Hey, ' + (cu&&cu.display_name ? cu.display_name.split(' ')[0] : 'there') + ' 👋';
+  const dt = document.getElementById('mob-greet-date');
+  if(dt) dt.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  // quote
+  const q = QQ[qIdx];
+  const qt = document.getElementById('mob-qt');
+  const qa = document.getElementById('mob-qa');
+  if(qt&&q) qt.textContent = '“'+q.t+'”';
+  if(qa&&q) qa.textContent = '— '+q.a;
+  // stats
+  const done = tasks.filter(t=>t.col==='done').length;
+  const el = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  el('mst-tasks',tasks.length);
+  el('mst-done',done);
+  el('mst-journal',journal.length);
+  el('mst-proj',subjects.length);
+  // today events
+  const today = new Date().toISOString().slice(0,10);
+  const todayEvs = calEvs.filter(e=>e.date===today);
+  const evEl = document.getElementById('mob-today-evs');
+  if(evEl){
+    if(!todayEvs.length){
+      evEl.innerHTML='<div class="mob-ev-row"><span style="font-size:12px;color:var(--ink4);">No events today</span></div>';
+    } else {
+      evEl.innerHTML = todayEvs.map(ev=>`
+        <div class="mob-ev-row">
+          <div class="mob-ev-dot" style="background:${ev.subColor||'var(--a2)'}"></div>
+          <div class="mob-ev-title">${ev.title}</div>
+        </div>`).join('');
     }
-  });
-  if(empty)empty.style.display=mobileWidgets.length?'none':'flex';
-  if(_mobEditing&&grid)grid.classList.add('edit-mode');
+  }
+  // pending tasks (show up to 5 non-done)
+  const pending = tasks.filter(t=>t.col!=='done').slice(0,5);
+  const taskEl = document.getElementById('mob-home-tasks');
+  const taskHd = document.getElementById('mob-tasks-hd-lbl');
+  const pendingCount = tasks.filter(t=>t.col!=='done').length;
+  if(taskHd) taskHd.textContent = `Tasks (${pendingCount} pending)`;
+  if(taskEl){
+    if(!tasks.length){
+      taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--ink4);">No tasks yet — add your first one!</span></div>';
+    } else if(!pending.length){
+      taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--a2);font-weight:700;">🎉 All tasks done!</span></div>';
+    } else {
+      taskEl.innerHTML = pending.map(t=>`
+        <div class="mob-task-row" onclick="mobGoPage('tasks')">
+          <div class="mob-task-chk${t.col==='done'?' done':''}"></div>
+          <div class="mob-task-txt${t.col==='done'?' done':''}">${t.text}</div>
+          ${t.priority==='high'?'<span class="mob-task-hi">HIGH</span>':''}
+        </div>`).join('');
+    }
+  }
+  // last journal entry
+  const jSec = document.getElementById('mob-last-journal-sec');
+  const jEl = document.getElementById('mob-last-journal');
+  if(jSec&&jEl){
+    if(journal.length){
+      const last = journal[0];
+      const m = MLAB[last.mood]||MLAB[0];
+      jSec.style.display='';
+      jEl.innerHTML=`<div style="padding:14px 16px;">
+        <div class="mob-je-hd">
+          <span class="mob-je-emoji">${m.e}</span>
+          <span class="mob-je-mood">${m.l}</span>
+          <span class="mob-je-date">${last.date}</span>
+        </div>
+        <div class="mob-je-text">${last.text}</div>
+      </div>`;
+    } else {
+      jSec.style.display='none';
+    }
+  }
 }
-// ═══════════════════════════════════════
+
+// ── TASKS ──
+function mobTaskTab(tab){
+  _mobTaskTab=tab;
+  ['todo','inprog','done','all'].forEach(t=>{
+    const btn=document.getElementById('mtt-'+t);
+    if(btn)btn.classList.toggle('act',t===tab);
+  });
+  mobRenderTasks();
+}
+function mobRenderTasks(){
+  const list=document.getElementById('mob-tasks-list');
+  if(!list)return;
+  const filtered = _mobTaskTab==='all' ? tasks : tasks.filter(t=>t.col===_mobTaskTab);
+  if(!filtered.length){
+    const labels={todo:'No tasks to do 🎉',inprog:'Nothing in progress',done:'Nothing done yet',all:'No tasks yet'};
+    list.innerHTML=`<div class="mob-tasks-empty">${labels[_mobTaskTab]||'No tasks'}<br><span style="font-size:11px;">Tap Add to create your first task</span></div>`;
+    return;
+  }
+  const colLabel={todo:'To Do',inprog:'In Progress',done:'Done'};
+  const colColor={todo:'#B87333',inprog:'var(--a2)',done:'var(--ink3)'};
+  list.innerHTML = filtered.map(t=>`
+    <div class="mob-task-card" onclick="mobToggleTask(${t.id})">
+      <div class="mob-task-card-dot${t.col==='done'?' done':''}"></div>
+      <div class="mob-task-card-body">
+        <div class="mob-task-card-text${t.col==='done'?' done':''}">${t.text}</div>
+        <div class="mob-task-card-meta">
+          <span class="mob-task-card-col" style="color:${colColor[t.col]||'var(--ink4)'}">${colLabel[t.col]||t.col}</span>
+          ${t.priority==='high'?'<span class="mob-task-priority high">High</span>':''}
+          ${t.priority==='medium'?'<span class="mob-task-priority medium">Med</span>':''}
+        </div>
+      </div>
+      <button class="mob-task-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
+    </div>`).join('');
+}
+function mobToggleTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const order=['todo','inprog','done'];
+  t.col=order[(order.indexOf(t.col)+1)%order.length];
+  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();
+}
+function mobDelTask(id){
+  tasks=tasks.filter(t=>t.id!==id);
+  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();
+}
+function openMobAddTask(){
+  const modal=document.getElementById('mob-add-modal');
+  if(modal){modal.classList.add('open');setTimeout(()=>document.getElementById('mob-add-task-input')?.focus(),100);}
+}
+function closeMobAddTask(){
+  const modal=document.getElementById('mob-add-modal');
+  if(modal)modal.classList.remove('open');
+}
+function mobSubmitTask(){
+  const inp=document.getElementById('mob-add-task-input');
+  const t=inp?.value.trim();if(!t)return;
+  const pri=document.getElementById('mob-add-task-pri')?.value||'medium';
+  const col=document.getElementById('mob-add-task-col')?.value||'todo';
+  tasks.unshift({id:Date.now(),text:t,priority:pri,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  persist();
+  if(inp)inp.value='';
+  closeMobAddTask();
+  mobRenderTasks();mobRenderHome();
+  updateFixedStats();updateAllStatsW();renderAllTaskW();
+}
+
+// ── TIMER ──
+function mobFmtSec(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function mobTimerRender(){
+  const timeEl=document.getElementById('mob-timer-time');
+  const lblEl=document.getElementById('mob-timer-lbl');
+  const circEl=document.getElementById('mob-timer-circ');
+  const startBtn=document.getElementById('mob-timer-start');
+  const hintEl=document.getElementById('mob-timer-hint');
+  if(timeEl)timeEl.textContent=mobFmtSec(_mobTimerSec);
+  if(lblEl)lblEl.textContent=MOB_TMODES[_mobTimerMode].l;
+  if(hintEl)hintEl.textContent=_mobTimerMode===0?'locked · 25:00':'tap to edit';
+  // ring
+  if(circEl){
+    const R=110,circ=2*Math.PI*R;
+    const pct=_mobTimerSec/MOB_TMODES[_mobTimerMode].s;
+    const dash=circ*pct;
+    circEl.setAttribute('stroke-dasharray',`${dash} ${circ}`);
+    circEl.setAttribute('stroke-dashoffset',`${circ/4}`);
+  }
+  if(startBtn){
+    startBtn.textContent=_mobTimerRunning?'Pause':'Start';
+    startBtn.classList.toggle('pause',_mobTimerRunning);
+  }
+  // mode buttons
+  MOB_TMODES.forEach((_,i)=>{
+    const btn=document.getElementById('mmt-'+i);
+    if(btn)btn.classList.toggle('on',i===_mobTimerMode);
+  });
+  // sessions
+  const sessEl=document.getElementById('mob-timer-sessions');
+  if(sessEl){
+    sessEl.innerHTML=Array.from({length:4},(_,i)=>`<div class="mob-timer-dot${i<_mobTimerSessions?' done':''}"></div>`).join('');
+  }
+}
+function mobSetMode(m){
+  if(_mobTimerRunning)return;
+  _mobTimerMode=m;
+  _mobTimerSec=MOB_TMODES[m].s;
+  mobTimerRender();
+}
+function mobTimerToggle(){
+  if(_mobTimerRunning){
+    clearInterval(_mobTimerIv);_mobTimerRunning=false;
+  } else {
+    _mobTimerRunning=true;
+    _mobTimerIv=setInterval(()=>{
+      _mobTimerSec--;
+      if(_mobTimerSec<=0){
+        clearInterval(_mobTimerIv);_mobTimerRunning=false;
+        _mobTimerSessions=(_mobTimerSessions+1)%5;
+        _mobTimerSec=0;
+        // vibrate on completion
+        if(navigator.vibrate)navigator.vibrate([300,100,300]);
+      }
+      mobTimerRender();
+    },1000);
+  }
+  mobTimerRender();
+}
+function mobTimerReset(){
+  clearInterval(_mobTimerIv);_mobTimerRunning=false;
+  _mobTimerSec=MOB_TMODES[_mobTimerMode].s;
+  mobTimerRender();
+}
+
+// ── JOURNAL ──
+function mobRenderJournal(){
+  // mood buttons
+  const moodsEl=document.getElementById('mob-jmoods');
+  if(moodsEl){
+    moodsEl.innerHTML=MLAB.map((m,i)=>`
+      <button class="mob-jmood${i===_mobMood?' on':''}" onclick="mobPickMood(${i})">
+        <span class="mob-jmood-e">${m.e}</span>
+        <span class="mob-jmood-l">${m.l}</span>
+      </button>`).join('');
+  }
+  // entries
+  const list=document.getElementById('mob-journal-list');
+  if(!list)return;
+  if(!journal.length){
+    list.innerHTML='<div class="mob-journal-empty">No entries yet.<br><span style="font-size:11px;">Write how your day is going above!</span></div>';
+    return;
+  }
+  list.innerHTML=journal.map(j=>{
+    const m=MLAB[j.mood]||MLAB[0];
+    return`<div class="mob-journal-entry">
+      <div class="mob-je-hd">
+        <span class="mob-je-emoji">${m.e}</span>
+        <span class="mob-je-mood">${m.l}</span>
+        <span class="mob-je-date">${j.date}</span>
+        <button class="mob-je-del" onclick="mobDelJournal(${j.id})">&#x2715;</button>
+      </div>
+      <div class="mob-je-text">${j.text}</div>
+    </div>`;
+  }).join('');
+}
+function mobPickMood(i){
+  _mobMood=i;
+  document.querySelectorAll('.mob-jmood').forEach((b,idx)=>b.classList.toggle('on',idx===i));
+}
+function mobSaveJournal(){
+  const ta=document.getElementById('mob-jta');
+  const text=ta?.value.trim();if(!text)return;
+  const now=new Date();
+  journal.unshift({
+    id:Date.now(),text,mood:_mobMood,
+    date:now.toLocaleDateString('en-US',{month:'short',day:'numeric'})
+  });
+  persist();
+  if(ta)ta.value='';
+  _mobMood=0;
+  mobRenderJournal();
+  mobRenderHome();
+  updateAllStatsW();updateFixedStats();
+}
+function mobDelJournal(id){
+  journal=journal.filter(j=>j.id!==id);
+  persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
+}
+
+// ── PROJECTS ──
+function gradeLabel(p){if(p>=90)return'A+';if(p>=80)return'A';if(p>=70)return'B';if(p>=60)return'C';if(p>=50)return'D';return'F';}
+function gradeColor(p){if(p>=70)return'var(--a2)';if(p>=50)return'var(--amb)';return'var(--red)';}
+function mobRenderProjects(){
+  const list=document.getElementById('mob-proj-list');if(!list)return;
+  if(!subjects.length){
+    list.innerHTML='<div class="mob-proj-empty">No projects yet.<br><span style="font-size:11px;">Tap Add to create your first project</span></div>';
+    return;
+  }
+  list.innerHTML=subjects.map(s=>`
+    <div class="mob-proj-card">
+      <div class="mob-proj-hd">
+        <div class="mob-proj-dot" style="background:${s.color||'var(--a2)'}"></div>
+        <div class="mob-proj-name">${s.name}</div>
+        <div class="mob-proj-grade" style="color:${gradeColor(s.progress)}">${gradeLabel(s.progress)}</div>
+      </div>
+      ${s.lead?`<div class="mob-proj-lead">${s.lead}</div>`:''}
+      <div class="mob-proj-bar-wrap">
+        <div class="mob-proj-bar-bg"><div class="mob-proj-bar-fill" style="width:${s.progress}%;background:${s.color||'var(--a2)'}"></div></div>
+        <div class="mob-proj-pct">${s.progress}%</div>
+      </div>
+      <div class="mob-proj-btns">
+        ${[0,25,50,75,100].map(v=>`<button class="mob-proj-pbt${s.progress===v?' act':''}" onclick="mobUpdProj(${s.id},${v})">${v}%</button>`).join('')}
+        <button class="mob-proj-del" onclick="mobDelProj(${s.id})">&#x2715;</button>
+      </div>
+    </div>`).join('');
+}
+function mobUpdProj(id,val){
+  updGrade(id,val);
+  setTimeout(mobRenderProjects,100);
+}
+function mobDelProj(id){
+  if(!confirm('Delete this project?'))return;
+  delSub(id);
+  setTimeout(mobRenderProjects,100);
+}
+
+// ── CALENDAR ──
+const MOB_DAY_NAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function mobGetWeek(off){
+  const today=new Date();
+  today.setDate(today.getDate()+off*7);
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-((today.getDay()+6)%7));
+  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
+}
+function mobFdk(d){return d.toISOString().slice(0,10);}
+function mobRenderCalendar(){
+  const week=mobGetWeek(_mobCalOff);
+  const todayKey=mobFdk(new Date());
+  if(!_mobSelDay)_mobSelDay=todayKey;
+  // week label
+  const lbl=document.getElementById('mob-cal-week-lbl');
+  if(lbl)lbl.textContent=week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  // day pills
+  const daysEl=document.getElementById('mob-cal-days');
+  if(daysEl){
+    daysEl.innerHTML=week.map((d,i)=>{
+      const k=mobFdk(d);
+      const evCount=calEvs.filter(e=>e.date===k).length;
+      const isToday=k===todayKey;
+      const isSel=k===_mobSelDay;
+      return`<div class="mob-cal-day${isToday?' today':''}${isSel?' sel':''}" onclick="mobSelDay('${k}')">
+        <div class="mob-cal-day-name">${MOB_DAY_NAMES[i]}</div>
+        <div class="mob-cal-day-num">${d.getDate()}</div>
+        <div class="mob-cal-day-dots">${Array.from({length:Math.min(evCount,3)},()=>'<div class="mob-cal-day-dot"></div>').join('')}</div>
+      </div>`;
+    }).join('');
+  }
+  // selected day events
+  mobRenderDayEvents();
+}
+function mobSelDay(key){
+  _mobSelDay=key;
+  mobRenderCalendar();
+}
+function mobCalShift(dir){
+  _mobCalOff+=dir;
+  mobRenderCalendar();
+}
+function mobRenderDayEvents(){
+  const evEl=document.getElementById('mob-cal-events');if(!evEl)return;
+  const k=_mobSelDay||mobFdk(new Date());
+  const evs=calEvs.filter(e=>e.date===k);
+  const d=new Date(k);
+  const hdTxt=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  let html=`<div class="mob-cal-date-hd">${hdTxt}</div>`;
+  if(!evs.length){
+    html+='<div class="mob-cal-empty">No events — add one below</div>';
+  } else {
+    html+=evs.map(ev=>`
+      <div class="mob-cal-ev-card">
+        <div class="mob-cal-ev-bar" style="background:${ev.subColor||'var(--a2)'}"></div>
+        <div class="mob-cal-ev-title">${ev.title}</div>
+        <button class="mob-cal-ev-del" onclick="mobDelCalEv(${ev.id})">&#x2715;</button>
+      </div>`).join('');
+  }
+  evEl.innerHTML=html;
+}
+function mobAddCalEv(){
+  const inp=document.getElementById('mob-cal-input');
+  const title=inp?.value.trim();if(!title)return;
+  const date=_mobSelDay||mobFdk(new Date());
+  calEvs.push({id:Date.now(),title,date});
+  persist();
+  if(inp)inp.value='';
+  mobRenderCalendar();
+  mobRenderHome();
+  // also refresh desktop cal widget
+  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+}
+function mobDelCalEv(id){
+  calEvs=calEvs.filter(e=>e.id!==id);
+  persist();mobRenderCalendar();mobRenderHome();
+  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+}
+
+// ── SETTINGS ──
+function mobRenderSettings(){
+  const nm=document.getElementById('mob-set-name');
+  const un=document.getElementById('mob-set-un');
+  if(nm&&cu)nm.textContent=cu.display_name||'—';
+  if(un&&cu)un.textContent='@'+cu.username;
+  const tog=document.getElementById('mob-tog-dk');
+  if(tog)tog.classList.toggle('on',!!prefs.dark);
+}
+
+// ── INIT ──
+function initMobApp(){
+  if(!isMobile())return;
+  mobRenderHome();
+  mobTimerRender();
+  mobRenderJournal();
+}
+
+// Stub out old functions so desktop code doesn't break
+function toggleMobilePicker(){}
+function closeMobilePicker(){}
+function addMobileWidget(){}
+function removeMobileWidget(){}
+function renderMobileCanvas(){}
+function toggleMobEdit(){}
+
+// Sync data changes to mobile if visible
+function mobSyncIfVisible(){
+  if(!isMobile())return;
+  if(_mobPage==='home')mobRenderHome();
+  else if(_mobPage==='tasks')mobRenderTasks();
+  else if(_mobPage==='journal')mobRenderJournal();
+  else if(_mobPage==='projects')mobRenderProjects();
+  else if(_mobPage==='calendar')mobRenderCalendar();
+}
+
 // AUTH
 // ═══════════════════════════════════════
 function showAuth(tab){
@@ -1616,7 +2344,7 @@ function launch(){
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
-  if(isMobile())setTimeout(renderMobileCanvas,200);
+  if(isMobile())setTimeout(initMobApp,100);
 }
 (function(){const u=LS.g('pd1_cur',null);if(u&&acc[u]){cu=u;if(acc[u].displayName)launch();else show('sn');}})();
 
@@ -1624,14 +2352,14 @@ function launch(){
 // PERSIST
 // ═══════════════════════════════════════
 function persist(){
-  if(isMobile()&&document.getElementById('pg-canvas')&&!document.getElementById('pg-canvas').classList.contains('off')&&!document.activeElement?.closest('.mob-widget'))renderMobileCanvas();
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
   LS.s('pd1_acc',acc);
-  // Async save to Supabase (fire and forget)
   dbSaveUser(cu,d);
+  // sync mobile if visible
+  if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
 }
 
 // ═══════════════════════════════════════
@@ -2224,6 +2952,7 @@ function addSub(){
   subjects.push({id:Date.now(),name,lead:$('st-i').value.trim(),progress:Math.min(100,Math.max(0,parseFloat($('sg-i').value)||0)),color:$('sc-i').value,created:Date.now()});
   persist();renderSubFull();renderAllSubW();updateAllStatsW();closeMo('mo-sub');
   ['sn-i','st-i','sg-i'].forEach(id=>$(id).value='');updateEvSubSel();
+  setTimeout(()=>{if(typeof mobRenderProjects==='function')mobRenderProjects();},100);
 }
 function delSub(id){subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();}
 function updGrade(id,val){const s=subjects.find(x=>x.id===id);if(s){s.progress=Math.min(100,Math.max(0,parseFloat(val)||0));persist();renderSubFull();renderAllSubW();}}
