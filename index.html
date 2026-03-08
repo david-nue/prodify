@@ -546,15 +546,20 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .sl-mb{display:flex !important;}
 
   /* ── AUTH — full screen on mobile ── */
-  #sa{flex-direction:column;background:#111009;}
-  .al{display:none;}
-  .ar{
-    width:100%;flex:1;
-    background:#111009;
-    padding:max(52px,env(safe-area-inset-top)) 24px max(36px,env(safe-area-inset-bottom));
+  #sa{
+    flex-direction:column;
+    background:#111009 !important;
+    position:fixed;inset:0;
     overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .al{display:none !important;}
+  .ar{
+    width:100%;
+    min-height:100vh;min-height:100dvh;
+    background:#111009;
+    padding:max(52px,env(safe-area-inset-top)) 24px max(40px,env(safe-area-inset-bottom));
     display:flex;flex-direction:column;
-    justify-content:center;min-height:100%;
+    justify-content:center;
   }
   /* override light text colors for dark mobile auth background */
   #sa .ar .auh{color:#fff;}
@@ -742,8 +747,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   width:36px;height:36px;border-radius:10px;flex-shrink:0;
   background:rgba(255,255,255,.06);
   display:flex;align-items:center;justify-content:center;
-  font-size:16px;
 }
+.sl-mb-feat-icon svg{width:16px;height:16px;}
 .sl-mb-feat-title{font-size:14px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:2px;}
 .sl-mb-feat-sub{font-size:12px;color:rgba(255,255,255,.3);}
 .sl-mb-footer{
@@ -1302,23 +1307,23 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
     </div>
     <div class="sl-mb-features">
       <div class="sl-mb-feat">
-        <div class="sl-mb-feat-icon">✓</div>
+        <div class="sl-mb-feat-icon"><svg viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M2 8h7M2 12h9"/><path d="M11 9.5l1.5 1.5L15 8"/></svg></div>
         <div><div class="sl-mb-feat-title">Task Board</div><div class="sl-mb-feat-sub">Drag &amp; drop, priorities, columns</div></div>
       </div>
       <div class="sl-mb-feat">
-        <div class="sl-mb-feat-icon">⏱</div>
+        <div class="sl-mb-feat-icon"><svg viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="9" r="5.5"/><path d="M8 6v3l2 1.5M5.5 1.5h5"/></svg></div>
         <div><div class="sl-mb-feat-title">Focus Timer</div><div class="sl-mb-feat-sub">Pomodoro with custom durations</div></div>
       </div>
       <div class="sl-mb-feat">
-        <div class="sl-mb-feat-icon">📁</div>
+        <div class="sl-mb-feat-icon"><svg viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="4" width="5" height="10" rx="1.2"/><rect x="9" y="1" width="5" height="13" rx="1.2"/></svg></div>
         <div><div class="sl-mb-feat-title">Projects</div><div class="sl-mb-feat-sub">Goal tracking &amp; progress bars</div></div>
       </div>
       <div class="sl-mb-feat">
-        <div class="sl-mb-feat-icon">📓</div>
+        <div class="sl-mb-feat-icon"><svg viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6M5 8h6M5 11h4"/></svg></div>
         <div><div class="sl-mb-feat-title">Journal</div><div class="sl-mb-feat-sub">Daily entries with mood tracking</div></div>
       </div>
       <div class="sl-mb-feat">
-        <div class="sl-mb-feat-icon">📅</div>
+        <div class="sl-mb-feat-icon"><svg viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.6" stroke-linecap="round"><rect x="1.5" y="3" width="13" height="11" rx="1.5"/><path d="M1.5 7h13M5.5 1.5v3M10.5 1.5v3"/></svg></div>
         <div><div class="sl-mb-feat-title">Calendar</div><div class="sl-mb-feat-sub">Events &amp; smart planner</div></div>
       </div>
     </div>
