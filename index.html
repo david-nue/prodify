@@ -39,7 +39,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── SCREENS ── */
 .screen{position:fixed;inset:0;z-index:1;transition:opacity .36s,transform .36s cubic-bezier(.16,1,.3,1);}
-.screen.off{opacity:0;pointer-events:none;transform:translateY(8px);}
+.screen.off{opacity:0;pointer-events:none;transform:translateY(8px);visibility:hidden;}
 
 /* ── RESPONSIVE ── */
 /* ── BOTTOM TAB BAR (mobile only) ── */
@@ -545,15 +545,31 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   #sl .sl-mobile{display:flex !important;}
 
   /* ── AUTH — full screen on mobile ── */
-  #sa{flex-direction:column;}
+  #sa{flex-direction:column;background:#111009;}
   .al{display:none;}
   .ar{
     width:100%;flex:1;
+    background:#111009;
     padding:max(52px,env(safe-area-inset-top)) 24px max(36px,env(safe-area-inset-bottom));
     overflow-y:auto;-webkit-overflow-scrolling:touch;
     display:flex;flex-direction:column;
     justify-content:center;min-height:100%;
   }
+  /* override light text colors for dark mobile auth background */
+  #sa .ar .auh{color:#fff;}
+  #sa .ar .aus{color:rgba(255,255,255,.45);}
+  #sa .ar .fl{color:rgba(255,255,255,.6);}
+  #sa .ar .fi{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#fff;}
+  #sa .ar .fi:focus{border-color:var(--a2);background:rgba(255,255,255,.1);}
+  #sa .ar .fi::placeholder{color:rgba(255,255,255,.25);}
+  #sa .ar .atab{color:rgba(255,255,255,.4);}
+  #sa .ar .atab.act{color:#fff;}
+  #sa .ar .atab::after{background:#fff;}
+  #sa .ar .atabs{border-color:rgba(255,255,255,.1);}
+  #sa .ar .aftr{color:rgba(255,255,255,.35);}
+  #sa .ar .aftr a{color:#fff;}
+  #sa .ar .abk{color:rgba(255,255,255,.35);}
+  #sa .ar .abk:hover{color:#fff;}
   .abk{margin-bottom:22px;}
   .auh{font-size:24px;}
   .aus{font-size:13px;margin-bottom:18px;}
@@ -1210,24 +1226,28 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
       </div>
     </div>
 
-    <!-- Features — scrollable strip at bottom -->
-    <div style="flex-shrink:0;border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;-webkit-overflow-scrolling:touch;display:flex;scrollbar-width:none;">
-      <div style="display:flex;flex-shrink:0;min-width:100%;">
-        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
-          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Widgets</div>
-          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Drag &amp; Resize</div>
+    <!-- Features — horizontally scrollable strip -->
+    <div style="flex-shrink:0;border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;-webkit-overflow-scrolling:touch;display:flex;scrollbar-width:none;-webkit-scrollbar-width:none;">
+      <div style="display:flex;flex-shrink:0;">
+        <div style="width:140px;flex-shrink:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Widgets</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.65);">Drag &amp; Resize</div>
         </div>
-        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
-          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Focus Timer</div>
-          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Pomodoro</div>
+        <div style="width:150px;flex-shrink:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Focus Timer</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.65);">Pomodoro</div>
         </div>
-        <div style="flex:1;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
-          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Projects</div>
-          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Goal Tracking</div>
+        <div style="width:140px;flex-shrink:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Projects</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.65);">Goal Tracking</div>
         </div>
-        <div style="flex:1;padding:14px 16px;">
-          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:3px;">Journal</div>
-          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.6);">Mood Tracking</div>
+        <div style="width:140px;flex-shrink:0;padding:14px 16px;border-right:1px solid rgba(255,255,255,.06);">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Journal</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.65);">Mood Tracking</div>
+        </div>
+        <div style="width:140px;flex-shrink:0;padding:14px 16px;">
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:4px;">Calendar</div>
+          <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.65);">Smart Planner</div>
         </div>
       </div>
     </div>
