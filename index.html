@@ -537,12 +537,13 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .fab-menu{display:none !important;}
   .mobile-stack{display:none !important;}
   .mob-app{display:none !important;}
+  .sl-mb{display:none !important;}
 }
 
 @media(max-width:600px){
   /* ── LANDING mobile ── */
   .sl-dk{display:none !important;}
-  .sl-mb{display:flex;}
+  .sl-mb{display:flex !important;}
 
   /* ── AUTH — full screen on mobile ── */
   #sa{flex-direction:column;background:#111009;}
@@ -666,7 +667,6 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── MOBILE LANDING ── */
 .sl-mb{
-  display:none;
   position:absolute;inset:0;
   flex-direction:column;
   background:#111009;
