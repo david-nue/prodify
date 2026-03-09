@@ -743,7 +743,7 @@ overflow-y:auto;}
 /* ════════════════════════════════
    LANDING
 ════════════════════════════════ */
-#sl{background:#111009;display:block;overflow-y:auto;}
+
 
 /* ── MOBILE LANDING ── */
 .sl-mb{
@@ -1280,6 +1280,50 @@ overflow-y:auto;}
 
 /* ── PROFILE PHOTO ── */
 .mob-pbav-edit-badge{position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--a2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;border:2px solid var(--surf);}
+
+
+/* ════════════════════════════════
+   DESKTOP LANDING
+════════════════════════════════ */
+#sl{background:#111009;display:block;overflow-y:auto;}
+.lo2{position:absolute;border-radius:50%;pointer-events:none;}
+.lo1{width:640px;height:640px;background:radial-gradient(circle,rgba(58,125,94,.22) 0%,transparent 65%);top:-150px;right:-120px;}
+.lo2{width:340px;height:340px;background:radial-gradient(circle,rgba(74,157,116,.08) 0%,transparent 65%);bottom:-60px;left:-50px;}
+.l-above-fold{min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+.lnav{display:flex;align-items:center;justify-content:space-between;padding:24px 50px;}
+.logo{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.lhero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;position:relative;gap:14px;}
+.ltag{border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:6px 14px;border-radius:100px;}
+.lh1{font-size:clamp(38px,5vw,68px);font-weight:800;color:#fff;line-height:1.08;letter-spacing:-2px;max-width:760px;}
+.lh1 em{color:var(--a2);font-style:normal;}
+.lsub{font-size:clamp(14px,1.5vw,18px);color:rgba(255,255,255,.45);max-width:520px;line-height:1.6;}
+.lcta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+.install-btn{display:none;align-items:center;gap:7px;padding:10px 20px;border-radius:100px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s;}
+.install-btn.visible{display:flex;}
+.install-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+.install-ios{display:none;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;}
+.install-ios.visible{display:flex;}
+.install-ios svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+.lstrip{border-top:1px solid rgba(255,255,255,.05);display:grid;grid-template-columns:repeat(4,1fr);}
+.ls{padding:18px 30px;border-right:1px solid rgba(255,255,255,.05);}
+.ls:last-child{border-right:none;}
+.ls-v{font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;}
+.ls-l{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;font-weight:500;}
+.sl-features{padding:40px 5% 20px;position:relative;z-index:1;}
+.sl-feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:900px;margin:0 auto;}
+.sl-feat-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px 20px;transition:background .2s;}
+.sl-feat-card:hover{background:rgba(255,255,255,.09);}
+.sl-feat-icon{width:40px;height:40px;border-radius:10px;background:rgba(74,157,116,.2);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:rgba(74,157,116,.9);}
+.sl-feat-icon svg{width:20px;height:20px;}
+.sl-feat-name{font-size:14px;font-weight:700;color:rgba(255,255,255,.85);margin-bottom:6px;}
+.sl-feat-desc{font-size:12px;color:rgba(255,255,255,.38);line-height:1.6;}
+
+/* landing animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+.ltag{animation:fadeUp .5s .1s both;}
+.lh1{animation:fadeUp .6s .2s both;}
+.lsub{animation:fadeUp .6s .32s both;}
+.lcta{animation:fadeUp .65s .42s both;}
 
 </style>
 </head>
