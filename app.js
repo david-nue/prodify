@@ -217,7 +217,8 @@ async function sbGetSession(){
 })();
 
 // Supabase is loaded via <script> in index.html before app.js
-// (initialized after state variables are declared below)
+// Initialize immediately — no dynamic loading needed
+initSupabase();
 
 // DB helpers — all async, fall back to local silently
 // All reads/writes use the Supabase Auth session (JWT) for RLS
@@ -384,8 +385,6 @@ const LS={
 // STATE
 // ═══════════════════════════════════════
 let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
-// Initialize Supabase now that all state variables are declared
-initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let prefs={dark:false};
 let dragTaskId=null, calOff=0, nextZ=10;
@@ -1260,7 +1259,12 @@ async function doSI(){
 
     // Sign in via Supabase Auth so JWT is active for RLS
     if(dbUser.email){
-      await sbSignIn(dbUser.email,p).catch(()=>{});
+      const {error:signInErr} = await sbSignIn(dbUser.email,p);
+      if(signInErr){
+        recordLoginFailure(u);
+        fe('sie','Invalid username or password.');
+        return;
+      }
     }
 
     acc[u]={
@@ -1571,13 +1575,17 @@ function launch(){
   launch();
   // Then silently sync from Supabase in background
   try{
-    if(!sbReady){show('sl');return;}
+    if(!sbReady) return; // no Supabase — stay on local data, don't sign out
     // Restore Auth session — critical for RLS to work on page refresh
     const {data:{session}} = await sb.auth.getSession();
     if(!session){
-      // No session found — try refreshing from stored token
-      const {data:refreshed} = await sb.auth.refreshSession();
-      if(!refreshed?.session){doSO();return;}
+      // No session in memory — try refreshing from stored token
+      const {data:refreshed,error:refreshErr} = await sb.auth.refreshSession();
+      if(refreshErr||!refreshed?.session){
+        // Session truly expired — stay on local data rather than kicking to landing
+        console.warn('[Prodify] Session expired, staying on local data');
+        return;
+      }
     }
     const dbUser=await dbGetUser(cu);
     if(!dbUser){doSO();return;}
