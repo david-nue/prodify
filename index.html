@@ -2259,7 +2259,6 @@ function initSupabase(){
     }
     sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim());
     sbReady = true;
-    console.log('[Prodify] Supabase connected.');
     // Start realtime if user already logged in
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
   }catch(e){
@@ -2326,7 +2325,6 @@ async function dbSaveUser(username,data){
   if(!sbReady) return;
   _lastSaveTs = Date.now();
   try{
-    console.log('[Prodify] Saving to Supabase for:', username);
     await sb.from('users').upsert({
       username,
       pass_hash:data.passHash,
@@ -2339,7 +2337,6 @@ async function dbSaveUser(username,data){
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(data.prefs||{}),
     },{onConflict:'username'});
-    console.log('[Prodify] Saved OK');
   }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
 }
 async function dbDeleteUser(username){
@@ -2365,8 +2362,7 @@ function startRealtimeSync(username){
     }, payload=>{
       // Ignore if we just saved (within 3s) to avoid echo
       if(Date.now()-_lastSaveTs < 1500) return;
-      console.log('[Prodify] Realtime update received');
-      applyRemoteData(payload.new);
+        applyRemoteData(payload.new);
     })
     .subscribe(status=>{
       console.log('[Prodify] Realtime status:', status);
@@ -2412,7 +2408,6 @@ function applyRemoteData(row){
     if(typeof mobRenderHome==='function') mobRenderHome();
     if(typeof mobRenderJournal==='function') mobRenderJournal();
     if(typeof applyDark==='function') applyDark(prefs.dark);
-    console.log('[Prodify] UI updated from remote');
   }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
 </script>
