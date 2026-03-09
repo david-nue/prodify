@@ -307,32 +307,25 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-journal-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
 
 /* ── PROJECTS PAGE ── */
-.mob-proj-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
-.mob-proj-card{
-  background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;
-  padding:16px;margin-bottom:10px;
-}
-.mob-proj-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.mob-proj-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.mob-proj-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 80px;}
+.mob-proj-card{background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;padding:16px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px;}
+.mob-proj-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
 .mob-proj-name{font-size:16px;font-weight:700;color:var(--ink);flex:1;}
-.mob-proj-grade{font-size:18px;font-weight:800;}
-.mob-proj-lead{font-size:12px;color:var(--ink3);margin-bottom:10px;}
-.mob-proj-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.mob-proj-bar-bg{flex:1;height:7px;background:var(--bdr);border-radius:4px;overflow:hidden;}
-.mob-proj-bar-fill{height:100%;border-radius:4px;transition:width .3s;}
-.mob-proj-pct{font-size:12px;font-weight:700;color:var(--ink3);min-width:32px;text-align:right;}
-.mob-proj-btns{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
-.mob-proj-pbt{
-  border:1.5px solid var(--bdr);background:var(--surf2);border-radius:100px;
-  padding:6px 12px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer;
-  transition:all .13s;
-}
-.mob-proj-pbt.act{background:var(--a2);border-color:var(--a2);color:#fff;}
-.mob-proj-del{
-  margin-left:auto;background:none;border:none;
-  color:var(--ink4);cursor:pointer;font-size:18px;padding:4px;
-}
+.mob-proj-del{background:none;border:none;color:var(--ink4);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0;}
 .mob-proj-del:active{color:var(--red);}
+.mob-proj-desc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.mob-proj-lead{font-size:12px;color:var(--ink3);}
+.mob-proj-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.mob-proj-bar-wrap{display:flex;align-items:center;gap:10px;}
+.mob-proj-bar-bg{flex:1;height:5px;background:var(--bdr);border-radius:3px;overflow:hidden;}
+.mob-proj-bar-fill{height:100%;border-radius:3px;background:var(--a2);transition:width .3s;}
+.mob-proj-pct{font-size:12px;font-weight:700;color:var(--ink3);min-width:32px;text-align:right;}
+.mob-proj-prog-row{display:flex;align-items:center;gap:8px;}
+.mob-proj-prog-btns{display:flex;gap:4px;flex:1;}
+.mob-proj-pbt{flex:1;border:1.5px solid var(--bdr);background:var(--surf2);border-radius:100px;padding:6px 4px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer;transition:all .13s;text-align:center;}
+.mob-proj-pbt.act{background:var(--a2);border-color:var(--a2);color:#fff;}
+.mob-proj-due{font-size:11px;color:var(--ink3);}
+.mob-proj-due.overdue{color:var(--red);font-weight:700;}
 .mob-proj-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
 
 /* ── CALENDAR PAGE ── */
@@ -1173,22 +1166,28 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .fpscroll::-webkit-scrollbar{width:3px;}
 .fpscroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 
-/* subjects full page */
-.subgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
-.subcard{background:var(--surf);border-radius:var(--r14);border:1px solid var(--bdr);overflow:hidden;transition:transform .16s,box-shadow .16s;}
+/* projects full page */
+.subgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.subcard{background:var(--surf);border-radius:var(--r14);border:1px solid var(--bdr);overflow:hidden;transition:transform .16s,box-shadow .16s;display:flex;flex-direction:column;}
 .subcard:hover{transform:translateY(-2px);box-shadow:var(--sh2);}
-.subtopbar{height:4px;}
-.subbody{padding:13px 15px;}
-.subname{font-size:15px;font-weight:700;margin-bottom:2px;}
-.subteach{font-size:11px;color:var(--ink3);margin-bottom:9px;}
-.submeta{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
-.subg{font-size:18px;font-weight:800;letter-spacing:-.5px;}
-.subgl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);}
-.subbar{flex:1;height:4px;background:var(--bdr);border-radius:2px;overflow:hidden;}
-.subbarfill{height:100%;border-radius:2px;transition:width .4s;}
-.subgin{width:52px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:5px;padding:3px 7px;font-size:11px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:var(--ink);}
+.subbody{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:8px;}
+.subname{font-size:15px;font-weight:700;color:var(--ink);}
+.subdesc{font-size:12px;color:var(--ink3);line-height:1.5;}
+.subteach{font-size:12px;color:var(--ink3);}
+.submeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;}
+.subtag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);}
+.subtag.st-active{border-color:var(--a2);background:var(--al);color:var(--a2);}
+.subtag.st-done{border-color:#2A5C44;background:rgba(42,92,68,.08);color:#2A5C44;}
+.subtag.st-hold{border-color:var(--amb);background:rgba(180,140,40,.08);color:var(--amb);}
+.subbar{height:5px;background:var(--bdr);border-radius:3px;overflow:hidden;}
+.subbarfill{height:100%;border-radius:3px;background:var(--a2);transition:width .4s;}
+.subpct{font-size:11px;font-weight:700;color:var(--ink3);}
+.subprog-row{display:flex;align-items:center;gap:8px;}
+.subgin{flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:11px;font-family:'Plus Jakarta Sans',sans-serif;outline:none;color:var(--ink);max-width:70px;}
 .subgin:focus{border-color:var(--a2);}
-.subfoot{padding:8px 15px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;}
+.subfoot{padding:10px 18px;border-top:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.subdue{font-size:11px;color:var(--ink3);}
+.subdue.overdue{color:var(--red);font-weight:700;}
 
 /* calendar full page */
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;}
@@ -1944,7 +1943,7 @@ create policy "public" on users for all using (true);</pre>
       <div class="mob-section">
         <div class="mob-section-hd">
           <span class="mob-section-title" id="mob-tasks-hd-lbl">Tasks</span>
-          <button class="mob-section-link" onclick="mobGoPage('tasks')">See all →</button>
+          <button class="mob-section-link" onclick="mobGoPage('tasks')">Tasks →</button>
         </div>
         <div class="mob-card" id="mob-home-tasks"></div>
       </div>
@@ -2176,16 +2175,20 @@ create policy "public" on users for all using (true);</pre>
 
 <!-- MODALS -->
 <div class="ov" id="mo-sub" onclick="if(event.target===this)closeMo('mo-sub')"><div class="mod">
-  <div class="mh">Add Project</div><div class="ms">Track a project, goal or area of focus.</div>
-  <div class="fd"><label class="fl">Project Name</label><input class="fi" id="sn-i" type="text" placeholder="e.g. Work Project"/></div>
-  <div class="fd"><label class="fl">Lead / Owner</label><input class="fi" id="st-i" type="text" placeholder="Optional"/></div>
+  <div class="mh">New Project</div><div class="ms">Add a project, task group, or area of work.</div>
+  <div class="fd"><label class="fl">Project Name *</label><input class="fi" id="sn-i" type="text" placeholder="e.g. Website Redesign"/></div>
+  <div class="fd"><label class="fl">Description</label><input class="fi" id="sdesc-i" type="text" placeholder="Short summary (optional)"/></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-    <div class="fd"><label class="fl">Progress (%)</label><input class="fi" id="sg-i" type="number" min="0" max="100" placeholder="e.g. 60"/></div>
-    <div class="fd"><label class="fl">Color</label><select class="fi" id="sc-i">
-      <option value="#2A5C44">Forest Green</option><option value="#1A3A6B">Deep Blue</option>
-      <option value="#B83030">Crimson</option><option value="#9A6818">Amber</option>
-      <option value="#5B3A8A">Purple</option><option value="#B87333">Copper</option>
+    <div class="fd"><label class="fl">Lead / Owner</label><input class="fi" id="st-i" type="text" placeholder="e.g. John"/></div>
+    <div class="fd"><label class="fl">Due Date</label><input class="fi" id="sdue-i" type="date"/></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="fd"><label class="fl">Status</label><select class="fi" id="sstat-i">
+      <option value="active">Active</option>
+      <option value="hold">On Hold</option>
+      <option value="done">Completed</option>
     </select></div>
+    <div class="fd"><label class="fl">Progress (%)</label><input class="fi" id="sg-i" type="number" min="0" max="100" placeholder="0"/></div>
   </div>
   <div class="mf"><button class="bol bsm" onclick="closeMo('mo-sub')">Cancel</button><button class="btn bdk bsm" onclick="addSub()">Add Project</button></div>
 </div></div>
@@ -2529,7 +2532,7 @@ function mobRenderHome(){
   if(taskHd) taskHd.textContent = `Tasks (${pendingCount} pending)`;
   if(taskEl){
     if(!tasks.length){
-      taskEl.innerHTML='<div class="mob-tasks-empty">No tasks yet<br><span style="font-size:11px;">Tap Add to create your first task</span></div>';
+      taskEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;font-weight:600;">No tasks yet</div>';
     } else if(!pending.length){
       taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--a2);font-weight:700;">🎉 All tasks done!</span></div>';
     } else {
@@ -2871,26 +2874,51 @@ function gradeColor(p){if(p>=70)return'var(--a2)';if(p>=50)return'var(--amb)';re
 function mobRenderProjects(){
   const list=document.getElementById('mob-proj-list');if(!list)return;
   if(!subjects.length){
-    list.innerHTML='<div class="mob-proj-empty">No projects yet.<br><span style="font-size:11px;">Tap Add to create your first project</span></div>';
+    list.innerHTML='<div class="mob-proj-empty" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--ink3);font-size:14px;font-weight:600;pointer-events:none;">No projects yet.<br><span style="font-size:12px;font-weight:400;">Tap Add to create your first project</span></div>';
     return;
   }
-  list.innerHTML=subjects.map(s=>`
-    <div class="mob-proj-card">
+  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
+  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
+  const now=new Date();now.setHours(0,0,0,0);
+  list.innerHTML=subjects.map(s=>{
+    const st=s.status||'active';
+    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
+    return `<div class="mob-proj-card">
       <div class="mob-proj-hd">
-        <div class="mob-proj-dot" style="background:${s.color||'var(--a2)'}"></div>
-        <div class="mob-proj-name">${s.name}</div>
-        <div class="mob-proj-grade" style="color:${gradeColor(s.progress)}">${gradeLabel(s.progress)}</div>
-      </div>
-      ${s.lead?`<div class="mob-proj-lead">${s.lead}</div>`:''}
-      <div class="mob-proj-bar-wrap">
-        <div class="mob-proj-bar-bg"><div class="mob-proj-bar-fill" style="width:${s.progress}%;background:${s.color||'var(--a2)'}"></div></div>
-        <div class="mob-proj-pct">${s.progress}%</div>
-      </div>
-      <div class="mob-proj-btns">
-        ${[0,25,50,75,100].map(v=>`<button class="mob-proj-pbt${s.progress===v?' act':''}" onclick="mobUpdProj(${s.id},${v})">${v}%</button>`).join('')}
+        <div style="flex:1;">
+          <div class="mob-proj-name">${s.name}</div>
+          ${s.desc?`<div class="mob-proj-desc" style="margin-top:3px;">${s.desc}</div>`:''}
+        </div>
         <button class="mob-proj-del" onclick="mobDelProj(${s.id})">&#x2715;</button>
       </div>
-    </div>`).join('');
+      <div class="mob-proj-tags">
+        <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
+        ${s.lead?`<span class="subtag">👤 ${s.lead}</span>`:''}
+        ${dueStr?`<span class="subtag${overdue?' overdue':''}" style="${overdue?'color:var(--red);border-color:var(--red);':''}">📅 ${dueStr}</span>`:''}
+      </div>
+      <div class="mob-proj-bar-wrap">
+        <div class="mob-proj-bar-bg"><div class="mob-proj-bar-fill" style="width:${s.progress}%"></div></div>
+        <div class="mob-proj-pct">${s.progress}%</div>
+      </div>
+      <div class="mob-proj-prog-row">
+        <div class="mob-proj-prog-btns">
+          ${[0,25,50,75,100].map(v=>`<button class="mob-proj-pbt${s.progress===v?' act':''}" onclick="mobUpdProj(${s.id},${v})">${v}%</button>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <select class="fi" style="flex:1;font-size:12px;padding:6px 8px;" onchange="mobUpdProjStatus(${s.id},this.value)">
+          <option value="active"${st==='active'?' selected':''}>Active</option>
+          <option value="hold"${st==='hold'?' selected':''}>On Hold</option>
+          <option value="done"${st==='done'?' selected':''}>Completed</option>
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+}
+function mobUpdProjStatus(id,val){
+  updProjStatus(id,val);
+  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
 function mobUpdProj(id,val){
   updGrade(id,val);
@@ -3739,7 +3767,7 @@ function renderTaskCols(wid){
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
     el.innerHTML=cols[c].map(t=>`<div class="tc" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" ontouchstart="touchDragStart(event,${t.id})">
       <button class="tcdel" onclick="delTask(${t.id})">&times;</button>
-      <div class="tct">${esc(t.text)}</div>
+      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
       <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span><span class="tcd">${t.date}</span></div>
     </div>`).join('');
   });
@@ -4077,29 +4105,70 @@ function renderCalW(wid){
 // FULL PAGE — SUBJECTS
 // ═══════════════════════════════════════
 function renderSubFull(){
-  const g=$('subgrid');
-  if(!subjects.length){g.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px;font-weight:600;">No projects yet — click + Add Project to start.</div>`;return;}
+  const g=$('subgrid');if(!g)return;
+  if(!subjects.length){
+    g.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink3);font-size:13px;font-weight:600;">No projects yet — click + Add Project to start.</div>`;
+    return;
+  }
+  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
+  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
+  const now=new Date();now.setHours(0,0,0,0);
   g.innerHTML=subjects.map(s=>{
-    const gc=gradeC(s.progress),gl=gradeL(s.progress);
-    return `<div class="subcard"><div class="subtopbar" style="background:${s.color}"></div>
+    const st=s.status||'active';
+    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+    const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
+    return `<div class="subcard">
       <div class="subbody">
-        <div class="subname">${esc(s.name)}</div>
-        <div class="subteach">${s.lead?esc(s.lead):'No lead assigned'}</div>
-        <div class="submeta"><div><div class="subg" style="color:${gc}">${gl}</div><div class="subgl">${s.progress}%</div></div><div class="subbar"><div class="subbarfill" style="width:${s.progress}%;background:${s.color}"></div></div></div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="font-size:11px;color:var(--ink3)">Update progress:</span><input type="number" class="subgin" min="0" max="100" value="${s.progress}" onchange="updGrade(${s.id},this.value)" onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"/> <span style="font-size:11px;color:var(--ink3)">%</span></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div class="subname">${esc(s.name)}</div>
+          <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
+        </div>
+        ${s.desc?`<div class="subdesc">${esc(s.desc)}</div>`:''}
+        ${s.lead?`<div class="subteach">👤 ${esc(s.lead)}</div>`:''}
+        <div style="margin-top:4px;">
+          <div class="subprog-row" style="margin-bottom:6px;">
+            <div class="subbar" style="flex:1;"><div class="subbarfill" style="width:${s.progress}%"></div></div>
+            <span class="subpct">${s.progress}%</span>
+            <input type="number" class="subgin" min="0" max="100" value="${s.progress}"
+              onchange="updGrade(${s.id},this.value)"
+              onfocus="this.style.borderColor='var(--a2)'"
+              onblur="this.style.borderColor='var(--bdr)'"/>
+          </div>
+        </div>
       </div>
-      <div class="subfoot"><button class="bol bsm" onclick="delSub(${s.id})">Remove</button></div>
+      <div class="subfoot">
+        <span class="subdue${overdue?' overdue':''}">${dueStr?'Due: '+dueStr:''}</span>
+        <div style="display:flex;gap:6px;">
+          <select class="subgin" style="max-width:none;width:auto;" onchange="updProjStatus(${s.id},this.value)">
+            <option value="active"${st==='active'?' selected':''}>Active</option>
+            <option value="hold"${st==='hold'?' selected':''}>On Hold</option>
+            <option value="done"${st==='done'?' selected':''}>Completed</option>
+          </select>
+          <button class="bol bsm" onclick="delSub(${s.id})">Remove</button>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
 function addSub(){
   const name=$('sn-i').value.trim();if(!name)return;
-  subjects.push({id:Date.now(),name,lead:$('st-i').value.trim(),progress:Math.min(100,Math.max(0,parseFloat($('sg-i').value)||0)),color:$('sc-i').value,created:Date.now()});
+  subjects.push({id:Date.now(),name,
+    desc:$('sdesc-i').value.trim(),
+    lead:$('st-i').value.trim(),
+    due:$('sdue-i').value,
+    status:$('sstat-i').value||'active',
+    progress:Math.min(100,Math.max(0,parseFloat($('sg-i').value)||0)),
+    color:'var(--a2)',created:Date.now()});
   persist();renderSubFull();renderAllSubW();updateAllStatsW();closeMo('mo-sub');
-  ['sn-i','st-i','sg-i'].forEach(id=>$(id).value='');updateEvSubSel();
-  setTimeout(()=>{if(typeof mobRenderProjects==='function')mobRenderProjects();},100);
+  ['sn-i','sdesc-i','st-i','sdue-i','sg-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  $('sstat-i').value='active';
 }
 function delSub(id){subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();}
+function updProjStatus(id,val){
+  const s=subjects.find(x=>x.id===id);if(!s)return;
+  s.status=val;if(val==='done')s.progress=100;
+  persist();renderSubFull();renderAllSubW();
+}
 function updGrade(id,val){const s=subjects.find(x=>x.id===id);if(s){s.progress=Math.min(100,Math.max(0,parseFloat(val)||0));persist();renderSubFull();renderAllSubW();}}
 
 // ═══════════════════════════════════════
