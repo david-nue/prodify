@@ -2328,8 +2328,7 @@ async function dbSaveUser(username,data){
     // Strip avatarPhoto (base64 image) before saving — too large for Supabase
     const prefsToSave = Object.assign({}, data.prefs||{});
     delete prefsToSave.avatarPhoto;
-    await sb.from('users').upsert({
-      username,
+    const {error:saveErr} = await sb.from('users').update({
       pass_hash:data.passHash,
       display_name:data.displayName||'',
       tasks:JSON.stringify(data.tasks||[]),
@@ -2339,8 +2338,9 @@ async function dbSaveUser(username,data){
       widgets:JSON.stringify(data.widgets||[]),
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(prefsToSave),
-    },{onConflict:'username'});
-    console.log('[Prodify] Saved OK');
+    }).eq('username', username);
+    if(saveErr){console.error('[Prodify] Save error:',saveErr.message);}
+    else{console.log('[Prodify] Saved OK');}
   }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
 }
 async function dbDeleteUser(username){
@@ -3454,7 +3454,7 @@ async function pullFromCloud(){
   if(!sbReady||!cu)return;
   try{
     const dbUser=await dbGetUser(cu);
-    if(!dbUser)return;
+    if(!dbUser){doSO();return;}
     const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
     acc[cu]={
       passHash:dbUser.pass_hash,
@@ -3525,8 +3525,7 @@ function launch(){
     await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
     if(!sbReady||!cu)return;
     const dbUser=await dbGetUser(cu);
-    console.log('[Prodify] dbUser found:', !!dbUser, 'tasks count:', dbUser ? JSON.parse(dbUser.tasks||'[]').length : 'N/A');
-    if(!dbUser)return;
+    if(!dbUser){doSO();return;}
     // Always trust cloud — cloud is source of truth on refresh
     const loc=acc[cu]||{};
     const cT=JSON.parse(dbUser.tasks||'[]');
