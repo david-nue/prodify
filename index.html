@@ -1250,25 +1250,6 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .dbtn:hover{background:var(--red);color:#fff;}
 .dbtn.full{background:var(--red);color:#fff;}
 
-/* ── CONFIRM DIALOG ── */
-.conf-icon{width:44px;height:44px;border-radius:50%;background:var(--rl);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
-.conf-icon svg{width:22px;height:22px;stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-.conf-icon.warn{background:var(--aml);}
-.conf-icon.warn svg{stroke:var(--amb);}
-#mo-conf .mod{max-width:360px;}
-#mo-conf .mf{gap:8px;}
-.conf-cancel{background:var(--surf2);color:var(--ink);border:1.5px solid var(--bdr);border-radius:var(--r10);padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:border-color .14s;font-family:'Plus Jakarta Sans',sans-serif;}
-.conf-cancel:hover{border-color:var(--ink3);}
-.conf-ok{background:var(--red);color:#fff;border:none;border-radius:var(--r10);padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .14s;font-family:'Plus Jakarta Sans',sans-serif;}
-.conf-ok:hover{opacity:.85;}
-.conf-ok.warn-ok{background:var(--amb);}
-
-/* ── TOAST ── */
-#g-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:#1A1714;color:#F3F1EC;border-radius:100px;padding:10px 20px;font-size:13px;font-weight:700;z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.22);}
-#g-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-#g-toast.success::before{content:'✓  ';color:#4A9D74;}
-#g-toast.error::before{content:'✕  ';color:var(--red);}
-
 
 
 /* ── CANVAS TOPBAR ── */
@@ -2345,24 +2326,6 @@ create policy "public" on users for all using (true);</pre>
 
 </div>
 
-<!-- TOAST -->
-<div id="g-toast"></div>
-
-<!-- CONFIRM DIALOG -->
-<div class="ov" id="mo-conf">
-  <div class="mod">
-    <div class="conf-icon" id="conf-icon">
-      <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    </div>
-    <div class="mh" id="conf-title">Are you sure?</div>
-    <div class="ms" id="conf-msg">This action cannot be undone.</div>
-    <div class="mf">
-      <button class="conf-cancel" onclick="closeConfirm()">Cancel</button>
-      <button class="conf-ok" id="conf-ok-btn" onclick="_confResolve(true)">Delete</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODALS -->
 <div class="ov" id="mo-sub" onclick="if(event.target===this)closeMo('mo-sub')"><div class="mod">
   <div class="mh">New Project</div><div class="ms">Add a project, task group, or area of work.</div>
@@ -3185,8 +3148,8 @@ function mobUpdProj(id,val){
   updGrade(id,val);
   setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
-async function mobDelProj(id){
-  const ok=await pdConfirm('Delete project?','This will permanently remove the project and all its data.');if(!ok)return;
+function mobDelProj(id){
+  if(!confirm('Delete this project?'))return;
   delSub(id);
   setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
@@ -3878,7 +3841,7 @@ function removeW(id){
 }
 
 function clearCanvas(){
-  const ok=await pdConfirm('Clear canvas?','This removes all widgets from the canvas. Your data is still saved.',{warn:true,okLabel:'Clear'});if(!ok)return;
+  if(!confirm('Remove all widgets from the canvas? Your data is still saved.'))return;
   widgets.forEach(w=>{if(TMS[w.id]){clearInterval(TMS[w.id].iv);delete TMS[w.id];}});
   widgets=[];persist();$('canvas').innerHTML='';
 }
@@ -4396,7 +4359,7 @@ function renderCalW(wid){
     const evs=calEvs.filter(e=>e.date===k);
     return `<div class="cwd${isT?' tod':''}">
       <div class="cwdn">${dn[i]}</div><div class="cwdnum">${d.getDate()}</div>
-      <div style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 32px);">${evs.map(ev=>`<div class="cwev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="pdConfirm('Delete event?','Remove \'${esc(ev.title)}\' from your calendar?',{okLabel:'Delete'}).then(ok=>{if(ok)delEv(${ev.id})})">${esc(ev.title)}</div>`).join('')}</div>
+      <div style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 32px);">${evs.map(ev=>`<div class="cwev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete?'))delEv(${ev.id})">${esc(ev.title)}</div>`).join('')}</div>
       <div class="cwaddbtn" onclick="$('ev-d').value='${k}';openMo('mo-ev')">+</div>
     </div>`;
   }).join('');
@@ -4506,7 +4469,7 @@ function renderFullCal(){
     return `<div class="calday${isT?' today':''}">
       <div class="caldayhd"><div class="caldayname">${dn[i]}</div><div class="caldaynum">${d.getDate()}</div></div>
       <div class="caldaybody">
-        ${evs.map(ev=>`<div class="calev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="pdConfirm('Delete event?','Remove \'${esc(ev.title)}\' from your calendar?',{okLabel:'Delete'}).then(ok=>{if(ok)delEv(${ev.id})})">${esc(ev.title)}${ev.subName?`<div style="font-size:10px;opacity:.7">${esc(ev.subName)}</div>`:''}</div>`).join('')}
+        ${evs.map(ev=>`<div class="calev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete this event?'))delEv(${ev.id})">${esc(ev.title)}${ev.subName?`<div style="font-size:10px;opacity:.7">${esc(ev.subName)}</div>`:''}</div>`).join('')}
         <div class="caladdbtn" onclick="$('ev-d').value='${k}';openMo('mo-ev')">+</div>
       </div>
     </div>`;
@@ -4588,17 +4551,15 @@ function chgPw(){
   if(nw!==nw2){fe('pw-n2e','Passwords do not match.');return;}
   acc[cu].passHash=hp(nw);LS.s('pd1_acc',acc);
   ['pw-c','pw-n','pw-n2'].forEach(id=>$(id).value='');
-  closeMo('mo-pw');pdToast('Password updated.','success');
+  closeMo('mo-pw');alert('Password updated.');
 }
-function clrTasks(){pdConfirm('Delete all tasks?','This will permanently remove every task from your board.',{okLabel:'Delete all'}).then(ok=>{if(!ok)return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();pdToast('All tasks deleted.');});}
-function clrJournal(){pdConfirm('Delete all journal entries?','Every diary entry will be permanently removed.',{okLabel:'Delete all'}).then(ok=>{if(!ok)return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();pdToast('Journal cleared.');});}
-function clrSubjects(){pdConfirm('Delete all projects?','Every project and its data will be permanently removed.',{okLabel:'Delete all'}).then(ok=>{if(!ok)return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();pdToast('Projects cleared.');});}
+function clrTasks(){if(!confirm('Delete all tasks?'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+function clrJournal(){if(!confirm('Delete all journal entries?'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
+function clrSubjects(){if(!confirm('Delete all projects??'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
 function delAcc(){
-  pdConfirm('Delete your account?','This will permanently delete your account and ALL data. This cannot be undone.',{okLabel:'Delete account'}).then(ok=>{
-    if(!ok)return;
-    dbDeleteUser(cu);
-    delete acc[cu];LS.s('pd1_acc',acc);LS.d('pd1_cur');cu=null;show('sl');
-  });
+  if(!confirm('Permanently delete your account and ALL data? This cannot be undone.'))return;
+  dbDeleteUser(cu);
+  delete acc[cu];LS.s('pd1_acc',acc);LS.d('pd1_cur');cu=null;show('sl');
 }
 </script>
 <script>
@@ -4706,61 +4667,6 @@ if(isIOS&&!isInStandalone){
   style.textContent = '.sbtip,.wbtip{display:none!important;}';
   document.head.appendChild(style);
 })();
-</script>
-
-<script>
-// ═══════════════════════════════════════
-// CONFIRM DIALOG + TOAST SYSTEM
-// ═══════════════════════════════════════
-let _confResolve = null;
-
-function pdConfirm(title, msg, opts={}) {
-  return new Promise(resolve => {
-    _confResolve = (val) => { closeConfirm(); resolve(val); };
-
-    const icon  = document.getElementById('conf-icon');
-    const okBtn = document.getElementById('conf-ok-btn');
-
-    document.getElementById('conf-title').textContent = title;
-    document.getElementById('conf-msg').textContent   = msg;
-    okBtn.textContent = opts.okLabel || 'Delete';
-
-    // Style: warn (amber) vs danger (red, default)
-    if (opts.warn) {
-      icon.className  = 'conf-icon warn';
-      okBtn.className = 'conf-ok warn-ok';
-    } else {
-      icon.className  = 'conf-icon';
-      okBtn.className = 'conf-ok';
-    }
-
-    const ov = document.getElementById('mo-conf');
-    ov.classList.add('open');
-    // Close on backdrop click
-    ov.onclick = (e) => { if (e.target === ov) { _confResolve(false); } };
-  });
-}
-
-function closeConfirm() {
-  document.getElementById('mo-conf').classList.remove('open');
-}
-
-// ESC key closes confirm dialog
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('mo-conf').classList.contains('open')) {
-    _confResolve && _confResolve(false);
-  }
-});
-
-// ── TOAST ──
-let _toastTimer = null;
-function pdToast(msg, type='success') {
-  const t = document.getElementById('g-toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { t.className = ''; }, 2800);
-}
 </script>
 
 </body>
