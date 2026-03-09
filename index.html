@@ -2409,8 +2409,8 @@ function startRealtimeSync(username){
     }, payload=>{
       const age = Date.now()-_lastSaveTs;
       console.log('[Prodify] Realtime received, ms since last save:', age);
-      // Ignore if we just saved (within 1.5s) to avoid echo
-      if(age < 1500){console.log('[Prodify] Blocked as echo');return;}
+      // Only block if WE just saved (echo prevention) — 2s window
+      if(age < 2000){console.log('[Prodify] Blocked as echo');return;}
       applyRemoteData(payload.new);
     })
     .subscribe(status=>{
@@ -2510,6 +2510,7 @@ let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let prefs={dark:false};
 let dragTaskId=null, calOff=0, nextZ=10;
+let _selTask=null;
 let curMood=0;
 // per-widget timer state (not persisted)
 const TMS={};
@@ -3892,7 +3893,6 @@ function addTask(wid){
   persist();renderAllTaskW();inp.value='';inp.focus();
   updateAllStatsW();updateFixedStats();
 }
-let _selTask=null;
 function selTask(e,id){
   e.stopPropagation();
   _selTask=(_selTask===id)?null:id;
