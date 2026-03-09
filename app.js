@@ -1577,6 +1577,9 @@ function launch(){
   try{
     await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
     if(!sbReady||!cu)return;
+    // Restore Auth session first so RLS policies pass on the DB query
+    const session=await sbGetSession();
+    if(!session){await sb.auth.refreshSession().catch(()=>{});}
     const dbUser=await dbGetUser(cu);
     if(!dbUser){doSO();return;}
     // Always trust cloud — cloud is source of truth on refresh
