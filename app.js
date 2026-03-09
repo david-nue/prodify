@@ -163,7 +163,9 @@ function initSupabase(){
       console.warn('[Prodify] Supabase library not loaded, using local storage.');
       sbReady=false; return;
     }
-    sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim());
+    sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim(), {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+    });
     sbReady = true;
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
   }catch(e){
@@ -214,16 +216,9 @@ async function sbGetSession(){
   });
 })();
 
-// Load Supabase and resolve a promise so boot can wait for it
-let _sbLoadResolve;
-const sbLoaded=new Promise(r=>{_sbLoadResolve=r;});
-(function(){
-  const s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-  s.onload=()=>{initSupabase();_sbLoadResolve(true);};
-  s.onerror=()=>{sbReady=false;_sbLoadResolve(false);};
-  document.head.appendChild(s);
-})();
+// Supabase is loaded via <script> in index.html before app.js
+// Initialize immediately — no dynamic loading needed
+initSupabase();
 
 // DB helpers — all async, fall back to local silently
 // All reads/writes use the Supabase Auth session (JWT) for RLS
@@ -1223,7 +1218,7 @@ async function doSU(){
   if(!p||p.length<8){fe('spe','Min 8 characters.');ok=false;}
   if(p!==p2){fe('sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
-  if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e2){}}
+  if(!sbReady){fe('sue','Sync unavailable, try again.');return;}
   const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},joined:Date.now()};
   if(sbReady){
     const existing=await dbGetUser(u);
@@ -1243,7 +1238,7 @@ async function doSI(){
   ce('sie','sipe');
   const rateLimitMsg=checkRateLimit(u);
   if(rateLimitMsg){fe('sie',rateLimitMsg);return;}
-  if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
+  if(!sbReady){fe('sie','Sync unavailable, try again.');return;}
   if(sbReady){
     // Use RPC to verify username + password server-side — works before Auth session exists
     const {data,error}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:hp(p)});
@@ -1575,11 +1570,14 @@ function launch(){
   launch();
   // Then silently sync from Supabase in background
   try{
-    await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
-    if(!sbReady||!cu)return;
-    // Restore Auth session first so RLS policies pass on the DB query
-    const session=await sbGetSession();
-    if(!session){await sb.auth.refreshSession().catch(()=>{});}
+    if(!sbReady){show('sl');return;}
+    // Restore Auth session — critical for RLS to work on page refresh
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      // No session found — try refreshing from stored token
+      const {data:refreshed} = await sb.auth.refreshSession();
+      if(!refreshed?.session){doSO();return;}
+    }
     const dbUser=await dbGetUser(cu);
     if(!dbUser){doSO();return;}
     // Always trust cloud — cloud is source of truth on refresh
