@@ -990,7 +990,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas-scroll{position:absolute;inset:0;overflow:auto;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;}
+.canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
    WIDGETS
@@ -1008,7 +1008,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .widget.wresize{box-shadow:var(--sh4);border-color:var(--a2);}
 
 /* widget header \\u2014 drag handle */
-.whead{
+.whead{touch-action:none;
   padding:9px 12px 8px;border-bottom:1px solid var(--bdr);
   flex-shrink:0;cursor:grab;display:flex;align-items:center;gap:7px;
   background:var(--surf2);
@@ -1026,7 +1026,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* resize corner */
 .wrsz{
   position:absolute;bottom:0;right:0;width:18px;height:18px;
-  cursor:se-resize;display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
+  cursor:se-resize;touch-action:none;display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;
   opacity:0;transition:opacity .13s;
 }
 .widget:hover .wrsz,.widget.wresize .wrsz{opacity:1;}
@@ -1361,7 +1361,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas-scroll{position:absolute;inset:0;overflow:auto;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;}
+.canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
 
 /* ── JOURNAL EMOJI PICKER ── */
 .jwemoji-wrap{position:relative;flex-shrink:0;}
@@ -1444,6 +1444,29 @@ if('serviceWorker' in navigator){
     keys.forEach(k=>{ if(!k.includes('v56')) caches.delete(k); });
   });
 }
+
+// ── Canvas touch/pointer panning ──
+(function(){
+  const wrap=document.getElementById('canvas-scroll');
+  if(!wrap)return;
+  let panning=false,lastX=0,lastY=0,panTarget=null;
+  wrap.addEventListener('pointerdown',e=>{
+    // Only pan when touching the canvas background (not a widget)
+    if(e.target.closest('.widget')||e.target.closest('.wtray')||e.target.closest('.canvas-topbar'))return;
+    panning=true;lastX=e.clientX;lastY=e.clientY;
+    wrap.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  },{passive:false});
+  wrap.addEventListener('pointermove',e=>{
+    if(!panning)return;
+    wrap.scrollLeft-=(e.clientX-lastX);
+    wrap.scrollTop-=(e.clientY-lastY);
+    lastX=e.clientX;lastY=e.clientY;
+  },{passive:false});
+  wrap.addEventListener('pointerup',()=>{panning=false;});
+  wrap.addEventListener('pointercancel',()=>{panning=false;});
+})();
+
 </script>
 <div id="g-tip"></div>
 
@@ -1755,7 +1778,7 @@ if('serviceWorker' in navigator){
         </div>
         <!-- scrollable canvas -->
         <div class="canvas-wrap">
-          <div class="canvas-scroll">
+          <div class="canvas-scroll" id="canvas-scroll">
           <div style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">Built by <span style="color:var(--ink3);">David Nueva</span></div>
           <div class="canvas" id="canvas"></div>
         </div><!-- /canvas-scroll --></div>
@@ -2237,8 +2260,8 @@ function initSupabase(){
     sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim());
     sbReady = true;
     console.log('[Prodify] Supabase connected.');
-    // If user is already logged in (auto-login ran before Supabase loaded), sync now
-    // Supabase ready — realtime listener will start on next visibilitychange
+    // Start realtime if user already logged in
+    if(cu) startRealtimeSync(cu);
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -2301,6 +2324,7 @@ async function dbCreateUser(username,passHash,displayName){
 }
 async function dbSaveUser(username,data){
   if(!sbReady) return;
+  _lastSaveTs = Date.now();
   try{
     await sb.from('users').upsert({
       username,
@@ -2319,6 +2343,74 @@ async function dbSaveUser(username,data){
 async function dbDeleteUser(username){
   if(!sbReady) return;
   try{ await sb.from('users').delete().eq('username',username); }catch(e){}
+}
+
+// ── REALTIME SYNC ──
+let _realtimeChannel = null;
+let _lastSaveTs = 0;
+
+function startRealtimeSync(username){
+  if(!sbReady || !sb || !username) return;
+  // Remove existing channel
+  if(_realtimeChannel){try{sb.removeChannel(_realtimeChannel);}catch(e){}_realtimeChannel=null;}
+  _realtimeChannel = sb
+    .channel('prodify-user-'+username)
+    .on('postgres_changes',{
+      event:'UPDATE',
+      schema:'public',
+      table:'users',
+      filter:'username=eq.'+username
+    }, payload=>{
+      // Ignore if we just saved (within 3s) to avoid echo
+      if(Date.now()-_lastSaveTs < 3000) return;
+      console.log('[Prodify] Realtime update received');
+      applyRemoteData(payload.new);
+    })
+    .subscribe(status=>{
+      console.log('[Prodify] Realtime status:', status);
+    });
+}
+
+function stopRealtimeSync(){
+  if(_realtimeChannel && sb){try{sb.removeChannel(_realtimeChannel);}catch(e){}}
+  _realtimeChannel=null;
+}
+
+function applyRemoteData(row){
+  if(!row||!cu) return;
+  try{
+    const d = acc[cu] || {};
+    // Parse and apply each data field
+    if(row.tasks)       { tasks    = JSON.parse(row.tasks);    d.tasks    = tasks;    }
+    if(row.journal)     { journal  = JSON.parse(row.journal);  d.journal  = journal;  }
+    if(row.subjects)    { subjects = JSON.parse(row.subjects); d.subjects = subjects; }
+    if(row.cal_evs)     { calEvs   = JSON.parse(row.cal_evs);  d.calEvs   = calEvs;   }
+    if(row.widgets)     { widgets  = JSON.parse(row.widgets);  d.widgets  = widgets;  }
+    if(row.notes)       { notes    = JSON.parse(row.notes);    d.notes    = notes;    }
+    if(row.prefs){
+      const rp=JSON.parse(row.prefs);
+      // Don't overwrite local avatar photo to avoid flicker
+      const localPhoto=prefs.avatarPhoto;
+      prefs=rp;
+      if(localPhoto&&!rp.avatarPhoto) prefs.avatarPhoto=localPhoto;
+      d.prefs=prefs;
+    }
+    acc[cu]=d;
+    LS.s('pd1_acc',acc);
+    // Re-render everything
+    renderAllTaskW(); renderAllTaskW();
+    updateAllStatsW(); updateFixedStats();
+    if(typeof renderSubFull==='function') renderSubFull();
+    if(typeof renderAllSubW==='function') renderAllSubW();
+    if(typeof renderCal==='function') renderCal();
+    if(typeof renderWidgets==='function') renderWidgets();
+    if(typeof mobRenderTasks==='function') mobRenderTasks();
+    if(typeof mobRenderProjects==='function') mobRenderProjects();
+    if(typeof mobRenderHome==='function') mobRenderHome();
+    if(typeof mobRenderJournal==='function') mobRenderJournal();
+    if(typeof applyDark==='function') applyDark(prefs.dark);
+    console.log('[Prodify] UI updated from remote');
+  }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
 </script>
 <script>
@@ -3187,6 +3279,7 @@ async function doSU(){
   }
   acc[u]=newUser;
   LS.s('pd1_acc',acc);cu=u;LS.s('pd1_cur',u);
+  startRealtimeSync(u);
   show('sn');setTimeout(()=>$('nin').focus(),400);
 }
 async function doSI(){
@@ -3217,6 +3310,7 @@ async function doSI(){
     if(acc[u].passHash!==hp(p)){fe('sipe','Incorrect password.');return;}
   }
   cu=u;LS.s('pd1_cur',u);
+  startRealtimeSync(u);
   if(!acc[u].displayName){show('sn');setTimeout(()=>$('nin').focus(),400);}
   else launch();
 }
@@ -3339,6 +3433,7 @@ function stopAlarm(){
 }
 
 function doSO(){
+  stopRealtimeSync();
   LS.d('pd1_cur');cu=null;closeDD();
   const mobApp=document.getElementById('mob-app');
   if(mobApp)mobApp.style.display='none';
@@ -3657,7 +3752,7 @@ function buildWidgetEl(w){
       <button class="wclose" onclick="removeW('${w.id}')" data-tip="Remove">&#x2715;</button>
     </div>
     <div class="wbody" id="wb-${w.id}"></div>
-    <div class="wrsz" onmousedown="startResize(event,'${w.id}')">
+    <div class="wrsz" onpointerdown="startResize(event,'${w.id}')">
       <svg viewBox="0 0 8 8"><path d="M7 1L1 7"/><path d="M7 4L4 7"/></svg>
     </div>`;
   canvas.appendChild(el);
@@ -3690,6 +3785,8 @@ function startDrag(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wdrag');
+  const head=el.querySelector('.whead');
+  if(head)head.setPointerCapture&&e.pointerId!=null?head.setPointerCapture(e.pointerId):null;
   const startX=e.clientX-w.x,startY=e.clientY-w.y;
   const mm=e=>{
     w.x=Math.max(0,e.clientX-startX);w.y=Math.max(0,e.clientY-startY);
@@ -3697,9 +3794,9 @@ function startDrag(e,id){
   };
   const mu=()=>{
     el.classList.remove('wdrag');persist();
-    document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);
+    document.removeEventListener('pointermove',mm);document.removeEventListener('pointerup',mu);
   };
-  document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  document.addEventListener('pointermove',mm);document.addEventListener('pointerup',mu);
 }
 
 // RESIZE
@@ -3708,6 +3805,8 @@ function startResize(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wresize');
+  const rsz=el.querySelector('.wrsz');
+  if(rsz&&e.pointerId!=null)try{rsz.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX,startY=e.clientY,startW=w.w,startH=w.h;
   const isTimer=w.type==='timer';
   const minW=isTimer?280:200, maxW=99999;
@@ -3716,13 +3815,12 @@ function startResize(e,id){
     w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX-startX)));
     w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY-startY)));
     el.style.width=w.w+'px';el.style.height=w.h+'px';
-
   };
   const mu=()=>{
     el.classList.remove('wresize');persist();
-    document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);
+    document.removeEventListener('pointermove',mm);document.removeEventListener('pointerup',mu);
   };
-  document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  document.addEventListener('pointermove',mm);document.addEventListener('pointerup',mu);
 }
 
 // ═══════════════════════════════════════
