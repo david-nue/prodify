@@ -990,7 +990,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;min-width:100%;min-height:100%;cursor:grab;user-select:none;}
+.canvas{position:relative;width:2400px;height:1800px;cursor:grab;transform-origin:0 0;user-select:none;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
    WIDGETS
@@ -1208,7 +1208,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .caladdbtn:hover{background:var(--al);color:var(--a2);}
 
 /* profile full page */
-.profbanner{background:var(--ink);border-radius:var(--r18);padding:22px 26px;position:relative;overflow:hidden;display:flex;align-items:flex-end;gap:18px;}
+.profbanner{background:var(--a);border-radius:var(--r18);padding:22px 26px;position:relative;overflow:hidden;display:flex;align-items:flex-end;gap:18px;}
 .pborb{position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.18) 0%,transparent 65%);top:-80px;right:-60px;}
 .pbav{width:72px;height:72px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;border:3px solid rgba(255,255,255,.18);position:relative;z-index:1;flex-shrink:0;cursor:pointer;overflow:hidden;}
 .pbinfo{position:relative;z-index:1;}
@@ -1366,7 +1366,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;min-width:100%;min-height:100%;cursor:grab;user-select:none;}
+.canvas{position:relative;width:2400px;height:1800px;cursor:grab;transform-origin:0 0;user-select:none;}
 
 /* ── JOURNAL EMOJI PICKER ── */
 .jwemoji-wrap{position:relative;flex-shrink:0;}
@@ -1500,26 +1500,92 @@ document.addEventListener('DOMContentLoaded', function(){
     cvs.style.cursor = 'grab';
   });
 
-  // TOUCH (tablet in desktop mode)
+  // ── ZOOM STATE ──
+  let _scale = 1;
+  const MIN_SCALE = 0.3, MAX_SCALE = 2.5;
+
+  function applyZoom(newScale, originX, originY){
+    // originX/Y are coordinates relative to scroll viewport
+    const prevScale = _scale;
+    _scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScale));
+    // Adjust scroll so zoom centres on the origin point
+    const ratio = _scale / prevScale;
+    scroll.scrollLeft = (scroll.scrollLeft + originX) * ratio - originX;
+    scroll.scrollTop  = (scroll.scrollTop  + originY) * ratio - originY;
+    cvs.style.transformOrigin = '0 0';
+    cvs.style.transform = `scale(${_scale})`;
+    // Keep scroll container aware of scaled size
+    cvs.style.width  = (2400 * _scale) + 'px';
+    cvs.style.height = (1800 * _scale) + 'px';
+  }
+
+  // ── SCROLL WHEEL ZOOM (desktop) — always zoom, even over widgets ──
+  scroll.addEventListener('wheel', function(e){
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const rect = scroll.getBoundingClientRect();
+    const ox = e.clientX - rect.left;
+    const oy = e.clientY - rect.top;
+    applyZoom(_scale * delta, ox, oy);
+  }, {passive:false});
+
+  // ── TOUCH (tablet) — single finger pan, two finger pinch zoom ──
+  let _pinching = false, _pinchDist0 = 0, _pinchScale0 = 1;
+
+  function pinchDist(touches){
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx*dx + dy*dy);
+  }
+  function pinchMid(touches, rect){
+    return {
+      x: ((touches[0].clientX + touches[1].clientX) / 2) - rect.left,
+      y: ((touches[0].clientY + touches[1].clientY) / 2) - rect.top
+    };
+  }
+
   cvs.addEventListener('touchstart', function(e){
+    if(e.touches.length === 2){
+      _pinching = true;
+      active = false;
+      _pinchDist0 = pinchDist(e.touches);
+      _pinchScale0 = _scale;
+      e.preventDefault();
+      return;
+    }
     if(isWidget(e.target)) return;
-    const t = e.touches[0];
-    active = true;
-    startX = t.clientX;
-    startY = t.clientY;
-    scrollX = scroll.scrollLeft;
-    scrollY = scroll.scrollTop;
+    if(e.touches.length === 1){
+      const t = e.touches[0];
+      active = true;
+      startX = t.clientX;
+      startY = t.clientY;
+      scrollX = scroll.scrollLeft;
+      scrollY = scroll.scrollTop;
+    }
     e.preventDefault();
   },{passive:false});
+
   cvs.addEventListener('touchmove', function(e){
-    if(!active) return;
+    if(_pinching && e.touches.length === 2){
+      const dist = pinchDist(e.touches);
+      const rect = scroll.getBoundingClientRect();
+      const mid  = pinchMid(e.touches, rect);
+      applyZoom(_pinchScale0 * (dist / _pinchDist0), mid.x, mid.y);
+      e.preventDefault();
+      return;
+    }
+    if(!active || e.touches.length !== 1) return;
     const t = e.touches[0];
     scroll.scrollLeft = scrollX - (t.clientX - startX);
     scroll.scrollTop  = scrollY - (t.clientY - startY);
     e.preventDefault();
   },{passive:false});
-  cvs.addEventListener('touchend',   function(){ active = false; });
-  cvs.addEventListener('touchcancel',function(){ active = false; });
+
+  cvs.addEventListener('touchend', function(e){
+    if(e.touches.length < 2) _pinching = false;
+    if(e.touches.length === 0) active = false;
+  });
+  cvs.addEventListener('touchcancel', function(){ active = false; _pinching = false; });
 });
 
 
