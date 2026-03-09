@@ -2325,6 +2325,7 @@ async function dbSaveUser(username,data){
   if(!sbReady) return;
   _lastSaveTs = Date.now();
   try{
+    console.log('[Prodify] Saving...');
     await sb.from('users').upsert({
       username,
       pass_hash:data.passHash,
@@ -2337,6 +2338,7 @@ async function dbSaveUser(username,data){
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(data.prefs||{}),
     },{onConflict:'username'});
+    console.log('[Prodify] Saved OK');
   }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
 }
 async function dbDeleteUser(username){
@@ -3519,6 +3521,7 @@ function launch(){
     await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);
     if(!sbReady||!cu)return;
     const dbUser=await dbGetUser(cu);
+    console.log('[Prodify] dbUser found:', !!dbUser, 'tasks count:', dbUser ? JSON.parse(dbUser.tasks||'[]').length : 'N/A');
     if(!dbUser)return;
     // Always trust cloud — cloud is source of truth on refresh
     const loc=acc[cu]||{};
