@@ -2473,8 +2473,14 @@ const sbLoaded=new Promise(r=>{_sbLoadResolve=r;});
 // It's sent as a custom header on every Supabase request so RLS
 // can verify: only requests that know the secret can touch that row.
 function getSecret(username){
-  // Use password hash as secret — same on every device that knows the password
-  return (acc[username]&&acc[username].passHash) || localStorage.getItem('pd1_ph_'+username) || '';
+  // Use password hash as the RLS secret — consistent across all devices
+  // Check in-memory acc first, then localStorage acc, then cached ph key
+  if(acc[username]&&acc[username].passHash) return acc[username].passHash;
+  try{
+    const stored=JSON.parse(localStorage.getItem('pd1_acc')||'{}');
+    if(stored[username]&&stored[username].passHash) return stored[username].passHash;
+  }catch(e){}
+  return localStorage.getItem('pd1_ph_'+username)||'';
 }
 function sbWithSecret(username){
   const secret=getSecret(username);
@@ -3493,8 +3499,11 @@ async function doSI(){
     if(!dbUser){
       fe('sie','Incorrect username or password.');return;
     }
-    // Cache hash locally so getSecret() works for this session and future auto-logins
+    // Cache hash locally so getSecret() works on refresh and across sessions
     localStorage.setItem('pd1_ph_'+u, hash);
+    // Also pre-populate acc so getSecret() finds it immediately
+    if(!acc[u]) acc[u]={};
+    acc[u].passHash=hash;
     acc[u]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||'',
