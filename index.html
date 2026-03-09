@@ -1560,13 +1560,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sl-mb-footer strong{color:rgba(255,255,255,.38);font-weight:600;}
 
 /* ── MOBILE AUTH ── */
+.l-above-fold{min-height:100vh;display:flex;flex-direction:column;position:relative;}
 .lnav{display:flex;align-items:center;justify-content:space-between;padding:24px 50px;}
 .logo{font-size:22px;font-weight:800;letter-spacing:-.5px;}
 .logo b{color:#4A9D74;}
 .lo1,.lo2{position:absolute;border-radius:50%;pointer-events:none;}
 .lo1{width:640px;height:640px;background:radial-gradient(circle,rgba(58,125,94,.22) 0%,transparent 65%);top:-150px;right:-120px;}
 .lo2{width:340px;height:340px;background:radial-gradient(circle,rgba(74,157,116,.08) 0%,transparent 65%);bottom:-60px;left:-50px;}
-.lhero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 40px;text-align:center;position:relative;gap:14px;}
+.lhero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 40px;text-align:center;position:relative;gap:14px;}
 .ltag{border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);border-radius:100px;padding:5px 16px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;animation:fadeUp .6s .1s both;display:inline-block;}
 .lh1{font-size:clamp(48px,8.5vw,108px);font-weight:800;line-height:.93;letter-spacing:-3px;color:#fff;animation:fadeUp .65s .18s both;}
 .lh1 em{font-style:normal;color:#4A9D74;}
@@ -2071,14 +2072,15 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
   <!-- DESKTOP: shown on ≥601px via CSS -->
   <div class="lo1"></div><div class="lo2"></div>
-  <nav class="lnav sl-dk">
+  <div class="l-above-fold sl-dk">
+  <nav class="lnav">
     <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
     <div style="display:flex;gap:9px;">
       <button class="btn bgw" onclick="showAuth('si')">Sign in</button>
       <button class="btn bw" onclick="showAuth('su')">Get started</button>
     </div>
   </nav>
-  <div class="lhero sl-dk">
+  <div class="lhero">
     <div class="ltag">Your Productivity Space</div>
     <h1 class="lh1">Work smarter,<br/><em>live clearer</em></h1>
     <p class="lsub">Tasks, journal, projects &amp; calendar — one flexible workspace built around how you actually work.</p>
@@ -2095,6 +2097,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
       On iOS: tap Share then "Add to Home Screen"
     </div>
   </div>
+  </div><!-- /l-above-fold -->
   <div class="sl-features sl-dk">
     <div class="sl-feat-grid">
       <div class="sl-feat-card">
