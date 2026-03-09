@@ -654,7 +654,17 @@ overflow-y:auto;}
   /* show mobile auth, hide desktop auth panels */
   .sa-mb{display:flex !important;}
   #sa .ar.sl-dk,#sa .al.sl-dk{display:none !important;}
-  #sa{background:#111009 !important;}
+  #sa{background:var(--bg);display:flex;}
+.al{flex:1;background:#111009;display:flex;flex-direction:column;padding:40px 48px;position:relative;overflow:hidden;}
+.alorb{position:absolute;width:480px;height:480px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.16) 0%,transparent 70%);top:-90px;right:-90px;}
+.alc{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+.alq{font-size:clamp(20px,2.8vw,34px);font-weight:600;color:rgba(255,255,255,.75);line-height:1.4;max-width:340px;margin-bottom:12px;}
+.alct{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.22);}
+.ar{width:420px;flex-shrink:0;display:flex;flex-direction:column;padding:40px 48px;background:var(--surf);overflow-y:auto;}
+.ar::-webkit-scrollbar{width:0;}
+.abk{background:none;border:none;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:5px;margin-bottom:34px;padding:0;}
+.abk:hover{color:var(--ink);}
+.abk svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
 
   /* ── AUTH — desktop panels hidden on mobile (sa-mb handles it) ── */
   /* App shell — mobile */
@@ -1284,7 +1294,7 @@ overflow-y:auto;}
 .logo{font-size:22px;font-weight:800;letter-spacing:-.5px;}
 .lhero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;position:relative;gap:14px;}
 .ltag{border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:6px 14px;border-radius:100px;}
-.lh1{font-size:clamp(38px,5vw,68px);font-weight:800;color:#fff;line-height:1.08;letter-spacing:-2px;max-width:760px;}
+.lh1{font-size:clamp(44px,6vw,86px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-3px;max-width:860px;}
 .lh1 em{color:var(--a2);font-style:normal;}
 .lsub{font-size:clamp(14px,1.5vw,18px);color:rgba(255,255,255,.45);max-width:520px;line-height:1.6;}
 .lcta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px;}

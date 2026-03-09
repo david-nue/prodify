@@ -1,4 +1,4 @@
-const CACHE = 'prodify-v59';
+const CACHE = 'prodify-v60';
 const ASSETS = [
   '/',
   '/index.html',
