@@ -3481,30 +3481,31 @@ async function doSU(){
 async function doSI(){
   const u=$('si-u').value.trim().toLowerCase(),p=$('si-p').value;
   ce('sie','sipe');
-  // Wait for Supabase then try
   if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
-    // First attempt: use stored secret (works for existing migrated users)
-    let dbUser=await dbGetUser(u);
-    // If null, user may have a null secret in DB — fetch without secret filter to migrate them
-    if(!dbUser){
-      try{
-        const {data}=await sb.from('users').select('*').eq('username',u).single();
-        if(data && (!data.secret)){
-          // Existing user with no secret — verify password then migrate
-          if(data.pass_hash!==hp(p)){fe('sipe','Incorrect password.');return;}
-          const newSecret=crypto.randomUUID();
-          localStorage.setItem('pd1_secret_'+u, newSecret);
-          // Write secret back to Supabase
-          await sb.from('users').update({secret:newSecret}).eq('username',u);
-          // Now fetch properly with secret
-          dbUser=await dbGetUser(u);
-        }
-      }catch(e){}
+    // Step 1: use RPC to verify password and retrieve secret in one safe call
+    // The function only returns the secret if username + pass_hash both match
+    let secret=null;
+    try{
+      const {data,error}=await sb.rpc('get_secret_for_login',{p_username:u,p_pass_hash:hp(p)});
+      if(!error) secret=data;
+    }catch(e){}
+
+    if(secret===null||secret===undefined){
+      // RPC returned nothing — either wrong password or account doesn't exist
+      // We can't tell which without leaking info, so check locally if we have the account
+      const {data:exists}=await sb.rpc('get_secret_for_login',{p_username:u,p_pass_hash:''}).catch(()=>({data:null}));
+      if(exists===null){fe('sie','No account found.');return;}
+      fe('sipe','Incorrect password.');return;
     }
-    if(!dbUser){fe('sie','No account found.');return;}
-    if(dbUser.pass_hash!==hp(p)){fe('sipe','Incorrect password.');return;}
-    // Hydrate local from DB
+
+    // Step 2: store secret locally so this device can make authenticated requests
+    localStorage.setItem('pd1_secret_'+u, secret);
+
+    // Step 3: fetch full user data using the now-known secret
+    const dbUser=await dbGetUser(u);
+    if(!dbUser){fe('sie','Could not load account. Please try again.');return;}
+
     acc[u]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||'',
