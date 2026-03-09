@@ -339,11 +339,13 @@ function applyRemoteData(row){
     if(row.notes)       { notes    = JSON.parse(row.notes);    d.notes    = notes;    }
     if(row.prefs){
       const rp=JSON.parse(row.prefs);
-      // Don't overwrite local avatar photo to avoid flicker
-      const localPhoto=prefs.avatarPhoto;
       prefs=rp;
-      if(localPhoto&&!rp.avatarPhoto) prefs.avatarPhoto=localPhoto;
       d.prefs=prefs;
+    }
+    // Always sync avatar_url from DB — this is how photo changes propagate across devices
+    if(row.avatar_url){
+      prefs.avatarUrl=row.avatar_url;
+      if(d.prefs) d.prefs.avatarUrl=row.avatar_url;
     }
     acc[cu]=d;
     LS.s('pd1_acc',acc);
@@ -360,6 +362,9 @@ function applyRemoteData(row){
     if(typeof mobRenderHome==='function') mobRenderHome();
     if(typeof mobRenderJournal==='function') mobRenderJournal();
     if(typeof applyDark==='function') applyDark(prefs.dark);
+    // Apply avatar across all elements
+    applyAvatar();
+    if(typeof mobUpdateAvatar==='function') mobUpdateAvatar();
   }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
 
