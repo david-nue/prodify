@@ -1,7 +1,9 @@
-const CACHE = 'prodify-v117';
+const CACHE = 'prodify-v123';
 const ASSETS = [
   '/',
   '/index.html',
+  '/style.css',
+  '/app.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -24,16 +26,20 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch — network-first for HTML (always get latest), cache-first for everything else
+// Fetch — network-first for HTML/JS/CSS (always get latest), cache-first for everything else
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.hostname.includes('supabase') || (url.hostname.includes('googleapis') && url.pathname.includes('webfonts'))) return;
 
-  const isHTML = e.request.destination === 'document' || url.pathname === '/' || url.pathname.endsWith('.html');
+  const isCore = e.request.destination === 'document'
+    || url.pathname === '/'
+    || url.pathname.endsWith('.html')
+    || url.pathname.endsWith('.js')
+    || url.pathname.endsWith('.css');
 
-  if (isHTML) {
-    // Network-first for HTML — always fetch fresh, fall back to cache offline
+  if (isCore) {
+    // Network-first for core files — always fetch fresh, fall back to cache offline
     e.respondWith(
       fetch(e.request).then(res => {
         if (res && res.status === 200) {
