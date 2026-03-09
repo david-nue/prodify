@@ -2326,6 +2326,7 @@ async function dbSaveUser(username,data){
   if(!sbReady) return;
   _lastSaveTs = Date.now();
   try{
+    console.log('[Prodify] Saving to Supabase for:', username);
     await sb.from('users').upsert({
       username,
       pass_hash:data.passHash,
@@ -2338,6 +2339,7 @@ async function dbSaveUser(username,data){
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(data.prefs||{}),
     },{onConflict:'username'});
+    console.log('[Prodify] Saved OK');
   }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
 }
 async function dbDeleteUser(username){
@@ -3532,22 +3534,21 @@ function launch(){
     const cW=JSON.parse(dbUser.widgets||'[]');
     const cN=JSON.parse(dbUser.notes||'{}');
     const cP=JSON.parse(dbUser.prefs||'{}');
-    const lT=tasks, lW2=widgets, lJ=journal;
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
       tasks:cT,journal:cJ,subjects:cS,calEvs:cC,widgets:cW,notes:cN,prefs:cP,joined:loc.joined||Date.now()};
     LS.s('pd1_acc',acc);
     tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;prefs=cP;
-    const changed=JSON.stringify(cT)!==JSON.stringify(lT)||
-                  JSON.stringify(cW)!==JSON.stringify(lW2)||
-                  JSON.stringify(cJ)!==JSON.stringify(lJ);
-    if(changed){
-      applyTheme();
-      renderCanvas();
-      renderFixedQuote();
-      updateFixedStats();
-      updateAllStatsW();
-      if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
-    }
+    // Always re-render with cloud data — no conditional check
+    applyTheme();
+    renderCanvas();
+    renderFixedQuote();
+    updateFixedStats();
+    updateAllStatsW();
+    renderAllTaskW();
+    if(typeof renderAllJournalW==='function') renderAllJournalW();
+    if(typeof renderAllSubW==='function') renderAllSubW();
+    if(typeof renderFullCal==='function') renderFullCal();
+    if(typeof mobSyncIfVisible==='function') mobSyncIfVisible();
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
   startRealtimeSync(cu);
