@@ -218,7 +218,7 @@ async function sbGetSession(){
 
 // Supabase is loaded via <script> in index.html before app.js
 // Initialize immediately — no dynamic loading needed
-initSupabase();
+// (Supabase initialized after state variables below)
 
 // DB helpers — all async, fall back to local silently
 // All reads/writes use the Supabase Auth session (JWT) for RLS
@@ -385,6 +385,7 @@ const LS={
 // STATE
 // ═══════════════════════════════════════
 let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
+initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let prefs={dark:false};
 let dragTaskId=null, calOff=0, nextZ=10;
