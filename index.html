@@ -989,7 +989,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap{position:absolute;left:44px;top:0;right:0;bottom:0;overflow:auto;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:auto;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+.canvas-scroll{position:absolute;inset:0;overflow:auto;cursor:grab;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
@@ -1360,7 +1360,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap{position:absolute;left:44px;top:44px;right:0;bottom:0;overflow:hidden;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:auto;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+.canvas-scroll{position:absolute;inset:0;overflow:auto;cursor:grab;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
 .canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
 
 /* ── JOURNAL EMOJI PICKER ── */
@@ -1445,26 +1445,43 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── Canvas touch/pointer panning ──
+// ── Canvas pan (mouse + touch) ──
 (function(){
   const wrap=document.getElementById('canvas-scroll');
   if(!wrap)return;
-  let panning=false,lastX=0,lastY=0,panTarget=null;
+  let panning=false,lastX=0,lastY=0,panPointerId=null;
+
+  function isCanvasBg(e){
+    // Pan only when clicking/touching the raw canvas background
+    const t=e.target;
+    return !t.closest('.widget')&&!t.closest('.wtray')&&!t.closest('.canvas-topbar');
+  }
+
   wrap.addEventListener('pointerdown',e=>{
-    // Only pan when touching the canvas background (not a widget)
-    if(e.target.closest('.widget')||e.target.closest('.wtray')||e.target.closest('.canvas-topbar'))return;
-    panning=true;lastX=e.clientX;lastY=e.clientY;
-    wrap.setPointerCapture(e.pointerId);
+    if(!isCanvasBg(e))return;
+    // Left mouse button or any touch/pen
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    panning=true;lastX=e.clientX;lastY=e.clientY;panPointerId=e.pointerId;
+    try{wrap.setPointerCapture(e.pointerId);}catch(_){}
+    wrap.style.cursor='grabbing';
     e.preventDefault();
   },{passive:false});
+
   wrap.addEventListener('pointermove',e=>{
-    if(!panning)return;
-    wrap.scrollLeft-=(e.clientX-lastX);
-    wrap.scrollTop-=(e.clientY-lastY);
+    if(!panning||e.pointerId!==panPointerId)return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY;
+    wrap.scrollLeft-=dx;
+    wrap.scrollTop-=dy;
     lastX=e.clientX;lastY=e.clientY;
+    e.preventDefault();
   },{passive:false});
-  wrap.addEventListener('pointerup',()=>{panning=false;});
-  wrap.addEventListener('pointercancel',()=>{panning=false;});
+
+  function stopPan(){
+    panning=false;panPointerId=null;
+    wrap.style.cursor='';
+  }
+  wrap.addEventListener('pointerup',stopPan);
+  wrap.addEventListener('pointercancel',stopPan);
 })();
 
 </script>
