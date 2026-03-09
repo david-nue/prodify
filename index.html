@@ -3245,39 +3245,38 @@ function applyAvatar(){
 }
 
 // ── ALARM ──
-let _alarmCtx=null,_alarmNodes=[];
-function playAlarm(){
-  stopAlarm();
+let _alarmIv=null,_alarmTimeout=null;
+function _beep(freq,dur){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    _alarmCtx=ctx;_alarmNodes=[];
-    const vol=0.5;
-    // Repeating beep pattern: 3 beeps, pause, repeat — runs until stopAlarm()
-    const pattern=[880,880,1100,880,880,1100,880,880,1100];
-    const beepDur=0.22,beepGap=0.18,groupGap=0.7;
-    let t=ctx.currentTime+0.05;
-    for(let rep=0;rep<6;rep++){
-      pattern.forEach((freq,i)=>{
-        const o=ctx.createOscillator(),g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);
-        o.frequency.value=freq;o.type='sine';
-        g.gain.setValueAtTime(0,t);
-        g.gain.linearRampToValueAtTime(vol,t+0.01);
-        g.gain.linearRampToValueAtTime(vol,t+beepDur-0.02);
-        g.gain.linearRampToValueAtTime(0,t+beepDur);
-        o.start(t);o.stop(t+beepDur+0.05);
-        _alarmNodes.push(o,g);
-        t+=beepDur+beepGap;
-      });
-      t+=groupGap;
-    }
-    // Show stop button on all timer widgets
-    document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='flex');
-    setTimeout(()=>{stopAlarm();},30000); // auto-stop after 30s
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.frequency.value=freq;o.type='sine';
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+0.01);
+    g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+dur-0.02);
+    g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime+dur+0.05);
+    setTimeout(()=>{try{ctx.close();}catch(e){}},dur*1000+200);
   }catch(e){}
 }
+function playAlarm(){
+  stopAlarm();
+  const pattern=[880,880,1100];
+  let step=0;
+  const tick=()=>{
+    _beep(pattern[step%pattern.length],0.2);
+    step++;
+  };
+  tick();
+  _alarmIv=setInterval(tick,450);
+  _alarmTimeout=setTimeout(stopAlarm,30000);
+  document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='flex');
+}
 function stopAlarm(){
-  try{if(_alarmCtx){_alarmCtx.close();_alarmCtx=null;_alarmNodes=[];}}catch(e){}
+  if(_alarmIv){clearInterval(_alarmIv);_alarmIv=null;}
+  if(_alarmTimeout){clearTimeout(_alarmTimeout);_alarmTimeout=null;}
   document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='none');
 }
 
