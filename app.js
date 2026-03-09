@@ -1233,7 +1233,7 @@ async function doSU(){
       if(authErr.message.toLowerCase().includes('already registered')){
         fe('see','An account with this email already exists.');
       } else {
-        fe('see','Sign up error: '+authErr.message);
+        fe('see','Password must be at least 8 characters and include uppercase, lowercase, and a number.');
       }
       return;
     }
