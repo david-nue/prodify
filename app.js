@@ -1093,9 +1093,18 @@ function mobRenderSettings(){
 function mobRenderProfile(){
   if(!cu)return;
   const d=acc[cu];if(!d)return;
-  const nm=d.display_name||cu;
+  const nm=d.displayName||d.display_name||cu;
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  el('mob-pbav',nm[0].toUpperCase());
+  // Render profile avatar — use photo if available
+  const pbavInner=document.getElementById('mob-pbav-inner');
+  if(pbavInner){
+    const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
+    if(photo){
+      pbavInner.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    } else {
+      pbavInner.textContent=nm[0].toUpperCase();
+    }
+  }
   el('mob-pbnm',nm);
   el('mob-pbun','@'+cu);
   el('mob-pbjn',d.joined_at?'Joined '+new Date(d.joined_at).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'');
@@ -1167,6 +1176,15 @@ function mobUpdateAvatar(){
     if(avImg)avImg.style.display='none';
     if(avHdLetter){avHdLetter.textContent=letter;avHdLetter.style.display='';}
     if(avHdImg)avHdImg.style.display='none';
+  }
+  // Also update profile page avatar if visible
+  const pbavInner=document.getElementById('mob-pbav-inner');
+  if(pbavInner){
+    if(photo){
+      pbavInner.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    } else {
+      pbavInner.textContent=letter;
+    }
   }
 }
 async function mobAvatarUpload(e){
@@ -1510,7 +1528,8 @@ async function handlePhotoUpload(e){
 }
 function applyAvatar(){
   const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
-  const nm=acc[cu]?.displayName||cu||'';const initials=nm.trim()?nm.trim()[0].toUpperCase():(cu?cu[0].toUpperCase():'?');
+  const nm=acc[cu]?.displayName||acc[cu]?.display_name||cu||'';
+  const initials=nm.trim()?nm.trim()[0].toUpperCase():(cu?cu[0].toUpperCase():'U');
   const imgHtml=photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:'';
   ['sbavt','ddav','pbav'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
