@@ -3978,8 +3978,8 @@ function touchDragEnd(e){
   _tcDragActive=false;_touchDragId=null;_touchDragEl=null;_selTask=null;
   renderAllTaskW();
 }
-document.addEventListener('touchmove',touchDragMove,{passive:false});
-document.addEventListener('touchend',touchDragEnd);
+document.addEventListener('touchmove',function(e){if(_tcDragActive)touchDragMove(e);},{passive:false});
+document.addEventListener('touchend',function(e){if(_tcDragActive)touchDragEnd(e);});
 function dov(e,col,wid){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));$('col-'+col+'-'+wid).classList.add('dov');}
 function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');}
 function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}dragTaskId=null;}
