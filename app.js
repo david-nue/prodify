@@ -1221,12 +1221,17 @@ async function doSU(){
   if(!sbReady){fe('sue','Sync unavailable, please try again.');return;}
   const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},joined:Date.now()};
   if(sbReady){
-    const existing=await dbGetUser(u);
-    if(existing){fe('sue','This username is already taken.');return;}
-    // Check if email is already registered in users table
-    const {data:emailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
-    if(emailCheck){fe('see','An account with this email address already exists.');return;}
-    // Create Supabase Auth account
+    // Use RPC to check username + email availability before doing anything else
+    // Both checks use SECURITY DEFINER so RLS cannot block them
+    const {data:avail, error:availErr} = await sb.rpc('check_signup_availability', {
+      p_username: u,
+      p_email: e
+    });
+    if(availErr){fe('sue','Could not verify availability. Please try again.');return;}
+    const result = avail && avail[0];
+    if(result && result.username_taken){fe('sue','This username is already taken.');return;}
+    if(result && result.email_taken){fe('see','An account with this email address already exists.');return;}
+    // Create Supabase Auth account — only reached if username + email are both free
     const {user:authUser,error:authErr}=await sbSignUp(e,p);
     if(authErr){
       if(authErr.message.toLowerCase().includes('already registered')){
@@ -1239,8 +1244,7 @@ async function doSU(){
     const authId=authUser?.id||null;
     const createOk=await dbCreateUser(u,hp(p),'',authId,e);
     if(!createOk){
-      // DB insert failed — likely duplicate email constraint
-      fe('see','An account with this email address already exists.');
+      fe('sue','Account could not be created. Please try again.');
       return;
     }
   }
@@ -1428,10 +1432,13 @@ async function mobDoSU(){
   if(!p||p.length<8){mobShowErr('mb-spe','Minimum 8 characters.');ok=false;}
   if(p!==p2){mobShowErr('mb-sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
-  // Check duplicate email on mobile before calling doSU
+  // Check username + email availability before calling doSU
   if(sbReady){
-    const {data:mobEmailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
-    if(mobEmailCheck){mobShowErr('mb-see','An account with this email address already exists.');return;}
+    const {data:avail,error:availErr}=await sb.rpc('check_signup_availability',{p_username:u,p_email:e});
+    if(availErr){mobShowErr('mb-sue','Could not verify availability. Please try again.');return;}
+    const result=avail&&avail[0];
+    if(result&&result.username_taken){mobShowErr('mb-sue','This username is already taken.');return;}
+    if(result&&result.email_taken){mobShowErr('mb-see','An account with this email address already exists.');return;}
   }
   // mirror to desktop fields for shared logic
   $('su-u').value=u;
