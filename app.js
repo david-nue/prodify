@@ -1154,7 +1154,7 @@ function mobAvatarGo(page){
 function mobUpdateAvatar(){
   if(!cu)return;
   const d=acc[cu];if(!d)return;
-  const nm=d.display_name||cu;
+  const nm=d.displayName||d.display_name||cu||'';
   const letter=nm[0].toUpperCase();
   // top-right avatar
   const avLetter=document.getElementById('mob-av-inner');
@@ -1702,6 +1702,7 @@ function launch(){
     if($('ddnm'))$('ddnm').textContent=nm2;
     if($('ddun'))$('ddun').textContent='@'+cu;
     applyAvatar();
+    if(typeof mobUpdateAvatar==='function') mobUpdateAvatar();
     applyTheme();
     renderCanvas();
     renderFixedQuote();
@@ -1712,6 +1713,7 @@ function launch(){
     if(typeof renderAllSubW==='function') renderAllSubW();
     if(typeof renderFullCal==='function') renderFullCal();
     if(typeof mobSyncIfVisible==='function') mobSyncIfVisible();
+    if(isMobile()&&typeof mobRenderProfile==='function'&&_mobPage==='profile') mobRenderProfile();
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
   startRealtimeSync(cu);
