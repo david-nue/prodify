@@ -3445,7 +3445,7 @@ function handlePhotoUpload(e){
 }
 function applyAvatar(){
   const photo=prefs.avatarPhoto;
-  const initials=(acc[cu]?.displayName||cu||'?')[0].toUpperCase();
+  const nm=acc[cu]?.displayName||cu||'';const initials=nm.trim()?nm.trim()[0].toUpperCase():(cu?cu[0].toUpperCase():'?');
   ['sbavt','ddav','pbav'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     if(photo){
@@ -3609,6 +3609,11 @@ function launch(){
     if(localAvatar) prefs.avatarPhoto = localAvatar;
     acc[cu].prefs = prefs;
     // Always re-render with cloud data — no conditional check
+    // Update name display and avatar with cloud data
+    const nm2=acc[cu].displayName||cu;
+    if($('ddnm'))$('ddnm').textContent=nm2;
+    if($('ddun'))$('ddun').textContent='@'+cu;
+    applyAvatar();
     applyTheme();
     renderCanvas();
     renderFixedQuote();
