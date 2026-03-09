@@ -680,7 +680,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550 */
 
 
-@media(max-width:600px){
+@media(max-width:768px){
   /* Hide sidebar on mobile */
   .sb{display:none !important;}
   /* Push content to fill full width */
@@ -735,7 +735,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .sb{display:none !important;}
 }
 
-@media(min-width:601px){
+@media(min-width:769px){
   .btab-bar{display:none !important;}
   .fab{display:none !important;}
   .fab-menu{display:none !important;}
@@ -743,9 +743,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   .mob-app{display:none !important;}
   .sl-mb{display:none !important;}
   .sa-mb{display:none !important;}
-overflow-y:auto;}
+}
 
-@media(max-width:600px){
+@media(max-width:768px){
   /* ── LANDING mobile ── */
   .sl-dk{display:none !important;}
   .sl-mb{display:flex !important;}
@@ -791,6 +791,89 @@ overflow-y:auto;}
   /* Widget tray icons */
   .wtic{font-size:13px;}
 }
+
+/* ── MOBILE LANDING (sl-mb-*) — matches screenshot design ── */
+.sl-mb{
+  display:none;flex-direction:column;min-height:100vh;
+  background:#0d1a12;
+  color:#fff;overflow-y:auto;position:relative;
+}
+.sl-mb-orb{
+  position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:500px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(42,92,68,.5) 0%,transparent 65%);
+  pointer-events:none;z-index:0;
+}
+.sl-mb-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 20px 0;position:relative;z-index:1;flex-shrink:0;
+}
+.sl-mb-signinbtn{
+  background:transparent;border:1.5px solid rgba(255,255,255,.25);
+  color:#fff;border-radius:100px;padding:9px 20px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:background .15s;
+}
+.sl-mb-signinbtn:active{background:rgba(255,255,255,.08);}
+.sl-mb-hero{
+  padding:48px 20px 36px;position:relative;z-index:1;
+  text-align:center;flex-shrink:0;
+}
+.sl-mb-tag{
+  display:inline-block;border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.5);border-radius:100px;padding:6px 16px;
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:24px;
+}
+.sl-mb-h1{
+  font-size:42px;font-weight:800;line-height:1.05;
+  letter-spacing:-2px;color:#fff;margin:0 0 0;
+}
+.sl-mb-h1 em{color:#4A9D74;font-style:normal;display:block;}
+.sl-mb-sub{
+  font-size:15px;line-height:1.65;color:rgba(255,255,255,.4);
+  margin:18px auto 32px;max-width:320px;
+}
+.sl-mb-cta{display:flex;flex-direction:column;gap:12px;padding:0 4px;}
+.sl-mb-btn-primary{
+  background:#3A7D5E;color:#fff;border:none;border-radius:100px;
+  padding:17px 0;font-size:16px;font-weight:700;cursor:pointer;width:100%;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:opacity .15s;
+}
+.sl-mb-btn-primary:active{opacity:.85;}
+.sl-mb-btn-ghost{
+  background:rgba(255,255,255,.07);border:none;
+  color:#fff;border-radius:100px;padding:16px 0;
+  font-size:16px;font-weight:700;cursor:pointer;width:100%;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:background .15s;
+}
+.sl-mb-btn-ghost:active{background:rgba(255,255,255,.13);}
+.sl-mb-features{
+  padding:36px 20px 24px;position:relative;z-index:1;
+}
+.sl-mb-feat-section-title{
+  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:22px;
+}
+.sl-mb-feat{
+  display:flex;align-items:flex-start;gap:16px;
+  padding:16px 0;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.sl-mb-feat:last-child{border-bottom:none;}
+.sl-mb-feat-icon{
+  width:44px;height:44px;border-radius:12px;flex-shrink:0;
+  background:rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:center;
+}
+.sl-mb-feat-icon svg{width:18px;height:18px;}
+.sl-mb-feat-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:5px;}
+.sl-mb-feat-sub{font-size:13px;line-height:1.6;color:rgba(255,255,255,.38);}
+.sl-mb-footer{
+  text-align:center;padding:16px 20px 40px;
+  font-size:11px;color:rgba(255,255,255,.18);
+  position:relative;z-index:1;
+}
+.sl-mb-footer strong{color:rgba(255,255,255,.3);}
 
 @media(max-width:900px){
   .al{display:none;}
