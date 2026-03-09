@@ -2325,7 +2325,9 @@ async function dbSaveUser(username,data){
   if(!sbReady) return;
   _lastSaveTs = Date.now();
   try{
-    console.log('[Prodify] Saving...');
+    // Strip avatarPhoto (base64 image) before saving — too large for Supabase
+    const prefsToSave = Object.assign({}, data.prefs||{});
+    delete prefsToSave.avatarPhoto;
     await sb.from('users').upsert({
       username,
       pass_hash:data.passHash,
@@ -2336,7 +2338,7 @@ async function dbSaveUser(username,data){
       cal_evs:JSON.stringify(data.calEvs||[]),
       widgets:JSON.stringify(data.widgets||[]),
       notes:JSON.stringify(data.notes||{}),
-      prefs:JSON.stringify(data.prefs||{}),
+      prefs:JSON.stringify(prefsToSave),
     },{onConflict:'username'});
     console.log('[Prodify] Saved OK');
   }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
@@ -3535,7 +3537,12 @@ function launch(){
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
       tasks:cT,journal:cJ,subjects:cS,calEvs:cC,widgets:cW,notes:cN,prefs:cP,joined:loc.joined||Date.now()};
     LS.s('pd1_acc',acc);
-    tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;prefs=cP;
+    tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;
+    // Restore avatarPhoto from localStorage since we don't save it to cloud
+    const localAvatar = loc.prefs?.avatarPhoto || null;
+    prefs=cP;
+    if(localAvatar) prefs.avatarPhoto = localAvatar;
+    acc[cu].prefs = prefs;
     // Always re-render with cloud data — no conditional check
     applyTheme();
     renderCanvas();
