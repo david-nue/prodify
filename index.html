@@ -1385,6 +1385,12 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .pbuser{font-size:13px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:500;}
 .pbjoin{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;}
 
+
+.tm-stopbtn{background:var(--red);color:#fff;border:none;border-radius:100px;
+  padding:8px 22px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;transition:background .15s;
+  align-items:center;gap:5px;animation:pulse .6s infinite alternate;}
+@keyframes pulse{from{opacity:1;}to{opacity:.7;}}
 /* ════ LANDING PAGE ════ */
 #sl{background:#111009;display:block;overflow-y:auto;}
 .lo2{position:absolute;border-radius:50%;pointer-events:none;}
@@ -3239,22 +3245,40 @@ function applyAvatar(){
 }
 
 // ── ALARM ──
+let _alarmCtx=null,_alarmNodes=[];
 function playAlarm(){
+  stopAlarm();
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const play=(freq,start,dur)=>{
-      const o=ctx.createOscillator(),g=ctx.createGain();
-      o.connect(g);g.connect(ctx.destination);
-      o.frequency.value=freq;o.type='sine';
-      g.gain.setValueAtTime(0,ctx.currentTime+start);
-      g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+start+0.01);
-      g.gain.linearRampToValueAtTime(0,ctx.currentTime+start+dur);
-      o.start(ctx.currentTime+start);
-      o.stop(ctx.currentTime+start+dur+0.05);
-    };
-    play(880,0,.15);play(880,.2,.15);play(1100,.4,.3);
-    setTimeout(()=>ctx.close(),1500);
+    _alarmCtx=ctx;_alarmNodes=[];
+    const vol=0.5;
+    // Repeating beep pattern: 3 beeps, pause, repeat — runs until stopAlarm()
+    const pattern=[880,880,1100,880,880,1100,880,880,1100];
+    const beepDur=0.22,beepGap=0.18,groupGap=0.7;
+    let t=ctx.currentTime+0.05;
+    for(let rep=0;rep<6;rep++){
+      pattern.forEach((freq,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.frequency.value=freq;o.type='sine';
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(vol,t+0.01);
+        g.gain.linearRampToValueAtTime(vol,t+beepDur-0.02);
+        g.gain.linearRampToValueAtTime(0,t+beepDur);
+        o.start(t);o.stop(t+beepDur+0.05);
+        _alarmNodes.push(o,g);
+        t+=beepDur+beepGap;
+      });
+      t+=groupGap;
+    }
+    // Show stop button on all timer widgets
+    document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='flex');
+    setTimeout(()=>{stopAlarm();},30000); // auto-stop after 30s
   }catch(e){}
+}
+function stopAlarm(){
+  try{if(_alarmCtx){_alarmCtx.close();_alarmCtx=null;_alarmNodes=[];}}catch(e){}
+  document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='none');
 }
 
 function doSO(){
@@ -3803,6 +3827,7 @@ function buildTimerW(body,w){
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="toggleTimer('${w.id}')">${ts.running?'Pause':'Start'}</button>
+        <button class="tm-stopbtn" onclick="stopAlarm()" style="display:none;">Stop Alarm</button>
       </div>
       <div class="tmsess" id="tmsess-${w.id}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
