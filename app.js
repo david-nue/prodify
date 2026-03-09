@@ -1271,6 +1271,13 @@ async function doSI(){
     if(dbUser.email){
       const {error:signInErr} = await sbSignIn(dbUser.email,p);
       if(signInErr){
+        // Detect unconfirmed email — Supabase returns "Email not confirmed"
+        const msg = signInErr.message||'';
+        if(msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('not confirmed')){
+          fe('sie','Please confirm your email first — check your inbox and click the confirmation link.');
+          return;
+        }
+        // Any other Auth error — credentials are wrong at the Auth level
         recordLoginFailure(u);
         fe('sie','Invalid username or password.');
         return;
