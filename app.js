@@ -1264,7 +1264,7 @@ async function doSU(){
   if(mobConfirmMsg){
     mobConfirmMsg.innerHTML='Account created! Check your email and click the confirmation link, then <button onclick="mobSwtab(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
     mobConfirmMsg.style.display='block';
-    mobConfirmMsg.style.color='var(--ink)';
+    mobConfirmMsg.style.color='#ffffff';
   }
 }
 async function doSI(){
