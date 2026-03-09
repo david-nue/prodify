@@ -1282,20 +1282,28 @@ async function submitMigrateEmail(){
   if(!_pendingLogin)return;
   const {u,p,dbUser}=_pendingLogin;
 
-  // Create Supabase Auth account
+  // Step 1: Create Supabase Auth account
   const {user:authUser,error:authErr}=await sbSignUp(email,p);
   if(authErr&&!authErr.message.includes('already registered')){
     if(errEl)errEl.textContent='Could not create account: '+authErr.message;return;
   }
-  // If already registered, sign in instead
+
+  // Step 2: Get auth_id — from signup or sign in if already exists
   let authId=authUser?.id;
   if(!authId){
     const {user:siUser}=await sbSignIn(email,p);
     authId=siUser?.id;
   }
-  // Save auth_id and email back to DB row
-  await dbSetAuthId(u,authId,email);
-  // Sign in so JWT is active for RLS
+
+  // Step 3: Write auth_id + email via RPC (bypasses RLS — verified by pass_hash)
+  await sb.rpc('set_auth_id_for_user',{
+    p_username:u,
+    p_pass_hash:hp(p),
+    p_auth_id:authId,
+    p_email:email
+  });
+
+  // Step 4: Sign in so JWT is active for all future RLS checks
   await sbSignIn(email,p).catch(()=>{});
 
   closeMo('mo-migrate-email');
