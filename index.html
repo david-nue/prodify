@@ -2407,9 +2407,11 @@ function startRealtimeSync(username){
       table:'users',
       filter:'username=eq.'+username
     }, payload=>{
-      // Ignore if we just saved (within 3s) to avoid echo
-      if(Date.now()-_lastSaveTs < 1500) return;
-        applyRemoteData(payload.new);
+      const age = Date.now()-_lastSaveTs;
+      console.log('[Prodify] Realtime received, ms since last save:', age);
+      // Ignore if we just saved (within 1.5s) to avoid echo
+      if(age < 1500){console.log('[Prodify] Blocked as echo');return;}
+      applyRemoteData(payload.new);
     })
     .subscribe(status=>{
       console.log('[Prodify] Realtime status:', status);
