@@ -2362,7 +2362,7 @@ function startRealtimeSync(username){
       filter:'username=eq.'+username
     }, payload=>{
       // Ignore if we just saved (within 3s) to avoid echo
-      if(Date.now()-_lastSaveTs < 3000) return;
+      if(Date.now()-_lastSaveTs < 1500) return;
       console.log('[Prodify] Realtime update received');
       applyRemoteData(payload.new);
     })
@@ -2398,7 +2398,8 @@ function applyRemoteData(row){
     acc[cu]=d;
     LS.s('pd1_acc',acc);
     // Re-render everything
-    renderAllTaskW(); renderAllTaskW();
+    renderAllTaskW();
+    renderCanvas();
     updateAllStatsW(); updateFixedStats();
     if(typeof renderSubFull==='function') renderSubFull();
     if(typeof renderAllSubW==='function') renderAllSubW();
@@ -3506,6 +3507,7 @@ function launch(){
   updateFixedStats();
   if(isMobile())setTimeout(initMobApp,100);
   startRealtime();
+  startRealtimeSync(cu);
 }
 // Boot: load local first, sync cloud silently after
 (async function boot(){
@@ -3561,6 +3563,7 @@ function launch(){
     dbSaveUser(cu,acc[cu]);
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
+  startRealtimeSync(cu);
 })();
 
 // ═══════════════════════════════════════
