@@ -1212,33 +1212,37 @@ async function doSU(){
   const e=($('su-e')||{value:''}).value.trim();
   const p=$('su-p').value,p2=$('su-p2').value;
   ce('sue','see','spe','sp2e');let ok=true;
-  if(!u||u.length<3){fe('sue','Min 3 characters.');ok=false;}
-  if(!/^[a-z0-9_]+$/.test(u)){fe('sue','Letters, numbers, underscores only.');ok=false;}
-  if(acc[u]){fe('sue','Username taken.');ok=false;}
-  if(!e||!e.includes('@')){fe('see','A valid email is required.');ok=false;}
-  if(!p||p.length<8){fe('spe','Min 8 characters.');ok=false;}
+  if(!u||u.length<3){fe('sue','Minimum 3 characters.');ok=false;}
+  if(!/^[a-z0-9_]+$/.test(u)){fe('sue','Letters, numbers, and underscores only.');ok=false;}
+  if(!e||!e.includes('@')){fe('see','A valid email address is required.');ok=false;}
+  if(!p||p.length<8){fe('spe','Minimum 8 characters.');ok=false;}
   if(p!==p2){fe('sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
-  if(!sbReady){fe('sue','Sync unavailable, try again.');return;}
+  if(!sbReady){fe('sue','Sync unavailable, please try again.');return;}
   const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},joined:Date.now()};
   if(sbReady){
     const existing=await dbGetUser(u);
-    if(existing){fe('sue','Username taken.');return;}
-    // Check if email is already registered
+    if(existing){fe('sue','This username is already taken.');return;}
+    // Check if email is already registered in users table
     const {data:emailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
-    if(emailCheck){fe('see','Email already in use.');return;}
+    if(emailCheck){fe('see','An account with this email address already exists.');return;}
     // Create Supabase Auth account
     const {user:authUser,error:authErr}=await sbSignUp(e,p);
     if(authErr){
       if(authErr.message.toLowerCase().includes('already registered')){
-        fe('see','Email already in use.');
+        fe('see','An account with this email address already exists.');
       } else {
-        fe('spe','Must include uppercase, lowercase, and a number.');
+        fe('spe','Password must include uppercase, lowercase, and a number.');
       }
       return;
     }
     const authId=authUser?.id||null;
-    await dbCreateUser(u,hp(p),'',authId,e);
+    const createOk=await dbCreateUser(u,hp(p),'',authId,e);
+    if(!createOk){
+      // DB insert failed — likely duplicate email constraint
+      fe('see','An account with this email address already exists.');
+      return;
+    }
   }
   acc[u]=newUser;
   LS.s('pd1_acc',acc);
@@ -1248,13 +1252,13 @@ async function doSU(){
   ['su-u','su-e','su-p','su-p2'].forEach(id=>{const el=$(id);if(el)el.value='';});
   const confirmMsg=document.getElementById('sue');
   if(confirmMsg){
-    confirmMsg.innerHTML='\u2705 Account created! Check your email and click the confirmation link, then <button onclick="showAuth(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
+    confirmMsg.innerHTML='Account created! Check your email and click the confirmation link, then <button onclick="showAuth(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
     confirmMsg.style.display='block';
     confirmMsg.style.color='var(--ink)';
   }
   const mobConfirmMsg=document.getElementById('mb-sue');
   if(mobConfirmMsg){
-    mobConfirmMsg.innerHTML='\u2705 Account created! Check your email and click the confirmation link, then <button onclick="mobSwtab(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
+    mobConfirmMsg.innerHTML='Account created! Check your email and click the confirmation link, then <button onclick="mobSwtab(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
     mobConfirmMsg.style.display='block';
     mobConfirmMsg.style.color='var(--ink)';
   }
@@ -1418,24 +1422,23 @@ async function mobDoSU(){
   const p2=document.getElementById('mb-su-p2').value;
   mobClearErr('mb-sue','mb-see','mb-spe','mb-sp2e');
   let ok=true;
-  if(!u||u.length<3){mobShowErr('mb-sue','Min 3 characters.');ok=false;}
-  if(ok&&!/^[a-z0-9_]+$/.test(u)){mobShowErr('mb-sue','Letters, numbers, underscores only.');ok=false;}
-  if(ok&&acc[u]){mobShowErr('mb-sue','Username taken.');ok=false;}
-  if(!e||!e.includes('@')){mobShowErr('mb-see','A valid email is required.');ok=false;}
-  if(!p||p.length<8){mobShowErr('mb-spe','Min 8 characters.');ok=false;}
+  if(!u||u.length<3){mobShowErr('mb-sue','Minimum 3 characters.');ok=false;}
+  if(ok&&!/^[a-z0-9_]+$/.test(u)){mobShowErr('mb-sue','Letters, numbers, and underscores only.');ok=false;}
+  if(!e||!e.includes('@')){mobShowErr('mb-see','A valid email address is required.');ok=false;}
+  if(!p||p.length<8){mobShowErr('mb-spe','Minimum 8 characters.');ok=false;}
   if(p!==p2){mobShowErr('mb-sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
   // Check duplicate email on mobile before calling doSU
   if(sbReady){
     const {data:mobEmailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
-    if(mobEmailCheck){mobShowErr('mb-see','Email already in use.');return;}
+    if(mobEmailCheck){mobShowErr('mb-see','An account with this email address already exists.');return;}
   }
   // mirror to desktop fields for shared logic
   $('su-u').value=u;
   const suE=document.getElementById('su-e');if(suE)suE.value=e;
   $('su-p').value=p;$('su-p2').value=p2;
   await doSU();
-  // copy any errors back
+  // copy any errors back — map desktop field IDs to mobile field IDs
   ['sue','see','spe','sp2e'].forEach((dk)=>{
     const de=$(dk),me=document.getElementById('mb-'+dk);
     if(de&&me&&de.style.display!=='none'){me.textContent=de.textContent;me.style.display='block';}
