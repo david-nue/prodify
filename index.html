@@ -989,8 +989,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap{position:absolute;left:44px;top:0;right:0;bottom:0;overflow:auto;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:auto;cursor:grab;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
+.canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+.canvas{position:relative;width:2400px;height:1800px;min-width:100%;min-height:100%;cursor:grab;user-select:none;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
    WIDGETS
@@ -1360,8 +1360,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .canvas-wrap{position:absolute;left:44px;top:44px;right:0;bottom:0;overflow:hidden;}
 .canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
 .canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:auto;cursor:grab;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;touch-action:none;}
+.canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+.canvas{position:relative;width:2400px;height:1800px;min-width:100%;min-height:100%;cursor:grab;user-select:none;}
 
 /* ── JOURNAL EMOJI PICKER ── */
 .jwemoji-wrap{position:relative;flex-shrink:0;}
@@ -1445,44 +1445,65 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── Canvas pan (mouse + touch) ──
-(function(){
-  const wrap=document.getElementById('canvas-scroll');
-  if(!wrap)return;
-  let panning=false,lastX=0,lastY=0,panPointerId=null;
 
-  function isCanvasBg(e){
-    // Pan only when clicking/touching the raw canvas background
-    const t=e.target;
-    return !t.closest('.widget')&&!t.closest('.wtray')&&!t.closest('.canvas-topbar');
+
+
+// ── Canvas drag-to-pan (mouse + touch) ──
+document.addEventListener('DOMContentLoaded', function(){
+  const scroll = document.getElementById('canvas-scroll');
+  const cvs    = document.getElementById('canvas');
+  if(!scroll || !cvs) return;
+
+  let active = false, startX, startY, scrollX, scrollY;
+
+  function isWidget(t){
+    return t.closest('.widget') || t.closest('.wtray') || t.closest('.canvas-topbar');
   }
 
-  wrap.addEventListener('pointerdown',e=>{
-    if(!isCanvasBg(e))return;
-    // Left mouse button or any touch/pen
-    if(e.pointerType==='mouse'&&e.button!==0)return;
-    panning=true;lastX=e.clientX;lastY=e.clientY;panPointerId=e.pointerId;
-    try{wrap.setPointerCapture(e.pointerId);}catch(_){}
-    wrap.style.cursor='grabbing';
+  // MOUSE
+  cvs.addEventListener('mousedown', function(e){
+    if(isWidget(e.target)) return;
+    if(e.button !== 0) return;
+    active = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollX = scroll.scrollLeft;
+    scrollY = scroll.scrollTop;
+    cvs.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!active) return;
+    scroll.scrollLeft = scrollX - (e.clientX - startX);
+    scroll.scrollTop  = scrollY - (e.clientY - startY);
+  });
+  document.addEventListener('mouseup', function(){
+    if(!active) return;
+    active = false;
+    cvs.style.cursor = 'grab';
+  });
+
+  // TOUCH (tablet in desktop mode)
+  cvs.addEventListener('touchstart', function(e){
+    if(isWidget(e.target)) return;
+    const t = e.touches[0];
+    active = true;
+    startX = t.clientX;
+    startY = t.clientY;
+    scrollX = scroll.scrollLeft;
+    scrollY = scroll.scrollTop;
     e.preventDefault();
   },{passive:false});
-
-  wrap.addEventListener('pointermove',e=>{
-    if(!panning||e.pointerId!==panPointerId)return;
-    const dx=e.clientX-lastX, dy=e.clientY-lastY;
-    wrap.scrollLeft-=dx;
-    wrap.scrollTop-=dy;
-    lastX=e.clientX;lastY=e.clientY;
+  cvs.addEventListener('touchmove', function(e){
+    if(!active) return;
+    const t = e.touches[0];
+    scroll.scrollLeft = scrollX - (t.clientX - startX);
+    scroll.scrollTop  = scrollY - (t.clientY - startY);
     e.preventDefault();
   },{passive:false});
-
-  function stopPan(){
-    panning=false;panPointerId=null;
-    wrap.style.cursor='';
-  }
-  wrap.addEventListener('pointerup',stopPan);
-  wrap.addEventListener('pointercancel',stopPan);
-})();
+  cvs.addEventListener('touchend',   function(){ active = false; });
+  cvs.addEventListener('touchcancel',function(){ active = false; });
+});
 
 </script>
 <div id="g-tip"></div>
