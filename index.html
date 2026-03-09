@@ -3313,12 +3313,14 @@ async function doSI(){
   }
   cu=u;LS.s('pd1_cur',u);
   startRealtimeSync(u);
-  if(!acc[u].displayName){show('sn');setTimeout(()=>$('nin').focus(),400);}
+  if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
   else launch();
 }
 function doName(){
   const n=$('nin').value.trim();if(!n)return;
-  acc[cu].displayName=n;LS.s('pd1_acc',acc);launch();
+  acc[cu].displayName=n;LS.s('pd1_acc',acc);
+  if(sbReady)dbSaveUser(cu,acc[cu]);
+  launch();
 }
 // ── MOBILE AUTH helpers ──
 function mobSwtab(t){
