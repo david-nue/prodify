@@ -193,6 +193,28 @@ async function sbGetSession(){
   return data.session;
 }
 
+// ── AVATAR UPLOAD TO SUPABASE STORAGE ──
+async function uploadAvatarToStorage(file){
+  if(!sbReady||!cu) return null;
+  try{
+    const ext = file.name.split('.').pop().toLowerCase()||'jpg';
+    const path = cu+'/avatar.'+ext;
+    const {error:upErr} = await sb.storage.from('avatars').upload(path, file, {
+      upsert: true,
+      contentType: file.type||'image/jpeg'
+    });
+    if(upErr){console.error('[Prodify] Avatar upload error:',upErr.message);return null;}
+    const {data} = sb.storage.from('avatars').getPublicUrl(path);
+    return data?.publicUrl||null;
+  }catch(e){console.error('[Prodify] Avatar upload failed:',e);return null;}
+}
+async function saveAvatarUrl(url){
+  if(!sbReady||!cu) return;
+  try{
+    await sb.from('users').update({avatar_url:url}).eq('username',cu);
+  }catch(e){console.error('[Prodify] saveAvatarUrl error:',e);}
+}
+
 // ── GLOBAL TOOLTIP ──
 (function(){
   const tip=document.getElementById('g-tip');
@@ -249,6 +271,7 @@ async function dbSaveUser(username,data){
   try{
     const prefsToSave = Object.assign({}, data.prefs||{});
     delete prefsToSave.avatarPhoto;
+    delete prefsToSave.avatarUrl;
     const {error:saveErr} = await sb.from('users').update({
       pass_hash:data.passHash,
       display_name:data.displayName||'',
@@ -259,6 +282,7 @@ async function dbSaveUser(username,data){
       widgets:JSON.stringify(data.widgets||[]),
       notes:JSON.stringify(data.notes||{}),
       prefs:JSON.stringify(prefsToSave),
+      avatar_url:data.prefs?.avatarUrl||null,
     }).eq('username', username);
     if(saveErr){console.error('[Prodify] Save error:',saveErr.message);}
     else{console.log('[Prodify] Saved OK');}
@@ -1127,7 +1151,7 @@ function mobUpdateAvatar(){
   const avHdUser=document.getElementById('mob-av-hd-user');
   if(avHdName)avHdName.textContent=nm;
   if(avHdUser)avHdUser.textContent='@'+cu;
-  const photo=prefs.avatarPhoto||null;
+  const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
   if(photo){
     if(avLetter)avLetter.style.display='none';
     if(avImg){avImg.src=photo;avImg.style.display='block';}
@@ -1140,22 +1164,19 @@ function mobUpdateAvatar(){
     if(avHdImg)avHdImg.style.display='none';
   }
 }
-function mobAvatarUpload(e){
+async function mobAvatarUpload(e){
   const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    prefs.avatarPhoto=ev.target.result;
-    persist();
-    mobUpdateAvatar();
-    // also sync desktop avatar if possible
-    const sbavt=document.getElementById('sbavt');
-    const ddav=document.getElementById('ddav');
-    if(sbavt)sbavt.innerHTML=safePhotoSrc(prefs.avatarPhoto)?`<img src="${safePhotoSrc(prefs.avatarPhoto)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`:'';
-    if(ddav)ddav.innerHTML=safePhotoSrc(prefs.avatarPhoto)?`<img src="${safePhotoSrc(prefs.avatarPhoto)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`:'';
-  };
-  reader.readAsDataURL(file);
   const av=document.getElementById('mob-av');
   if(av)av.classList.remove('open');
+  const url=await uploadAvatarToStorage(file);
+  if(!url){alert('Photo upload failed. Please try again.');return;}
+  prefs.avatarUrl=url;
+  delete prefs.avatarPhoto;
+  acc[cu].prefs=prefs;
+  await saveAvatarUrl(url);
+  persist();
+  applyAvatar();
+  mobUpdateAvatar();
 }
 
 // ── INIT ──
@@ -1471,41 +1492,29 @@ async function mobDoSI(){
 const _origShowAuth=typeof showAuth==='function'?showAuth:null;
 
 // ── PHOTO UPLOAD ──
-function handlePhotoUpload(e){
+async function handlePhotoUpload(e){
   const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    prefs.avatarPhoto=ev.target.result;
-    persist();
-    applyAvatar();
-  };
-  reader.readAsDataURL(file);
+  const url=await uploadAvatarToStorage(file);
+  if(!url){alert('Photo upload failed. Please try again.');return;}
+  prefs.avatarUrl=url;
+  delete prefs.avatarPhoto;
+  acc[cu].prefs=prefs;
+  await saveAvatarUrl(url);
+  persist();
+  applyAvatar();
 }
 function applyAvatar(){
-  const photo=prefs.avatarPhoto;
+  const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
   const nm=acc[cu]?.displayName||cu||'';const initials=nm.trim()?nm.trim()[0].toUpperCase():(cu?cu[0].toUpperCase():'?');
+  const imgHtml=photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`:'';
   ['sbavt','ddav','pbav'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
-    const safe=safePhotoSrc(photo);
-    if(safe){
-      el.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
-    } else {
-      el.textContent=initials;
-    }
+    if(photo){el.innerHTML=imgHtml;}else{el.textContent=initials;}
   });
-  // mobile avatars
   const mobPbav=document.getElementById('mob-pbav-inner');
-  if(mobPbav){
-    const safe=safePhotoSrc(photo);
-    if(safe){mobPbav.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
-    else{mobPbav.textContent=initials;}
-  }
+  if(mobPbav){if(photo){mobPbav.innerHTML=imgHtml;}else{mobPbav.textContent=initials;}}
   const mav=document.getElementById('mob-av-inner');
-  if(mav){
-    const safe=safePhotoSrc(photo);
-    if(safe){mav.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
-    else{mav.textContent=initials;}
-  }
+  if(mav){if(photo){mav.innerHTML=imgHtml;}else{mav.textContent=initials;}}
 }
 
 // ── ALARM ──
@@ -1562,6 +1571,8 @@ async function pullFromCloud(){
     const dbUser=await dbGetUser(cu);
     if(!dbUser){doSO();return;}
     const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
+    const pulledPrefs=JSON.parse(dbUser.prefs||'{}');
+    if(dbUser.avatar_url) pulledPrefs.avatarUrl=dbUser.avatar_url;
     acc[cu]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||acc[cu]?.displayName||'',
@@ -1571,7 +1582,7 @@ async function pullFromCloud(){
       calEvs:JSON.parse(dbUser.cal_evs||'[]'),
       widgets:JSON.parse(dbUser.widgets||'[]'),
       notes:JSON.parse(dbUser.notes||'{}'),
-      prefs:JSON.parse(dbUser.prefs||'{}'),
+      prefs:pulledPrefs,
       joined:acc[cu]?.joined||Date.now(),
     };
     LS.s('pd1_acc',acc);
@@ -1606,6 +1617,8 @@ function launch(){
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
+  // Restore avatar_url from DB row if available
+  if(d.avatarUrl&&!prefs.avatarUrl) prefs.avatarUrl=d.avatarUrl;
   const nm=d.displayName||cu,av=nm[0].toUpperCase();
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
   setTimeout(applyAvatar,50);
@@ -1655,10 +1668,9 @@ function launch(){
       tasks:cT,journal:cJ,subjects:cS,calEvs:cC,widgets:cW,notes:cN,prefs:cP,joined:loc.joined||Date.now()};
     LS.s('pd1_acc',acc);
     tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;
-    // Restore avatarPhoto from localStorage since we don't save it to cloud
-    const localAvatar = loc.prefs?.avatarPhoto || null;
     prefs=cP;
-    if(localAvatar) prefs.avatarPhoto = localAvatar;
+    // Load avatar_url from DB column (source of truth)
+    if(dbUser.avatar_url) prefs.avatarUrl = dbUser.avatar_url;
     acc[cu].prefs = prefs;
     // Always re-render with cloud data — no conditional check
     // Update name display and avatar with cloud data
@@ -2467,12 +2479,11 @@ function renderFullCal(){
 // ═══════════════════════════════════════
 function renderProfile(){
   const d=acc[cu],nm=d.displayName||cu;
-  const photo=prefs.avatarPhoto;
+  const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
   const pbavEl=$('pbav');
   if(pbavEl){
-    const safe=safePhotoSrc(photo);
-    if(safe){
-      pbavEl.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;"/><div class="pbav-overlay">📷 Change</div>`;
+    if(photo){
+      pbavEl.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;"/><div class="pbav-overlay">📷 Change</div>`;
     } else {
       pbavEl.innerHTML=esc(nm[0].toUpperCase())+'<div class="pbav-overlay">📷 Change</div>';
     }
