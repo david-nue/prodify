@@ -1224,8 +1224,19 @@ async function doSU(){
   if(sbReady){
     const existing=await dbGetUser(u);
     if(existing){fe('sue','Username taken.');return;}
+    // Check if email is already registered
+    const {data:emailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
+    if(emailCheck){fe('see','An account with this email already exists.');return;}
     // Create Supabase Auth account
     const {user:authUser,error:authErr}=await sbSignUp(e,p);
+    if(authErr){
+      if(authErr.message.toLowerCase().includes('already registered')){
+        fe('see','An account with this email already exists.');
+      } else {
+        fe('see','Sign up error: '+authErr.message);
+      }
+      return;
+    }
     const authId=authUser?.id||null;
     await dbCreateUser(u,hp(p),'',authId,e);
   }
