@@ -1566,7 +1566,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .lo1,.lo2{position:absolute;border-radius:50%;pointer-events:none;}
 .lo1{width:640px;height:640px;background:radial-gradient(circle,rgba(58,125,94,.22) 0%,transparent 65%);top:-150px;right:-120px;}
 .lo2{width:340px;height:340px;background:radial-gradient(circle,rgba(74,157,116,.08) 0%,transparent 65%);bottom:-60px;left:-50px;}
-.lhero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center;position:relative;gap:14px;}
+.lhero{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 40px;text-align:center;position:relative;gap:14px;}
 .ltag{border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.3);border-radius:100px;padding:5px 16px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;animation:fadeUp .6s .1s both;display:inline-block;}
 .lh1{font-size:clamp(48px,8.5vw,108px);font-weight:800;line-height:.93;letter-spacing:-3px;color:#fff;animation:fadeUp .65s .18s both;}
 .lh1 em{font-style:normal;color:#4A9D74;}
@@ -3713,6 +3713,8 @@ function showAuth(tab){
     console.error('[Prodify] showAuth error:',e);
     show('sa');swtab(tab);
   }
+  LS.s('pd1_authscr','sa');
+  LS.s('pd1_authtab',tab);
 }
 function swtab(t){
   $('fsu').style.display=t==='su'?'block':'none';
@@ -3877,7 +3879,7 @@ function playAlarm(){
 }
 
 function doSO(){
-  LS.d('pd1_cur');cu=null;closeDD();
+  LS.d('pd1_cur');LS.d('pd1_authscr');LS.d('pd1_authtab');cu=null;closeDD();
   const mobApp=document.getElementById('mob-app');
   if(mobApp)mobApp.style.display='none';
   show('sl');
@@ -3943,6 +3945,7 @@ function launch(){
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
   setTimeout(applyAvatar,50);
   $('ev-d').value=new Date().toISOString().slice(0,10);
+  LS.d('pd1_authscr');LS.d('pd1_authtab');
   applyTheme();show('app');goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
   renderFixedQuote();
@@ -3953,7 +3956,14 @@ function launch(){
 // Boot: load local first, sync cloud silently after
 (async function boot(){
   const u=LS.g('pd1_cur',null);
-  if(!u){show('sl');return;}
+  if(!u){
+    // Restore auth screen if user was on it before refresh
+    const authScr=LS.g('pd1_authscr',null);
+    const authTab=LS.g('pd1_authtab','su');
+    if(authScr==='sa'){showAuth(authTab);}
+    else{show('sl');}
+    return;
+  }
   cu=u;
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
   // Always launch immediately from localStorage — single render, no flicker
