@@ -406,6 +406,26 @@ const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function hp(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString(16);}
 function fe(id,m){const e=$(id);e.textContent=m;e.style.display=m?'block':'none';}
+function safePhotoSrc(photo){if(!photo)return null;if(!photo.startsWith('data:image/'))return null;return photo;}
+
+// ── RATE LIMITING ──
+const _loginAttempts={};
+const MAX_ATTEMPTS=5;
+const LOCKOUT_MS=15*60*1000;
+function checkRateLimit(username){
+  const key=username.toLowerCase(),now=Date.now();
+  if(!_loginAttempts[key])_loginAttempts[key]={count:0,lockedUntil:0};
+  const entry=_loginAttempts[key];
+  if(entry.lockedUntil>now){const mins=Math.ceil((entry.lockedUntil-now)/60000);return `Too many attempts. Try again in ${mins} minute${mins>1?'s':''}.`;}
+  return null;
+}
+function recordLoginFailure(username){
+  const key=username.toLowerCase();
+  if(!_loginAttempts[key])_loginAttempts[key]={count:0,lockedUntil:0};
+  _loginAttempts[key].count++;
+  if(_loginAttempts[key].count>=MAX_ATTEMPTS){_loginAttempts[key].lockedUntil=Date.now()+LOCKOUT_MS;_loginAttempts[key].count=0;}
+}
+function clearLoginAttempts(username){delete _loginAttempts[username.toLowerCase()];}
 function ce(...ids){ids.forEach(id=>fe(id,''));}
 function fmtSec(s){const m=Math.floor(s/60),sc=s%60;return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
 
@@ -543,7 +563,7 @@ function mobRenderHome(){
       evEl.innerHTML = todayEvs.map(ev=>`
         <div class="mob-ev-row">
           <div class="mob-ev-dot" style="background:${ev.subColor||'var(--a2)'}"></div>
-          <div class="mob-ev-title">${ev.title}</div>
+          <div class="mob-ev-title">${esc(ev.title)}</div>
         </div>`).join('');
     }
   }
@@ -562,7 +582,7 @@ function mobRenderHome(){
       taskEl.innerHTML = pending.map(t=>`
         <div class="mob-task-row" onclick="mobGoPage('tasks')">
           <div class="mob-task-chk${t.col==='done'?' done':''}"></div>
-          <div class="mob-task-txt${t.col==='done'?' done':''}">${t.text}</div>
+          <div class="mob-task-txt${t.col==='done'?' done':''}">${esc(t.text)}</div>
           <span class="mob-task-pri mob-task-pri-${t.priority||'low'}">${(t.priority||'low').toUpperCase()}</span>
         </div>`).join('');
     }
@@ -581,7 +601,7 @@ function mobRenderHome(){
           <span class="mob-je-mood">${m.l}</span>
           <span class="mob-je-date">${last.date}</span>
         </div>
-        <div class="mob-je-text">${last.text}</div>
+        <div class="mob-je-text">${esc(last.text)}</div>
       </div>`;
     } else {
       jSec.style.display='none';
@@ -861,7 +881,7 @@ function mobRenderJournal(){
         <span class="mob-je-date">${j.date}</span>
         <button class="mob-je-del" onclick="mobDelJournal(${j.id})">&#x2715;</button>
       </div>
-      <div class="mob-je-text">${j.text}</div>
+      <div class="mob-je-text">${esc(j.text)}</div>
     </div>`;
   }).join('');
 }
@@ -910,14 +930,14 @@ function mobRenderProjects(){
     return `<div class="mob-proj-card">
       <div class="mob-proj-hd">
         <div style="flex:1;">
-          <div class="mob-proj-name">${s.name}</div>
-          ${s.desc?`<div class="mob-proj-desc" style="margin-top:3px;">${s.desc}</div>`:''}
+          <div class="mob-proj-name">${esc(s.name)}</div>
+          ${s.desc?`<div class="mob-proj-desc" style="margin-top:3px;">${esc(s.desc)}</div>`:''}
         </div>
         <button class="mob-proj-del" onclick="mobDelProj(${s.id})">&#x2715;</button>
       </div>
       <div class="mob-proj-tags">
         <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
-        ${s.lead?`<span class="subtag">👤 ${s.lead}</span>`:''}
+        ${s.lead?`<span class="subtag">👤 ${esc(s.lead)}</span>`:''}
         ${dueStr?`<span class="subtag${overdue?' overdue':''}" style="${overdue?'color:var(--red);border-color:var(--red);':''}">📅 ${dueStr}</span>`:''}
       </div>
       <div class="mob-proj-bar-wrap">
@@ -1009,7 +1029,7 @@ function mobRenderDayEvents(){
     html+=evs.map(ev=>`
       <div class="mob-cal-ev-card">
         <div class="mob-cal-ev-bar" style="background:${ev.subColor||'var(--a2)'}"></div>
-        <div class="mob-cal-ev-title">${ev.title}</div>
+        <div class="mob-cal-ev-title">${esc(ev.title)}</div>
         <button class="mob-cal-ev-del" onclick="mobDelCalEv(${ev.id})">&#x2715;</button>
       </div>`).join('');
   }
@@ -1072,7 +1092,7 @@ function mobRenderProfile(){
     spl.innerHTML=subjects.map(s=>`
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-size:12px;font-weight:600;color:var(--ink);">${s.name}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--ink);">${esc(s.name)}</span>
           <span style="font-size:12px;font-weight:700;color:var(--a2);">${s.progress}%</span>
         </div>
         <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;">
@@ -1134,8 +1154,8 @@ function mobAvatarUpload(e){
     // also sync desktop avatar if possible
     const sbavt=document.getElementById('sbavt');
     const ddav=document.getElementById('ddav');
-    if(sbavt)sbavt.innerHTML=`<img src="${prefs.avatarPhoto}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
-    if(ddav)ddav.innerHTML=`<img src="${prefs.avatarPhoto}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+    if(sbavt)sbavt.innerHTML=safePhotoSrc(prefs.avatarPhoto)?`<img src="${safePhotoSrc(prefs.avatarPhoto)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`:'';
+    if(ddav)ddav.innerHTML=safePhotoSrc(prefs.avatarPhoto)?`<img src="${safePhotoSrc(prefs.avatarPhoto)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`:'';
   };
   reader.readAsDataURL(file);
   const av=document.getElementById('mob-av');
@@ -1200,7 +1220,7 @@ async function doSU(){
   if(!/^[a-z0-9_]+$/.test(u)){fe('sue','Letters, numbers, underscores only.');ok=false;}
   if(acc[u]){fe('sue','Username taken.');ok=false;}
   if(!e||!e.includes('@')){fe('see','A valid email is required.');ok=false;}
-  if(!p||p.length<4){fe('spe','Min 4 characters.');ok=false;}
+  if(!p||p.length<8){fe('spe','Min 8 characters.');ok=false;}
   if(p!==p2){fe('sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
   if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e2){}}
@@ -1221,16 +1241,16 @@ async function doSU(){
 async function doSI(){
   const u=$('si-u').value.trim().toLowerCase(),p=$('si-p').value;
   ce('sie','sipe');
+  const rateLimitMsg=checkRateLimit(u);
+  if(rateLimitMsg){fe('sie',rateLimitMsg);return;}
   if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
     // Use RPC to verify username + password server-side — works before Auth session exists
     const {data,error}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:hp(p)});
     const dbUser=data&&data[0]||null;
     if(!dbUser){
-      // Distinguish no account vs wrong password
-      const {data:exists}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:''});
-      if(!exists||!exists.length){fe('sie','No account found.');return;}
-      fe('sipe','Incorrect password.');return;
+      recordLoginFailure(u);
+      fe('sie','Invalid username or password.');return;
     }
 
     // ── Supabase Auth migration ──
@@ -1261,9 +1281,9 @@ async function doSI(){
     };
     LS.s('pd1_acc',acc);
   } else {
-    if(!acc[u]){fe('sie','No account found.');return;}
-    if(acc[u].passHash!==hp(p)){fe('sipe','Incorrect password.');return;}
+    if(!acc[u]||acc[u].passHash!==hp(p)){recordLoginFailure(u);fe('sie','Invalid username or password.');return;}
   }
+  clearLoginAttempts(u);
   cu=u;LS.s('pd1_cur',u);
   startRealtimeSync(u);
   if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
@@ -1369,7 +1389,7 @@ async function mobDoSU(){
   if(ok&&!/^[a-z0-9_]+$/.test(u)){mobShowErr('mb-sue','Letters, numbers, underscores only.');ok=false;}
   if(ok&&acc[u]){mobShowErr('mb-sue','Username taken.');ok=false;}
   if(!e||!e.includes('@')){mobShowErr('mb-see','A valid email is required.');ok=false;}
-  if(!p||p.length<4){mobShowErr('mb-spe','Min 4 characters.');ok=false;}
+  if(!p||p.length<8){mobShowErr('mb-spe','Min 8 characters.');ok=false;}
   if(p!==p2){mobShowErr('mb-sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
   // mirror to desktop fields for shared logic
@@ -1413,8 +1433,9 @@ function applyAvatar(){
   const nm=acc[cu]?.displayName||cu||'';const initials=nm.trim()?nm.trim()[0].toUpperCase():(cu?cu[0].toUpperCase():'?');
   ['sbavt','ddav','pbav'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
-    if(photo){
-      el.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
+    const safe=safePhotoSrc(photo);
+    if(safe){
+      el.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
     } else {
       el.textContent=initials;
     }
@@ -1422,12 +1443,14 @@ function applyAvatar(){
   // mobile avatars
   const mobPbav=document.getElementById('mob-pbav-inner');
   if(mobPbav){
-    if(photo){mobPbav.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
+    const safe=safePhotoSrc(photo);
+    if(safe){mobPbav.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
     else{mobPbav.textContent=initials;}
   }
   const mav=document.getElementById('mob-av-inner');
   if(mav){
-    if(photo){mav.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
+    const safe=safePhotoSrc(photo);
+    if(safe){mav.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;}
     else{mav.textContent=initials;}
   }
 }
@@ -2384,10 +2407,11 @@ function renderProfile(){
   const photo=prefs.avatarPhoto;
   const pbavEl=$('pbav');
   if(pbavEl){
-    if(photo){
-      pbavEl.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;"/><div class="pbav-overlay">📷 Change</div>`;
+    const safe=safePhotoSrc(photo);
+    if(safe){
+      pbavEl.innerHTML=`<img src="${safe}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;"/><div class="pbav-overlay">📷 Change</div>`;
     } else {
-      pbavEl.innerHTML=nm[0].toUpperCase()+'<div class="pbav-overlay">📷 Change</div>';
+      pbavEl.innerHTML=esc(nm[0].toUpperCase())+'<div class="pbav-overlay">📷 Change</div>';
     }
   }
   $('pbnm').textContent=nm;$('pbun').textContent='@'+cu;
@@ -2447,7 +2471,7 @@ function chgPw(){
   const c=$('pw-c').value,nw=$('pw-n').value,nw2=$('pw-n2').value;
   ce('pw-ce','pw-n2e');
   if(acc[cu].passHash!==hp(c)){fe('pw-ce','Incorrect current password.');return;}
-  if(nw.length<4){fe('pw-n2e','Min 4 characters.');return;}
+  if(nw.length<8){fe('pw-n2e','Min 8 characters.');return;}
   if(nw!==nw2){fe('pw-n2e','Passwords do not match.');return;}
   acc[cu].passHash=hp(nw);LS.s('pd1_acc',acc);
   ['pw-c','pw-n','pw-n2'].forEach(id=>$(id).value='');
