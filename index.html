@@ -192,7 +192,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-task-priority.high{background:var(--rl);color:var(--red);}
 .mob-task-priority.medium{background:var(--aml);color:var(--amb);}
 .mob-task-del{background:none;border:none;color:var(--ink4);cursor:pointer;padding:4px;font-size:16px;margin-left:auto;}
-.mob-tasks-empty{text-align:center;padding:48px 20px;color:var(--ink4);font-size:13px;line-height:2;}
+.mob-tasks-empty{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--ink3);font-size:15px;font-weight:700;pointer-events:none;line-height:1.6;}
 .mob-kcol{background:var(--surf2);border-radius:14px;border:1px solid var(--bdr);overflow:hidden;min-width:240px;width:240px;flex-shrink:0;max-height:calc(100vh - 200px);display:flex;flex-direction:column;}
 .mob-kcol-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;border-bottom:1px solid var(--bdr);}
 .mob-kcol-cnt{background:var(--surf);border:1px solid var(--bdr);border-radius:100px;padding:1px 7px;font-size:10px;color:var(--ink3);font-weight:700;}
@@ -1982,13 +1982,12 @@ create policy "public" on users for all using (true);</pre>
       </div>
       <div class="tmdis" style="flex:1;justify-content:center;">
         <div id="mob-timer-time" class="tmtime tmtime-edit" style="font-size:clamp(72px,22vw,120px);letter-spacing:-6px;" onclick="mobTimerEdit()">25:00</div>
-        <div class="tminputs" id="mob-timer-inputs" style="gap:6px;">
-          <input class="tmseg" id="mob-tmh" type="number" min="0" max="99" placeholder="00" style="width:52px;font-size:32px;"/>
-          <span class="tmsep" style="font-size:28px;">:</span>
-          <input class="tmseg" id="mob-tmm" type="number" min="0" max="59" placeholder="00" style="width:52px;font-size:32px;"/>
-          <span class="tmsep" style="font-size:28px;">:</span>
-          <input class="tmseg" id="mob-tms" type="number" min="0" max="59" placeholder="00" style="width:52px;font-size:32px;"/>
-          <button class="tm-setbtn" style="padding:8px 16px;font-size:15px;" onclick="mobTimerConfirmEdit()">Set</button>
+        <div class="tminputs" id="mob-timer-inputs" style="gap:8px;align-items:center;">
+          <input class="tm-timeinput" id="mob-tminp" type="text" inputmode="numeric" placeholder="25:00"
+            style="font-size:36px;width:160px;text-align:center;letter-spacing:-1px;"
+            onkeydown="mobTimerInputKey(event)" oninput="tmInputFmt(event)"/>
+          <div class="tm-inputhint">MM:SS · Enter to set · Esc to cancel</div>
+          <button class="tm-setbtn" style="padding:10px 24px;font-size:15px;" onclick="mobTimerConfirmEdit()">Set time</button>
         </div>
       </div>
       <div class="tmctrl" style="gap:16px;">
@@ -2448,6 +2447,14 @@ let _mobTimerCustom=[25*60,5*60,15*60,20*60];
 let _mobTimerRunning = false;
 let _mobTimerIv = null;
 let _mobTimerSessions = 0;
+let _mobTimerAlarmActive = false;
+// Sync mobile custom times with desktop TMS['mob'] when a widget exists
+function _syncMobCustom(){
+  const ts=TMS['mob']||Object.values(TMS)[0];
+  if(ts&&ts.custom){
+    _mobTimerCustom[3]=ts.custom[3]; // sync custom slot
+  }
+}
 const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Short Break',s:5*60,locked:true},{l:'Long Break',s:15*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
 function isMobile(){return window.innerWidth<=600;}
@@ -2522,7 +2529,7 @@ function mobRenderHome(){
   if(taskHd) taskHd.textContent = `Tasks (${pendingCount} pending)`;
   if(taskEl){
     if(!tasks.length){
-      taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--ink4);">No tasks yet — add your first one!</span></div>';
+      taskEl.innerHTML='<div class="mob-tasks-empty">No tasks yet<br><span style="font-size:11px;">Tap Add to create your first task</span></div>';
     } else if(!pending.length){
       taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--a2);font-weight:700;">🎉 All tasks done!</span></div>';
     } else {
@@ -2704,14 +2711,20 @@ function mobSubmitTask(){
 // ── TIMER ──
 function mobFmtSec(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
 function mobTimerRender(){
+  _syncMobCustom();
   const timeEl=document.getElementById('mob-timer-time');
   const startBtn=document.getElementById('mob-timer-start');
   if(timeEl&&!timeEl.classList.contains('hide'))timeEl.textContent=mobFmtSec(_mobTimerSec);
   // show/hide edit cursor based on mode
   if(timeEl)timeEl.classList.toggle('tmtime-edit',!MOB_TMODES[_mobTimerMode]?.locked&&!_mobTimerRunning);
   if(startBtn){
-    startBtn.textContent=_mobTimerRunning?'Pause':'Start';
-    startBtn.classList.toggle('stop',_mobTimerRunning);
+    if(_mobTimerAlarmActive){
+      startBtn.textContent='Stop';
+      startBtn.classList.add('stop');
+    } else {
+      startBtn.textContent=_mobTimerRunning?'Pause':'Start';
+      startBtn.classList.toggle('stop',_mobTimerRunning);
+    }
   }
   // mode buttons
   for(let i=0;i<MOB_TMODES.length;i++){
@@ -2734,26 +2747,45 @@ function mobTimerEdit(){
   if(_mobTimerRunning||MOB_TMODES[_mobTimerMode]?.locked)return;
   const t=document.getElementById('mob-timer-time'),i=document.getElementById('mob-timer-inputs');
   if(!t||!i)return;
-  document.getElementById('mob-tmh').value=String(Math.floor(_mobTimerSec/3600)).padStart(2,'0');
-  document.getElementById('mob-tmm').value=String(Math.floor((_mobTimerSec%3600)/60)).padStart(2,'0');
-  document.getElementById('mob-tms').value=String(_mobTimerSec%60).padStart(2,'0');
+  const m=Math.floor(_mobTimerSec/60),s=_mobTimerSec%60;
+  const inp=document.getElementById('mob-tminp');
+  if(inp)inp.value=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
   t.classList.add('hide');i.classList.add('show');
-  setTimeout(()=>{const mi=document.getElementById('mob-tmm');if(mi){mi.focus();mi.select();}},50);
+  setTimeout(()=>{if(inp){inp.focus();inp.select();}},50);
 }
 function mobTimerConfirmEdit(){
-  const h=parseInt(document.getElementById('mob-tmh')?.value)||0;
-  const m=parseInt(document.getElementById('mob-tmm')?.value)||0;
-  const s=parseInt(document.getElementById('mob-tms')?.value)||0;
-  _mobTimerCustom[_mobTimerMode]=Math.max(10,h*3600+m*60+s);
-  _mobTimerSec=_mobTimerCustom[_mobTimerMode];
+  const inp=document.getElementById('mob-tminp');
+  if(!inp)return;
+  const raw=inp.value.trim();
+  let total=0;
+  if(raw.includes(':')){const parts=raw.split(':');total=(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);}
+  else{total=(parseInt(raw)||0)*60;}
+  total=Math.max(10,total);
+  _mobTimerCustom[_mobTimerMode]=total;
+  _mobTimerSec=total;
+  // Also sync to any desktop timer widget
+  Object.values(TMS).forEach(ts=>{if(ts&&ts.custom)ts.custom[3]=total;});
   document.getElementById('mob-timer-time').classList.remove('hide');
   document.getElementById('mob-timer-inputs').classList.remove('show');
   mobTimerRender();
 }
+function mobTimerInputKey(e){
+  if(e.key==='Enter'){e.preventDefault();mobTimerConfirmEdit();}
+  if(e.key==='Escape'){e.preventDefault();
+    document.getElementById('mob-timer-time').classList.remove('hide');
+    document.getElementById('mob-timer-inputs').classList.remove('show');
+  }
+}
 function mobTimerToggle(){
+  if(_mobTimerAlarmActive){
+    stopAlarm();_mobTimerAlarmActive=false;
+    _mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
+    mobTimerRender();return;
+  }
   if(_mobTimerRunning){
     clearInterval(_mobTimerIv);_mobTimerRunning=false;
   } else {
+    if(_mobTimerSec<=0){_mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;}
     _mobTimerRunning=true;
     _mobTimerIv=setInterval(()=>{
       _mobTimerSec--;
@@ -2761,7 +2793,7 @@ function mobTimerToggle(){
         clearInterval(_mobTimerIv);_mobTimerRunning=false;
         _mobTimerSessions=(_mobTimerSessions+1)%5;
         _mobTimerSec=0;
-        if(navigator.vibrate)navigator.vibrate([300,100,300]);
+        _mobTimerAlarmActive=true;
         playAlarm();
       }
       mobTimerRender();
@@ -2772,6 +2804,7 @@ function mobTimerToggle(){
 function mobTimerReset(){
   clearInterval(_mobTimerIv);_mobTimerRunning=false;
   _mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
+  stopAlarm();_mobTimerAlarmActive=false;
   mobTimerRender();
 }
 
@@ -3245,39 +3278,36 @@ function applyAvatar(){
 }
 
 // ── ALARM ──
-let _alarmIv=null,_alarmTimeout=null;
-function _beep(freq,dur){
-  try{
-    const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const o=ctx.createOscillator(),g=ctx.createGain();
-    o.connect(g);g.connect(ctx.destination);
-    o.frequency.value=freq;o.type='sine';
-    g.gain.setValueAtTime(0,ctx.currentTime);
-    g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+0.01);
-    g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+dur-0.02);
-    g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
-    o.start(ctx.currentTime);
-    o.stop(ctx.currentTime+dur+0.05);
-    setTimeout(()=>{try{ctx.close();}catch(e){}},dur*1000+200);
-  }catch(e){}
+let _alarmIv=null,_alarmTimeout=null,_alarmCtx=null;
+function _singleBeep(freq,dur,vol){
+  if(!_alarmCtx)return;
+  const t=_alarmCtx.currentTime;
+  const o=_alarmCtx.createOscillator();
+  const g=_alarmCtx.createGain();
+  o.connect(g);g.connect(_alarmCtx.destination);
+  o.type='sine';o.frequency.value=freq;
+  g.gain.setValueAtTime(vol,t);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  o.start(t);o.stop(t+dur);
 }
 function playAlarm(){
   stopAlarm();
-  const pattern=[880,880,1100];
-  let step=0;
-  const tick=()=>{
-    _beep(pattern[step%pattern.length],0.2);
-    step++;
-  };
-  tick();
-  _alarmIv=setInterval(tick,450);
-  _alarmTimeout=setTimeout(stopAlarm,30000);
-  document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='flex');
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    _alarmCtx=new AC();
+    _alarmCtx.resume();
+    const pattern=[880,1100,880,1320];
+    let step=0;
+    const tick=()=>{_singleBeep(pattern[step%pattern.length],0.18,0.6);step++;};
+    tick();
+    _alarmIv=setInterval(tick,300);
+    _alarmTimeout=setTimeout(stopAlarm,30000);
+  }catch(e){console.error('alarm',e);}
 }
 function stopAlarm(){
   if(_alarmIv){clearInterval(_alarmIv);_alarmIv=null;}
   if(_alarmTimeout){clearTimeout(_alarmTimeout);_alarmTimeout=null;}
-  document.querySelectorAll('.tm-stopbtn').forEach(b=>b.style.display='none');
+  if(_alarmCtx){try{_alarmCtx.close();}catch(e){}_alarmCtx=null;}
 }
 
 function doSO(){
@@ -3825,8 +3855,7 @@ function buildTimerW(body,w){
       </div>
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
-        <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="toggleTimer('${w.id}')">${ts.running?'Pause':'Start'}</button>
-        <button class="tm-stopbtn" onclick="stopAlarm()" style="display:none;">Stop Alarm</button>
+        <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')">${ts.running?'Pause':'Start'}</button>
       </div>
       <div class="tmsess" id="tmsess-${w.id}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
@@ -3878,6 +3907,7 @@ function tmConfirmEdit(wid){
   total=Math.max(10,total);
   ts.custom[ts.mode]=total;
   ts.sec=total;
+  if(ts.mode===3){_mobTimerCustom[3]=total;_mobTimerSec=total;}
   tmCancelEdit(wid);
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
 }
@@ -3900,20 +3930,48 @@ function setTMode(wid,m){
   }
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
 }
+function timerBtn(wid){
+  const ts=TMS[wid];if(!ts)return;
+  if(ts.alarmActive){
+    stopAlarm();
+    ts.alarmActive=false;
+    ts.sec=ts.custom[ts.mode];
+    const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.classList.remove('stop');}
+    const tEl=$('tmtime-'+wid);if(tEl)tEl.textContent=fmtSec(ts.sec);
+    return;
+  }
+  toggleTimer(wid);
+}
 function toggleTimer(wid){
   const ts=TMS[wid];if(!ts)return;
-  if(ts.running){clearInterval(ts.iv);ts.running=false;const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.classList.remove('stop');}}
-  else{ts.running=true;ts.iv=setInterval(()=>tickTimer(wid),1000);const b=$('tmbtn-'+wid);if(b){b.textContent='Pause';b.classList.add('stop');}}
+  if(ts.running){
+    clearInterval(ts.iv);ts.running=false;
+    const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.classList.remove('stop');}
+  } else {
+    if(ts.sec<=0){ts.sec=ts.custom[ts.mode];}
+    ts.running=true;
+    ts.iv=setInterval(()=>tickTimer(wid),1000);
+    const b=$('tmbtn-'+wid);if(b){b.textContent='Pause';b.classList.add('stop');}
+  }
 }
 function tickTimer(wid){
   const ts=TMS[wid];if(!ts)return;
   ts.sec--;
   const tEl=$('tmtime-'+wid);if(tEl)tEl.textContent=fmtSec(ts.sec);
-  if(ts.sec<=0){clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;playAlarm();const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);}
+  if(ts.sec<=0){
+    clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;
+    ts.alarmActive=true;
+    playAlarm();
+    const btn=$('tmbtn-'+wid);
+    if(btn){btn.textContent='Stop';btn.classList.add('stop');}
+    const sessEl=$('tmsess-'+wid);
+    if(sessEl){sessEl.innerHTML=Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('');}
+  }
 }
 function resetTimer(wid){
   const ts=TMS[wid];if(!ts)return;
   clearInterval(ts.iv);ts.running=false;ts.sec=ts.custom[ts.mode];
+  stopAlarm();
   const mobBody=document.getElementById('mwb-'+wid);
   if(mobBody){buildTimerW(mobBody,{id:wid,type:'timer'});return;}
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
