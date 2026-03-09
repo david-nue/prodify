@@ -1433,7 +1433,19 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
 .ltag{animation:fadeUp .5s .1s both;}
 .lh1{animation:fadeUp .6s .2s both;}
-.lsub{animation:fadeUp .6s </style>
+.lsub{animation:fadeUp .6s 
+
+
+/* password eye icon - inside input, right side */
+.pw-wrap{position:relative;display:flex;align-items:stretch;}
+.pw-wrap .fi{flex:1;min-width:0;padding-right:40px;box-sizing:border-box;}
+.pw-eye{position:absolute;right:12px;top:0;bottom:0;margin:auto 0;height:fit-content;background:none;border:none;cursor:pointer;opacity:0.4;padding:0;line-height:0;color:var(--ink3);display:flex;align-items:center;}
+.pw-eye:hover{opacity:0.8;}
+.sa-mb-pw-wrap{position:relative;display:flex;align-items:stretch;}
+.sa-mb-pw-wrap .sa-mb-input{flex:1;min-width:0;padding-right:44px;box-sizing:border-box;}
+.sa-mb-eye{position:absolute;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background:none;border:none;cursor:pointer;opacity:0.4;padding:0;line-height:0;color:#fff;display:flex;align-items:center;}
+.sa-mb-eye:hover{opacity:0.8;}
+</style>
 </head>
 <body>
 <script>
@@ -1509,6 +1521,15 @@ document.addEventListener('DOMContentLoaded', function(){
   cvs.addEventListener('touchend',   function(){ active = false; });
   cvs.addEventListener('touchcancel',function(){ active = false; });
 });
+
+
+
+function togglePw(inputId,btn){
+  const inp=document.getElementById(inputId);if(!inp)return;
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show?'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
 
 </script>
 <div id="g-tip"></div>
@@ -1661,16 +1682,16 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
     <div id="fsu">
       <div class="auh">Join Prodify</div><div class="aus">Create your free workspace.</div>
-      <div class="fd"><label class="fl">Username</label><input class="fi" id="su-u" type="text" placeholder="e.g. alex_work" autocomplete="off"/><div class="ferr" id="sue"></div></div>
-      <div class="fd"><label class="fl">Password</label><input class="fi" id="su-p" type="password" placeholder="At least 4 characters"/><div class="ferr" id="spe"></div></div>
-      <div class="fd"><label class="fl">Confirm Password</label><input class="fi" id="su-p2" type="password" placeholder="Repeat password"/><div class="ferr" id="sp2e"></div></div>
+      <div class="fd"><label class="fl">Username</label><input class="fi" id="su-u" type="text" placeholder="e.g. alex_work" autocomplete="off" onkeydown="if(event.key==='Enter')doSU()"/><div class="ferr" id="sue"></div></div>
+      <div class="fd"><label class="fl">Password</label><div class="pw-wrap"><input class="fi" id="su-p" type="password" placeholder="At least 4 characters" onkeydown="if(event.key==='Enter')doSU()"/><button class="pw-eye" type="button" onclick="togglePw('su-p',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="ferr" id="spe"></div></div>
+      <div class="fd"><label class="fl">Confirm Password</label><div class="pw-wrap"><input class="fi" id="su-p2" type="password" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSU()"/><button class="pw-eye" type="button" onclick="togglePw('su-p2',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="ferr" id="sp2e"></div></div>
       <button class="btn bdk bfull" onclick="doSU()" style="margin-top:4px;">Create account</button>
       <div class="aftr">Have an account? <a onclick="swtab('si')">Sign in</a></div>
     </div>
     <div id="fsi" style="display:none;">
       <div class="auh">Welcome back</div><div class="aus">Sign in to your workspace.</div>
-      <div class="fd"><label class="fl">Username</label><input class="fi" id="si-u" type="text" placeholder="Your username" autocomplete="off"/><div class="ferr" id="sie"></div></div>
-      <div class="fd"><label class="fl">Password</label><input class="fi" id="si-p" type="password" placeholder="Your password"/><div class="ferr" id="sipe"></div></div>
+      <div class="fd"><label class="fl">Username</label><input class="fi" id="si-u" type="text" placeholder="Your username" autocomplete="off" onkeydown="if(event.key==='Enter')doSI()"/><div class="ferr" id="sie"></div></div>
+      <div class="fd"><label class="fl">Password</label><div class="pw-wrap"><input class="fi" id="si-p" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')doSI()"/><button class="pw-eye" type="button" onclick="togglePw('si-p',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="ferr" id="sipe"></div></div>
       <button class="btn bdk bfull" onclick="doSI()" style="margin-top:4px;">Sign in</button>
       <div class="aftr">No account? <a onclick="swtab('su')">Sign up</a></div>
     </div>
@@ -1700,12 +1721,12 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="sa-mb-field">
         <label class="sa-mb-label">Password</label>
-        <input class="sa-mb-input" id="mb-su-p" type="password" placeholder="At least 4 characters"/>
+        <div class="sa-mb-pw-wrap"><input class="sa-mb-input" id="mb-su-p" type="password" placeholder="At least 4 characters"/><button class="sa-mb-eye" type="button" onclick="togglePw('mb-su-p',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         <div class="sa-mb-err" id="mb-spe"></div>
       </div>
       <div class="sa-mb-field">
         <label class="sa-mb-label">Confirm Password</label>
-        <input class="sa-mb-input" id="mb-su-p2" type="password" placeholder="Repeat password"/>
+        <div class="sa-mb-pw-wrap"><input class="sa-mb-input" id="mb-su-p2" type="password" placeholder="Repeat password"/><button class="sa-mb-eye" type="button" onclick="togglePw('mb-su-p2',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         <div class="sa-mb-err" id="mb-sp2e"></div>
       </div>
       <button class="sa-mb-btn" onclick="mobDoSU()">Create account</button>
@@ -1722,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="sa-mb-field">
         <label class="sa-mb-label">Password</label>
-        <input class="sa-mb-input" id="mb-si-p" type="password" placeholder="Your password"/>
+        <div class="sa-mb-pw-wrap"><input class="sa-mb-input" id="mb-si-p" type="password" placeholder="Your password"/><button class="sa-mb-eye" type="button" onclick="togglePw('mb-si-p',this)" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         <div class="sa-mb-err" id="mb-sipe"></div>
       </div>
       <button class="sa-mb-btn" onclick="mobDoSI()">Sign in</button>
