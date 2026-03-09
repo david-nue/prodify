@@ -3523,11 +3523,8 @@ function launch(){
     if(!sbReady||!cu)return;
     const dbUser=await dbGetUser(cu);
     if(!dbUser)return;
-    // Capture local BEFORE any overwrite
+    // Always trust cloud — cloud is source of truth on refresh
     const loc=acc[cu]||{};
-    const lT=tasks.slice(), lJ=journal.slice(), lS=subjects.slice();
-    const lC=calEvs.slice(), lW=widgets.slice();
-    const lN=JSON.parse(JSON.stringify(notes)), lP=JSON.parse(JSON.stringify(prefs));
     const cT=JSON.parse(dbUser.tasks||'[]');
     const cJ=JSON.parse(dbUser.journal||'[]');
     const cS=JSON.parse(dbUser.subjects||'[]');
@@ -3535,22 +3532,14 @@ function launch(){
     const cW=JSON.parse(dbUser.widgets||'[]');
     const cN=JSON.parse(dbUser.notes||'{}');
     const cP=JSON.parse(dbUser.prefs||'{}');
-    // Pick best: if cloud has same or more items, trust cloud, else keep local
-    const mT=cT.length>=lT.length?cT:lT;
-    const mJ=cJ.length>=lJ.length?cJ:lJ;
-    const mS=cS.length>=lS.length?cS:lS;
-    const mC=cC.length>=lC.length?cC:lC;
-    const mW=cW.length>=lW.length?cW:lW;
-    const mN=Object.keys(cN).length>=Object.keys(lN).length?cN:lN;
-    const mP=Object.keys(cP).length>0?cP:lP;
-    // Only re-render if data actually changed
-    const changed=JSON.stringify(mT)!==JSON.stringify(lT)||
-                  JSON.stringify(mW)!==JSON.stringify(lW)||
-                  JSON.stringify(mJ)!==JSON.stringify(lJ);
+    const lT=tasks, lW2=widgets, lJ=journal;
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
-      tasks:mT,journal:mJ,subjects:mS,calEvs:mC,widgets:mW,notes:mN,prefs:mP,joined:loc.joined||Date.now()};
+      tasks:cT,journal:cJ,subjects:cS,calEvs:cC,widgets:cW,notes:cN,prefs:cP,joined:loc.joined||Date.now()};
     LS.s('pd1_acc',acc);
-    tasks=mT;journal=mJ;subjects=mS;calEvs=mC;widgets=mW;notes=mN;prefs=mP;
+    tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;prefs=cP;
+    const changed=JSON.stringify(cT)!==JSON.stringify(lT)||
+                  JSON.stringify(cW)!==JSON.stringify(lW2)||
+                  JSON.stringify(cJ)!==JSON.stringify(lJ);
     if(changed){
       applyTheme();
       renderCanvas();
@@ -3559,8 +3548,6 @@ function launch(){
       updateAllStatsW();
       if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
     }
-    // Push merged data back so cloud stays current
-    dbSaveUser(cu,acc[cu]);
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
   startRealtimeSync(cu);
