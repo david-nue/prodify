@@ -1223,22 +1223,26 @@ async function doSI(){
   ce('sie','sipe');
   if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
-    const dbUser=await dbGetUser(u);
-    if(!dbUser){fe('sie','No account found.');return;}
-    if(dbUser.pass_hash!==hp(p)){fe('sipe','Incorrect password.');return;}
+    // Use RPC to verify username + password server-side — works before Auth session exists
+    const {data,error}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:hp(p)});
+    const dbUser=data&&data[0]||null;
+    if(!dbUser){
+      // Distinguish no account vs wrong password
+      const {data:exists}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:''});
+      if(!exists||!exists.length){fe('sie','No account found.');return;}
+      fe('sipe','Incorrect password.');return;
+    }
 
     // ── Supabase Auth migration ──
-    // If this user has no auth_id yet, they're a legacy account
-    // Ask for email, create Supabase Auth account, store auth_id
+    // If no auth_id, this is a legacy account — ask for email to migrate
     if(!dbUser.auth_id){
-      // Store pending login state and show email prompt
       _pendingLogin={u,p,dbUser};
       openMo('mo-migrate-email');
       setTimeout(()=>{const el=document.getElementById('migrate-email-input');if(el)el.focus();},300);
       return;
     }
 
-    // Sign in via Supabase Auth so JWT is set for RLS
+    // Sign in via Supabase Auth so JWT is active for RLS
     if(dbUser.email){
       await sbSignIn(dbUser.email,p).catch(()=>{});
     }
