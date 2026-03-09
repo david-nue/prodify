@@ -739,7 +739,7 @@ overflow-y:auto;}
 /* ════════════════════════════════
    LANDING
 ════════════════════════════════ */
-#sl{background:#111009;display:flex;flex-direction:column;overflow-y:auto;min-height:100%;}
+#sl{background:#111009;display:block;overflow-y:auto;height:100%;}
 
 /* ── MOBILE LANDING ── */
 .sl-mb{
@@ -1560,7 +1560,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sl-mb-footer strong{color:rgba(255,255,255,.38);font-weight:600;}
 
 /* ── MOBILE AUTH ── */
-.l-above-fold{min-height:100vh;display:flex;flex-direction:column;position:relative;}
+.l-above-fold{min-height:100vh;display:flex;flex-direction:column;}
 .lnav{display:flex;align-items:center;justify-content:space-between;padding:24px 50px;}
 .logo{font-size:22px;font-weight:800;letter-spacing:-.5px;}
 .logo b{color:#4A9D74;}
@@ -3716,8 +3716,6 @@ function showAuth(tab){
     console.error('[Prodify] showAuth error:',e);
     show('sa');swtab(tab);
   }
-  LS.s('pd1_authscr','sa');
-  LS.s('pd1_authtab',tab);
 }
 function swtab(t){
   $('fsu').style.display=t==='su'?'block':'none';
@@ -3882,7 +3880,7 @@ function playAlarm(){
 }
 
 function doSO(){
-  LS.d('pd1_cur');LS.d('pd1_authscr');LS.d('pd1_authtab');cu=null;closeDD();
+  LS.d('pd1_cur');cu=null;closeDD();
   const mobApp=document.getElementById('mob-app');
   if(mobApp)mobApp.style.display='none';
   show('sl');
@@ -3948,7 +3946,6 @@ function launch(){
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
   setTimeout(applyAvatar,50);
   $('ev-d').value=new Date().toISOString().slice(0,10);
-  LS.d('pd1_authscr');LS.d('pd1_authtab');
   applyTheme();show('app');goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
   renderFixedQuote();
@@ -3959,14 +3956,7 @@ function launch(){
 // Boot: load local first, sync cloud silently after
 (async function boot(){
   const u=LS.g('pd1_cur',null);
-  if(!u){
-    // Restore auth screen if user was on it before refresh
-    const authScr=LS.g('pd1_authscr',null);
-    const authTab=LS.g('pd1_authtab','su');
-    if(authScr==='sa'){showAuth(authTab);}
-    else{show('sl');}
-    return;
-  }
+  if(!u){show('sl');return;}
   cu=u;
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
   // Always launch immediately from localStorage — single render, no flicker
