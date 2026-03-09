@@ -2261,7 +2261,7 @@ function initSupabase(){
     sbReady = true;
     console.log('[Prodify] Supabase connected.');
     // Start realtime if user already logged in
-    if(cu) startRealtimeSync(cu);
+    if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
