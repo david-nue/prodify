@@ -1230,9 +1230,18 @@ async function doSU(){
     await dbCreateUser(u,hp(p),'',authId,e);
   }
   acc[u]=newUser;
-  LS.s('pd1_acc',acc);cu=u;LS.s('pd1_cur',u);
-  startRealtimeSync(u);
-  show('sn');setTimeout(()=>$('nin').focus(),400);
+  LS.s('pd1_acc',acc);
+  // Don't auto-login — user must confirm email first
+  cu=null;LS.d('pd1_cur');
+  // Show confirmation message then redirect to sign in
+  showAuth('si');
+  ce('sue','see','spe','sp2e');
+  const confirmMsg=document.getElementById('sue');
+  if(confirmMsg){
+    confirmMsg.textContent='Account created! Check your email to confirm before signing in.';
+    confirmMsg.style.display='block';
+    confirmMsg.style.color='var(--a2)';
+  }
 }
 async function doSI(){
   const u=$('si-u').value.trim().toLowerCase(),p=$('si-p').value;
