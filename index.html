@@ -2407,15 +2407,12 @@ function startRealtimeSync(username){
       table:'users',
       filter:'username=eq.'+username
     }, payload=>{
-      const age = Date.now()-_lastSaveTs;
-      console.log('[Prodify] Realtime received, ms since last save:', age);
-      // Only block if WE just saved (echo prevention) — 2s window
-      if(age < 2000){console.log('[Prodify] Blocked as echo');return;}
+      // Only block if WE just saved (echo prevention)
+      if(Date.now()-_lastSaveTs < 2000) return;
       applyRemoteData(payload.new);
     })
     .subscribe(status=>{
-      console.log('[Prodify] Realtime status:', status);
-    });
+      });
 }
 
 function stopRealtimeSync(){
