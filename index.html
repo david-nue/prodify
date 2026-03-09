@@ -1054,13 +1054,17 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .twbody.dov{background:var(--al);outline:2px dashed var(--a2);outline-offset:-3px;border-radius:var(--r6);}
 .tc{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:var(--r10);padding:9px 10px;cursor:grab;position:relative;animation:tcIn .18s both;user-select:none;touch-action:none;}
 .tc:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--a2);}
+.tc.tc-selected{border-color:var(--a2);box-shadow:0 0 0 2px var(--al);transform:translateY(-2px);cursor:grabbing;}
+.tc.tc-selected .tcdel{opacity:1;background:var(--rl);color:var(--red);}
+.tc-drag-clone{position:fixed;pointer-events:none;z-index:9999;opacity:0.92;transform:scale(1.05) rotate(1.5deg);box-shadow:0 8px 24px rgba(0,0,0,0.25);border-radius:10px;background:var(--surf2);border:1.5px solid var(--a2);}
+.twbody.dov{background:var(--al);border-radius:8px;}
 .tc.dragging{opacity:.25;cursor:grabbing;}
 .tct{font-size:12px;font-weight:500;color:var(--ink);line-height:1.5;margin-bottom:7px;padding-right:16px;}
 .tcf{display:flex;align-items:center;gap:4px;}
 .tcd{font-size:10px;color:var(--ink3);margin-left:auto;}
 .tcdel{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;opacity:0;padding:1px 3px;border-radius:3px;line-height:1;}
 .tc:hover .tcdel{opacity:1;}
-@media(hover:none){.tcdel{opacity:1 !important;}.tc{-webkit-tap-highlight-color:transparent;}}
+@media(hover:none){.tc{-webkit-tap-highlight-color:transparent;}}
 .tcdel:hover{background:var(--rl);color:var(--red);}
 .twempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px;}
 .twempty-t{font-size:11px;font-weight:600;color:var(--ink3);}
@@ -3873,7 +3877,7 @@ function buildTaskW(body,w){
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
-      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
+      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#3A7D5E"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#1B4332"></div>Done</div><span class="twcnt" id="cn-done-${w.id}">0</span></div><div class="twbody" id="col-done-${w.id}" ondragover="dov(event,'done','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'done')"></div></div>
     </div>`;
@@ -3886,7 +3890,13 @@ function addTask(wid){
   persist();renderAllTaskW();inp.value='';inp.focus();
   updateAllStatsW();updateFixedStats();
 }
-function delTask(id){tasks=tasks.filter(t=>t.id!==id);persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+let _selTask=null;
+function selTask(e,id){
+  e.stopPropagation();
+  _selTask=(_selTask===id)?null:id;
+  renderAllTaskW();
+}
+function delTask(id){tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
 function sortByPriority(arr){return arr.slice().sort((a,b)=>(PRIORITY_ORDER[a.priority]??3)-(PRIORITY_ORDER[b.priority]??3));}
 function renderTaskCols(wid){
@@ -3898,8 +3908,8 @@ function renderTaskCols(wid){
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
-    el.innerHTML=cols[c].map(t=>`<div class="tc" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" ontouchstart="touchDragStart(event,${t.id})">
-      <button class="tcdel" onclick="delTask(${t.id})">&times;</button>
+    el.innerHTML=cols[c].map(t=>`<div class="tc${_selTask===t.id?' tc-selected':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
+      <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
       <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
       <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span><span class="tcd">${t.date}</span></div>
     </div>`).join('');
@@ -3908,69 +3918,65 @@ function renderTaskCols(wid){
 function dstart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=$('tc-'+id);if(el)el.classList.add('dragging');},0);}
 function dend(){dragTaskId=null;document.querySelectorAll('.tc').forEach(e=>e.classList.remove('dragging'));document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));}
 // Touch drag for mobile tasks
-let _touchDragId=null,_touchDragEl=null,_touchClone=null;
-let _touchCloneEl=null;
-function touchDragStart(e,id){
+let _touchDragId=null,_touchDragEl=null,_touchClone=null,_tcDragActive=false,_tcDragClone=null,_tcDragStartX=0,_tcDragStartY=0;
+// Task card touch — tap to select, drag if selected
+function tcTouchStart(e,id){
+  if(_selTask!==id){
+    // First tap: just select, don't drag
+    return;
+  }
+  // Already selected: start drag
+  const el=$('tc-'+id);
+  if(!el)return;
+  const touch=e.touches[0];
+  _tcDragActive=true;
   _touchDragId=id;
-  _touchDragEl=$('tc-'+id);
-  if(!_touchDragEl){e.preventDefault();return;}
-  // Fade original
-  _touchDragEl.style.opacity='0.3';
-  // Create floating clone that follows finger
-  const rect=_touchDragEl.getBoundingClientRect();
-  _touchCloneEl=_touchDragEl.cloneNode(true);
-  _touchCloneEl.style.cssText=`
-    position:fixed;
-    left:${rect.left}px;top:${rect.top}px;
-    width:${rect.width}px;
-    pointer-events:none;
-    z-index:9999;
-    opacity:0.95;
-    transform:scale(1.05) rotate(1.5deg);
-    box-shadow:0 8px 24px rgba(0,0,0,0.25);
-    transition:transform 0.1s;
-    border-radius:10px;
-  `;
-  document.body.appendChild(_touchCloneEl);
+  _touchDragEl=el;
+  _tcDragStartX=touch.clientX;
+  _tcDragStartY=touch.clientY;
+  // Clone
+  const rect=el.getBoundingClientRect();
+  _tcDragClone=el.cloneNode(true);
+  _tcDragClone.className='tc-drag-clone';
+  _tcDragClone.style.width=rect.width+'px';
+  _tcDragClone.style.left=(touch.clientX-rect.width/2)+'px';
+  _tcDragClone.style.top=(touch.clientY-rect.height/2)+'px';
+  document.body.appendChild(_tcDragClone);
+  el.style.opacity='0.3';
   e.preventDefault();
+  e.stopPropagation();
 }
+function touchDragStart(e,id){}
 function touchDragMove(e){
-  if(!_touchDragId)return;
+  if(!_tcDragActive||!_touchDragId)return;
   e.preventDefault();
   const t=e.touches[0];
-  // Move clone to follow finger (centered on touch point)
-  if(_touchCloneEl){
-    const w=parseInt(_touchCloneEl.style.width);
-    _touchCloneEl.style.left=(t.clientX - w/2)+'px';
-    _touchCloneEl.style.top=(t.clientY - 30)+'px';
+  if(_tcDragClone){
+    _tcDragClone.style.left=(t.clientX-parseInt(_tcDragClone.style.width)/2)+'px';
+    _tcDragClone.style.top=(t.clientY-30)+'px';
   }
-  // Highlight target column
-  // Hide clone temporarily to detect element underneath
-  if(_touchCloneEl)_touchCloneEl.style.display='none';
+  if(_tcDragClone)_tcDragClone.style.display='none';
   const target=document.elementFromPoint(t.clientX,t.clientY);
-  if(_touchCloneEl)_touchCloneEl.style.display='';
+  if(_tcDragClone)_tcDragClone.style.display='';
   const col=target?.closest('.twbody');
   document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
   if(col)col.classList.add('dov');
 }
 function touchDragEnd(e){
-  if(!_touchDragId)return;
-  const t=e.changedTouches[0];
-  // Remove clone
-  if(_touchCloneEl){_touchCloneEl.remove();_touchCloneEl=null;}
-  // Restore original
+  if(!_tcDragActive)return;
+  if(_tcDragClone){_tcDragClone.remove();_tcDragClone=null;}
   if(_touchDragEl)_touchDragEl.style.opacity='';
-  // Hide clone to find element underneath
-  if(_touchCloneEl)_touchCloneEl.style.display='none';
+  const t=e.changedTouches[0];
   const target=document.elementFromPoint(t.clientX,t.clientY);
   const colEl=target?.closest('.twbody');
-  if(colEl){
+  if(colEl&&_touchDragId){
     const col=colEl.id.replace(/^col-/,'').replace(/-[^-]+$/,'');
     const task=tasks.find(x=>x.id===_touchDragId);
     if(task&&task.col!==col){task.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
   }
   document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
-  _touchDragId=null;_touchDragEl=null;
+  _tcDragActive=false;_touchDragId=null;_touchDragEl=null;_selTask=null;
+  renderAllTaskW();
 }
 document.addEventListener('touchmove',touchDragMove,{passive:false});
 document.addEventListener('touchend',touchDragEnd);
