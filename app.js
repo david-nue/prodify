@@ -197,15 +197,24 @@ async function sbGetSession(){
 async function uploadAvatarToStorage(file){
   if(!sbReady||!cu) return null;
   try{
-    const ext = file.name.split('.').pop().toLowerCase()||'jpg';
-    const path = cu+'/avatar.'+ext;
+    // Ensure auth session is active before uploading
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      const {data:refreshed} = await sb.auth.refreshSession();
+      if(!refreshed?.session){console.error('[Prodify] No auth session for upload');return null;}
+    }
+    const ext = (file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const path = cu+'/avatar.'+(ext||'jpg');
     const {error:upErr} = await sb.storage.from('avatars').upload(path, file, {
       upsert: true,
+      cacheControl: '3600',
       contentType: file.type||'image/jpeg'
     });
     if(upErr){console.error('[Prodify] Avatar upload error:',upErr.message);return null;}
+    // Add cache-busting timestamp so browsers reload the new photo
     const {data} = sb.storage.from('avatars').getPublicUrl(path);
-    return data?.publicUrl||null;
+    const url = data?.publicUrl;
+    return url ? url+'?t='+Date.now() : null;
   }catch(e){console.error('[Prodify] Avatar upload failed:',e);return null;}
 }
 async function saveAvatarUrl(url){
