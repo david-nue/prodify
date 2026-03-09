@@ -3782,8 +3782,8 @@ function startDrag(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wdrag');
-  const head=el.querySelector('.whead');
-  if(head)head.setPointerCapture&&e.pointerId!=null?head.setPointerCapture(e.pointerId):null;
+  // Capture pointer on the source element so move events keep firing even if finger moves fast
+  try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX-w.x,startY=e.clientY-w.y;
   const mm=e=>{
     w.x=Math.max(0,e.clientX-startX);w.y=Math.max(0,e.clientY-startY);
@@ -3802,8 +3802,7 @@ function startResize(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wresize');
-  const rsz=el.querySelector('.wrsz');
-  if(rsz&&e.pointerId!=null)try{rsz.setPointerCapture(e.pointerId);}catch(_){}
+  try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX,startY=e.clientY,startW=w.w,startH=w.h;
   const isTimer=w.type==='timer';
   const minW=isTimer?280:200, maxW=99999;
