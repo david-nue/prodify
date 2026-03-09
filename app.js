@@ -1242,16 +1242,21 @@ async function doSU(){
   }
   acc[u]=newUser;
   LS.s('pd1_acc',acc);
-  // Don't auto-login — user must confirm email first
   cu=null;LS.d('pd1_cur');
-  // Show confirmation message then redirect to sign in
-  showAuth('si');
+  // Stay on signup tab — clear form and show success message
   ce('sue','see','spe','sp2e');
+  ['su-u','su-e','su-p','su-p2'].forEach(id=>{const el=$(id);if(el)el.value='';});
   const confirmMsg=document.getElementById('sue');
   if(confirmMsg){
-    confirmMsg.textContent='Account created! Check your email to confirm before signing in.';
+    confirmMsg.innerHTML='\u2705 Account created! Check your email and click the confirmation link, then <button onclick="showAuth(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
     confirmMsg.style.display='block';
-    confirmMsg.style.color='var(--a2)';
+    confirmMsg.style.color='var(--ink)';
+  }
+  const mobConfirmMsg=document.getElementById('mb-sue');
+  if(mobConfirmMsg){
+    mobConfirmMsg.innerHTML='\u2705 Account created! Check your email and click the confirmation link, then <button onclick="mobSwtab(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
+    mobConfirmMsg.style.display='block';
+    mobConfirmMsg.style.color='var(--ink)';
   }
 }
 async function doSI(){
@@ -2518,7 +2523,7 @@ function chgPw(){
 function clrTasks(){if(!confirm('Delete all tasks?'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function clrJournal(){if(!confirm('Delete all journal entries?'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function clrSubjects(){if(!confirm('Delete all projects??'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
-function delAcc(){
+async function delAcc(){
   if(!confirm('Permanently delete your account and ALL data? This cannot be undone.'))return;
   dbDeleteUser(cu);
   delete acc[cu];LS.s('pd1_acc',acc);LS.d('pd1_cur');cu=null;show('sl');
