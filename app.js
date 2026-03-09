@@ -1233,7 +1233,7 @@ async function doSU(){
       if(authErr.message.toLowerCase().includes('already registered')){
         fe('see','An account with this email already exists.');
       } else {
-        fe('see','Password must be at least 8 characters and include uppercase, lowercase, and a number.');
+        fe('see','Password must include uppercase, lowercase, and a number.');
       }
       return;
     }
@@ -1343,7 +1343,7 @@ async function submitMigrateEmail(){
     // Step 1: Create Supabase Auth account
     const {user:authUser,error:authErr}=await sbSignUp(email,p);
     if(authErr&&!authErr.message.includes('already registered')&&!authErr.message.includes('User already registered')){
-      if(errEl)errEl.textContent='Auth error: '+authErr.message;
+      if(errEl)errEl.textContent='Password must include uppercase, lowercase, and a number.';
       if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}
       return;
     }
