@@ -1276,56 +1276,70 @@ let _pendingLogin=null;
 async function submitMigrateEmail(){
   const emailEl=document.getElementById('migrate-email-input');
   const errEl=document.getElementById('migrate-email-err');
+  const okBtn=document.getElementById('migrate-ok-btn');
   const email=emailEl?emailEl.value.trim():'';
   if(errEl)errEl.textContent='';
   if(!email||!email.includes('@')){if(errEl)errEl.textContent='Please enter a valid email.';return;}
-  if(!_pendingLogin)return;
+  if(!_pendingLogin){if(errEl)errEl.textContent='Session expired — please sign in again.';return;}
   const {u,p,dbUser}=_pendingLogin;
 
-  // Step 1: Create Supabase Auth account
-  const {user:authUser,error:authErr}=await sbSignUp(email,p);
-  if(authErr&&!authErr.message.includes('already registered')){
-    if(errEl)errEl.textContent='Could not create account: '+authErr.message;return;
+  // Disable button while working
+  if(okBtn){okBtn.disabled=true;okBtn.textContent='Saving...';}
+
+  try{
+    // Step 1: Create Supabase Auth account
+    const {user:authUser,error:authErr}=await sbSignUp(email,p);
+    if(authErr&&!authErr.message.includes('already registered')&&!authErr.message.includes('User already registered')){
+      if(errEl)errEl.textContent='Auth error: '+authErr.message;
+      if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}
+      return;
+    }
+
+    // Step 2: Get auth_id — from signup or by signing in if already exists
+    let authId=authUser?.id;
+    if(!authId){
+      const {user:siUser,error:siErr}=await sbSignIn(email,p);
+      if(siErr){if(errEl)errEl.textContent='Sign in error: '+siErr.message;if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}return;}
+      authId=siUser?.id;
+    }
+    if(!authId){if(errEl)errEl.textContent='Could not get account ID. Try again.';if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}return;}
+
+    // Step 3: Write auth_id + email via RPC (security definer — verified by pass_hash)
+    const {error:rpcErr}=await sb.rpc('set_auth_id_for_user',{
+      p_username:u,
+      p_pass_hash:hp(p),
+      p_auth_id:authId,
+      p_email:email
+    });
+    if(rpcErr){if(errEl)errEl.textContent='Save error: '+rpcErr.message;if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}return;}
+
+    // Step 4: Sign in so JWT is active for all future RLS checks
+    await sbSignIn(email,p).catch(()=>{});
+
+    closeMo('mo-migrate-email');
+    _pendingLogin=null;
+
+    acc[u]={
+      passHash:dbUser.pass_hash,
+      displayName:dbUser.display_name||'',
+      tasks:JSON.parse(dbUser.tasks||'[]'),
+      journal:JSON.parse(dbUser.journal||'[]'),
+      subjects:JSON.parse(dbUser.subjects||'[]'),
+      calEvs:JSON.parse(dbUser.cal_evs||'[]'),
+      widgets:JSON.parse(dbUser.widgets||'[]'),
+      notes:JSON.parse(dbUser.notes||'{}'),
+      prefs:JSON.parse(dbUser.prefs||'{}'),
+      joined:new Date(dbUser.joined_at).getTime()||Date.now(),
+    };
+    LS.s('pd1_acc',acc);
+    cu=u;LS.s('pd1_cur',u);
+    startRealtimeSync(u);
+    if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
+    else launch();
+  }catch(e){
+    if(errEl)errEl.textContent='Unexpected error: '+(e?.message||e);
+    if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}
   }
-
-  // Step 2: Get auth_id — from signup or sign in if already exists
-  let authId=authUser?.id;
-  if(!authId){
-    const {user:siUser}=await sbSignIn(email,p);
-    authId=siUser?.id;
-  }
-
-  // Step 3: Write auth_id + email via RPC (bypasses RLS — verified by pass_hash)
-  await sb.rpc('set_auth_id_for_user',{
-    p_username:u,
-    p_pass_hash:hp(p),
-    p_auth_id:authId,
-    p_email:email
-  });
-
-  // Step 4: Sign in so JWT is active for all future RLS checks
-  await sbSignIn(email,p).catch(()=>{});
-
-  closeMo('mo-migrate-email');
-  _pendingLogin=null;
-
-  acc[u]={
-    passHash:dbUser.pass_hash,
-    displayName:dbUser.display_name||'',
-    tasks:JSON.parse(dbUser.tasks||'[]'),
-    journal:JSON.parse(dbUser.journal||'[]'),
-    subjects:JSON.parse(dbUser.subjects||'[]'),
-    calEvs:JSON.parse(dbUser.cal_evs||'[]'),
-    widgets:JSON.parse(dbUser.widgets||'[]'),
-    notes:JSON.parse(dbUser.notes||'{}'),
-    prefs:JSON.parse(dbUser.prefs||'{}'),
-    joined:new Date(dbUser.joined_at).getTime()||Date.now(),
-  };
-  LS.s('pd1_acc',acc);
-  cu=u;LS.s('pd1_cur',u);
-  startRealtimeSync(u);
-  if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
-  else launch();
 }
 function doName(){
   const n=$('nin').value.trim();if(!n)return;
