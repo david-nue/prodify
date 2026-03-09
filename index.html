@@ -2473,16 +2473,19 @@ const sbLoaded=new Promise(r=>{_sbLoadResolve=r;});
 // It's sent as a custom header on every Supabase request so RLS
 // can verify: only requests that know the secret can touch that row.
 function getSecret(username){
-  const key='pd1_secret_'+username;
-  let s=localStorage.getItem(key);
-  if(!s){ s=crypto.randomUUID(); localStorage.setItem(key,s); }
-  return s;
+  // Use password hash as secret — same on every device that knows the password
+  return (acc[username]&&acc[username].passHash) || localStorage.getItem('pd1_ph_'+username) || '';
 }
 function sbWithSecret(username){
-  // Create a one-off Supabase client that injects the secret header
   const secret=getSecret(username);
   return supabase.createClient(SB_URL.trim(), SB_KEY.trim(), {
     global:{ headers:{ 'x-prodify-secret': secret } }
+  });
+}
+function sbWithHash(hash){
+  // For login: we know the hash but acc may not be loaded yet
+  return supabase.createClient(SB_URL.trim(), SB_KEY.trim(), {
+    global:{ headers:{ 'x-prodify-secret': hash } }
   });
 }
 
@@ -3483,29 +3486,15 @@ async function doSI(){
   ce('sie','sipe');
   if(!sbReady){try{await Promise.race([sbLoaded,new Promise(r=>setTimeout(r,4000))]);}catch(e){}}
   if(sbReady){
-    // Step 1: use RPC to verify password and retrieve secret in one safe call
-    // The function only returns the secret if username + pass_hash both match
-    let secret=null;
-    try{
-      const {data,error}=await sb.rpc('get_secret_for_login',{p_username:u,p_pass_hash:hp(p)});
-      if(!error) secret=data;
-    }catch(e){}
-
-    if(secret===null||secret===undefined){
-      // RPC returned nothing — either wrong password or account doesn't exist
-      // We can't tell which without leaking info, so check locally if we have the account
-      const {data:exists}=await sb.rpc('get_secret_for_login',{p_username:u,p_pass_hash:''}).catch(()=>({data:null}));
-      if(exists===null){fe('sie','No account found.');return;}
-      fe('sipe','Incorrect password.');return;
+    const hash=hp(p);
+    // Use hash as the secret header — RLS policy checks pass_hash matches header
+    const client=sbWithHash(hash);
+    const {data:dbUser,error}=await client.from('users').select('*').eq('username',u).single();
+    if(!dbUser){
+      fe('sie','Incorrect username or password.');return;
     }
-
-    // Step 2: store secret locally so this device can make authenticated requests
-    localStorage.setItem('pd1_secret_'+u, secret);
-
-    // Step 3: fetch full user data using the now-known secret
-    const dbUser=await dbGetUser(u);
-    if(!dbUser){fe('sie','Could not load account. Please try again.');return;}
-
+    // Cache hash locally so getSecret() works for this session and future auto-logins
+    localStorage.setItem('pd1_ph_'+u, hash);
     acc[u]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||'',
