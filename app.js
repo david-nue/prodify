@@ -1445,11 +1445,16 @@ async function mobDoSU(){
   const suE=document.getElementById('su-e');if(suE)suE.value=e;
   $('su-p').value=p;$('su-p2').value=p2;
   await doSU();
-  // copy any errors back — map desktop field IDs to mobile field IDs
-  ['sue','see','spe','sp2e'].forEach((dk)=>{
-    const de=$(dk),me=document.getElementById('mb-'+dk);
-    if(de&&me&&de.style.display!=='none'){me.textContent=de.textContent;me.style.display='block';}
-  });
+  // Only copy errors back — skip 'sue' since doSU sets the success message there
+  // and we don't want to overwrite the mobile success message
+  const desktopSue=$('sue');
+  const isSuccess = desktopSue && desktopSue.style.display!=='none' && desktopSue.querySelector('button');
+  if(!isSuccess){
+    ['sue','see','spe','sp2e'].forEach((dk)=>{
+      const de=$(dk),me=document.getElementById('mb-'+dk);
+      if(de&&me&&de.style.display!=='none'){me.textContent=de.textContent;me.style.display='block';}
+    });
+  }
 }
 async function mobDoSI(){
   const u=document.getElementById('mb-si-u').value.trim().toLowerCase();
