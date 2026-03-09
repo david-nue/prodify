@@ -1277,7 +1277,7 @@ overflow-y:auto;}
 ════════════════════════════════ */
 #sl{background:#111009;display:block;overflow-y:auto;}
 .lo2{position:absolute;border-radius:50%;pointer-events:none;}
-.lo1{width:640px;height:640px;background:radial-gradient(circle,rgba(58,125,94,.22) 0%,transparent 65%);top:-150px;right:-120px;}
+.lo1{position:absolute;border-radius:50%;pointer-events:none;width:640px;height:640px;background:radial-gradient(circle,rgba(58,125,94,.22) 0%,transparent 65%);top:-150px;right:-120px;}
 .lo2{width:340px;height:340px;background:radial-gradient(circle,rgba(74,157,116,.08) 0%,transparent 65%);bottom:-60px;left:-50px;}
 .l-above-fold{min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
 .lnav{display:flex;align-items:center;justify-content:space-between;padding:24px 50px;}
@@ -1338,8 +1338,8 @@ if('serviceWorker' in navigator){
 <div class="screen" id="sl">
 
   <!-- DESKTOP: shown on ≥601px via CSS -->
-  <div class="lo1"></div><div class="lo2"></div>
   <div class="l-above-fold sl-dk">
+  <div class="lo1"></div><div class="lo2"></div>
   <nav class="lnav">
     <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
     <div style="display:flex;gap:9px;">
