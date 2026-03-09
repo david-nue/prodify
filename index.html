@@ -1052,7 +1052,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .twbody{flex:1;overflow-y:auto;padding:5px;display:flex;flex-direction:column;gap:4px;}
 .twbody::-webkit-scrollbar{width:2px;}
 .twbody.dov{background:var(--al);outline:2px dashed var(--a2);outline-offset:-3px;border-radius:var(--r6);}
-.tc{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:var(--r10);padding:9px 10px;cursor:grab;position:relative;animation:tcIn .18s both;user-select:none;}
+.tc{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:var(--r10);padding:9px 10px;cursor:grab;position:relative;animation:tcIn .18s both;user-select:none;touch-action:none;}
 .tc:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--a2);}
 .tc.dragging{opacity:.25;cursor:grabbing;}
 .tct{font-size:12px;font-weight:500;color:var(--ink);line-height:1.5;margin-bottom:7px;padding-right:16px;}
@@ -1060,6 +1060,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .tcd{font-size:10px;color:var(--ink3);margin-left:auto;}
 .tcdel{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;opacity:0;padding:1px 3px;border-radius:3px;line-height:1;}
 .tc:hover .tcdel{opacity:1;}
+@media(hover:none){.tcdel{opacity:1 !important;}.tc{-webkit-tap-highlight-color:transparent;}}
 .tcdel:hover{background:var(--rl);color:var(--red);}
 .twempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px;}
 .twempty-t{font-size:11px;font-weight:600;color:var(--ink3);}
@@ -3908,17 +3909,46 @@ function dstart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';setTimeo
 function dend(){dragTaskId=null;document.querySelectorAll('.tc').forEach(e=>e.classList.remove('dragging'));document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));}
 // Touch drag for mobile tasks
 let _touchDragId=null,_touchDragEl=null,_touchClone=null;
+let _touchCloneEl=null;
 function touchDragStart(e,id){
   _touchDragId=id;
   _touchDragEl=$('tc-'+id);
-  if(_touchDragEl)_touchDragEl.style.opacity='0.4';
+  if(!_touchDragEl){e.preventDefault();return;}
+  // Fade original
+  _touchDragEl.style.opacity='0.3';
+  // Create floating clone that follows finger
+  const rect=_touchDragEl.getBoundingClientRect();
+  _touchCloneEl=_touchDragEl.cloneNode(true);
+  _touchCloneEl.style.cssText=`
+    position:fixed;
+    left:${rect.left}px;top:${rect.top}px;
+    width:${rect.width}px;
+    pointer-events:none;
+    z-index:9999;
+    opacity:0.95;
+    transform:scale(1.05) rotate(1.5deg);
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    transition:transform 0.1s;
+    border-radius:10px;
+  `;
+  document.body.appendChild(_touchCloneEl);
   e.preventDefault();
 }
 function touchDragMove(e){
   if(!_touchDragId)return;
   e.preventDefault();
   const t=e.touches[0];
+  // Move clone to follow finger (centered on touch point)
+  if(_touchCloneEl){
+    const w=parseInt(_touchCloneEl.style.width);
+    _touchCloneEl.style.left=(t.clientX - w/2)+'px';
+    _touchCloneEl.style.top=(t.clientY - 30)+'px';
+  }
+  // Highlight target column
+  // Hide clone temporarily to detect element underneath
+  if(_touchCloneEl)_touchCloneEl.style.display='none';
   const target=document.elementFromPoint(t.clientX,t.clientY);
+  if(_touchCloneEl)_touchCloneEl.style.display='';
   const col=target?.closest('.twbody');
   document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
   if(col)col.classList.add('dov');
@@ -3926,6 +3956,12 @@ function touchDragMove(e){
 function touchDragEnd(e){
   if(!_touchDragId)return;
   const t=e.changedTouches[0];
+  // Remove clone
+  if(_touchCloneEl){_touchCloneEl.remove();_touchCloneEl=null;}
+  // Restore original
+  if(_touchDragEl)_touchDragEl.style.opacity='';
+  // Hide clone to find element underneath
+  if(_touchCloneEl)_touchCloneEl.style.display='none';
   const target=document.elementFromPoint(t.clientX,t.clientY);
   const colEl=target?.closest('.twbody');
   if(colEl){
@@ -3933,7 +3969,6 @@ function touchDragEnd(e){
     const task=tasks.find(x=>x.id===_touchDragId);
     if(task&&task.col!==col){task.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
   }
-  if(_touchDragEl)_touchDragEl.style.opacity='';
   document.querySelectorAll('.twbody').forEach(b=>b.classList.remove('dov'));
   _touchDragId=null;_touchDragEl=null;
 }
