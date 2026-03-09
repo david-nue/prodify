@@ -1226,14 +1226,14 @@ async function doSU(){
     if(existing){fe('sue','Username taken.');return;}
     // Check if email is already registered
     const {data:emailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
-    if(emailCheck){fe('see','An account with this email already exists.');return;}
+    if(emailCheck){fe('see','Email already in use.');return;}
     // Create Supabase Auth account
     const {user:authUser,error:authErr}=await sbSignUp(e,p);
     if(authErr){
       if(authErr.message.toLowerCase().includes('already registered')){
-        fe('see','An account with this email already exists.');
+        fe('see','Email already in use.');
       } else {
-        fe('see','Password must include uppercase, lowercase, and a number.');
+        fe('spe','Must include uppercase, lowercase, and a number.');
       }
       return;
     }
@@ -1425,6 +1425,11 @@ async function mobDoSU(){
   if(!p||p.length<8){mobShowErr('mb-spe','Min 8 characters.');ok=false;}
   if(p!==p2){mobShowErr('mb-sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
+  // Check duplicate email on mobile before calling doSU
+  if(sbReady){
+    const {data:mobEmailCheck}=await sb.from('users').select('username').eq('email',e).maybeSingle();
+    if(mobEmailCheck){mobShowErr('mb-see','Email already in use.');return;}
+  }
   // mirror to desktop fields for shared logic
   $('su-u').value=u;
   const suE=document.getElementById('su-e');if(suE)suE.value=e;
