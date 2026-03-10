@@ -676,6 +676,7 @@ function mobGoPage(page){
   else if(page==='profile')mobRenderProfile();
   else if(page==='settings')mobRenderSettings();
   else if(page==='timer')pomRenderHistory();
+  else if(page==='habits'){renderHabits('mob-habit-page-list');renderHabitAddForm('mob-habit-page-form');}
   else if(page==='feedback'){_fbType='general';_fbStar=0;setFbType('general');setTimeout(initFbStars,50);}
   requestAnimationFrame(()=>{
     const next = document.getElementById('mpg-'+page);
@@ -2326,6 +2327,7 @@ const WD={
   subjects:{w:300,h:260,title:'Project Progress'},
   quote:{w:280,h:160,title:'Quote'},
   calendar:{w:540,h:290,title:'Calendar'},
+  habits:{w:300,h:340,title:'Daily Habits'},
 };
 
 function addW(type,opts={}){
@@ -2452,6 +2454,92 @@ function fillWBody(w){
   else if(w.type==='subjects')buildSubjectsW(body,w);
   else if(w.type==='quote')buildQuoteW(body,w);
   else if(w.type==='calendar')buildCalW(body,w);
+  else if(w.type==='habits')buildHabitW(body,w);
+}
+
+
+/* ── HABIT TRACKER ── */
+function buildHabitW(body,w){
+  body.style.cssText='display:flex;flex-direction:column;height:100%;overflow:hidden;';
+  body.innerHTML=`
+    <div id="hwrap-${w.id}" style="flex:1;overflow-y:auto;padding:10px 10px 4px;">
+      <div id="hlist-${w.id}" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <div style="padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0;">
+      <div id="hadd-${w.id}" style="display:flex;gap:6px;">
+        <input id="hinp-${w.id}" type="text" placeholder="New habit…" maxlength="40"
+          style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
+          onkeydown="if(event.key==='Enter')habitWSubmit('${w.id}')"/>
+        <button onclick="habitWSubmit('${w.id}')" style="background:var(--a2);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Add</button>
+      </div>
+    </div>`;
+  renderHabitW(w.id);
+}
+
+function renderHabitW(wid){
+  const list=document.getElementById('hlist-'+wid);
+  if(!list)return;
+  const habits=habitGetAll();
+  const total=habits.length, doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
+  if(!total){
+    list.innerHTML=`<div style="text-align:center;padding:20px 10px;color:var(--ink4);font-size:12px;line-height:1.8;">
+      <div style="font-size:24px;margin-bottom:6px;">🎯</div>
+      Add habits to track below
+    </div>`;
+    return;
+  }
+  const pct=Math.round(doneCount/total*100);
+  list.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:10px;font-weight:700;color:var(--ink3);">TODAY — ${doneCount}/${total}</span>
+      <span style="font-size:10px;font-weight:700;color:var(--a2);">${pct}%</span>
+    </div>
+    <div style="height:3px;background:var(--bdr);border-radius:2px;margin-bottom:8px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:var(--a2);border-radius:2px;"></div>
+    </div>
+    ${habits.map(h=>{
+      const done=habitDoneToday(h.id);
+      const streak=habitStreak(h.id);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:${done?'var(--al)':'var(--surf2)'};border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:10px;transition:all .18s;">
+        <button onclick="habitToggleW(${h.id},'${wid}')" style="width:28px;height:28px;border-radius:50%;border:2px solid ${done?'var(--a2)':'var(--bdr)'};background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;transition:all .18s;">${done?'✔️':h.emoji}</button>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:${done?'var(--a2)':'var(--ink)'};${done?'text-decoration:line-through;':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.name)}</div>
+          ${streak>0?`<div style="font-size:10px;color:var(--a2);">🔥 ${streak}d</div>`:''}
+        </div>
+        <button onclick="habitDeleteW(${h.id},'${wid}')" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all .15s;"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">✕</button>
+      </div>`;
+    }).join('')}`;
+}
+
+function habitToggleW(id, wid){
+  habitToggle(id);
+  renderHabitW(wid);
+  // also re-render all other habit widgets
+  widgets.filter(w=>w.type==='habits'&&w.id!==wid).forEach(w=>renderHabitW(w.id));
+}
+
+async function habitDeleteW(id, wid){
+  if(!await appConfirm('Delete this habit?','Your streak and history will be lost.'))return;
+  prefs.habits=(prefs.habits||[]).filter(h=>h.id!==id);
+  habitSave();
+  renderHabitW(wid);
+  widgets.filter(w=>w.type==='habits'&&w.id!==wid).forEach(w=>renderHabitW(w.id));
+  renderHabits('habit-list'); renderHabits('mob-habit-list'); renderHabits('mob-habit-page-list');
+}
+
+function habitWSubmit(wid){
+  const inp=document.getElementById('hinp-'+wid);
+  if(!inp||!inp.value.trim())return;
+  if((prefs.habits||[]).length>=HABIT_MAX_FREE){habitShowProGate();return;}
+  prefs.habits=prefs.habits||[];
+  prefs.habits.push({id:Date.now(),name:inp.value.trim(),emoji:'✔️',created:habitToday()});
+  habitSave();
+  inp.value='';
+  renderHabitW(wid);
+  widgets.filter(w=>w.type==='habits'&&w.id!==wid).forEach(w=>renderHabitW(w.id));
+  renderHabits('habit-list'); renderHabits('mob-habit-list'); renderHabits('mob-habit-page-list');
 }
 
 // DRAG
@@ -3309,6 +3397,8 @@ function habitToggle(id){
   habitSave();
   renderHabits('habit-list');
   renderHabits('mob-habit-list');
+  renderHabits('mob-habit-page-list');
+  widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
 }
 
 function habitStreak(id){
@@ -3463,3 +3553,4 @@ function habitSubmit(containerId){
   habitAdd(inp?.value||'', emoji);
   renderHabitAddForm(containerId);
 }
+

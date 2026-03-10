@@ -710,6 +710,17 @@
     </div>
   </div>
 
+  <!-- HABITS PAGE (mobile) -->
+  <div class="mob-page" id="mpg-habits">
+    <div class="mob-topbar">
+      <div class="mob-topbar-title">Daily Habits</div>
+    </div>
+    <div class="mob-page-scroll" style="padding:0 16px 24px;">
+      <div id="mob-habit-page-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;margin-top:12px;"></div>
+      <div id="mob-habit-page-form"></div>
+    </div>
+  </div>
+
   <!-- SETTINGS PAGE (mobile) -->
   <div class="mob-page" id="mpg-settings">
     <div class="mob-topbar">
@@ -840,6 +851,10 @@
     <button class="mob-nav-btn" id="mnb-calendar" onclick="mobGoPage('calendar')">
       <svg viewBox="0 0 22 22"><rect x="3" y="4" width="16" height="15" rx="2"/><path d="M3 9h16M8 2v3M14 2v3"/></svg>
       <span>Calendar</span>
+    </button>
+    <button class="mob-nav-btn" id="mnb-habits" onclick="mobGoPage('habits')">
+      <svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="8"/><path d="M7 11l3 3 5-5"/></svg>
+      <span>Habits</span>
     </button>
   </nav>
 
