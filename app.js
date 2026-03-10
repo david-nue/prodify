@@ -3722,13 +3722,9 @@ function _fcsInpKey(e,wid) {
 
 // ── Mobile focus mode ──
 function fcsMobEnter() {
-  // Make sure we're on the timer page first
   if (_mobPage !== 'timer') {
     mobGoPage('timer');
-    // Wait for page transition then enter focus
-    setTimeout(()=>{
-      document.body.classList.add('in-focus-mob');
-    }, 280);
+    setTimeout(() => document.body.classList.add('in-focus-mob'), 280);
   } else {
     document.body.classList.add('in-focus-mob');
   }

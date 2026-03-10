@@ -1703,14 +1703,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── Session 6: Focus Mode ── */
 .fcsbtn{
-  display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;
+  display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
   background:var(--al);border:1.5px solid var(--a2);border-radius:100px;
-  padding:10px 14px;font-size:12px;font-weight:700;
-  color:var(--a2);cursor:pointer;width:100%;box-sizing:border-box;
+  padding:0 14px;height:44px;font-size:12px;font-weight:700;
+  color:var(--a2);cursor:pointer;
   font-family:'Plus Jakarta Sans',sans-serif;
   transition:background .12s,opacity .12s;
 }
-.fcsbtn:hover{background:var(--a2);color:#fff;}
+.fcsbtn:hover{opacity:.8;}
 .fcsbtn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;flex-shrink:0;}
 
 /* desktop: dim sidebar/topbar/wtray in focus mode */
@@ -1722,18 +1722,11 @@ body.in-focus .wtray{opacity:0;pointer-events:none;transition:opacity .3s;}
 body.in-focus-mob .mob-nav{display:none!important;}
 body.in-focus-mob .mob-topbar{display:none!important;}
 body.in-focus-mob .mob-av{display:none!important;}
+/* overflow:hidden on mob-app traps position:fixed children — override when in focus */
 body.in-focus-mob .mob-app{overflow:hidden;}
-/* timer page and wrap fill all freed space */
-body.in-focus-mob #mpg-timer{
-  flex:1;min-height:0;overflow:visible;
-  display:flex;flex-direction:column;
-}
-body.in-focus-mob .mob-timer-wrap{
-  flex:1;justify-content:center;padding-top:24px;padding-bottom:24px;
-}
-/* hide session history in focus mode */
+body.in-focus-mob #mpg-timer{flex:1;min-height:0;overflow:visible;display:flex;flex-direction:column;}
+body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;}
 body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
-body.in-focus-mob .mob-timer-sessions{display:flex;}
 
 /* mobile exit btn */
 #fcs-mob-exit{
@@ -1758,5 +1751,4 @@ body.in-focus-mob #fcs-mob-exit{display:flex;}
   box-shadow:var(--sh2);transition:background .15s;
 }
 body.in-focus #fcs-exit-overlay{display:flex;}
-#fcs-exit-overlay:hover{background:var(--warm);}
 #fcs-exit-overlay svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;}
