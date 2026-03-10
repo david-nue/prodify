@@ -532,8 +532,8 @@ function pomRenderHistory(){
       </div>
     `;
   });
-  // Also update focus mode overlay history if open
-  if (typeof _focusRenderPomHistory === 'function') _focusRenderPomHistory();
+  // also update focus overlay if open
+  if(typeof _focusRenderHistory==='function')_focusRenderHistory();
 }
 let dragTaskId=null, calOff=0, nextZ=10;
 let _selTask=null;
@@ -1908,181 +1908,6 @@ function stopAlarm(){
   if(_alarmCtx){try{_alarmCtx.close();}catch(e){}_alarmCtx=null;}
 }
 
-
-// ═══════════════════════════════════════
-// FOCUS MODE
-// ═══════════════════════════════════════
-let _focusWid = null;
-let _focusTickIv = null;
-
-function enterFocusMode(wid) {
-  _focusWid = wid;
-  const overlay = document.getElementById('focus-overlay');
-  const wrap    = document.getElementById('focus-timer-wrap');
-  if (!overlay || !wrap) return;
-  _buildFocusTimer(wid, wrap);
-  // Add open class — CSS handles display:flex + backdrop
-  overlay.classList.add('open');
-  document.body.classList.add('focus-mode');
-  document.addEventListener('keydown', _focusKeyHandler);
-}
-
-function exitFocusMode() {
-  const overlay = document.getElementById('focus-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('open');
-  document.body.classList.remove('focus-mode');
-  document.removeEventListener('keydown', _focusKeyHandler);
-  clearInterval(_focusTickIv); _focusTickIv = null;
-  // Clear wrap content after transition
-  setTimeout(() => {
-    const wrap = document.getElementById('focus-timer-wrap');
-    if (wrap) wrap.innerHTML = '';
-  }, 400);
-  // Re-sync source widget
-  if (_focusWid) {
-    const w = widgets.find(x => x.id === _focusWid);
-    if (w) fillWBody(w);
-  }
-  _focusWid = null;
-}
-
-function _focusKeyHandler(e) {
-  if (e.key === 'Escape') exitFocusMode();
-}
-
-function _buildFocusTimer(wid, wrap) {
-  const ts = TMS[wid] || { mode:0, sec:25*60, running:false, sessions:0, custom:[25*60,20*60] };
-  TMS[wid] = ts;
-  if (!ts.custom || ts.custom.length < 2) ts.custom = [25*60, 20*60];
-  wrap.innerHTML = `
-    <div style="width:100%;text-align:center;margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--ink4);">Focus Mode</div>
-    </div>
-    <div class="tmmodes" style="width:100%;margin-bottom:8px;">
-      ${TMODES.map((m,i) => `<button class="tmm${i===ts.mode?' on':''}" onclick="focusTModeSet('${wid}',${i})">${m.l}</button>`).join('')}
-    </div>
-    <div class="tmdis" style="margin:12px 0 8px;">
-      <div class="tmtime${(TMODES[ts.mode]&&!TMODES[ts.mode].locked&&!ts.running)?' tmtime-edit':''}"
-           id="focus-tmtime" style="font-size:clamp(64px,14vw,96px);letter-spacing:-4px;"
-           onclick="focusTimerEdit('${wid}')">${fmtSec(ts.sec)}</div>
-      <div class="tminputs" id="focus-tminputs">
-        <input class="tm-timeinput" id="focus-tminp" type="text" inputmode="numeric" placeholder="25:00"
-          onkeydown="focusTimerInputKey(event,'${wid}')" oninput="tmInputFmt(event)"
-          style="font-size:32px;width:140px;text-align:center;"/>
-        <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
-        <button class="tm-setbtn" onclick="focusTimerConfirmEdit('${wid}')">Set time</button>
-      </div>
-    </div>
-    <div class="tmctrl" style="gap:14px;margin-bottom:16px;">
-      <button class="tm-resetbtn" style="width:44px;height:44px;font-size:20px;" onclick="focusTimerReset('${wid}')">↺</button>
-      <button class="tm-startbtn${ts.alarmActive||ts.running?' stop':''}" id="focus-tmbtn" style="padding:13px 36px;font-size:16px;" onclick="focusTimerBtn('${wid}')">${ts.alarmActive?'Stop':ts.running?'Pause':'Start'}</button>
-    </div>
-    <div class="tmsess" id="focus-tmsess" style="${ts.mode!==0?'display:none;':''}margin-bottom:12px;">
-      ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
-    </div>
-    <div id="focus-pom-wrap" style="${ts.mode!==0?'display:none;':''}width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:12px 14px;">
-      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
-      <div id="focus-pom-history"></div>
-    </div>`;
-  _focusRenderPomHistory();
-  clearInterval(_focusTickIv);
-  _focusTickIv = setInterval(() => {
-    const timeEl = document.getElementById('focus-tmtime');
-    if (timeEl) timeEl.textContent = fmtSec(TMS[wid]?.sec ?? 0);
-    const btn = document.getElementById('focus-tmbtn');
-    const cts = TMS[wid];
-    if (btn && cts) {
-      if (cts.alarmActive) { btn.textContent='Stop'; btn.classList.add('stop'); }
-      else { btn.textContent=cts.running?'Pause':'Start'; btn.classList.toggle('stop',cts.running); }
-    }
-    // sync sessions dots
-    const sess = document.getElementById('focus-tmsess');
-    if (sess && cts) sess.innerHTML = Array.from({length:4},(_,i)=>`<div class="tmsd${i<cts.sessions?' dn':''}"></div>`).join('');
-  }, 250);
-}
-
-function _focusRenderPomHistory() {
-  const el = document.getElementById('focus-pom-history');
-  if (!el) return;
-  const today = pomGetToday(), week = pomGetWeek(), days = pomGetWeekData();
-  const max = Math.max(...days.map(d=>d.count), 1);
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <div><div style="font-size:24px;font-weight:800;color:var(--ink);line-height:1;">${today}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">today</div></div>
-      <div style="text-align:right;"><div style="font-size:24px;font-weight:800;color:var(--ink);line-height:1;">${week}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">this week</div></div>
-    </div>
-    <div style="display:flex;align-items:flex-end;gap:6px;height:48px;">
-      ${days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
-        <div style="width:100%;border-radius:4px;background:var(--a2);opacity:${d.count?1:.18};height:${Math.max(d.count/max*36,d.count?5:3)}px;"></div>
-        <div style="font-size:9px;font-weight:700;color:${d.today?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${d.label}</div>
-      </div>`).join('')}
-    </div>`;
-}
-
-function focusTModeSet(wid, m) {
-  setTMode(wid, m);
-  const wrap = document.getElementById('focus-timer-wrap');
-  if (wrap) _buildFocusTimer(wid, wrap);
-}
-function focusTimerBtn(wid) {
-  timerBtn(wid);
-  const btn = document.getElementById('focus-tmbtn');
-  const ts = TMS[wid];
-  if (btn && ts) {
-    if (ts.alarmActive) { btn.textContent='Stop'; btn.classList.add('stop'); }
-    else { btn.textContent=ts.running?'Pause':'Start'; btn.classList.toggle('stop',ts.running); }
-  }
-}
-function focusTimerReset(wid) {
-  resetTimer(wid);
-  const wrap = document.getElementById('focus-timer-wrap');
-  if (wrap) _buildFocusTimer(wid, wrap);
-}
-function focusTimerEdit(wid) {
-  const ts = TMS[wid]; if (!ts) return;
-  if (TMODES[ts.mode]?.locked || ts.running) return;
-  const timeEl = document.getElementById('focus-tmtime');
-  const inpEl  = document.getElementById('focus-tminputs');
-  const inp    = document.getElementById('focus-tminp');
-  if (!timeEl || !inpEl || !inp) return;
-  inp.value = fmtSec(ts.sec);
-  timeEl.classList.add('hide');
-  inpEl.classList.add('show');
-  setTimeout(() => { inp.focus(); inp.select(); }, 50);
-}
-function focusTimerConfirmEdit(wid) {
-  const inp = document.getElementById('focus-tminp'); if (!inp) return;
-  const total = parseTimeInput(inp.value.trim()); if (total < 1) return;
-  const ts = TMS[wid]; if (!ts) return;
-  ts.custom[ts.mode] = total; ts.sec = total;
-  const wrap = document.getElementById('focus-timer-wrap');
-  if (wrap) _buildFocusTimer(wid, wrap);
-}
-function focusTimerInputKey(e, wid) {
-  if (e.key === 'Enter') { e.preventDefault(); focusTimerConfirmEdit(wid); }
-  if (e.key === 'Escape') {
-    const timeEl = document.getElementById('focus-tmtime');
-    const inpEl  = document.getElementById('focus-tminputs');
-    if (timeEl) timeEl.classList.remove('hide');
-    if (inpEl)  inpEl.classList.remove('show');
-  }
-}
-
-// ── MOBILE FOCUS MODE ──
-function mobEnterFocus() {
-  if (_mobPage !== 'timer') mobGoPage('timer');
-  document.body.classList.add('mob-focus');
-  document.addEventListener('keydown', _mobFocusKeyHandler);
-}
-function mobExitFocus() {
-  document.body.classList.remove('mob-focus');
-  document.removeEventListener('keydown', _mobFocusKeyHandler);
-}
-function _mobFocusKeyHandler(e) {
-  if (e.key === 'Escape') mobExitFocus();
-}
-
 function doSO(){
   stopRealtimeSync();
   if(sbReady)sbSignOut().catch(()=>{});
@@ -3044,7 +2869,7 @@ function buildTimerW(body,w){
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')" style="flex:1;">${ts.running?'Pause':'Start'}</button>
-        <button class="focus-btn" onclick="enterFocusMode('${w.id}')" data-tip="Focus mode" style="flex-shrink:0;">
+        <button class="focus-btn" onclick="enterFocusMode('${w.id}')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
           Focus
         </button>
@@ -3760,4 +3585,145 @@ function habitSubmit(containerId){
   const emoji=el._selectedEmoji||'✅';
   habitAdd(inp?.value||'', emoji);
   renderHabitAddForm(containerId);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// SESSION 6: FOCUS MODE
+// ═══════════════════════════════════════════════════════════
+let _focusWid=null, _focusIv=null;
+
+function enterFocusMode(wid){
+  _focusWid=wid;
+  const overlay=document.getElementById('focus-overlay');
+  const card=document.getElementById('focus-card');
+  if(!overlay||!card)return;
+  _focusBuild(wid,card);
+  overlay.classList.add('open');
+  document.body.classList.add('focus-mode');
+  document.addEventListener('keydown',_focusKey);
+}
+
+function exitFocusMode(){
+  const overlay=document.getElementById('focus-overlay');
+  if(!overlay)return;
+  overlay.classList.remove('open');
+  document.body.classList.remove('focus-mode');
+  document.removeEventListener('keydown',_focusKey);
+  clearInterval(_focusIv);_focusIv=null;
+  setTimeout(()=>{
+    const card=document.getElementById('focus-card');
+    if(card)card.innerHTML='';
+  },300);
+  if(_focusWid){
+    const w=widgets.find(x=>x.id===_focusWid);
+    if(w)fillWBody(w);
+  }
+  _focusWid=null;
+}
+
+function _focusKey(e){if(e.key==='Escape')exitFocusMode();}
+
+function _focusBuild(wid,card){
+  if(!TMS[wid])TMS[wid]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,20*60]};
+  const ts=TMS[wid];
+  const canEdit=TMODES[ts.mode]&&!TMODES[ts.mode].locked&&!ts.running;
+  card.innerHTML=`
+    <div style="text-align:center;margin-bottom:18px;">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--ink4);">Focus Mode</span>
+    </div>
+    <div class="tmmodes" style="margin-bottom:16px;">
+      ${TMODES.map((m,i)=>`<button class="tmm${i===ts.mode?' on':''}" onclick="_focusModeSet('${wid}',${i})">${m.l}</button>`).join('')}
+    </div>
+    <div class="tmdis" style="margin-bottom:16px;">
+      <div class="tmtime${canEdit?' tmtime-edit':''}" id="fc-time" style="font-size:clamp(56px,12vw,88px);letter-spacing:-4px;" onclick="_focusEditTime('${wid}')">${fmtSec(ts.sec)}</div>
+      <div class="tminputs" id="fc-inputs">
+        <input class="tm-timeinput" id="fc-inp" type="text" inputmode="numeric" placeholder="25:00"
+          onkeydown="_focusInpKey(event,'${wid}')" oninput="tmInputFmt(event)" style="font-size:28px;text-align:center;"/>
+        <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
+        <button class="tm-setbtn" onclick="_focusConfirm('${wid}')">Set time</button>
+      </div>
+    </div>
+    <div class="tmctrl" style="margin-bottom:16px;">
+      <button class="tm-resetbtn" style="width:44px;height:44px;font-size:20px;" onclick="_focusReset('${wid}')">↺</button>
+      <button class="tm-startbtn${ts.running?' stop':''}" id="fc-btn" style="flex:1;padding:13px 0;font-size:15px;" onclick="_focusToggle('${wid}')">${ts.running?'Pause':'Start'}</button>
+    </div>
+    <div class="tmsess" id="fc-sess" style="${ts.mode!==0?'display:none;':''}margin-bottom:14px;">
+      ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
+    </div>
+    <div id="fc-hist" style="${ts.mode!==0?'display:none;':''}background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:14px;">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
+      <div id="fc-hist-inner"></div>
+    </div>`;
+  _focusRenderHistory();
+  clearInterval(_focusIv);
+  _focusIv=setInterval(()=>{
+    const t=document.getElementById('fc-time');
+    const b=document.getElementById('fc-btn');
+    const s=document.getElementById('fc-sess');
+    const cts=TMS[wid];
+    if(!cts)return;
+    if(t)t.textContent=fmtSec(cts.sec);
+    if(b){b.textContent=cts.running?'Pause':'Start';b.classList.toggle('stop',cts.running);}
+    if(s&&cts.mode===0)s.innerHTML=Array.from({length:4},(_,i)=>`<div class="tmsd${i<cts.sessions?' dn':''}"></div>`).join('');
+  },250);
+}
+
+function _focusRenderHistory(){
+  const el=document.getElementById('fc-hist-inner');
+  if(!el)return;
+  const today=pomGetToday(),week=pomGetWeek(),days=pomGetWeekData();
+  const max=Math.max(...days.map(d=>d.count),1);
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+      <div><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${today}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;">today</div></div>
+      <div style="text-align:right;"><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${week}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;">this week</div></div>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:5px;height:44px;">
+      ${days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <div style="width:100%;border-radius:3px;background:var(--a2);opacity:${d.count?1:.18};height:${Math.max(d.count/max*34,d.count?5:3)}px;"></div>
+        <div style="font-size:9px;font-weight:700;color:${d.today?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${d.label}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function _focusModeSet(wid,m){setTMode(wid,m);const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);}
+function _focusReset(wid){resetTimer(wid);const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);}
+function _focusToggle(wid){
+  timerBtn(wid);
+  const b=document.getElementById('fc-btn');const ts=TMS[wid];
+  if(b&&ts){b.textContent=ts.running?'Pause':'Start';b.classList.toggle('stop',ts.running);}
+}
+function _focusEditTime(wid){
+  const ts=TMS[wid];if(!ts||TMODES[ts.mode]?.locked||ts.running)return;
+  const t=document.getElementById('fc-time');
+  const inp=document.getElementById('fc-inputs');
+  const i=document.getElementById('fc-inp');
+  if(!t||!inp||!i)return;
+  i.value=fmtSec(ts.sec);
+  t.classList.add('hide');inp.classList.add('show');
+  setTimeout(()=>{i.focus();i.select();},50);
+}
+function _focusConfirm(wid){
+  const i=document.getElementById('fc-inp');if(!i)return;
+  const total=parseTimeInput(i.value.trim());if(total<1)return;
+  const ts=TMS[wid];if(!ts)return;
+  ts.custom[ts.mode]=total;ts.sec=total;
+  const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);
+}
+function _focusInpKey(e,wid){
+  if(e.key==='Enter'){e.preventDefault();_focusConfirm(wid);}
+  if(e.key==='Escape'){
+    const t=document.getElementById('fc-time');const inp=document.getElementById('fc-inputs');
+    if(t)t.classList.remove('hide');if(inp)inp.classList.remove('show');
+  }
+}
+
+// ── Mobile focus mode ──
+function mobEnterFocus(){
+  if(typeof _mobPage!=='undefined'&&_mobPage!=='timer')mobGoPage('timer');
+  document.body.classList.add('mob-focus');
+}
+function mobExitFocus(){
+  document.body.classList.remove('mob-focus');
 }
