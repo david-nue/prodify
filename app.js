@@ -529,7 +529,7 @@ let _selTask=null;
 let curMood=0;
 // per-widget timer state (not persisted)
 const TMS={};
-const TMODES=[{l:'Pomodoro',s:25*60,locked:true},{l:'Short',s:5*60,locked:true},{l:'Long',s:15*60,locked:true},{l:'Custom',s:20*60,locked:false}];
+const TMODES=[{l:'Pomodoro',s:25*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
 // ═══════════════════════════════════════
 // HELPERS
@@ -621,7 +621,7 @@ let _mobMood = 0;
 // Timer state (standalone, independent of desktop)
 let _mobTimerMode = 0;
 let _mobTimerSec = 25*60;
-let _mobTimerCustom=[25*60,5*60,15*60,20*60];
+let _mobTimerCustom=[25*60,20*60];
 let _mobTimerRunning = false;
 let _mobTimerIv = null;
 let _mobTimerSessions = 0;
@@ -630,10 +630,10 @@ let _mobTimerAlarmActive = false;
 function _syncMobCustom(){
   const ts=TMS['mob']||Object.values(TMS)[0];
   if(ts&&ts.custom){
-    _mobTimerCustom[3]=ts.custom[3]; // sync custom slot
+    _mobTimerCustom[1]=ts.custom[1]; // sync custom slot
   }
 }
-const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Short Break',s:5*60,locked:true},{l:'Long Break',s:15*60,locked:true},{l:'Custom',s:20*60,locked:false}];
+const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
 function isMobile(){return window.innerWidth<=600;}
 
@@ -924,6 +924,12 @@ function mobSetMode(m){
   if(_mobTimerRunning)return;
   _mobTimerMode=m;
   _mobTimerSec=_mobTimerCustom[m]||MOB_TMODES[m].s;
+  // show/hide session history and dots — only relevant for Pomodoro
+  const hw=document.getElementById('mob-pom-history-wrap');
+  const sw=document.getElementById('mob-timer-sessions');
+  const isPomodoro=m===0;
+  if(hw)hw.style.display=isPomodoro?'block':'none';
+  if(sw)sw.style.display=isPomodoro?'flex':'none';
   mobTimerRender();
 }
 function mobTimerEdit(){
@@ -943,7 +949,8 @@ function mobTimerConfirmEdit(){
   let total=0;
   if(raw.includes(':')){const parts=raw.split(':');total=(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);}
   else{total=(parseInt(raw)||0)*60;}
-  total=Math.max(10,total);
+  total=Math.max(1,total);
+  if(total===0)return;
   _mobTimerCustom[_mobTimerMode]=total;
   _mobTimerSec=total;
   // Also sync to any desktop timer widget
@@ -2456,11 +2463,10 @@ function renderJournalW(wid){
 /* ── TIMER ── */
 function buildTimerW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
-  if(!TMS[w.id])TMS[w.id]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,5*60,15*60,20*60]};
+  if(!TMS[w.id])TMS[w.id]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,20*60]};
   const ts=TMS[w.id];
-  if(!ts.custom||ts.custom.length<4)ts.custom=[25*60,5*60,15*60,20*60];
-  // restore locked modes
-  ts.custom[0]=25*60;ts.custom[1]=5*60;ts.custom[2]=15*60;
+  if(!ts.custom||ts.custom.length<2)ts.custom=[25*60,20*60];
+  ts.custom[0]=25*60; // lock pomodoro
 
   const canEdit=TMODES[ts.mode]&&!TMODES[ts.mode].locked;
   body.innerHTML=`
@@ -2481,10 +2487,10 @@ function buildTimerW(body,w){
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')">${ts.running?'Pause':'Start'}</button>
       </div>
-      <div class="tmsess" id="tmsess-${w.id}">
+      <div class="tmsess" id="tmsess-${w.id}" style="${ts.mode!==0?'display:none;':''}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
       </div>
-      <div style="margin:8px 14px 14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;">
+      <div id="dsk-pom-history-wrap-${w.id}" style="margin:8px 14px 14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;${ts.mode!==0?'display:none;':''}">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
         <div id="dsk-pom-history"></div>
       </div>
@@ -2533,10 +2539,11 @@ function tmConfirmEdit(wid){
   } else {
     total=(parseInt(raw)||0)*60;
   }
-  total=Math.max(10,total);
+  total=Math.max(1,total);
+  if(total===0)return;
   ts.custom[ts.mode]=total;
   ts.sec=total;
-  if(ts.mode===3){_mobTimerCustom[3]=total;_mobTimerSec=total;}
+  if(ts.mode===1){_mobTimerCustom[1]=total;_mobTimerSec=total;}
   tmCancelEdit(wid);
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
 }
@@ -2558,6 +2565,12 @@ function setTMode(wid,m){
     return;
   }
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
+  // show/hide session history + dots based on mode
+  const isPomodoro=m===0;
+  const hw=document.getElementById('dsk-pom-history-wrap-'+wid);
+  const sw=document.getElementById('tmsess-'+wid);
+  if(hw)hw.style.display=isPomodoro?'':'none';
+  if(sw)sw.style.display=isPomodoro?'':'none';
 }
 function timerBtn(wid){
   const ts=TMS[wid];if(!ts)return;
