@@ -1142,10 +1142,12 @@ function mobDelCalEv(id){
 
 // ── SETTINGS ──
 function mobRenderSettings(){
+  const d=acc[cu]||{};
+  const displayName=d.displayName||d.display_name||'—';
   const nm=document.getElementById('mob-set-name');
   const un=document.getElementById('mob-set-un');
-  if(nm&&cu)nm.textContent=cu.display_name||'—';
-  if(un&&cu)un.textContent='@'+cu.username;
+  if(nm)nm.textContent=displayName;
+  if(un)un.textContent='@'+cu;
   const tog=document.getElementById('mob-tog-dk');
   if(tog)tog.classList.toggle('on',!!prefs.dark);
 }
@@ -2778,24 +2780,12 @@ function renderProfile(){
 // SETTINGS
 // ═══════════════════════════════════════
 function renderSettings(){
-  const d=acc[cu];
-  $('set-un').textContent='@'+cu;
-  $('nm-i').value=d.displayName||'';
+  const d=acc[cu]||{};
+  const displayName=d.displayName||d.display_name||'—';
+  const el=document.getElementById('set-dn');if(el)el.textContent=displayName;
+  const un=document.getElementById('set-un');if(un)un.textContent='@'+cu;
+  const nmInput=$('nm-i');if(nmInput)nmInput.value=d.displayName||'';
   $('tog-dk').className='tog'+(prefs.dark?' on':'');
-  // Supabase status
-  const dot=$('sb-dot'),status=$('sb-status');
-  const setupRow=$('sb-setup-row'),sqlRow=$('sb-sql-row');
-  if(sbReady){
-    if(dot){dot.style.background='#3A7D5E';}
-    if(status)status.textContent='Connected — data syncs to Supabase';
-    if(setupRow)setupRow.style.display='none';
-    if(sqlRow)sqlRow.style.display='none';
-  } else {
-    if(dot){dot.style.background='#B83030';}
-    if(status)status.textContent='Not connected — using local storage only';
-    if(setupRow)setupRow.style.display='flex';
-    if(sqlRow)sqlRow.style.display='flex';
-  }
 }
 function copySql(){
   const sql=$('sb-sql');if(!sql)return;
@@ -2807,9 +2797,12 @@ function copySql(){
 function saveName(){
   const n=$('nm-i').value.trim();if(!n)return;
   acc[cu].displayName=n;LS.s('pd1_acc',acc);
-  ['sbavt','ddav'].forEach(id=>$(id).textContent=n[0].toUpperCase());
-  $('ddnm').textContent=n;
+  if(sbReady)dbSaveUser(cu,acc[cu]);
+  ['sbavt','ddav'].forEach(id=>{const e=$(id);if(e)e.textContent=n[0].toUpperCase();});
+  const ddnm=$('ddnm');if(ddnm)ddnm.textContent=n;
   if($('pbnm'))$('pbnm').textContent=n;
+  renderSettings();
+  mobRenderSettings();
   closeMo('mo-nm');
 }
 function chgPw(){

@@ -420,32 +420,12 @@
         <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:11px;">
         <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;">Settings</div>
           <div class="setsec"><div class="setsect">Account</div>
-            <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc">Change how you appear in Prodify</div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
-            <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="set-un"></div></div></div>
+            <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="set-dn">—</div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
+            <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="set-un">—</div></div></div>
             <div class="setrow"><div><div class="setlbl">Change Password</div><div class="setdsc">Update your login credentials</div></div><button class="bol bsm" onclick="openMo('mo-pw')">Change</button></div>
           </div>
           <div class="setsec"><div class="setsect">Appearance</div>
             <div class="setrow"><div><div class="setlbl">Dark Mode</div><div class="setdsc">Switch to a dark color scheme</div></div><button class="tog" id="tog-dk" onclick="togDark(this)"></button></div>
-          </div>
-          <div class="setsec"><div class="setsect">Database</div>
-            <div class="setrow"><div><div class="setlbl">Supabase Sync</div><div class="setdsc" id="sb-status">Checking...</div></div><div id="sb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--bdr);flex-shrink:0;"></div></div>
-            <div class="setrow" id="sb-setup-row" style="display:none;"><div><div class="setlbl">How to connect</div><div class="setdsc" style="line-height:1.7;">1. Create a free project at <b>supabase.com</b><br/>2. Run the SQL below in your SQL editor<br/>3. Paste your URL + anon key into the file</div></div></div>
-            <div class="setrow" id="sb-sql-row" style="display:none;"><div style="width:100%"><div class="setlbl">SQL to run</div><pre id="sb-sql" style="font-size:10px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r6);padding:8px;margin-top:5px;overflow-x:auto;white-space:pre;color:var(--ink2);font-family:monospace;line-height:1.6;cursor:pointer;" onclick="copySql()" title="Click to copy">create table users (
-  username text primary key,
-  pass_hash text,
-  display_name text,
-  tasks text default '[]',
-  journal text default '[]',
-  subjects text default '[]',
-  cal_evs text default '[]',
-  widgets text default '[]',
-  notes text default '{}',
-  prefs text default '{}',
-  joined_at timestamptz default now()
-);
-alter table users enable row level security;
-create policy "public" on users for all using (true);</pre>
-            <div style="font-size:10px;color:var(--ink4);margin-top:3px;">Click to copy • Then open the file and fill in SB_URL and SB_KEY</div></div></div>
           </div>
           <div class="setsec"><div class="setsect">Data</div>
             <div class="setrow"><div><div class="setlbl">Delete account</div><div class="setdsc">Permanently delete your account and all data</div></div><button class="dbtn full" onclick="delAcc()">Delete account</button></div>
@@ -917,32 +897,35 @@ create policy "public" on users for all using (true);</pre>
 </div>
 
 <!-- DESKTOP ABOUT MODAL -->
-<div class="ov" id="mo-about" onclick="if(event.target===this)closeMo('mo-about')"><div class="mod" style="max-width:480px;">
-  <div class="mh">About Prodify</div>
-  <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;padding:16px;background:var(--surf2);border-radius:14px;">
-    <div style="width:64px;height:64px;border-radius:50%;background:var(--a2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;flex-shrink:0;">D</div>
-    <div>
-      <div style="font-size:17px;font-weight:800;color:var(--ink);">David Nueva</div>
-      <div style="font-size:12px;color:var(--a2);font-weight:600;">Creator of Prodify</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;line-height:1.5;">A student developer building tools that make everyday life more organized and productive.</div>
+<div class="ov" id="mo-about" onclick="if(event.target===this)closeMo('mo-about')"><div class="mod" style="max-width:460px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+
+  <!-- Creator card -->
+  <div class="profcard" style="border-radius:18px;text-align:center;padding:28px 20px;">
+    <img src="https://avatars.githubusercontent.com/u/00000000" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:12px;background:var(--bdr);display:block;margin-left:auto;margin-right:auto;" onerror="this.style.display='none'"/>
+    <div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:4px;">David Nueva</div>
+    <div style="font-size:12px;color:var(--a2);font-weight:600;margin-bottom:12px;">Creator of Prodify</div>
+    <div style="font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:16px;">A student developer passionate about building tools that make everyday life more organized and productive. Prodify started as a personal project and grew into something I hope helps you too.</div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+      <a href="https://github.com/davidnueva" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink);text-decoration:none;">GitHub</a>
+      <a href="https://davidnueva.dev" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:var(--a2);border-radius:100px;font-size:12px;font-weight:600;color:#fff;text-decoration:none;">Portfolio</a>
     </div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-    <a href="https://github.com/davidnueva" target="_blank" style="padding:7px 14px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink);text-decoration:none;">GitHub</a>
-    <a href="https://davidnueva.dev" target="_blank" style="padding:7px 14px;background:var(--a2);border-radius:100px;font-size:12px;font-weight:600;color:#fff;text-decoration:none;">Portfolio</a>
-  </div>
-  <div style="margin-bottom:14px;">
-    <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Built With</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;">
-      <span style="padding:4px 10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vanilla JS</span>
-      <span style="padding:4px 10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Supabase</span>
-      <span style="padding:4px 10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vercel</span>
-      <span style="padding:4px 10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">CSS3</span>
-      <span style="padding:4px 10px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">PWA</span>
+
+  <!-- Built with card -->
+  <div class="profcard" style="border-radius:14px;">
+    <div class="pct">Built With</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+      <span style="padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink2);">Vanilla JS</span>
+      <span style="padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink2);">Supabase</span>
+      <span style="padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink2);">Vercel</span>
+      <span style="padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink2);">CSS3</span>
+      <span style="padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:12px;font-weight:600;color:var(--ink2);">PWA</span>
     </div>
   </div>
+
   <div style="text-align:center;font-size:11px;color:var(--ink4);">Prodify v1.0 · Made with ♥</div>
-  <div class="mf"><button class="bol bsm" onclick="closeMo('mo-about')">Close</button></div>
+  <div class="mf" style="margin-top:0;"><button class="bol bsm" onclick="closeMo('mo-about')">Close</button></div>
+
 </div></div>
 
 <!-- BIO EDIT MODAL -->
