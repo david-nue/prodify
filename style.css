@@ -1422,7 +1422,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sa-mb-eye:hover{opacity:0.8;}
 
 /* ── FEEDBACK ── */
-.fbtype-btn{padding:7px 14px;border-radius:100px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.fbtype-btn{padding:6px 0;border-radius:8px;border:1.5px solid var(--bdr);background:transparent;color:var(--ink3);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.01em;}
 .fbtype-btn.fbtype-act{background:var(--a2);color:#fff;border-color:var(--a2);}
-.fb-star{transition:color .1s;color:var(--ink4);user-select:none;}
+.fbtype-btn:not(.fbtype-act):hover{border-color:var(--ink3);color:var(--ink);}
+.fb-star{transition:color .12s;color:var(--ink3);user-select:none;line-height:1;}
 .fb-star:hover{color:var(--a2);}

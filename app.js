@@ -1771,44 +1771,63 @@ function renderActivity(barId, streakId, legendId){
   const barEl=$(barId); if(!barEl)return;
   const today=new Date();
   const DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MAX_H=60; // px — fixed bar max height
 
-  // Build per-day counts for last 7 days
+  // Last 7 days
   const days=[];
   for(let i=6;i>=0;i--){
     const d=new Date(today);d.setDate(today.getDate()-i);
     const ds=d.toDateString();
     const jCount=journal.filter(j=>new Date(j.ts||j.id).toDateString()===ds).length;
     const tCount=tasks.filter(t=>t.col==='done'&&new Date(t.id).toDateString()===ds).length;
-    days.push({d,ds,label:DAY[d.getDay()],date:d.getDate(),jCount,tCount,isToday:i===0});
+    days.push({d,ds,label:DAY[d.getDay()],jCount,tCount,isToday:i===0});
   }
   const maxVal=Math.max(1,...days.map(d=>d.jCount+d.tCount));
 
-  // Render bar chart
-  let html=`<div style="display:flex;align-items:flex-end;gap:6px;height:70px;padding:0 2px;">`;
+  // Summary stats
+  const totalT=days.reduce((s,d)=>s+d.tCount,0);
+  const totalJ=days.reduce((s,d)=>s+d.jCount,0);
+
+  let html=`<div style="display:flex;gap:12px;margin-bottom:14px;">
+    <div style="flex:1;background:var(--surf2);border-radius:10px;padding:10px 12px;">
+      <div style="font-size:18px;font-weight:800;color:var(--a2);">${totalT}</div>
+      <div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">tasks done</div>
+    </div>
+    <div style="flex:1;background:var(--surf2);border-radius:10px;padding:10px 12px;">
+      <div style="font-size:18px;font-weight:800;color:var(--a2);">${totalJ}</div>
+      <div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">journal entries</div>
+    </div>
+  </div>`;
+
+  // Bar chart with fixed px heights
+  html+=`<div style="display:flex;align-items:flex-end;gap:5px;height:${MAX_H+20}px;padding:0 2px;">`;
   days.forEach(day=>{
     const total=day.jCount+day.tCount;
-    const pct=total?Math.max(12,Math.round((total/maxVal)*100)):0;
-    const jPct=total?Math.round((day.jCount/total)*100):0;
-    const tip=`${day.d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}: ${day.tCount} task${day.tCount!==1?'s':''} done, ${day.jCount} journal entr${day.jCount!==1?'ies':'y'}`;
-    html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
-      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
-        ${total?`<div style="width:100%;height:${pct}%;border-radius:5px 5px 0 0;background:linear-gradient(to top,var(--a2) ${100-jPct}%,var(--a) ${100-jPct}%);opacity:${day.isToday?1:0.75};min-height:6px;" title="${tip}"></div>`
-        :`<div style="width:100%;height:6px;border-radius:5px;background:var(--bdr);"></div>`}
+    const barH=total?Math.max(8,Math.round((total/maxVal)*MAX_H)):4;
+    const tH=total?Math.round((day.tCount/total)*barH):0;
+    const jH=barH-tH;
+    const tip=`${day.d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}: ${day.tCount} task${day.tCount!==1?'s':''} done · ${day.jCount} journal entr${day.jCount!==1?'ies':'y'}`;
+    html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;" title="${tip}">
+      <div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:${MAX_H}px;">
+        ${total?`<div style="width:100%;border-radius:4px 4px 0 0;overflow:hidden;">
+          ${jH>0?`<div style="height:${jH}px;background:var(--a);"></div>`:''}
+          ${tH>0?`<div style="height:${tH}px;background:var(--a2);"></div>`:''}
+        </div>`:`<div style="width:100%;height:4px;border-radius:2px;background:var(--bdr);"></div>`}
       </div>
-      <div style="font-size:9px;font-weight:700;color:${day.isToday?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${day.label}</div>
+      <div style="font-size:9px;font-weight:700;color:${day.isToday?'var(--a2)':'var(--ink4)'};letter-spacing:.03em;">${day.label}</div>
     </div>`;
   });
   html+=`</div>`;
 
   // Legend
-  html+=`<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
-    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink4);"><span style="width:10px;height:10px;border-radius:2px;background:var(--a2);display:inline-block;"></span>Tasks done</span>
-    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink4);"><span style="width:10px;height:10px;border-radius:2px;background:var(--a);display:inline-block;"></span>Journal entries</span>
+  html+=`<div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink3);"><span style="width:8px;height:8px;border-radius:2px;background:var(--a2);display:inline-block;"></span>Tasks</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink3);"><span style="width:8px;height:8px;border-radius:2px;background:var(--a);display:inline-block;"></span>Journal</span>
   </div>`;
 
   barEl.innerHTML=html;
 
-  // Streak — consecutive days with any activity
+  // Streak
   if(streakId){
     let streak=0;
     for(let i=0;i<=90;i++){
@@ -1816,11 +1835,10 @@ function renderActivity(barId, streakId, legendId){
       const ds=d.toDateString();
       const active=journal.some(j=>new Date(j.ts||j.id).toDateString()===ds)||
                    tasks.some(t=>t.col==='done'&&new Date(t.id).toDateString()===ds);
-      if(active)streak++;
-      else break;
+      if(active)streak++;else break;
     }
     const streakEl=$(streakId);
-    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:(streak===1?'🌱 Active today':'No recent activity');
+    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:streak===1?'🌱 Active today':'';
   }
 }
 
