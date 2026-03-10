@@ -1421,8 +1421,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
 .ltag{animation:fadeUp .5s .1s both;}
 .lh1{animation:fadeUp .6s .2s both;}
-.lsub{animation:fadeUp .6s 
-
+.lsub{animation:fadeUp .6s .3s both;}
 
 /* password eye icon - inside input, right side */
 .pw-wrap{position:relative;display:flex;align-items:stretch;}
