@@ -1703,14 +1703,14 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── Session 6: Focus Mode ── */
 .fcsbtn{
-  display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;
   background:var(--al);border:1.5px solid var(--a2);border-radius:100px;
-  padding:0 14px;height:44px;font-size:12px;font-weight:700;
-  color:var(--a2);cursor:pointer;
+  padding:10px 14px;font-size:12px;font-weight:700;
+  color:var(--a2);cursor:pointer;width:100%;box-sizing:border-box;
   font-family:'Plus Jakarta Sans',sans-serif;
   transition:background .12s,opacity .12s;
 }
-.fcsbtn:hover{opacity:.8;}
+.fcsbtn:hover{background:var(--a2);color:#fff;}
 .fcsbtn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;flex-shrink:0;}
 
 /* desktop: dim sidebar/topbar/wtray in focus mode */
@@ -1724,6 +1724,12 @@ body.in-focus-mob .mob-topbar{display:none!important;}
 body.in-focus-mob .mob-av{display:none!important;}
 /* overflow:hidden on mob-app traps position:fixed children — override when in focus */
 body.in-focus-mob .mob-app{overflow:visible;}
+/* timer page fills full screen in focus mode */
+body.in-focus-mob #mpg-timer{flex:1;min-height:0;}
+body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;}
+/* hide session history and non-essential elements in focus mode */
+body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
+body.in-focus-mob .mob-timer-sessions{display:flex;}
 
 /* mobile exit btn */
 #fcs-mob-exit{

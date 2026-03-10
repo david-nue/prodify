@@ -2867,11 +2867,11 @@ function buildTimerW(body,w){
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')" style="flex:1;">${ts.running?'Pause':'Start'}</button>
-        <button class="fcsbtn" onclick="fcsOpen('${w.id}')">
-          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-          Focus
-        </button>
       </div>
+      <button class="fcsbtn" style="width:100%;justify-content:center;margin:0 0 2px;" onclick="fcsOpen('${w.id}')">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        Focus Mode
+      </button>
       <div class="tmsess" id="tmsess-${w.id}" style="${ts.mode!==0?'display:none;':''}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
       </div>
