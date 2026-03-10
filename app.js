@@ -1183,6 +1183,13 @@ function mobTimerReset(){
 }
 
 // ── JOURNAL ──
+let _mobJSearch='';
+function onMobJSearch(val){
+  _mobJSearch=val.toLowerCase().trim();
+  const clr=document.getElementById('mob-journal-search-clear');
+  if(clr)clr.style.display=val?'block':'none';
+  mobRenderJournal();
+}
 function mobRenderJournal(){
   // mood buttons
   const moodsEl=document.getElementById('mob-jmoods');
@@ -1196,12 +1203,19 @@ function mobRenderJournal(){
   // entries
   const list=document.getElementById('mob-journal-list');
   if(!list)return;
+  const q=_mobJSearch||'';
+  const filtered=q?journal.filter(j=>(j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q)):journal;
   if(!journal.length){
     list.innerHTML='<div class="mob-journal-empty">No entries yet.<br><span style="font-size:11px;">Write how your day is going above!</span></div>';
     return;
   }
-  const mobJHdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px;"><span style="font-size:11px;color:var(--ink4);">${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="mobClrJournal()" style="background:none;border:none;font-size:11px;color:var(--ink4);cursor:pointer;padding:2px 6px;border-radius:6px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
-  list.innerHTML=mobJHdr+journal.map(j=>{
+  if(!filtered.length){
+    list.innerHTML='<div class="mob-journal-empty">No entries match your search.</div>';
+    return;
+  }
+  const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
+  const mobJHdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px;"><span style="font-size:11px;color:var(--ink4);">${filtered.length}${q?' of '+journal.length:''} entr${journal.length>1?'ies':'y'}</span><button onclick="mobClrJournal()" style="background:none;border:none;font-size:11px;color:var(--ink4);cursor:pointer;padding:2px 6px;border-radius:6px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  list.innerHTML=mobJHdr+filtered.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
     return`<div class="mob-journal-entry">
       <div class="mob-je-hd">
@@ -1210,7 +1224,7 @@ function mobRenderJournal(){
         <span class="mob-je-date">${j.date}</span>
         <button class="mob-je-del" onclick="mobDelJournal(${j.id})">&#x2715;</button>
       </div>
-      <div class="mob-je-text">${esc(j.text)}</div>
+      <div class="mob-je-text">${hl(esc(j.text))}</div>
     </div>`;
   }).join('');
 }
@@ -2639,9 +2653,14 @@ function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.cl
 function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}dragTaskId=null;}
 
 /* ── JOURNAL ── */
+let _jwSearch={};  // per-widget search query
+
 function buildJournalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   body.innerHTML=`
+    <div class="jwsearch-wrap">
+      <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
+    </div>
     <div class="jwlist" id="jwl-${w.id}"></div>
     <div class="jwadd">
       <textarea class="jwta" id="jwta-${w.id}" rows="2" placeholder="How's your day?"></textarea>
@@ -2676,13 +2695,18 @@ function addJournal(wid){
 }
 async function delJournal(id){if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>renderJournalW(w.id));}
+function onJwSearch(wid,val){_jwSearch[wid]=val.toLowerCase().trim();renderJournalW(wid);}
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
+  const q=_jwSearch[wid]||'';
+  const filtered=q?journal.filter(j=>(j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q)):journal;
   if(!journal.length){el.innerHTML='<div class="jwempty">Your journal is empty.<br/>Write something below.</div>';return;}
-  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
-  el.innerHTML=hdr+journal.map(j=>{
+  if(!filtered.length){el.innerHTML='<div class="jwempty">No entries match your search.</div>';return;}
+  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
+  el.innerHTML=hdr+filtered.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
-    return `<div class="jwje"><div class="jwjehd"><div class="jwm">${m.e}</div><span class="jwdt">${j.date} · ${m.l}</span><button class="jwdel" onclick="delJournal(${j.id})">&times;</button></div><div class="jwtx">${esc(j.text)}</div></div>`;
+    return `<div class="jwje"><div class="jwjehd"><div class="jwm">${m.e}</div><span class="jwdt">${j.date} · ${m.l}</span><button class="jwdel" onclick="delJournal(${j.id})">&times;</button></div><div class="jwtx">${hl(esc(j.text))}</div></div>`;
   }).join('');
 }
 

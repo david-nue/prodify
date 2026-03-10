@@ -594,6 +594,15 @@
         <button class="mob-journal-save" onclick="mobSaveJournal()">Save Entry</button>
       </div>
     </div>
+    <div style="padding:0 12px 8px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:9px 12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="mob-journal-search" type="text" placeholder="Search entries…" oninput="onMobJSearch(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:13px;color:var(--ink);font-family:inherit;" />
+        <button onclick="document.getElementById('mob-journal-search').value='';onMobJSearch('');" style="background:none;border:none;cursor:pointer;padding:0;display:none;" id="mob-journal-search-clear">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
     <div class="mob-journal-list" id="mob-journal-list"></div>
   </div>
 
