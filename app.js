@@ -2467,7 +2467,7 @@ function buildTaskW(body,w){
   body.innerHTML=`
     <div class="twadd">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
+      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>Due date</button>
       <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
