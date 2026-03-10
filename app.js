@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // ── ZOOM STATE ──
   let _scale = 1;
+  window._canvasScale = 1; // exposed for drag/resize coordinate math
   const MIN_SCALE = 0.3, MAX_SCALE = 2.5;
 
   function applyZoom(newScale, originX, originY){
@@ -63,13 +64,24 @@ document.addEventListener('DOMContentLoaded', function(){
     scroll.scrollTop  = (scroll.scrollTop  + originY) * ratio - originY;
     cvs.style.transformOrigin = '0 0';
     cvs.style.transform = `scale(${_scale})`;
+    window._canvasScale = _scale;
     // Keep scroll container aware of scaled size
     cvs.style.width  = (2400 * _scale) + 'px';
     cvs.style.height = (1800 * _scale) + 'px';
   }
 
-  // ── SCROLL WHEEL ZOOM (desktop) — always zoom, even over widgets ──
+  // ── SCROLL WHEEL ZOOM (desktop) — zoom on bg, scroll on widgets ──
   scroll.addEventListener('wheel', function(e){
+    // If hovering over a scrollable widget body, let it scroll naturally
+    const widgetBody = e.target.closest('.wbody, .twbody, .jwlist, .swbody, .stgrid, .cwdays, .tmbody, .notebody');
+    if(widgetBody){
+      // Only intercept if the widget body itself is not scrollable (no overflow)
+      const isScrollable = widgetBody.scrollHeight > widgetBody.clientHeight || widgetBody.scrollWidth > widgetBody.clientWidth;
+      if(isScrollable){
+        // Let the widget handle its own scroll — don't zoom
+        return;
+      }
+    }
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const rect = scroll.getBoundingClientRect();
@@ -1953,18 +1965,28 @@ function startDrag(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wdrag');
-  // Capture pointer on the source element so move events keep firing even if finger moves fast
-  try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
-  const startX=e.clientX-w.x,startY=e.clientY-w.y;
+  // Disable pointer events on other widgets during drag to prevent hit-test lag
+  document.querySelectorAll('.widget').forEach(wd=>{if(wd.id!==id)wd.style.pointerEvents='none';});
+  const scale = window._canvasScale||1;
+  // Capture pointer for fast uninterrupted tracking
+  try{if(e.pointerId!=null)el.setPointerCapture(e.pointerId);}catch(_){}
+  // Convert initial mouse pos to canvas space
+  const startX = e.clientX/scale - w.x;
+  const startY = e.clientY/scale - w.y;
   const mm=e=>{
-    w.x=Math.max(0,e.clientX-startX);w.y=Math.max(0,e.clientY-startY);
+    w.x=Math.max(0, e.clientX/scale - startX);
+    w.y=Math.max(0, e.clientY/scale - startY);
     el.style.left=w.x+'px';el.style.top=w.y+'px';
   };
   const mu=()=>{
-    el.classList.remove('wdrag');persist();
-    document.removeEventListener('pointermove',mm);document.removeEventListener('pointerup',mu);
+    el.classList.remove('wdrag');
+    document.querySelectorAll('.widget').forEach(wd=>wd.style.pointerEvents='');
+    persist();
+    el.removeEventListener('pointermove',mm);
+    el.removeEventListener('pointerup',mu);
   };
-  document.addEventListener('pointermove',mm);document.addEventListener('pointerup',mu);
+  el.addEventListener('pointermove',mm);
+  el.addEventListener('pointerup',mu);
 }
 
 // RESIZE
@@ -1973,21 +1995,23 @@ function startResize(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wresize');
+  const scale = window._canvasScale||1;
   try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
-  const startX=e.clientX,startY=e.clientY,startW=w.w,startH=w.h;
+  const startX=e.clientX/scale, startY=e.clientY/scale, startW=w.w, startH=w.h;
   const isTimer=w.type==='timer';
   const minW=isTimer?280:200, maxW=99999;
   const minH=isTimer?300:130, maxH=99999;
   const mm=e=>{
-    w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX-startX)));
-    w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY-startY)));
+    w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
+    w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
     el.style.width=w.w+'px';el.style.height=w.h+'px';
   };
   const mu=()=>{
     el.classList.remove('wresize');persist();
-    document.removeEventListener('pointermove',mm);document.removeEventListener('pointerup',mu);
+    e.target.releasePointerCapture&&e.target.releasePointerCapture(e.pointerId);
+    el.removeEventListener('pointermove',mm);el.removeEventListener('pointerup',mu);
   };
-  document.addEventListener('pointermove',mm);document.addEventListener('pointerup',mu);
+  el.addEventListener('pointermove',mm);el.addEventListener('pointerup',mu);
 }
 
 // ═══════════════════════════════════════
