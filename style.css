@@ -1422,10 +1422,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sa-mb-eye:hover{opacity:0.8;}
 
 /* ── FEEDBACK ── */
-.fbtype-btn{padding:7px 0;border-radius:8px;border:1.5px solid var(--ink4);background:transparent;color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.01em;}
-.fbtype-btn.fbtype-act{background:var(--a2);color:#fff;border-color:var(--a2);}
-.fbtype-btn:not(.fbtype-act):hover{border-color:var(--ink2);color:var(--ink);}
-.fb-star{transition:all .12s;color:var(--ink3);fill:none;user-select:none;line-height:1;display:inline-block;}
-.fb-star svg{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .12s;}
+.fb-type-seg{display:flex;background:var(--surf2);border-radius:10px;padding:3px;gap:2px;}
+.fbtype-btn{flex:1;padding:7px 0;border-radius:7px;border:none;background:transparent;color:var(--ink3);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.fbtype-btn.fbtype-act{background:var(--surf);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.fb-star{display:inline-flex;align-items:center;justify-content:center;user-select:none;cursor:pointer;transition:transform .1s;}
+.fb-star svg{width:32px;height:32px;stroke:var(--ink3);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:all .15s;}
 .fb-star.filled svg{fill:var(--a2);stroke:var(--a2);}
-.fb-star:hover svg,.fb-star:hover~.fb-star svg{stroke:var(--a2);}
+.fb-star:active{transform:scale(.88);}

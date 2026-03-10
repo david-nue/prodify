@@ -788,7 +788,7 @@ create policy "public" on users for all using (true);</pre>
       <div style="text-align:center;padding:32px 0 28px;">
         <div style="font-size:22px;font-weight:800;color:var(--ink);margin-bottom:6px;">How's Prodify?</div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:20px;">Tap a star to rate</div>
-        <div id="fb-stars" style="display:flex;justify-content:center;gap:8px;font-size:38px;cursor:pointer;line-height:1;">
+        <div id="fb-stars" style="display:flex;justify-content:center;gap:4px;">
           <span onclick="setFbStar(1)" class="fb-star" data-i="1"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
           <span onclick="setFbStar(2)" class="fb-star" data-i="2"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
           <span onclick="setFbStar(3)" class="fb-star" data-i="3"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
@@ -797,10 +797,10 @@ create policy "public" on users for all using (true);</pre>
         </div>
       </div>
       <!-- Type chips -->
-      <div style="display:flex;gap:8px;margin-bottom:20px;">
-        <button id="fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act" style="flex:1;padding:8px 0;">General</button>
-        <button id="fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn" style="flex:1;padding:8px 0;">Bug</button>
-        <button id="fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn" style="flex:1;padding:8px 0;">Idea</button>
+      <div class="fb-type-seg" style="margin-bottom:20px;">
+        <button id="fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">General</button>
+        <button id="fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">Bug</button>
+        <button id="fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">Idea</button>
       </div>
       <!-- Input -->
       <textarea id="fb-msg" rows="4" placeholder="Say something..." style="width:100%;background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;padding:16px;outline:none;font-size:14px;color:var(--ink);line-height:1.65;resize:none;font-family:inherit;box-sizing:border-box;margin-bottom:16px;transition:border-color .15s;" onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"></textarea>
@@ -960,7 +960,7 @@ create policy "public" on users for all using (true);</pre>
   <div style="text-align:center;margin-bottom:22px;">
     <div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px;">How's Prodify?</div>
     <div style="font-size:12px;color:var(--ink3);">Your feedback helps make it better</div>
-    <div id="dsk-fb-stars" style="display:flex;justify-content:center;gap:8px;font-size:30px;cursor:pointer;margin-top:16px;line-height:1;">
+    <div id="dsk-fb-stars" style="display:flex;justify-content:center;gap:4px;margin-top:16px;">
       <span onclick="setFbStar(1)" class="fb-star" data-i="1"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
       <span onclick="setFbStar(2)" class="fb-star" data-i="2"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
       <span onclick="setFbStar(3)" class="fb-star" data-i="3"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
@@ -968,10 +968,10 @@ create policy "public" on users for all using (true);</pre>
       <span onclick="setFbStar(5)" class="fb-star" data-i="5"><svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></span>
     </div>
   </div>
-  <div style="display:flex;gap:6px;margin-bottom:14px;">
-    <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act" style="flex:1;padding:7px 0;">General</button>
-    <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn" style="flex:1;padding:7px 0;">Bug</button>
-    <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn" style="flex:1;padding:7px 0;">Idea</button>
+  <div class="fb-type-seg" style="margin-bottom:14px;">
+    <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">General</button>
+    <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">Bug</button>
+    <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">Idea</button>
   </div>
   <textarea class="fi" id="dsk-fb-msg" rows="3" placeholder="Say something..." style="resize:none;transition:border-color .15s;" onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"></textarea>
   <div style="display:flex;gap:8px;margin-top:14px;">
