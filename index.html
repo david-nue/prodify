@@ -777,37 +777,58 @@ create policy "public" on users for all using (true);</pre>
 
   <!-- FEEDBACK PAGE (mobile) -->
   <div class="mob-page" id="mpg-feedback">
-    <div class="mob-topbar">
-      <div>
-        <button onclick="mobGoPage('settings')" style="background:none;border:none;color:var(--a2);font-size:13px;font-weight:700;cursor:pointer;padding:0 0 4px;">← Back</button>
-        <div class="mob-topbar-title">Feedback</div>
-      </div>
+    <div class="mob-fb-topbar">
+      <button class="mob-fb-back" onclick="mobGoPage('settings')">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2L3 6l5 4"/></svg>
+      </button>
+      <div class="mob-fb-heading">Feedback</div>
+      <div style="width:32px;"></div>
     </div>
-    <div class="mob-page-scroll" style="padding:0 16px 32px;">
-      <!-- Rating card -->
-      <div class="profcard" style="border-radius:18px;margin-bottom:12px;text-align:center;padding:24px 20px 20px;">
-        <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:4px;">Rate your experience</div>
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:18px;">How's Prodify treating you?</div>
-        <div id="fb-stars" style="display:flex;justify-content:center;gap:10px;">
-          <span onclick="setFbStar(1)" class="fb-star">★</span>
-          <span onclick="setFbStar(2)" class="fb-star">★</span>
-          <span onclick="setFbStar(3)" class="fb-star">★</span>
-          <span onclick="setFbStar(4)" class="fb-star">★</span>
-          <span onclick="setFbStar(5)" class="fb-star">★</span>
+
+    <div class="mob-page-scroll mob-fb-scroll">
+
+      <!-- Stars block -->
+      <div class="mob-fb-stars-card">
+        <div class="mob-fb-stars-label">How are we doing?</div>
+        <div class="mob-fb-stars-row" id="fb-stars">
+          <span class="fb-star" onclick="setFbStar(1)">★</span>
+          <span class="fb-star" onclick="setFbStar(2)">★</span>
+          <span class="fb-star" onclick="setFbStar(3)">★</span>
+          <span class="fb-star" onclick="setFbStar(4)">★</span>
+          <span class="fb-star" onclick="setFbStar(5)">★</span>
         </div>
       </div>
-      <!-- Type + message card -->
-      <div class="profcard" style="border-radius:18px;margin-bottom:12px;padding:18px 18px 18px;">
-        <div class="pct" style="margin-bottom:10px;">What kind of feedback?</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <button id="fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">General</button>
-          <button id="fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">Bug Report</button>
-          <button id="fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">Idea</button>
+
+      <!-- Type + message -->
+      <div class="mob-fb-card">
+        <div class="mob-fb-card-title">What kind of feedback?</div>
+        <div class="mob-fb-chips">
+          <button id="fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 6v4M7 4.5v.5"/></svg>
+            General
+          </button>
+          <button id="fb-type-bug" onclick="setFbType('bug')" class="fb-chip">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 2.5C5 1.7 5.9 1 7 1s2 .7 2 1.5"/><path d="M3 5h8M3 9h8M5 5v4M9 5v4"/><path d="M5 5c0-1.1.9-2 2-2s2 .9 2 2"/><path d="M3 5l-1.5-1M11 5l1.5-1M3 9l-1.5 1M11 9l1.5 1"/></svg>
+            Bug Report
+          </button>
+          <button id="fb-type-idea" onclick="setFbType('idea')" class="fb-chip">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 1v1M7 12v1M1 7H2M12 7h1M2.5 2.5l.7.7M10.8 10.8l.7.7M2.5 11.5l.7-.7M10.8 3.2l.7-.7"/><circle cx="7" cy="7" r="2.5"/></svg>
+            Idea
+          </button>
         </div>
-        <textarea id="fb-msg" rows="4" placeholder="Tell us what's on your mind..." style="width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:12px;outline:none;font-size:13px;color:var(--ink);line-height:1.6;resize:none;font-family:inherit;box-sizing:border-box;transition:border-color .15s;" onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"></textarea>
+        <textarea class="mob-fb-textarea" id="fb-msg" rows="5" placeholder="Tell us what's on your mind…"></textarea>
       </div>
-      <button onclick="submitFeedback()" style="width:100%;padding:14px;background:var(--a2);color:#fff;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">Send Feedback</button>
-      <div id="fb-success" style="display:none;text-align:center;padding:16px 0 0;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks for your feedback!</div>
+
+      <button class="mob-fb-submit" onclick="submitFeedback()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h12M8 3l5 4-5 4"/></svg>
+        Send Feedback
+      </button>
+
+      <div id="fb-success" class="fb-success-msg" style="display:none;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+        Thanks for your feedback!
+      </div>
+
     </div>
   </div>
 
@@ -958,35 +979,64 @@ create policy "public" on users for all using (true);</pre>
 </div></div>
 
 <!-- DESKTOP FEEDBACK MODAL -->
-<div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')"><div class="mod" style="max-width:460px;">
-  <div class="mh">Send Feedback</div>
-  <!-- Rating -->
-  <div style="background:var(--surf2);border-radius:14px;padding:16px 20px;margin-bottom:14px;text-align:center;">
-    <div style="font-size:12px;color:var(--ink3);font-weight:600;margin-bottom:12px;">Rate your experience</div>
-    <div id="dsk-fb-stars" style="display:flex;justify-content:center;gap:10px;">
-      <span onclick="setFbStar(1)" class="fb-star">★</span>
-      <span onclick="setFbStar(2)" class="fb-star">★</span>
-      <span onclick="setFbStar(3)" class="fb-star">★</span>
-      <span onclick="setFbStar(4)" class="fb-star">★</span>
-      <span onclick="setFbStar(5)" class="fb-star">★</span>
+<div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')">
+  <div class="mod fb-mod">
+    <div class="fb-mod-header">
+      <div class="fb-mod-title">Send Feedback</div>
+      <div class="fb-mod-sub">We read every message.</div>
+      <button class="fb-mod-close" onclick="closeMo('mo-feedback')">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+
+    <!-- Stars -->
+    <div class="fb-stars-block">
+      <div class="fb-stars-label">How's Prodify treating you?</div>
+      <div class="fb-stars-row" id="dsk-fb-stars">
+        <span class="fb-star" onclick="setFbStar(1)">★</span>
+        <span class="fb-star" onclick="setFbStar(2)">★</span>
+        <span class="fb-star" onclick="setFbStar(3)">★</span>
+        <span class="fb-star" onclick="setFbStar(4)">★</span>
+        <span class="fb-star" onclick="setFbStar(5)">★</span>
+      </div>
+    </div>
+
+    <!-- Type chips -->
+    <div class="fb-type-row">
+      <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 6v4M7 4.5v.5"/></svg>
+        General
+      </button>
+      <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fb-chip">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 2.5C5 1.7 5.9 1 7 1s2 .7 2 1.5"/><path d="M3 5h8M3 9h8M5 5v4M9 5v4"/><path d="M5 5c0-1.1.9-2 2-2s2 .9 2 2"/><path d="M3 5l-1.5-1M11 5l1.5-1M3 9l-1.5 1M11 9l1.5 1"/></svg>
+        Bug Report
+      </button>
+      <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fb-chip">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 1v1M7 12v1M1 7H2M12 7h1M2.5 2.5l.7.7M10.8 10.8l.7.7M2.5 11.5l.7-.7M10.8 3.2l.7-.7"/><circle cx="7" cy="7" r="2.5"/></svg>
+        Idea
+      </button>
+    </div>
+
+    <!-- Message -->
+    <div class="fb-field">
+      <textarea class="fb-textarea" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind…"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="fb-actions">
+      <button class="fb-cancel" onclick="closeMo('mo-feedback')">Cancel</button>
+      <button class="fb-submit" onclick="submitFeedback(true)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h12M8 3l5 4-5 4"/></svg>
+        Send
+      </button>
+    </div>
+
+    <div id="dsk-fb-success" class="fb-success-msg" style="display:none;">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+      Thanks for your feedback!
     </div>
   </div>
-  <!-- Type -->
-  <div style="margin-bottom:12px;">
-    <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Type</div>
-    <div style="display:flex;gap:8px;">
-      <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">General</button>
-      <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">Bug Report</button>
-      <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">Idea</button>
-    </div>
-  </div>
-  <div class="fd"><label class="fl">Message</label><textarea class="fi" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind..." style="resize:none;"></textarea></div>
-  <div class="mf">
-    <button class="bol bsm" onclick="closeMo('mo-feedback')">Cancel</button>
-    <button class="btn bdk bsm" onclick="submitFeedback(true)">Send Feedback</button>
-  </div>
-  <div id="dsk-fb-success" style="display:none;text-align:center;padding:10px 0 0;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks for your feedback!</div>
-</div></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/app.js"></script>
