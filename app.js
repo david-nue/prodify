@@ -466,6 +466,8 @@ let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
 initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let _jwSearch={},_mobJSearch='';
+const HABIT_MAX_FREE=3;
+const HABIT_EMOJIS=['✅','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🚫🍭','🌿'];
 let prefs={dark:false};
 
 // ── POMODORO HISTORY ──
@@ -3279,8 +3281,6 @@ if(isIOS&&!isInStandalone){
 // HABIT TRACKER
 // ═══════════════════════════════════════
 
-const HABIT_MAX_FREE = 3;
-const HABIT_EMOJIS = ['✅','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🚫🍭','🌿'];
 
 function habitToday(){ return new Date().toISOString().slice(0,10); }
 
