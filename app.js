@@ -1451,8 +1451,8 @@ function mobRenderProfile(){
   // project progress
   const spl=document.getElementById('mob-spllist');
   if(spl){
-    if(!subjects.length){spl.innerHTML='<div style="font-size:12px;color:var(--ink4);padding:4px 0;">No projects yet</div>';return;}
-    spl.innerHTML=subjects.map(s=>`
+    if(!subjects.length){spl.innerHTML='<div style="font-size:12px;color:var(--ink4);padding:4px 0;">No projects yet</div>';}
+    else spl.innerHTML=subjects.map(s=>`
       <div style="margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
           <span style="font-size:12px;font-weight:600;color:var(--ink);">${esc(s.name)}</span>
@@ -3373,41 +3373,51 @@ function renderHabits(containerId){
   const el=document.getElementById(containerId);
   if(!el) return;
   const habits=habitGetAll();
-  const isMob=containerId.startsWith('mob');
+  const total=habits.length;
+  const doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
 
-  if(!habits.length){
-    el.innerHTML=`<div style="text-align:center;padding:24px 16px;color:var(--ink4);font-size:12px;line-height:2;">
-      No habits yet.<br>Add your first habit below.
+  if(!total){
+    el.innerHTML=`<div style="background:var(--surf2);border:1.5px dashed var(--bdr);border-radius:14px;padding:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">🎯</div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;">Build a daily routine</div>
+      <div style="font-size:12px;color:var(--ink4);line-height:1.6;">Add habits below and check them off each day.<br>Streaks track how many days in a row you showed up.</div>
     </div>`;
     return;
   }
 
-  el.innerHTML=habits.map(h=>{
+  // Progress bar header
+  const pct=total?Math.round(doneCount/total*100):0;
+  const headerHtml=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span style="font-size:11px;font-weight:700;color:var(--ink3);">TODAY — ${doneCount}/${total} done</span>
+    <span style="font-size:11px;font-weight:700;color:var(--a2);">${pct}%</span>
+  </div>
+  <div style="height:4px;background:var(--bdr);border-radius:2px;margin-bottom:12px;overflow:hidden;">
+    <div style="height:100%;width:${pct}%;background:var(--a2);border-radius:2px;transition:width .3s;"></div>
+  </div>`;
+
+  const cardsHtml=habits.map(h=>{
     const done=habitDoneToday(h.id);
     const streak=habitStreak(h.id);
     const grid=habitActivityGrid(h.id);
-    const gridHtml=grid.map(v=>`<div style="width:8px;height:8px;border-radius:2px;background:${v?'var(--a2)':'var(--surf2)'};border:1px solid ${v?'var(--a)':'var(--bdr)'};flex-shrink:0;"></div>`).join('');
-
-    return `<div style="background:var(--surf2);border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:16px;padding:14px 16px;transition:border-color .2s;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <button onclick="habitToggle(${h.id})" style="width:36px;height:36px;border-radius:10px;border:2px solid ${done?'var(--a2)':'var(--bdr)'};background:${done?'var(--a2)':'var(--surf)'};display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;transition:all .18s;">${done?'✓':h.emoji}</button>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:${done?'var(--a2)':'var(--ink)'};${done?'text-decoration:line-through;':''}">${esc(h.name)}</div>
-          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${streak>0?'🔥 '+streak+' day streak':'No streak yet'}</div>
+    const gridHtml=grid.map(v=>`<div style="width:8px;height:8px;border-radius:2px;background:${v?'var(--a2)':'var(--bdr)'};flex-shrink:0;"></div>`).join('');
+    return `<div style="display:flex;align-items:center;gap:12px;background:${done?'var(--al)':'var(--surf2)'};border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:14px;padding:12px 14px;transition:all .2s;">
+      <button onclick="habitToggle(${h.id})" title="${done?'Mark undone':'Mark done for today'}"
+        style="width:38px;height:38px;border-radius:50%;border:2.5px solid ${done?'var(--a2)':'var(--bdr)'};background:${done?'var(--a2)':'var(--surf)'};display:flex;align-items:center;justify-content:center;font-size:${done?'16px':'20px'};cursor:pointer;flex-shrink:0;transition:all .18s;color:${done?'#fff':'inherit'};">${done?'✓':h.emoji}</button>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:${done?'var(--a2)':'var(--ink)'};${done?'text-decoration:line-through opacity:.7;':''}">${esc(h.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+          <div style="display:flex;gap:2px;">${gridHtml}</div>
+          <span style="font-size:10px;color:${streak>0?'var(--a2)':'var(--ink4)'};">${streak>0?'🔥 '+streak+'d':''}</span>
         </div>
-        <button onclick="habitDelete(${h.id})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px;padding:4px;border-radius:6px;opacity:0;transition:opacity .15s;" class="habit-del-btn">✕</button>
       </div>
-      <div style="display:flex;gap:2px;flex-wrap:wrap;">${gridHtml}</div>
+      <button onclick="habitDelete(${h.id})" title="Delete habit"
+        style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;flex-shrink:0;transition:all .15s;"
+        onmouseover="this.style.color='var(--red)';this.style.background='var(--rl)'"
+        onmouseout="this.style.color='var(--ink4)';this.style.background='none'">✕</button>
     </div>`;
   }).join('');
 
-  // show delete buttons on hover via CSS trick — inject a style tag once
-  if(!document.getElementById('habit-hover-style')){
-    const s=document.createElement('style');
-    s.id='habit-hover-style';
-    s.textContent=`div:hover > div > .habit-del-btn { opacity: 1 !important; }`;
-    document.head.appendChild(s);
-  }
+  el.innerHTML=headerHtml+cardsHtml;
 }
 
 function renderHabitAddForm(containerId){
@@ -3416,28 +3426,27 @@ function renderHabitAddForm(containerId){
   const habits=habitGetAll();
   const atLimit=habits.length>=HABIT_MAX_FREE;
 
-  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
-      ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:16px;transition:all .13s;">${e}</button>`).join('')}
+  el.innerHTML=`<div style="border-top:1px solid var(--bdr);padding-top:12px;margin-top:4px;">
+    <div style="font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Add a new habit</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">
+      ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:14px;transition:all .13s;" title="${e}">${e}</button>`).join('')}
     </div>
     <div style="display:flex;gap:8px;">
-      <input id="${containerId}-inp" type="text" placeholder="Habit name…" maxlength="40"
+      <input id="${containerId}-inp" type="text" placeholder="e.g. Read 20 mins, Drink water…" maxlength="40"
         style="flex:1;background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--ink);outline:none;font-family:inherit;"
         onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
         onkeydown="if(event.key==='Enter')habitSubmit('${containerId}')"/>
-      <button onclick="habitSubmit('${containerId}')" style="background:var(--a2);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;${atLimit?'opacity:.5;':''}">
-        ${atLimit?'🔒 Pro':'+ Add'}
+      <button onclick="habitSubmit('${containerId}')" style="background:${atLimit?'var(--bdr)':'var(--a2)'};color:${atLimit?'var(--ink3)':'#fff'};border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
+        ${atLimit?'🔒 Limit reached':'+ Add Habit'}
       </button>
     </div>
-    ${atLimit?`<div style="font-size:11px;color:var(--ink3);text-align:center;">Free plan: ${HABIT_MAX_FREE} habits max · <span style="color:var(--a2);font-weight:700;cursor:pointer;" onclick="habitShowProGate()">Upgrade to Pro</span></div>`:''}
+    ${atLimit?`<div style="font-size:11px;color:var(--ink3);margin-top:8px;text-align:center;">Free plan allows <b>${HABIT_MAX_FREE} habits</b> · <span style="color:var(--a2);font-weight:700;cursor:pointer;" onclick="habitShowProGate()">Upgrade to Pro for unlimited</span></div>`:'<div style="font-size:11px;color:var(--ink4);margin-top:6px;">Tap the circle on a habit card each day to mark it done and build your streak.</div>'}
   </div>`;
 
-  // set first emoji as selected
   const firstBtn=el.querySelector('[data-emoji]');
-  if(firstBtn) firstBtn.style.background='var(--al)',firstBtn.style.borderColor='var(--a2)';
+  if(firstBtn){firstBtn.style.background='var(--al)';firstBtn.style.borderColor='var(--a2)';}
   el._selectedEmoji=HABIT_EMOJIS[0];
 }
-
 function habitSelectEmoji(btn, containerId){
   const el=document.getElementById(containerId);
   el.querySelectorAll('[data-emoji]').forEach(b=>{ b.style.background='var(--surf)'; b.style.borderColor='var(--bdr)'; });
