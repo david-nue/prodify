@@ -1010,7 +1010,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .widget:hover .wrsz,.widget.wresize .wrsz{opacity:1;}
 .wrsz svg{width:8px;height:8px;stroke:var(--ink3);fill:none;stroke-width:2;stroke-linecap:round;}
-.wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;container-type:size;}
+.wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;container-type:inline-size;}
 
 /* \\u2500\\u2500 TASK WIDGET \\u2500\\u2500 */
 .twadd{padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;gap:5px;background:var(--surf2);}
