@@ -465,6 +465,7 @@ const LS={
 let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
 initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
+let _jwSearch={},_mobJSearch='';
 let prefs={dark:false};
 
 // ── POMODORO HISTORY ──
@@ -1183,7 +1184,6 @@ function mobTimerReset(){
 }
 
 // ── JOURNAL ──
-let _mobJSearch='';
 function onMobJSearch(val){
   _mobJSearch=val.toLowerCase().trim();
   const clr=document.getElementById('mob-journal-search-clear');
@@ -2653,8 +2653,6 @@ function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.cl
 function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}dragTaskId=null;}
 
 /* ── JOURNAL ── */
-let _jwSearch={};  // per-widget search query
-
 function buildJournalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   body.innerHTML=`
