@@ -1652,17 +1652,18 @@ function launch(){
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
-  // Restore avatar_url from DB row if available
-  if(d.avatarUrl&&!prefs.avatarUrl) prefs.avatarUrl=d.avatarUrl;
+  // avatarUrl lives inside prefs — already set before launch() is called in doSI
+  // just make sure it wasn't lost when prefs was reassigned above
+  if(d.prefs?.avatarUrl) prefs.avatarUrl=d.prefs.avatarUrl;
   const nm=d.displayName||cu,av=nm[0].toUpperCase();
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
-  setTimeout(applyAvatar,50);
+  applyAvatar();
   $('ev-d').value=new Date().toISOString().slice(0,10);
   applyTheme();show('app');goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
-  if(isMobile())setTimeout(initMobApp,100);
+  if(isMobile())setTimeout(()=>{initMobApp();mobUpdateAvatar();},100);
   startRealtime();
   startRealtimeSync(cu);
 }
