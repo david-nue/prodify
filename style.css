@@ -1477,6 +1477,39 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   display:inline-flex;align-items:center;gap:2px;
 }
 
+
+/* ── EXPORT MODAL ── */
+.export-opt{
+  display:flex;align-items:center;gap:14px;
+  padding:14px;border-radius:14px;border:1.5px solid var(--bdr);
+  background:var(--surf2);margin-bottom:10px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.export-opt:not(.export-opt-locked):hover{border-color:var(--a2);background:rgba(58,125,94,0.06);}
+.export-opt-locked{opacity:.55;cursor:default;}
+.export-opt-icon{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  background:rgba(58,125,94,0.12);display:flex;align-items:center;justify-content:center;
+}
+.export-opt-icon svg{width:18px;height:18px;stroke:var(--a2);}
+.export-opt-icon-locked{background:var(--surf);} 
+.export-opt-icon-locked svg{stroke:var(--ink3);}
+.export-opt-body{flex:1;}
+.export-opt-title{font-size:14px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;margin-bottom:2px;}
+.export-opt-desc{font-size:12px;color:var(--ink3);}
+.export-opt-arrow{width:18px;height:18px;stroke:var(--a2);flex-shrink:0;}
+.export-lock-icon{width:16px;height:16px;stroke:var(--ink3);flex-shrink:0;}
+.export-free-badge{
+  font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  background:rgba(58,125,94,0.15);color:var(--a2);
+  border:1px solid rgba(58,125,94,0.3);border-radius:100px;padding:2px 7px;
+}
+.export-pro-badge{
+  font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  background:rgba(245,183,0,0.15);color:#8a6500;
+  border:1px solid rgba(245,183,0,0.4);border-radius:100px;padding:2px 7px;
+}
+
 /* ── FEEDBACK ── */
 /* .fbtype-btn + .fb-star: replaced by redesigned feedback styles at bottom of file */
 .fbtype-btn{padding:6px 14px;border-radius:100px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}

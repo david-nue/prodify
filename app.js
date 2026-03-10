@@ -3671,6 +3671,32 @@ function scheduleRecurringCheck() {
   setTimeout(() => { checkRecurringReset(); scheduleRecurringCheck(); }, msUntilMidnight);
 }
 
+
+// ═══════════════════════════════════════
+// SESSION 8 — EXPORT DATA
+// ═══════════════════════════════════════
+function exportJSON() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    tasks,
+    journal,
+    habits: prefs.habits || [],
+    projects: subjects,
+    calendarEvents: calEvs,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'prodify-export-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showExportModal() {
+  openMo('mo-export');
+}
+
 // SESSION 6 — FOCUS MODE
 // ═══════════════════════════════════════════
 

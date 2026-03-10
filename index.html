@@ -433,6 +433,15 @@
             <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
             <div class="setrow"><div><div class="setlbl">Delete account</div><div class="setdsc">Permanently delete your account and all data</div></div><button class="dbtn full" onclick="delAcc()">Delete account</button></div>
           </div>
+          <div class="setsec"><div class="setsect">Export</div>
+            <div class="setrow">
+              <div>
+                <div class="setlbl">Export Data</div>
+                <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
+              </div>
+              <button class="bol bsm" onclick="showExportModal()">Export</button>
+            </div>
+          </div>
           <div class="setsec"><div class="setsect">More</div>
             <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-about')"><div><div class="setlbl">About Prodify</div><div class="setdsc">Meet the creator &amp; tech stack</div></div><span style="color:var(--ink4);font-size:18px;">›</span></div>
             <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-feedback')"><div><div class="setlbl">Send Feedback</div><div class="setdsc">Rate, report bugs, or suggest ideas</div></div><span style="color:var(--ink4);font-size:18px;">›</span></div>
@@ -732,6 +741,16 @@
         <div class="setsect">Data</div>
         <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
         <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
+        <div class="setsec"><div class="setsect">Export</div>
+          <div class="setrow">
+            <div>
+              <div class="setlbl">Export Data</div>
+              <div class="setdsc">Download your tasks, journal, habits &amp; projects</div>
+            </div>
+            <button class="bol bsm" onclick="showExportModal()">Export</button>
+          </div>
+        </div>
+
       </div>
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">More</div>
@@ -1054,5 +1073,51 @@ function fbRate(n) {
 
   <div id="debug-log"></div>
 </div>
+<!-- EXPORT MODAL -->
+<div class="ov" id="mo-export" onclick="if(event.target===this)closeMo('mo-export')"><div class="mod" style="max-width:400px;">
+  <div class="mh">Export Data</div>
+  <div class="ms">Download a copy of your Prodify data.</div>
+
+  <!-- JSON export — free -->
+  <div class="export-opt" onclick="exportJSON();closeMo('mo-export')">
+    <div class="export-opt-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    </div>
+    <div class="export-opt-body">
+      <div class="export-opt-title">JSON <span class="export-free-badge">Free</span></div>
+      <div class="export-opt-desc">Full data export — tasks, journal, habits, projects</div>
+    </div>
+    <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 17V7M7 12l5-5 5 5"/></svg>
+  </div>
+
+  <!-- CSV — Pro locked -->
+  <div class="export-opt export-opt-locked">
+    <div class="export-opt-icon export-opt-icon-locked">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+    </div>
+    <div class="export-opt-body">
+      <div class="export-opt-title">CSV <span class="export-pro-badge">Pro</span></div>
+      <div class="export-opt-desc">Spreadsheet-ready export for tasks &amp; journal</div>
+    </div>
+    <svg class="export-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  </div>
+
+  <!-- PDF — Pro locked -->
+  <div class="export-opt export-opt-locked">
+    <div class="export-opt-icon export-opt-icon-locked">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="export-opt-body">
+      <div class="export-opt-title">PDF <span class="export-pro-badge">Pro</span></div>
+      <div class="export-opt-desc">Beautifully formatted report of your productivity</div>
+    </div>
+    <svg class="export-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  </div>
+
+  <div class="mf" style="margin-top:8px;">
+    <button class="bol bsm" onclick="closeMo('mo-export')">Close</button>
+  </div>
+</div></div>
+
 </body>
 </html>
