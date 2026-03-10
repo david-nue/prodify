@@ -97,25 +97,7 @@ document.addEventListener('DOMContentLoaded', function(){
     cvs.style.height = (1800 * _scale) + 'px';
   }
 
-  // ── SCROLL WHEEL ZOOM (desktop) — zoom on bg, scroll on widgets ──
-  scroll.addEventListener('wheel', function(e){
-    // If hovering over a scrollable widget body, let it scroll naturally
-    const widgetBody = e.target.closest('.wbody, .twbody, .jwlist, .swbody, .stgrid, .cwdays, .tmbody, .notebody');
-    if(widgetBody){
-      // Only intercept if the widget body itself is not scrollable (no overflow)
-      const isScrollable = widgetBody.scrollHeight > widgetBody.clientHeight || widgetBody.scrollWidth > widgetBody.clientWidth;
-      if(isScrollable){
-        // Let the widget handle its own scroll — don't zoom
-        return;
-      }
-    }
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const rect = scroll.getBoundingClientRect();
-    const ox = e.clientX - rect.left;
-    const oy = e.clientY - rect.top;
-    applyZoom(_scale * delta, ox, oy);
-  }, {passive:false});
+  // ── SCROLL WHEEL ZOOM — disabled for now, will be a toggle in settings ──
 
   // ── TOUCH (tablet) — single finger pan, two finger pinch zoom ──
   let _pinching = false, _pinchDist0 = 0, _pinchScale0 = 1;
