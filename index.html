@@ -23,16 +23,6 @@
 <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="style.css"/>
-<script>
-window.onerror = function(msg, src, line, col, err) {
-  console.error('[GLOBAL ERROR]', msg, '\nSource:', src, '\nLine:', line, '\nCol:', col);
-  return false;
-};
-window.addEventListener('unhandledrejection', function(e) {
-  console.error('[UNHANDLED PROMISE]', e.reason);
-});
-console.log('[PRODIFY] index.html loaded');
-</script>
 
 </head>
 <body>
@@ -563,6 +553,7 @@ console.log('[PRODIFY] index.html loaded');
       <div class="mob-topbar-title">Focus Timer</div>
     </div>
     <div class="mob-timer-wrap">
+      <div class="fcs-mob-label">Focus Mode</div>
       <div class="tmmodes" style="width:100%;gap:6px;">
         <button class="tmm on" id="mmt-0" onclick="mobSetMode(0)">Pomodoro</button>
         <button class="tmm" id="mmt-1" onclick="mobSetMode(1)">Custom</button>
@@ -1052,36 +1043,7 @@ function fbRate(n) {
     Exit Focus
   </button>
 
-<div id="debug-panel" style="position:fixed;bottom:0;left:0;right:0;max-height:200px;overflow-y:auto;background:rgba(0,0,0,.85);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:999999;display:none;">
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-    <span style="color:#ff0;font-weight:bold;">DEBUG LOG</span>
-    <button onclick="document.getElementById('debug-panel').style.display='none'" style="background:none;border:none;color:#f00;cursor:pointer;font-size:14px;">✕</button>
-  </div>
   <div id="debug-log"></div>
 </div>
-<button onclick="document.getElementById('debug-panel').style.display='block'" 
-  style="position:fixed;bottom:8px;left:8px;z-index:999998;background:#000;color:#0f0;border:1px solid #0f0;border-radius:4px;padding:4px 8px;font-size:10px;font-family:monospace;cursor:pointer;">
-  DEBUG
-</button>
-<script>
-(function(){
-  const orig = console.log.bind(console);
-  const origErr = console.error.bind(console);
-  function appendLog(msg, color) {
-    const el = document.getElementById('debug-log');
-    if(!el) return;
-    const line = document.createElement('div');
-    line.style.color = color || '#0f0';
-    line.style.borderBottom = '1px solid #1a1a1a';
-    line.style.padding = '2px 0';
-    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-  }
-  console.log = function(...args) { orig(...args); appendLog(args.join(' ')); };
-  console.error = function(...args) { origErr(...args); appendLog(args.join(' '), '#f55'); };
-  console.warn = function(...args) { origErr(...args); appendLog(args.join(' '), '#ff0'); };
-})();
-</script>
 </body>
 </html>

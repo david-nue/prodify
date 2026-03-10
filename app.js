@@ -3595,7 +3595,6 @@ let _fcsIv  = null;
 
 // ── Desktop: open overlay ──
 function fcsOpen(wid) {
-  console.log('[FOCUS DSK] fcsOpen called, wid =', wid);
   _fcsWid = wid;
   const body = document.getElementById('fcs-body');
   if (!body) return;
@@ -3609,7 +3608,6 @@ function fcsOpen(wid) {
 }
 
 function fcsClose() {
-  console.log('[FOCUS DSK] fcsClose called');
   closeMo('fcs-ov');
   document.body.classList.remove('in-focus');
   document.removeEventListener('keydown', _fcsKey);
@@ -3728,36 +3726,21 @@ function _fcsInpKey(e,wid) {
 
 // ── Mobile focus mode ──
 function fcsMobEnter() {
-  console.log('[FOCUS MOB] fcsMobEnter called');
-  console.log('[FOCUS MOB] _mobPage =', _mobPage);
-  console.log('[FOCUS MOB] isMobile() =', isMobile());
-  console.log('[FOCUS MOB] window.innerWidth =', window.innerWidth);
   if (_mobPage !== 'timer') {
     mobGoPage('timer');
     setTimeout(() => {
       document.body.classList.add('in-focus-mob');
-      console.log('[FOCUS MOB] in-focus-mob added after nav, body classes:', document.body.className);
-      const mpg = document.getElementById('mpg-timer');
+          const mpg = document.getElementById('mpg-timer');
       const mobApp = document.getElementById('mob-app');
-      console.log('[FOCUS MOB] mpg-timer display:', mpg ? getComputedStyle(mpg).display : 'NOT FOUND');
-      console.log('[FOCUS MOB] mob-app display:', mobApp ? getComputedStyle(mobApp).display : 'NOT FOUND');
-      console.log('[FOCUS MOB] mob-nav display:', getComputedStyle(document.querySelector('.mob-nav')||document.body).display);
-    }, 280);
+                }, 280);
   } else {
     document.body.classList.add('in-focus-mob');
-    console.log('[FOCUS MOB] in-focus-mob added, body classes:', document.body.className);
     const mpg = document.getElementById('mpg-timer');
     const mobApp = document.getElementById('mob-app');
-    console.log('[FOCUS MOB] mpg-timer display:', mpg ? getComputedStyle(mpg).display : 'NOT FOUND');
-    console.log('[FOCUS MOB] mpg-timer flex:', mpg ? getComputedStyle(mpg).flex : 'NOT FOUND');
-    console.log('[FOCUS MOB] mob-app display:', mobApp ? getComputedStyle(mobApp).display : 'NOT FOUND');
     const nav = document.querySelector('.mob-nav');
-    console.log('[FOCUS MOB] mob-nav display:', nav ? getComputedStyle(nav).display : 'NOT FOUND');
     const topbar = document.querySelector('#mpg-timer .mob-topbar');
-    console.log('[FOCUS MOB] mob-topbar display:', topbar ? getComputedStyle(topbar).display : 'NOT FOUND');
   }
 }
 function fcsMobExit() {
-  console.log('[FOCUS MOB] fcsMobExit called');
   document.body.classList.remove('in-focus-mob');
 }

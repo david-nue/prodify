@@ -1728,6 +1728,13 @@ body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;}
 body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
 
 /* mobile exit btn */
+/* focus mode label — hidden normally, shown in focus mode */
+.fcs-mob-label{
+  display:none;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:2.5px;color:var(--ink4);text-align:center;
+}
+body.in-focus-mob .fcs-mob-label{display:block;}
+
 /* inline exit button inside timer wrap — only shown in focus mode */
 .fcs-mob-inline-exit{
   display:none;align-items:center;justify-content:center;gap:6px;
