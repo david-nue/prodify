@@ -1847,15 +1847,10 @@ function renderActivity(barId, streakId, legendId){
 let _fbType='general', _fbStar=0;
 function initFbStars(){
   _fbStar=0;
-  ['fb-stars','dsk-fb-stars'].forEach(id=>{
-    const el=$(id);if(!el)return;
-    const stars=[...el.querySelectorAll('.fb-star')];
-    stars.forEach(s=>s.classList.remove('filled','hover-fill'));
-    stars.forEach((s,i)=>{
-      s.onmouseover=()=>stars.forEach((st,j)=>st.classList.toggle('hover-fill',j<=i));
-      s.onmouseout=()=>stars.forEach(st=>st.classList.remove('hover-fill'));
-    });
-  });
+  document.querySelectorAll('input[name="mob-rating"],input[name="dsk-rating"]').forEach(r=>r.checked=false);
+}
+function setFbStar(n){
+  _fbStar=n;
 }
 function setFbType(t){
   _fbType=t;
@@ -1868,17 +1863,7 @@ function setFbType(t){
     const el=$('dsk-fb-type-'+k);if(el)el.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
   });
 }
-function setFbStar(n){
-  _fbStar=n;
-  ['fb-stars','dsk-fb-stars'].forEach(id=>{
-    const el=$(id);if(!el)return;
-    el.querySelectorAll('.fb-star').forEach((s,i)=>{
-      s.classList.toggle('filled',i<n);
-      s.classList.remove('hover-fill');
-      if(i===n-1){s.classList.remove('pop');void s.offsetWidth;s.classList.add('pop');}
-    });
-  });
-}
+function setFbStar(n){ _fbStar=n; }
 async function submitFeedback(isDesktop=false){
   const msgId=isDesktop?'dsk-fb-msg':'fb-msg';
   const msg=$(msgId)?.value.trim();

@@ -1432,25 +1432,37 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 ══════════════════════════════════════ */
 
 /* Stars (shared between desktop modal + mobile page) */
-.fb-star {
-  font-size: 32px;
-  color: rgba(255,255,255,.3);
+/* ── STAR RATING — pure CSS, no JS needed ── */
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: center;
+  gap: 4px;
+}
+.star-rating input {
+  display: none;
+}
+.star-rating label {
+  font-size: 52px;
+  color: rgba(255,255,255,.25);
   cursor: pointer;
-  user-select: none;
   transition: color .12s, transform .12s;
   line-height: 1;
-  display: inline-block;
-  position: relative;
-  z-index: 1;
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
-.fb-star:hover { transform: scale(1.2); }
-.fb-star.hover-fill { color: rgba(245,184,0,.6); transform: scale(1.1); }
-.fb-star.filled { color: #F5B800; }
-.fb-star.filled:hover { color: #F5B800; transform: scale(1.2); }
-@keyframes starPop { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
-.fb-star.pop { animation: starPop .25s cubic-bezier(.16,1,.3,1); }
-.fb-star-lg { font-size: 44px; }
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #F5B800;
+  transform: scale(1.15);
+}
+.star-rating input:checked ~ label {
+  color: #F5B800;
+}
+.star-rating input:checked + label {
+  transform: scale(1.2);
+}
+/* sync JS _fbStar when radio changes — handled via onchange */
 
 /* Type chips (shared) */
 .fb-chip {
