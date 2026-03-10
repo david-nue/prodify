@@ -883,22 +883,6 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .sbb:hover .sbtip{opacity:1;}
 .sb-bot{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:2px;}
-.sb-shortcuts{
-  display:flex;flex-direction:column;gap:3px;
-  padding:8px 6px;width:100%;
-}
-.sb-sc-row{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:4px;padding:0 4px;
-}
-.sb-sc-row span{font-size:9px;color:var(--ink4);white-space:nowrap;}
-kbd{
-  font-family:inherit;font-size:9px;font-weight:700;
-  color:var(--ink3);background:var(--surf2);
-  border:1px solid var(--bdr);border-bottom-width:2px;
-  border-radius:4px;padding:1px 4px;
-  line-height:1.6;flex-shrink:0;
-}
 
 /* avatar + dropdown */
 .sbav{

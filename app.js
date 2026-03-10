@@ -602,56 +602,6 @@ function goPg(id,btn){
   LS.s('pd1_pg',id);
 }
 
-// ═══════════════════════════════════════
-// KEYBOARD SHORTCUTS
-// ═══════════════════════════════════════
-function initKeyboardShortcuts(){
-  document.addEventListener('keydown', function(e){
-    // Don't fire if user is typing in an input/textarea
-    const tag = document.activeElement?.tagName;
-    if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable) return;
-
-    // Escape — close any open modal or picker
-    if(e.key==='Escape'){
-      // close custom confirm
-      const confirm = document.querySelector('.app-confirm-box');
-      if(confirm){document.querySelector('.app-confirm-overlay')?.remove();confirm.remove();return;}
-      // close due picker
-      if(document.getElementById('dp-modal')?.style.pointerEvents==='auto'){dpClose();return;}
-      // close any .ov modal
-      const openMo = document.querySelector('.ov.open');
-      if(openMo){openMo.classList.remove('open');return;}
-      // close mobile add task
-      const mobAdd = document.getElementById('mob-add-modal');
-      if(mobAdd?.classList.contains('open')){closeMobAddTask();return;}
-      return;
-    }
-
-    // Don't fire nav shortcuts if a modal is open
-    if(document.querySelector('.ov.open')) return;
-
-    if(isMobile()){
-      switch(e.key.toLowerCase()){
-        case 'n': mobGoPage('tasks'); setTimeout(()=>openMobAddTask(),100); break;
-        case 'j': mobGoPage('journal'); break;
-        case 't': mobGoPage('timer'); break;
-        case 's': mobGoPage('settings'); break;
-      }
-    } else {
-      switch(e.key.toLowerCase()){
-        case 'n':
-          // focus the first visible task input
-          const twi = document.querySelector('.twi');
-          if(twi){goPg('canvas');twi.focus();}
-          break;
-        case 'j': goPg('canvas'); setTimeout(()=>document.querySelector('.jwta')?.focus(),100); break;
-        case 't': goPg('canvas'); break;
-        case 's': goPg('settings'); break;
-      }
-    }
-  });
-}
-
 // ── MOBILE HELPERS ──
 function isMobile(){return window.innerWidth<=600;}
 function setTab(id){
@@ -703,7 +653,6 @@ function _syncMobCustom(){
 }
 const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Custom',s:20*60,locked:false}];
 
-function isMobile(){return window.innerWidth<=600;}
 
 function mobGoPage(page){
   if(!isMobile())return;
@@ -1593,9 +1542,6 @@ function initMobApp(){
   if(savedPg&&savedPg!=='home')mobGoPage(savedPg);
 }
 
-// Stub out old functions so desktop code doesn't break
-function toggleMobilePicker(){}
-function closeMobilePicker(){}
 function addMobileWidget(){}
 function removeMobileWidget(){}
 function renderMobileCanvas(){}
@@ -2038,7 +1984,6 @@ function launch(){
   startRealtime();
   startRealtimeSync(cu);
 }
-initKeyboardShortcuts();
 
 // ═══════════════════════════════════════
 // PROFILE — BIO + SOCIAL + ACTIVITY
