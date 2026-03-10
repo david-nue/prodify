@@ -906,27 +906,18 @@ function buildCal(year,month,selectedVal,containerId,pickFn,navFn){
   const prevOk=new Date(year,month,1)>new Date(today.getFullYear(),today.getMonth(),1);
   let cells='';
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{ cells+=`<div class="cal-dh">${d}</div>`; });
-  for(let i=0;i<startDow;i++) cells+=`<div></div>`;
+  for(let i=0;i<startDow;i++) cells+=`<div class="cal-empty"></div>`;
   for(let d=1;d<=lastDay.getDate();d++){
     const date=new Date(year,month,d);
     const val=calFmt(date);
     const isPast=date<today;
     const isSel=val===selectedVal;
     const isToday=val===calFmt(today);
-    cells+=`<div class="cal-day${isSel?' cal-sel':''}${isToday&&!isSel?' cal-today':''}${isPast?' cal-past':''}"
-      ${!isPast?`onclick="${pickFn}('${val}')"`:''}>
-      ${d}
-    </div>`;
+    const cls=`cal-day${isSel?' cal-sel':''}${isToday&&!isSel?' cal-today':''}${isPast?' cal-past':''}`;
+    const click=!isPast?` onclick="${pickFn}('${val}')"`:'';
+    cells+=`<div class="${cls}"${click}>${d}</div>`;
   }
-  container.innerHTML=`
-    <div class="cal-wrap">
-      <div class="cal-nav">
-        <button class="cal-nav-btn" ${!prevOk?'disabled':''} onclick="${navFn}('prev')">\u2039</button>
-        <span class="cal-month">${monthName}</span>
-        <button class="cal-nav-btn" onclick="${navFn}('next')">\u203a</button>
-      </div>
-      <div class="cal-grid">${cells}</div>
-    </div>`;
+  container.innerHTML=`<div class="cal-wrap"><div class="cal-nav"><button class="cal-nav-btn"${!prevOk?' disabled':''} onclick="${navFn}('prev')">‹</button><span class="cal-month">${monthName}</span><button class="cal-nav-btn" onclick="${navFn}('next')">›</button></div><div class="cal-grid">${cells}</div></div>`;
 }
 
 // ── MOBILE PICKER ──
@@ -2446,11 +2437,13 @@ function buildTaskW(body,w){
   body.innerHTML=`
     <div class="twadd">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
-      <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
+      <div style="position:relative;flex-shrink:0;">
+        <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
+        <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
+        <div id="twdp-${w.id}" class="tw-due-dropdown" style="display:none;"></div>
+      </div>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
-    <div id="twdp-${w.id}" class="tw-due-dropdown" style="display:none;"></div>
     <div class="twcols">
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#3A7D5E"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
