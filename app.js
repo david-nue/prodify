@@ -605,7 +605,7 @@ function goPg(id,btn){
 }
 
 // ── MOBILE HELPERS ──
-function isMobile(){return window.innerWidth<=600;}
+function isMobile(){return window.innerWidth<=768;}
 function setTab(id){
   document.querySelectorAll('.btab').forEach(b=>b.classList.toggle('act',b.id==='bt-'+id));
 }
@@ -2867,7 +2867,7 @@ function buildTimerW(body,w){
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')" style="flex:1;">${ts.running?'Pause':'Start'}</button>
-        <button class="tm-resetbtn" data-tip="Focus Mode" onclick="fcsOpen('${w.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+        <button class="tm-resetbtn" data-tip="Focus Mode" onclick="fcsOpen('${w.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:13px;height:13px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
       </div>
       <div class="tmsess" id="tmsess-${w.id}" style="${ts.mode!==0?'display:none;':''}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}

@@ -1722,12 +1722,11 @@ body.in-focus .wtray{opacity:0;pointer-events:none;transition:opacity .3s;}
 body.in-focus-mob .mob-nav{display:none!important;}
 body.in-focus-mob .mob-topbar{display:none!important;}
 body.in-focus-mob .mob-av{display:none!important;}
-/* overflow:hidden on mob-app traps position:fixed children — override when in focus */
-body.in-focus-mob .mob-app{overflow:visible;}
-/* timer page fills full screen in focus mode */
-body.in-focus-mob #mpg-timer{flex:1;min-height:0;}
-body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;}
-/* hide session history and non-essential elements in focus mode */
+/* keep mob-app clipping intact but let timer fill the freed space */
+body.in-focus-mob .mob-app{overflow:hidden;}
+body.in-focus-mob #mpg-timer{flex:1;min-height:0;overflow:visible;}
+body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;padding-top:40px;}
+/* hide session history in focus mode */
 body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
 body.in-focus-mob .mob-timer-sessions{display:flex;}
 
