@@ -1845,41 +1845,42 @@ function renderActivity(barId, streakId, legendId){
 // FEEDBACK
 // ═══════════════════════════════════════
 let _fbType='general', _fbStar=0;
-function initFbStars(){
-  _fbStar=0;
-  document.querySelectorAll('input[name="mob-rating"],input[name="dsk-rating"]').forEach(r=>r.checked=false);
+function fbRate(n, containerId){
+  _fbStar = n;
+  ['fb-stars','dsk-fb-stars'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.querySelectorAll('.fbs').forEach(s => {
+      s.classList.toggle('on', parseInt(s.dataset.v) <= n);
+    });
+  });
 }
-function setFbStar(n){
-  _fbStar=n;
+function initFbStars(){
+  _fbStar = 0;
+  document.querySelectorAll('.fbs').forEach(s => s.classList.remove('on'));
 }
 function setFbType(t){
   _fbType=t;
-  // mobile
   ['gen','bug','idea'].forEach(k=>{
     const el=$('fb-type-'+k);if(el)el.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
-  });
-  // desktop
-  ['gen','bug','idea'].forEach(k=>{
-    const el=$('dsk-fb-type-'+k);if(el)el.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
+    const el2=$('dsk-fb-type-'+k);if(el2)el2.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
   });
 }
-function setFbStar(n){ _fbStar=n; }
 async function submitFeedback(isDesktop=false){
   const msgId=isDesktop?'dsk-fb-msg':'fb-msg';
   const msg=$(msgId)?.value.trim();
   if(!msg){alert('Please write a message before sending.');return;}
   const body={type:_fbType,rating:_fbStar,message:msg,user:cu,ts:new Date().toISOString()};
-  // Send via mailto as fallback (replace with your email endpoint if available)
   const subject=encodeURIComponent(`[Prodify Feedback] ${_fbType} from ${cu}`);
   const emailBody=encodeURIComponent(`Type: ${_fbType}\nRating: ${_fbStar}/5\n\n${msg}`);
   window.open(`mailto:david@prodify.cc?subject=${subject}&body=${emailBody}`,'_blank');
-  // Show success
   const succId=isDesktop?'dsk-fb-success':'fb-success';
   const succEl=$(succId);if(succEl){succEl.style.display='block';}
   if($(msgId))$(msgId).value='';
-  _fbStar=0;setFbStar(0);
+  _fbStar=0; initFbStars();
   setTimeout(()=>{if(succEl)succEl.style.display='none';if(isDesktop)closeMo('mo-feedback');},2500);
 }
+
 
 // Boot: load local first, sync cloud silently after
 (async function boot(){

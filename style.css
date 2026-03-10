@@ -1432,37 +1432,20 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 ══════════════════════════════════════ */
 
 /* Stars (shared between desktop modal + mobile page) */
-/* ── STAR RATING — pure CSS, no JS needed ── */
-.star-rating {
-  display: flex;
-  flex-direction: row-reverse;
-  justify-content: center;
-  gap: 4px;
-}
-.star-rating input {
-  display: none;
-}
-.star-rating label {
+/* ── STAR RATING ── */
+.fbs {
   font-size: 52px;
   color: rgba(255,255,255,.25);
   cursor: pointer;
-  transition: color .12s, transform .12s;
-  line-height: 1;
-  -webkit-tap-highlight-color: transparent;
   user-select: none;
+  line-height: 1;
+  display: inline-block;
+  transition: color .1s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
 }
-.star-rating label:hover,
-.star-rating label:hover ~ label {
-  color: #F5B800;
-  transform: scale(1.15);
-}
-.star-rating input:checked ~ label {
-  color: #F5B800;
-}
-.star-rating input:checked + label {
-  transform: scale(1.2);
-}
-/* sync JS _fbStar when radio changes — handled via onchange */
+.fbs:hover { transform: scale(1.15); }
+.fbs.on { color: #F5B800; }
+
 
 /* Type chips (shared) */
 .fb-chip {
