@@ -1434,17 +1434,13 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* Stars (shared between desktop modal + mobile page) */
 /* ── STAR RATING ── */
 .fbs {
-  font-size: 52px;
-  color: rgba(255,255,255,.25);
   cursor: pointer;
-  user-select: none;
-  line-height: 1;
-  display: inline-block;
-  transition: color .1s, transform .1s;
+  transition: fill .15s, transform .15s;
   -webkit-tap-highlight-color: transparent;
+  display: block;
 }
-.fbs:hover { transform: scale(1.15); }
-.fbs.on { color: #F5B800; }
+.fbs:hover { transform: scale(1.2); }
+.fbs.on { fill: #F5B800 !important; stroke: #F5B800 !important; }
 
 
 /* Type chips (shared) */
