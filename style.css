@@ -1478,6 +1478,42 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 
 
+
+/* ── PRO SYSTEM ── */
+.pro-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:linear-gradient(135deg,#1B4332,#3A7D5E);
+  color:#fff;font-size:10px;font-weight:800;letter-spacing:.5px;
+  padding:3px 9px;border-radius:100px;
+  box-shadow:0 2px 8px rgba(58,125,94,0.35);
+}
+
+/* upgrade modal features */
+.upgrade-feat{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 12px;border-radius:12px;background:var(--surf2);
+}
+.upgrade-feat-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.upgrade-feat-title{font-size:13px;font-weight:700;color:var(--ink);}
+.upgrade-feat-desc{font-size:11px;color:var(--ink3);margin-top:1px;}
+
+/* pricing plans */
+.upgrade-plan{
+  border:1.5px solid var(--bdr);border-radius:14px;
+  padding:16px 14px;text-align:center;position:relative;background:var(--surf2);
+}
+.upgrade-plan-best{
+  border-color:var(--a2);background:rgba(58,125,94,0.07);
+}
+.upgrade-plan-price{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.5px;}
+.upgrade-plan-label{font-size:11px;color:var(--ink3);font-weight:600;margin-top:2px;}
+.upgrade-plan-badge{
+  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  background:var(--a2);color:#fff;font-size:9px;font-weight:800;
+  letter-spacing:.4px;text-transform:uppercase;padding:3px 10px;border-radius:100px;
+  white-space:nowrap;
+}
+
 /* ── EXPORT MODAL ── */
 .export-opt{
   display:flex;align-items:center;gap:14px;

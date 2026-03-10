@@ -2009,7 +2009,8 @@ function launch(){
   applyAvatar();
   $('ev-d').value=new Date().toISOString().slice(0,10);
   applyTheme();
-  scheduleRecurringCheck();show('app');goPg(LS.g('pd1_pg','canvas'),null);
+  scheduleRecurringCheck();
+  renderProBadge();show('app');goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
@@ -3497,19 +3498,7 @@ async function habitDelete(id){
   renderHabits('mob-habit-list');
 }
 
-function habitShowProGate(){
-  // Simple inline alert for now — Pro system in Session 9
-  const modal=document.createElement('div');
-  modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);';
-  modal.innerHTML=`<div style="background:var(--surf);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,.2);">
-    <div style="font-size:32px;margin-bottom:12px;">🔒</div>
-    <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px;">Pro Feature</div>
-    <div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:20px;">Free plan includes up to 3 habits. Upgrade to Pro for unlimited habits.</div>
-    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:var(--a2);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Got it</button>
-  </div>`;
-  document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
-}
+// habitShowProGate → see Session 9 Pro System
 
 function renderHabits(containerId){
   const el=document.getElementById(containerId);
@@ -3671,6 +3660,47 @@ function scheduleRecurringCheck() {
   setTimeout(() => { checkRecurringReset(); scheduleRecurringCheck(); }, msUntilMidnight);
 }
 
+
+
+// ═══════════════════════════════════════
+// SESSION 9 — PRO SYSTEM
+// ═══════════════════════════════════════
+function isPro() { return !!(prefs.pro); }
+
+function showUpgradeModal(featureName) {
+  const el = document.getElementById('mo-upgrade');
+  if (featureName) {
+    const sub = document.getElementById('mo-upgrade-sub');
+    if (sub) sub.textContent = featureName + ' is a Pro feature. Unlock everything with Prodify Pro.';
+  }
+  openMo('mo-upgrade');
+}
+
+function proGate(featureName, fn) {
+  // Returns a function that checks pro before running
+  return function(...args) {
+    if (isPro()) { fn(...args); }
+    else { showUpgradeModal(featureName); }
+  };
+}
+
+function renderProBadge() {
+  // Show/hide pro badge on profile pages
+  document.querySelectorAll('.pro-badge').forEach(el => {
+    el.style.display = isPro() ? 'inline-flex' : 'none';
+  });
+  document.querySelectorAll('.pro-upgrade-btn').forEach(el => {
+    el.style.display = isPro() ? 'none' : 'flex';
+  });
+  document.querySelectorAll('.pro-active-indicator').forEach(el => {
+    el.style.display = isPro() ? 'flex' : 'none';
+  });
+}
+
+// Hook into existing habitShowProGate to use the new modal
+function habitShowProGate() {
+  showUpgradeModal('Unlimited Habits');
+}
 
 // ═══════════════════════════════════════
 // SESSION 8 — EXPORT DATA

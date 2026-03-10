@@ -394,7 +394,10 @@
               <input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
             </label>
             <div class="pbinfo">
-              <div class="pbname" id="pbnm"></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="pbname" id="pbnm"></div>
+                <span class="pro-badge" style="display:none;">✦ Pro</span>
+              </div>
               <div class="pbuser" id="pbun"></div>
               <div class="pbjoin" id="pbjn"></div>
             </div>
@@ -421,6 +424,20 @@
       <div class="pg off" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px;">
         <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:11px;">
         <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;">Settings</div>
+          <div class="setsec" id="pro-upgrade-setsec"><div class="setsect">Plan</div>
+            <div class="pro-upgrade-btn" onclick="showUpgradeModal()" style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(58,125,94,0.12),rgba(74,157,116,0.08));border:1.5px solid rgba(58,125,94,0.3);cursor:pointer;margin-bottom:4px;">
+              <div style="font-size:28px;">✦</div>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:800;color:var(--ink);">Upgrade to Pro</div>
+                <div style="font-size:12px;color:var(--ink3);margin-top:2px;">Unlimited habits, CSV/PDF export, AI planner &amp; more</div>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:var(--a2);white-space:nowrap;">See plans →</div>
+            </div>
+            <div class="pro-active-indicator" style="display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(58,125,94,0.08);border:1.5px solid rgba(58,125,94,0.25);">
+              <span style="font-size:18px;">✦</span>
+              <div><div style="font-size:13px;font-weight:700;color:var(--a2);">Prodify Pro — Active</div><div style="font-size:11px;color:var(--ink3);">You have access to all Pro features</div></div>
+            </div>
+          </div>
           <div class="setsec"><div class="setsect">Account</div>
             <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="set-dn">—</div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
             <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="set-un">—</div></div></div>
@@ -672,7 +689,10 @@
         </div>
         <input type="file" id="mob-photo-inp" accept="image/*" style="display:none" onchange="mobAvatarUpload(event)"/>
         <div class="pbinfo">
-          <div class="pbname" id="mob-pbnm"></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="pbname" id="mob-pbnm"></div>
+            <span class="pro-badge" style="display:none;">✦ Pro</span>
+          </div>
           <div class="pbuser" id="mob-pbun"></div>
           <div class="pbjoin" id="mob-pbjn"></div>
         </div>
@@ -729,6 +749,20 @@
     <div class="mob-page-scroll" style="padding:0 16px 24px;">
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Account</div>
+        <div class="setsec"><div class="setsect">Plan</div>
+          <div class="pro-upgrade-btn" onclick="showUpgradeModal()" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(58,125,94,0.12),rgba(74,157,116,0.08));border:1.5px solid rgba(58,125,94,0.3);cursor:pointer;margin-bottom:4px;">
+            <div style="font-size:24px;">✦</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:800;color:var(--ink);">Upgrade to Pro</div>
+              <div style="font-size:11px;color:var(--ink3);margin-top:1px;">Unlimited habits, CSV/PDF, AI planner</div>
+            </div>
+            <div style="font-size:11px;font-weight:700;color:var(--a2);">See plans →</div>
+          </div>
+          <div class="pro-active-indicator" style="display:none;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:rgba(58,125,94,0.08);border:1.5px solid rgba(58,125,94,0.25);">
+            <span style="font-size:16px;">✦</span>
+            <div><div style="font-size:13px;font-weight:700;color:var(--a2);">Prodify Pro — Active</div><div style="font-size:11px;color:var(--ink3);">All Pro features unlocked</div></div>
+          </div>
+        </div>
         <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="mob-set-name"></div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
         <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="mob-set-un"></div></div></div>
         <div class="setrow"><div><div class="setlbl">Change Password</div></div><button class="bol bsm" onclick="openMo('mo-pw')">Change</button></div>
@@ -1116,6 +1150,40 @@ function fbRate(n) {
 
   <div class="mf" style="margin-top:8px;">
     <button class="bol bsm" onclick="closeMo('mo-export')">Close</button>
+  </div>
+</div></div>
+
+<!-- UPGRADE MODAL -->
+<div class="ov" id="mo-upgrade" onclick="if(event.target===this)closeMo('mo-upgrade')"><div class="mod" style="max-width:420px;padding:0;overflow:hidden;">
+  <!-- header banner -->
+  <div style="background:linear-gradient(135deg,#1B4332,#3A7D5E);padding:32px 28px 28px;text-align:center;">
+    <div style="font-size:36px;margin-bottom:10px;">✦</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;">Prodify Pro</div>
+    <div id="mo-upgrade-sub" style="font-size:13px;color:rgba(255,255,255,.7);margin-top:6px;line-height:1.5;">Unlock everything and supercharge your productivity.</div>
+  </div>
+  <!-- features list -->
+  <div style="padding:24px 28px;">
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+      <div class="upgrade-feat"><span class="upgrade-feat-icon">♾️</span><div><div class="upgrade-feat-title">Unlimited Habits</div><div class="upgrade-feat-desc">Free plan is capped at 3 habits</div></div></div>
+      <div class="upgrade-feat"><span class="upgrade-feat-icon">📊</span><div><div class="upgrade-feat-title">CSV &amp; PDF Export</div><div class="upgrade-feat-desc">Download your data in any format</div></div></div>
+      <div class="upgrade-feat"><span class="upgrade-feat-icon">🤖</span><div><div class="upgrade-feat-title">AI Daily Planner</div><div class="upgrade-feat-desc">Time-blocked schedule from your tasks</div></div></div>
+      <div class="upgrade-feat"><span class="upgrade-feat-icon">🎨</span><div><div class="upgrade-feat-title">Custom Themes</div><div class="upgrade-feat-desc">Accent colors &amp; per-widget color themes</div></div></div>
+      <div class="upgrade-feat"><span class="upgrade-feat-icon">✦</span><div><div class="upgrade-feat-title">Pro Badge</div><div class="upgrade-feat-desc">Show off your Pro status on your profile</div></div></div>
+    </div>
+    <!-- pricing -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div class="upgrade-plan">
+        <div class="upgrade-plan-price">$4<span style="font-size:13px;font-weight:500;">/mo</span></div>
+        <div class="upgrade-plan-label">Monthly</div>
+      </div>
+      <div class="upgrade-plan upgrade-plan-best">
+        <div class="upgrade-plan-price">$2<span style="font-size:13px;font-weight:500;">/mo</span></div>
+        <div class="upgrade-plan-label">Yearly · Save 50%</div>
+        <div class="upgrade-plan-badge">Best value</div>
+      </div>
+    </div>
+    <button class="btn bdk" style="width:100%;padding:14px;font-size:15px;" onclick="closeMo('mo-upgrade')">Coming Soon — Stay tuned 🚀</button>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--ink4);">No payment required yet · Just building out the UI</div>
   </div>
 </div></div>
 
