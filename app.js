@@ -495,8 +495,8 @@ function pomGetWeekData(){
   }
   return days;
 }
-function clearPomHistory(){
-  if(!confirm('Clear all pomodoro session history?'))return;
+async function clearPomHistory(){
+  if(!await appConfirm('Clear session history?','This will erase all your pomodoro session data.','Clear'))return;
   prefs.pomHistory={};
   if(cu){acc[cu].prefs=prefs;LS.s('pd1_acc',acc);if(sbReady)dbSaveUser(cu,acc[cu]);}
   pomRenderHistory();
@@ -638,6 +638,7 @@ let _mobMood = 0;
 let _mobTimerMode = 0;
 let _mobTimerSec = 25*60;
 let _mobTimerCustom=[25*60,20*60];
+let _mobTimerLastSet=[25*60,20*60]; // tracks last confirmed time per mode for reset
 let _mobTimerRunning = false;
 let _mobTimerIv = null;
 let _mobTimerSessions = 0;
@@ -943,7 +944,7 @@ function mobTimerRender(){
 function mobSetMode(m){
   if(_mobTimerRunning)return;
   _mobTimerMode=m;
-  _mobTimerSec=_mobTimerCustom[m]||MOB_TMODES[m].s;
+  _mobTimerSec=_mobTimerLastSet[m]||_mobTimerCustom[m]||MOB_TMODES[m].s;
   // show/hide session history and dots — only relevant for Pomodoro
   const hw=document.getElementById('mob-pom-history-wrap');
   const sw=document.getElementById('mob-timer-sessions');
@@ -967,6 +968,7 @@ function mobTimerConfirmEdit(){
   const total=parseTimeInput(inp.value.trim());
   if(total<1)return;
   _mobTimerCustom[_mobTimerMode]=total;
+  _mobTimerLastSet[_mobTimerMode]=total;
   _mobTimerSec=total;
   // Also sync to any desktop timer widget
   Object.values(TMS).forEach(ts=>{if(ts&&ts.custom)ts.custom[3]=total;});
@@ -1009,7 +1011,7 @@ function mobTimerToggle(){
 }
 function mobTimerReset(){
   clearInterval(_mobTimerIv);_mobTimerRunning=false;
-  _mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
+  _mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
   stopAlarm();_mobTimerAlarmActive=false;
   mobTimerRender();
 }
