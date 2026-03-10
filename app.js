@@ -2659,7 +2659,7 @@ function buildJournalW(body,w){
     <div class="jwsearch-wrap">
       <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
     </div>
-    <div class="jwlist" id="jwl-${w.id}"></div>
+    <div class="jwlist" id="jwl-${w.id}" style="flex:1;overflow-y:auto;"></div>
     <div class="jwadd">
       <textarea class="jwta" id="jwta-${w.id}" rows="2" placeholder="How's your day?"></textarea>
       <div class="jwfoot">

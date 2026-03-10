@@ -243,7 +243,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── JOURNAL PAGE ── */
 .mob-journal-composer{
-  background:var(--surf);border-bottom:1px solid var(--bdr);
+  background:var(--surf);border-top:1px solid var(--bdr);
   padding:14px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;
 }
 .mob-journal-ta{
@@ -1058,6 +1058,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .jwsearch:focus{border-color:var(--a2);}
 .jwsearch::placeholder{color:var(--ink4);}
 
+.jwlist{flex:1;overflow-y:auto;padding:0 11px 4px;min-height:0;}
 .jwlist::-webkit-scrollbar{width:2px;}
 .jwje{padding:9px 0;border-bottom:1px solid var(--bdr);}
 .jwje:last-child{border-bottom:none;}

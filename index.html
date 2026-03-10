@@ -587,14 +587,7 @@
     <div class="mob-topbar">
       <div class="mob-topbar-title">Journal</div>
     </div>
-    <div class="mob-journal-composer">
-      <textarea class="mob-journal-ta" id="mob-jta" rows="3" placeholder="How's your day going?"></textarea>
-      <div class="mob-journal-moods" id="mob-jmoods"></div>
-      <div class="mob-journal-foot">
-        <button class="mob-journal-save" onclick="mobSaveJournal()">Save Entry</button>
-      </div>
-    </div>
-    <div style="padding:0 12px 8px;">
+    <div style="padding:10px 12px 6px;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:8px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:9px 12px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <input id="mob-journal-search" type="text" placeholder="Search entries…" oninput="onMobJSearch(this.value)" style="flex:1;background:none;border:none;outline:none;font-size:13px;color:var(--ink);font-family:inherit;" />
@@ -604,6 +597,13 @@
       </div>
     </div>
     <div class="mob-journal-list" id="mob-journal-list"></div>
+    <div class="mob-journal-composer">
+      <textarea class="mob-journal-ta" id="mob-jta" rows="3" placeholder="How's your day going?"></textarea>
+      <div class="mob-journal-moods" id="mob-jmoods"></div>
+      <div class="mob-journal-foot">
+        <button class="mob-journal-save" onclick="mobSaveJournal()">Save Entry</button>
+      </div>
+    </div>
   </div>
 
   <!-- PROJECTS PAGE -->
