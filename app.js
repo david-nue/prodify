@@ -2198,6 +2198,7 @@ function buildWidgetEl(w){
   const canvas=$('canvas');
   const el=document.createElement('div');
   el.className='widget';el.id=w.id;
+  el.dataset.type=w.type;
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
   const wcolor=w.color||'';
   el.style.borderColor=wcolor||'';
@@ -2276,8 +2277,8 @@ function startResize(e,id){
   try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX/scale, startY=e.clientY/scale, startW=w.w, startH=w.h;
   const isTimer=w.type==='timer';
-  const minW=isTimer?280:200, maxW=99999;
-  const minH=isTimer?300:130, maxH=99999;
+  const minW=isTimer?260:200, maxW=99999;
+  const minH=isTimer?400:130, maxH=99999;
   const mm=e=>{
     w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
     w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));

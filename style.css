@@ -979,10 +979,13 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   user-select:none;
   transition:box-shadow .16s,border-color .16s;
 }
+/* Timer widget enforces its own minimum so the clock is always visible */
+.widget[data-type="timer"]{ min-width:260px; min-height:400px; }
 .widget:hover{box-shadow:var(--sh3);}
 .widget.wdrag{box-shadow:var(--sh4);border-color:var(--a2);z-index:1000!important;opacity:.96;}
 .widget.wresize{box-shadow:var(--sh4);border-color:var(--a2);}
-
+/* Clock never shrinks below its natural size */
+.tmtime{ flex-shrink:0; }
 /* widget header \\u2014 drag handle */
 .whead{touch-action:none;
   padding:9px 12px 8px;border-bottom:1px solid var(--bdr);
