@@ -802,12 +802,10 @@ function mobRenderTasks(){
           ontouchend="mobKTouchEnd(event)">
           <div class="mob-kcard-body">
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
-            <div class="mob-kcard-meta">
-              ${dueTag}
-              <span class="mob-kcard-date" style="margin-left:auto;">${t.date||''}</span>
-            </div>
+            ${dueTag?`<div class="mob-kcard-meta" style="margin-top:4px;">${dueTag}</div>`:''}
+            ${t.date?`<div class="mob-kcard-date" style="margin-top:3px;">${t.date}</div>`:''}
           </div>
-          <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
+          <button class="mob-kcard-del" style="flex-shrink:0;margin-top:-2px;" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
         </div>`;
       });
     }
