@@ -1716,10 +1716,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .cal-day.cal-sel{background:var(--a2);color:#fff !important;border-radius:8px;}
 .cal-day.cal-past{color:var(--ink4);cursor:default;opacity:.4;}
 
-/* Desktop calendar dropdown */
+/* Desktop calendar dropdown — rendered as body portal via JS */
 .tw-due-dropdown{
-  position:absolute;z-index:200;width:252px;
-  top:100%;left:0;margin-top:4px;
+  width:252px;
   box-shadow:var(--sh3);border-radius:14px;overflow:hidden;
   background:var(--surf);
 }

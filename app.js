@@ -963,14 +963,32 @@ function mobCalPick(val){
 
 // ── DESKTOP PICKER ──
 function openDskDuePicker(wid){
-  document.querySelectorAll('.tw-due-dropdown').forEach(d=>{if(d.id!=='twdp-'+wid)d.style.display='none';});
-  const dp=document.getElementById('twdp-'+wid);if(!dp)return;
-  if(dp.style.display==='block'){dp.style.display='none';_dskCalWid=null;return;}
+  // Portal-based dropdown: lives on <body> to escape overflow:hidden on .widget
+  const btn=document.getElementById('twdb-'+wid);
+  let dp=document.getElementById('due-portal');
+  if(!dp){
+    dp=document.createElement('div');
+    dp.id='due-portal';
+    dp.className='tw-due-dropdown';
+    dp.style.cssText='display:none;position:fixed;z-index:9999;';
+    document.body.appendChild(dp);
+  }
+  // Close if already open for this widget
+  if(dp.dataset.wid===wid&&dp.style.display==='block'){dp.style.display='none';_dskCalWid=null;return;}
+  // Close any other open pickers
+  dp.style.display='none';
   _dskCalWid=wid;
+  dp.dataset.wid=wid;
   const inp=$('twd-'+wid);
   const d=inp?.value?new Date(inp.value+'T00:00:00'):calToday();
   _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
-  buildCal(_calViewYear,_calViewMonth,inp?.value||'','twdp-'+wid,'dskCalPick','dskCalNav');
+  buildCal(_calViewYear,_calViewMonth,inp?.value||'','due-portal','dskCalPick','dskCalNav');
+  // Position below the button using fixed coords
+  if(btn){
+    const r=btn.getBoundingClientRect();
+    dp.style.top=(r.bottom+4)+'px';
+    dp.style.left=r.left+'px';
+  }
   dp.style.display='block';
 }
 function dskCalNav(dir){
@@ -979,7 +997,7 @@ function dskCalNav(dir){
   if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
   if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
   const inp=$('twd-'+_dskCalWid);
-  buildCal(_calViewYear,_calViewMonth,inp?.value||'','twdp-'+_dskCalWid,'dskCalPick','dskCalNav');
+  buildCal(_calViewYear,_calViewMonth,inp?.value||'','due-portal','dskCalPick','dskCalNav');
 }
 function dskCalPick(val){
   if(!_dskCalWid)return;
@@ -987,15 +1005,17 @@ function dskCalPick(val){
   if(inp)inp.value=val;
   const d=new Date(val+'T00:00:00');
   if(btn){btn.textContent=calDisplay(d);btn.classList.add('active');}
-  buildCal(_calViewYear,_calViewMonth,val,'twdp-'+_dskCalWid,'dskCalPick','dskCalNav');
-  setTimeout(()=>{const dp=document.getElementById('twdp-'+_dskCalWid);if(dp)dp.style.display='none';_dskCalWid=null;},180);
+  const dp=document.getElementById('due-portal');
+  if(dp){dp.style.display='none';}
+  _dskCalWid=null;
 }
 function onDueChange(wid){}
 function openDuePicker(wid){ openDskDuePicker(wid); }
 
 document.addEventListener('click',function(e){
-  if(_dskCalWid&&!e.target.closest('.tw-due-dropdown')&&!e.target.closest('.tw-due-btn')){
-    document.querySelectorAll('.tw-due-dropdown').forEach(d=>d.style.display='none');
+  if(_dskCalWid&&!e.target.closest('#due-portal')&&!e.target.closest('.tw-due-btn')){
+    const dp=document.getElementById('due-portal');
+    if(dp)dp.style.display='none';
     _dskCalWid=null;
   }
 });
@@ -2437,11 +2457,8 @@ function buildTaskW(body,w){
   body.innerHTML=`
     <div class="twadd">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <div style="position:relative;flex-shrink:0;">
-        <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
-        <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
-        <div id="twdp-${w.id}" class="tw-due-dropdown" style="display:none;"></div>
-      </div>
+      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
+      <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
