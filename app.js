@@ -1071,10 +1071,12 @@ function mobSubmitTask(){
   const inp=document.getElementById('mob-add-task-input');
   const t=inp?.value.trim();if(!t)return;
   const due=document.getElementById('mob-add-task-due')?.value||'';
-  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  const rec=document.getElementById('mob-add-task-recur')?.value||'none';
+  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
   persist();
   if(inp)inp.value='';
   const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
+  const recurEl=document.getElementById('mob-add-task-recur');if(recurEl)recurEl.value='none';
   closeMobAddTask();
   mobRenderTasks();mobRenderHome();
   updateFixedStats();updateAllStatsW();renderAllTaskW();
@@ -1997,7 +1999,8 @@ function launch(){
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
   applyAvatar();
   $('ev-d').value=new Date().toISOString().slice(0,10);
-  applyTheme();show('app');goPg(LS.g('pd1_pg','canvas'),null);
+  applyTheme();
+  scheduleRecurringCheck();show('app');goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
@@ -2640,6 +2643,11 @@ function buildTaskW(body,w){
     <div style="display:flex;align-items:center;padding:8px 10px;gap:6px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--surf2);">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
       <input type="date" id="twd-${w.id}" style="display:none;"/>
+      <select id="twr-${w.id}" class="tw-recur-sel" title="Recurring">
+        <option value="none">No repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+      </select>
       <button id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit;white-space:nowrap;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
         <span id="twdb-lbl-${w.id}">Due date</span>
@@ -2658,9 +2666,11 @@ function buildTaskW(body,w){
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
-  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  const rec=$('twr-'+wid)?.value||'none';
+  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
   persist();renderAllTaskW();inp.value='';
   if($('twd-'+wid))$('twd-'+wid).value='';
+  if($('twr-'+wid))$('twr-'+wid).value='none';
   onDueChange(wid);
   inp.focus();
   updateAllStatsW();updateFixedStats();
@@ -2714,7 +2724,7 @@ function renderTaskCols(wid){
       return `<div class="tc${_selTask===t.id?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
       <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
       <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
-      <div class="tcf">${dueTag}<span class="tcd">${t.date}</span></div>
+      <div class="tcf">${dueTag}${t.recurring&&t.recurring!=='none'?`<span class="tag tc-recur-tag" title="Repeats ${t.recurring}">↺ ${t.recurring}</span>`:''}<span class="tcd">${t.date}</span></div>
     </div>`;
     }).join('');
   });
@@ -3587,6 +3597,42 @@ function habitSubmit(containerId){
 
 
 // ═══════════════════════════════════════════
+
+// ── RECURRING TASK RESET ──
+function checkRecurringReset() {
+  const today = new Date().toISOString().slice(0, 10);
+  const lastReset = prefs.lastRecurringReset || '';
+  if (lastReset === today) return;
+  let changed = false;
+  tasks.forEach(t => {
+    if (!t.recurring || t.recurring === 'none') return;
+    if (t.col !== 'done') return;
+    if (t.recurring === 'daily') {
+      t.col = 'todo';
+      changed = true;
+    } else if (t.recurring === 'weekly') {
+      // reset once per week — check if last reset was in a different week
+      const lastDate = lastReset ? new Date(lastReset) : null;
+      const now = new Date();
+      const weekStart = d => { const c = new Date(d); c.setDate(c.getDate() - c.getDay()); return c.toISOString().slice(0,10); };
+      if (!lastDate || weekStart(lastDate) !== weekStart(now)) {
+        t.col = 'todo';
+        changed = true;
+      }
+    }
+  });
+  prefs.lastRecurringReset = today;
+  if (changed) { persist(); renderAllTaskW(); mobRenderTasks && mobRenderTasks(); }
+}
+
+function scheduleRecurringCheck() {
+  checkRecurringReset();
+  // schedule next check at midnight
+  const now = new Date();
+  const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1) - now;
+  setTimeout(() => { checkRecurringReset(); scheduleRecurringCheck(); }, msUntilMidnight);
+}
+
 // SESSION 6 — FOCUS MODE
 // ═══════════════════════════════════════════
 

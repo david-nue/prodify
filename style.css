@@ -1433,6 +1433,21 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sa-mb-eye{position:absolute;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background:none;border:none;cursor:pointer;opacity:0.4;padding:0;line-height:0;color:#fff;display:flex;align-items:center;}
 .sa-mb-eye:hover{opacity:0.8;}
 
+
+/* ── RECURRING TASKS ── */
+.tw-recur-sel{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;
+  color:var(--ink2);font-size:11px;font-weight:600;font-family:inherit;
+  padding:4px 6px;cursor:pointer;outline:none;flex-shrink:0;
+}
+.tc-recur-tag{
+  background:rgba(58,125,94,0.12);color:var(--a2);
+  border:1px solid rgba(58,125,94,0.25);
+  font-size:9px;font-weight:700;letter-spacing:.3px;
+  padding:2px 6px;border-radius:100px;
+  display:inline-flex;align-items:center;gap:2px;
+}
+
 /* ── FEEDBACK ── */
 /* .fbtype-btn + .fb-star: replaced by redesigned feedback styles at bottom of file */
 .fbtype-btn{padding:6px 14px;border-radius:100px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}

@@ -863,6 +863,19 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><path d="M9 18l6-6-6-6"/></svg>
       </button>
       <input type="date" id="mob-add-task-due" style="display:none;" />
+      <div style="display:flex;align-items:center;gap:10px;width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:13px 14px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:var(--surf);border:1.5px solid var(--bdr);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2" stroke-linecap="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+          <div style="font-size:10px;font-weight:700;color:var(--ink4);letter-spacing:.6px;text-transform:uppercase;">Repeat</div>
+          <select id="mob-add-task-recur" style="background:none;border:none;outline:none;font-size:13px;font-weight:600;color:var(--ink);font-family:inherit;cursor:pointer;padding:0;width:100%;">
+            <option value="none">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+      </div>
       <button class="mob-add-submit" onclick="mobSubmitTask()">Add Task</button>
     </div>
   </div>
