@@ -747,10 +747,11 @@
       </div>
     </div>
     <div class="mob-page-scroll" style="padding:0 16px 24px;">
+      <!-- Plan -->
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
-        <div class="setsect">Account</div>
-        <div class="setsec"><div class="setsect">Plan</div>
-          <div class="pro-upgrade-btn" onclick="showUpgradeModal()" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(58,125,94,0.12),rgba(74,157,116,0.08));border:1.5px solid rgba(58,125,94,0.3);cursor:pointer;margin-bottom:4px;">
+        <div class="setsect">Plan</div>
+        <div style="padding:10px 14px 14px;">
+          <div class="pro-upgrade-btn" onclick="showUpgradeModal()" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(58,125,94,0.12),rgba(74,157,116,0.08));border:1.5px solid rgba(58,125,94,0.3);cursor:pointer;">
             <div style="font-size:24px;">✦</div>
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:800;color:var(--ink);">Upgrade to Pro</div>
@@ -763,29 +764,34 @@
             <div><div style="font-size:13px;font-weight:700;color:var(--a2);">Prodify Pro — Active</div><div style="font-size:11px;color:var(--ink3);">All Pro features unlocked</div></div>
           </div>
         </div>
+      </div>
+      <!-- Account -->
+      <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div class="setsect">Account</div>
         <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="mob-set-name"></div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
         <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="mob-set-un"></div></div></div>
         <div class="setrow"><div><div class="setlbl">Change Password</div></div><button class="bol bsm" onclick="openMo('mo-pw')">Change</button></div>
       </div>
+      <!-- Appearance -->
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Appearance</div>
         <div class="setrow"><div><div class="setlbl">Dark Mode</div></div><button class="tog" id="mob-tog-dk" onclick="togDark(this);document.getElementById('tog-dk').classList.toggle('on',prefs.dark)"></button></div>
       </div>
+      <!-- Data -->
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Data</div>
         <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
         <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
-        <div class="setsec"><div class="setsect">Export</div>
-          <div class="setrow">
-            <div>
-              <div class="setlbl">Export Data</div>
-              <div class="setdsc">Download your tasks, journal, habits &amp; projects</div>
-            </div>
-            <button class="bol bsm" onclick="showExportModal()">Export</button>
-          </div>
-        </div>
-
       </div>
+      <!-- Export -->
+      <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div class="setsect">Export</div>
+        <div class="setrow">
+          <div><div class="setlbl">Export Data</div><div class="setdsc">Download your tasks, journal, habits &amp; projects</div></div>
+          <button class="bol bsm" onclick="showExportModal()">Export</button>
+        </div>
+      </div>
+      <!-- More -->
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">More</div>
         <div class="setrow" style="cursor:pointer;" onclick="mobGoPage('about')"><div><div class="setlbl">About Prodify</div><div class="setdsc">Meet the creator</div></div><span style="color:var(--ink4);font-size:16px;">›</span></div>
