@@ -1434,21 +1434,19 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* Stars (shared between desktop modal + mobile page) */
 .fb-star {
   font-size: 32px;
-  color: rgba(255,255,255,.25);
+  color: rgba(255,255,255,.3);
   cursor: pointer;
   user-select: none;
   transition: color .15s, transform .15s;
   line-height: 1;
   display: inline-block;
+  position: relative;
+  z-index: 1;
 }
 .fb-star:hover,
 .fb-star.filled { color: #F5B800; }
 .fb-star:hover  { transform: scale(1.2); }
-/* desktop stars — darker bg so use different unselected color */
-#dsk-fb-stars .fb-star { color: var(--bdr); }
-#dsk-fb-stars .fb-star:hover,
-#dsk-fb-stars .fb-star.filled { color: #F5B800; }
-.fb-star-lg { font-size: 40px; }
+.fb-star-lg { font-size: 44px; }
 
 /* Type chips (shared) */
 .fb-chip {
