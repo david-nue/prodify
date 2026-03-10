@@ -3513,7 +3513,8 @@ function renderHabitAddForm(containerId){
   const habits=habitGetAll();
   const atLimit=habits.length>=HABIT_MAX_FREE;
 
-  el.innerHTML=`<div style="border-top:1px solid var(--bdr);padding-top:12px;margin-top:4px;">
+  const isPage=containerId.includes('page');
+  el.innerHTML=`<div style="${isPage?'':'border-top:1px solid var(--bdr);'}padding-top:${isPage?'0':'12px'};margin-top:4px;">
     <div style="font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Add a new habit</div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">
       ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:14px;transition:all .13s;" title="${e}">${e}</button>`).join('')}
