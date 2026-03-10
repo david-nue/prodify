@@ -804,7 +804,7 @@ function mobRenderTasks(){
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
             <div class="mob-kcard-meta">
               ${dueTag}
-              <span class="mob-kcard-date">${t.date||''}</span>
+              <span class="mob-kcard-date" style="margin-left:auto;">${t.date||''}</span>
             </div>
           </div>
           <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
@@ -888,42 +888,131 @@ async function mobDelTask(id){
   tasks=tasks.filter(t=>t.id!==id);
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
+// ── CUSTOM DATE PICKER ──
+let _calViewYear=0, _calViewMonth=0, _dskCalWid=null;
+
+function calToday(){ const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+function calFmt(d){ return d.toISOString().slice(0,10); }
+function calDisplay(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+function buildCal(year,month,selectedVal,containerId,pickFn,navFn){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const today=calToday();
+  const firstDay=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0);
+  const startDow=firstDay.getDay();
+  const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const prevOk=new Date(year,month,1)>new Date(today.getFullYear(),today.getMonth(),1);
+  let cells='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{ cells+=`<div class="cal-dh">${d}</div>`; });
+  for(let i=0;i<startDow;i++) cells+=`<div></div>`;
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(year,month,d);
+    const val=calFmt(date);
+    const isPast=date<today;
+    const isSel=val===selectedVal;
+    const isToday=val===calFmt(today);
+    cells+=`<div class="cal-day${isSel?' cal-sel':''}${isToday&&!isSel?' cal-today':''}${isPast?' cal-past':''}"
+      ${!isPast?`onclick="${pickFn}('${val}')"`:''}>
+      ${d}
+    </div>`;
+  }
+  container.innerHTML=`
+    <div class="cal-wrap">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" ${!prevOk?'disabled':''} onclick="${navFn}('prev')">\u2039</button>
+        <span class="cal-month">${monthName}</span>
+        <button class="cal-nav-btn" onclick="${navFn}('next')">\u203a</button>
+      </div>
+      <div class="cal-grid">${cells}</div>
+    </div>`;
+}
+
+// ── MOBILE PICKER ──
 function mobDueReset(){
   document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
   const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
+  const lbl=document.getElementById('mob-due-selected-lbl');if(lbl)lbl.textContent='';
+  const today=calToday();
+  _calViewYear=today.getFullYear();_calViewMonth=today.getMonth();
+  buildCal(_calViewYear,_calViewMonth,'','mob-cal-wrap','mobCalPick','mobCalNav');
 }
 function mobSetDue(preset){
   const inp=document.getElementById('mob-add-task-due');if(!inp)return;
-  const d=new Date();
-  if(preset==='today'){}
-  else if(preset==='tomorrow')d.setDate(d.getDate()+1);
+  if(preset==='none'){mobDueReset();return;}
+  const d=calToday();
+  if(preset==='tomorrow')d.setDate(d.getDate()+1);
   else if(preset==='week')d.setDate(d.getDate()+7);
-  inp.value=d.toISOString().slice(0,10);
+  const val=calFmt(d);
+  inp.value=val;
   document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
   const labels={today:'Today',tomorrow:'Tomorrow',week:'This week'};
   document.querySelectorAll('.mob-due-chip').forEach(c=>{if(c.textContent===labels[preset])c.classList.add('active');});
+  const lbl=document.getElementById('mob-due-selected-lbl');
+  if(lbl)lbl.textContent='\u00b7 '+calDisplay(d);
+  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
+  buildCal(_calViewYear,_calViewMonth,val,'mob-cal-wrap','mobCalPick','mobCalNav');
 }
-function mobPickDue(){
-  const inp=document.getElementById('mob-add-task-due');if(!inp)return;
-  const today=new Date().toISOString().slice(0,10);
-  inp.min=today;
-  inp.showPicker?inp.showPicker():inp.click();
-}
-function mobOnDuePick(){
-  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+function mobCalNav(dir){
+  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
+  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
+  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
   const inp=document.getElementById('mob-add-task-due');
-  const pickBtn=document.querySelector('.mob-due-chip-pick');
-  if(inp?.value&&pickBtn){
-    const d=new Date(inp.value+'T00:00:00');
-    pickBtn.textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    pickBtn.classList.add('active');
-  } else if(pickBtn){pickBtn.textContent='Pick date';}
+  buildCal(_calViewYear,_calViewMonth,inp?.value||'','mob-cal-wrap','mobCalPick','mobCalNav');
 }
+function mobCalPick(val){
+  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value=val;
+  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+  const d=new Date(val+'T00:00:00');
+  const lbl=document.getElementById('mob-due-selected-lbl');
+  if(lbl)lbl.textContent='\u00b7 '+calDisplay(d);
+  buildCal(_calViewYear,_calViewMonth,val,'mob-cal-wrap','mobCalPick','mobCalNav');
+}
+
+// ── DESKTOP PICKER ──
+function openDskDuePicker(wid){
+  document.querySelectorAll('.tw-due-dropdown').forEach(d=>{if(d.id!=='twdp-'+wid)d.style.display='none';});
+  const dp=document.getElementById('twdp-'+wid);if(!dp)return;
+  if(dp.style.display==='block'){dp.style.display='none';_dskCalWid=null;return;}
+  _dskCalWid=wid;
+  const inp=$('twd-'+wid);
+  const d=inp?.value?new Date(inp.value+'T00:00:00'):calToday();
+  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
+  buildCal(_calViewYear,_calViewMonth,inp?.value||'','twdp-'+wid,'dskCalPick','dskCalNav');
+  dp.style.display='block';
+}
+function dskCalNav(dir){
+  if(!_dskCalWid)return;
+  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
+  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
+  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
+  const inp=$('twd-'+_dskCalWid);
+  buildCal(_calViewYear,_calViewMonth,inp?.value||'','twdp-'+_dskCalWid,'dskCalPick','dskCalNav');
+}
+function dskCalPick(val){
+  if(!_dskCalWid)return;
+  const inp=$('twd-'+_dskCalWid),btn=$('twdb-'+_dskCalWid);
+  if(inp)inp.value=val;
+  const d=new Date(val+'T00:00:00');
+  if(btn){btn.textContent=calDisplay(d);btn.classList.add('active');}
+  buildCal(_calViewYear,_calViewMonth,val,'twdp-'+_dskCalWid,'dskCalPick','dskCalNav');
+  setTimeout(()=>{const dp=document.getElementById('twdp-'+_dskCalWid);if(dp)dp.style.display='none';_dskCalWid=null;},180);
+}
+function onDueChange(wid){}
+function openDuePicker(wid){ openDskDuePicker(wid); }
+
+document.addEventListener('click',function(e){
+  if(_dskCalWid&&!e.target.closest('.tw-due-dropdown')&&!e.target.closest('.tw-due-btn')){
+    document.querySelectorAll('.tw-due-dropdown').forEach(d=>d.style.display='none');
+    _dskCalWid=null;
+  }
+});
+
 function openMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
   if(modal){modal.classList.add('open');setTimeout(()=>document.getElementById('mob-add-task-input')?.focus(),100);}
   mobDueReset();
-  const pickBtn=document.querySelector('.mob-due-chip-pick');if(pickBtn)pickBtn.textContent='Pick date';
 }
 function closeMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
@@ -932,9 +1021,8 @@ function closeMobAddTask(){
 function mobSubmitTask(){
   const inp=document.getElementById('mob-add-task-input');
   const t=inp?.value.trim();if(!t)return;
-  const col=document.getElementById('mob-add-task-col')?.value||'todo';
   const due=document.getElementById('mob-add-task-due')?.value||'';
-  tasks.unshift({id:Date.now(),text:t,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
   persist();
   if(inp)inp.value='';
   const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
@@ -2358,11 +2446,11 @@ function buildTaskW(body,w){
   body.innerHTML=`
     <div class="twadd">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <select class="twsel" id="twc-${w.id}"><option value="todo">To Do</option><option value="inprog">In Progress</option><option value="done">Done</option></select>
-      <button class="twsel tw-due-btn" id="twdb-${w.id}" onclick="openDuePicker('${w.id}')" style="cursor:pointer;white-space:nowrap;">Due date</button>
+      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')">+ Due date</button>
       <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
+    <div id="twdp-${w.id}" class="tw-due-dropdown" style="display:none;"></div>
     <div class="twcols">
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#3A7D5E"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
@@ -2390,7 +2478,7 @@ function onDueChange(wid){
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
-  tasks.unshift({id:Date.now(),text:t,col:$('twc-'+wid).value,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
   persist();renderAllTaskW();inp.value='';
   if($('twd-'+wid))$('twd-'+wid).value='';
   onDueChange(wid);

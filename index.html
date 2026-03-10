@@ -828,22 +828,16 @@
     <div class="mob-add-sheet">
       <div class="mob-add-title">New Task</div>
       <input class="mob-add-input" id="mob-add-task-input" placeholder="What needs to be done?" />
-      <div class="mob-add-row">
-        <select class="mob-add-sel" id="mob-add-task-col">
-          <option value="todo">To Do</option>
-          <option value="inprog">In Progress</option>
-        </select>
-      </div>
       <div class="mob-due-picker">
-        <div class="mob-due-label">Due date</div>
-        <div class="mob-due-chips" id="mob-due-chips">
+        <div class="mob-due-label">Due date <span id="mob-due-selected-lbl" style="color:var(--a2);font-weight:700;"></span></div>
+        <div class="mob-due-chips">
           <button class="mob-due-chip" onclick="mobSetDue('today')">Today</button>
           <button class="mob-due-chip" onclick="mobSetDue('tomorrow')">Tomorrow</button>
           <button class="mob-due-chip" onclick="mobSetDue('week')">This week</button>
-          <button class="mob-due-chip mob-due-chip-pick" onclick="mobPickDue()">Pick date</button>
+          <button class="mob-due-chip" onclick="mobSetDue('none')">None</button>
         </div>
-        <div id="mob-due-display" style="display:none;display:none;"></div>
-        <input type="date" id="mob-add-task-due" style="display:none;" onchange="mobOnDuePick()" />
+        <div id="mob-cal-wrap"></div>
+        <input type="date" id="mob-add-task-due" style="display:none;" />
       </div>
       <button class="mob-add-submit" onclick="mobSubmitTask()">Add Task</button>
     </div>

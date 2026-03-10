@@ -1706,3 +1706,39 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   border-radius:10px;font-size:12px;font-weight:600;color:var(--ink3);
   padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s;
 }
+
+/* ── CUSTOM CALENDAR ── */
+.cal-wrap{background:var(--surf);border-radius:14px;padding:12px;border:1.5px solid var(--bdr);}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-month{font-size:12px;font-weight:700;color:var(--ink);}
+.cal-nav-btn{background:none;border:1.5px solid var(--bdr);border-radius:8px;width:28px;height:28px;cursor:pointer;color:var(--ink);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
+.cal-nav-btn:hover:not(:disabled){border-color:var(--a2);color:var(--a2);}
+.cal-nav-btn:disabled{opacity:.3;cursor:default;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dh{font-size:9px;font-weight:700;color:var(--ink4);text-align:center;padding:4px 0;text-transform:uppercase;}
+.cal-day{font-size:11px;font-weight:600;color:var(--ink);text-align:center;padding:6px 2px;border-radius:8px;cursor:pointer;transition:all .13s;line-height:1;}
+.cal-day:hover:not(.cal-past){background:var(--al);color:var(--a2);}
+.cal-day.cal-today{background:var(--surf2);border:1.5px solid var(--a2);color:var(--a2);}
+.cal-day.cal-sel{background:var(--a2);color:#fff !important;border-radius:8px;}
+.cal-day.cal-past{color:var(--ink4);cursor:default;opacity:.4;}
+
+/* Desktop calendar dropdown */
+.tw-due-dropdown{
+  position:absolute;z-index:200;width:220px;
+  top:100%;left:0;margin-top:4px;
+  box-shadow:var(--sh3);border-radius:14px;overflow:hidden;
+}
+.tw-due-dropdown .cal-wrap{border-radius:0;border:none;}
+
+/* Mobile calendar */
+#mob-cal-wrap .cal-wrap{border:none;border-top:1.5px solid var(--bdr);border-radius:0;padding:12px 0 4px;}
+
+/* Desktop due btn */
+.tw-due-btn{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;
+  font-size:11px;font-weight:600;color:var(--ink3);padding:5px 10px;
+  cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;flex-shrink:0;
+}
+.tw-due-btn.active{color:var(--a2);border-color:var(--a2);}
+.tw-due-btn:hover{border-color:var(--a2);color:var(--a2);}
+.twadd{position:relative;}
