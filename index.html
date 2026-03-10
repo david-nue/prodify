@@ -556,7 +556,7 @@
         <button class="tmm" id="mmt-1" onclick="mobSetMode(1)">Custom</button>
       </div>
       <div class="tmdis" style="flex:1;justify-content:center;">
-        <div id="mob-timer-time" class="tmtime" style="font-size:clamp(72px,22vw,120px);letter-spacing:-6px;" onclick="mobTimerEdit()">25:00</div>
+        <div id="mob-timer-time" class="tmtime" style="font-size:clamp(64px,20vw,120px);letter-spacing:-6px;" onclick="mobTimerEdit()">25:00</div>
         <div class="tminputs" id="mob-timer-inputs" style="gap:8px;align-items:center;">
           <input class="tm-timeinput" id="mob-tminp" type="text" inputmode="numeric" placeholder="1:00:00"
             style="font-size:36px;width:160px;text-align:center;letter-spacing:-1px;"
@@ -575,12 +575,8 @@
         <div class="mob-timer-dot"></div>
         <div class="mob-timer-dot"></div>
       </div>
-    </div>
-
-    <!-- Session History — only shown in Pomodoro mode -->
-    <div id="mob-pom-history-wrap" style="padding:0 16px 24px;">
-      <div class="profcard" style="border-radius:16px;padding:16px 18px;">
-        <div class="pct" style="margin-bottom:14px;">Session History</div>
+      <div id="mob-pom-history-wrap" style="width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:12px 14px;box-sizing:border-box;">
+        <div class="pct" style="margin-bottom:10px;">Session History</div>
         <div id="mob-pom-history"></div>
       </div>
     </div>

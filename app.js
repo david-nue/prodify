@@ -986,13 +986,13 @@ function mobTimerInputKey(e){
 function mobTimerToggle(){
   if(_mobTimerAlarmActive){
     stopAlarm();_mobTimerAlarmActive=false;
-    _mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
+    _mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
     mobTimerRender();return;
   }
   if(_mobTimerRunning){
     clearInterval(_mobTimerIv);_mobTimerRunning=false;
   } else {
-    if(_mobTimerSec<=0){_mobTimerSec=_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;}
+    if(_mobTimerSec<=0){_mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;}
     _mobTimerRunning=true;
     _mobTimerIv=setInterval(()=>{
       _mobTimerSec--;
