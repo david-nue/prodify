@@ -1770,34 +1770,57 @@ function renderSocialLinks(){
 function renderActivity(barId, streakId, legendId){
   const barEl=$(barId); if(!barEl)return;
   const today=new Date();
-  const jds=new Set(journal.map(j=>new Date(j.ts||j.id).toDateString()));
-  const tds=new Set(tasks.filter(t=>t.col==='done').map(t=>new Date(t.id).toDateString()));
-  let html='';
-  for(let i=29;i>=0;i--){
+  const DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Build per-day counts for last 7 days
+  const days=[];
+  for(let i=6;i>=0;i--){
     const d=new Date(today);d.setDate(today.getDate()-i);
     const ds=d.toDateString();
-    const hasJ=jds.has(ds),hasT=tds.has(ds),isToday=i===0;
-    const cls=['abd',hasJ||hasT?'has':'',isToday?'tod':''].filter(Boolean).join(' ');
-    const tip=d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(hasJ?' · journaled':'')+(hasT?' · tasks done':'');
-    html+=`<div class="${cls}" title="${tip}" style="${hasJ&&hasT?'background:var(--a);':''}" ></div>`;
+    const jCount=journal.filter(j=>new Date(j.ts||j.id).toDateString()===ds).length;
+    const tCount=tasks.filter(t=>t.col==='done'&&new Date(t.id).toDateString()===ds).length;
+    days.push({d,ds,label:DAY[d.getDay()],date:d.getDate(),jCount,tCount,isToday:i===0});
   }
+  const maxVal=Math.max(1,...days.map(d=>d.jCount+d.tCount));
+
+  // Render bar chart
+  let html=`<div style="display:flex;align-items:flex-end;gap:6px;height:70px;padding:0 2px;">`;
+  days.forEach(day=>{
+    const total=day.jCount+day.tCount;
+    const pct=total?Math.max(12,Math.round((total/maxVal)*100)):0;
+    const jPct=total?Math.round((day.jCount/total)*100):0;
+    const tip=`${day.d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}: ${day.tCount} task${day.tCount!==1?'s':''} done, ${day.jCount} journal entr${day.jCount!==1?'ies':'y'}`;
+    html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+        ${total?`<div style="width:100%;height:${pct}%;border-radius:5px 5px 0 0;background:linear-gradient(to top,var(--a2) ${100-jPct}%,var(--a) ${100-jPct}%);opacity:${day.isToday?1:0.75};min-height:6px;" title="${tip}"></div>`
+        :`<div style="width:100%;height:6px;border-radius:5px;background:var(--bdr);"></div>`}
+      </div>
+      <div style="font-size:9px;font-weight:700;color:${day.isToday?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${day.label}</div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  // Legend
+  html+=`<div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink4);"><span style="width:10px;height:10px;border-radius:2px;background:var(--a2);display:inline-block;"></span>Tasks done</span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink4);"><span style="width:10px;height:10px;border-radius:2px;background:var(--a);display:inline-block;"></span>Journal entries</span>
+  </div>`;
+
   barEl.innerHTML=html;
-  // Streak
+
+  // Streak — consecutive days with any activity
   if(streakId){
     let streak=0;
-    for(let i=0;i<=29;i++){
+    for(let i=0;i<=90;i++){
       const d=new Date(today);d.setDate(today.getDate()-i);
       const ds=d.toDateString();
-      if(jds.has(ds)||tds.has(ds))streak++;
+      const active=journal.some(j=>new Date(j.ts||j.id).toDateString()===ds)||
+                   tasks.some(t=>t.col==='done'&&new Date(t.id).toDateString()===ds);
+      if(active)streak++;
       else break;
     }
     const streakEl=$(streakId);
-    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:(streak===1?'🌱 Active today':'');
-  }
-  // Legend
-  if(legendId){
-    const legEl=$(legendId);
-    if(legEl)legEl.innerHTML='<span>30 days ago</span><span>Today</span>';
+    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:(streak===1?'🌱 Active today':'No recent activity');
   }
 }
 
@@ -2709,7 +2732,7 @@ function renderProfile(){
   // Bio + social
   renderProfileBio();
   // Enhanced activity
-  renderActivity('actbar','act-streak','act-legend');
+  renderActivity('actbar','act-streak',null);
   const pbavEl=$('pbav');
   if(pbavEl){
     if(photo){

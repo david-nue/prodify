@@ -407,9 +407,9 @@
             <div class="profcard"><div class="pct">Task Overview</div><div class="pstrow"><div class="pst"><div class="pstv" id="pp-tot">0</div><div class="pstl">Total</div></div><div class="pst"><div class="pstv" id="pp-dn">0</div><div class="pstl">Done</div></div><div class="pst"><div class="pstv" id="pp-rt">—</div><div class="pstl">Rate</div></div></div></div>
             <div class="profcard"><div class="pct">Journal Moods</div><div class="mhist" id="mhist"></div></div>
             <div class="profcard">
-              <div class="pct">Activity — last 30 days</div>
+              <div class="pct">This Week</div>
               <div class="actbar" id="actbar"></div>
-              <div id="act-legend" style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--ink4);"></div>
+              
               <div id="act-streak" style="margin-top:8px;font-size:12px;font-weight:600;color:var(--a2);"></div>
             </div>
             <div class="profcard"><div class="pct">Project Progress</div><div class="spl" id="spllist"></div></div>
@@ -694,7 +694,7 @@ create policy "public" on users for all using (true);</pre>
         </div>
       </div>
       <div class="profcard" style="border-radius:14px;margin-bottom:10px;">
-        <div class="pct">Activity — last 30 days</div>
+        <div class="pct">This Week</div>
         <div class="actbar" id="mob-actbar" style="margin-top:6px;"></div>
         <div id="mob-act-streak" style="margin-top:8px;font-size:12px;font-weight:600;color:var(--a2);"></div>
       </div>
@@ -787,30 +787,29 @@ create policy "public" on users for all using (true);</pre>
       </div>
     </div>
     <div class="mob-page-scroll" style="padding:0 16px 24px;">
-      <!-- Type toggle -->
-      <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button id="fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">💬 General</button>
-        <button id="fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">🐛 Bug Report</button>
-        <button id="fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">💡 Suggestion</button>
-      </div>
-      <!-- Star rating -->
-      <div class="profcard" style="border-radius:14px;margin-bottom:12px;text-align:center;">
-        <div class="pct" style="text-align:left;">Rate your experience</div>
-        <div id="fb-stars" style="display:flex;justify-content:center;gap:8px;font-size:30px;cursor:pointer;margin-top:8px;">
-          <span onclick="setFbStar(1)" class="fb-star">☆</span>
-          <span onclick="setFbStar(2)" class="fb-star">☆</span>
-          <span onclick="setFbStar(3)" class="fb-star">☆</span>
-          <span onclick="setFbStar(4)" class="fb-star">☆</span>
-          <span onclick="setFbStar(5)" class="fb-star">☆</span>
+      <div class="profcard" style="border-radius:18px;padding:20px;">
+        <!-- Stars first -->
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:10px;">How's Prodify treating you?</div>
+          <div id="fb-stars" style="display:flex;justify-content:center;gap:6px;font-size:34px;cursor:pointer;">
+            <span onclick="setFbStar(1)" class="fb-star">☆</span>
+            <span onclick="setFbStar(2)" class="fb-star">☆</span>
+            <span onclick="setFbStar(3)" class="fb-star">☆</span>
+            <span onclick="setFbStar(4)" class="fb-star">☆</span>
+            <span onclick="setFbStar(5)" class="fb-star">☆</span>
+          </div>
         </div>
+        <!-- Type -->
+        <div style="display:flex;gap:6px;margin-bottom:16px;">
+          <button id="fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act" style="flex:1;">General</button>
+          <button id="fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn" style="flex:1;">Bug</button>
+          <button id="fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn" style="flex:1;">Idea</button>
+        </div>
+        <!-- Message -->
+        <textarea id="fb-msg" rows="5" placeholder="What's on your mind..." style="width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:12px;outline:none;font-size:13px;color:var(--ink);line-height:1.6;resize:none;font-family:inherit;box-sizing:border-box;margin-bottom:14px;"></textarea>
+        <button onclick="submitFeedback()" style="width:100%;padding:13px;background:var(--a2);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">Send</button>
+        <div id="fb-success" style="display:none;text-align:center;padding:12px 0 0;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks for your feedback!</div>
       </div>
-      <!-- Message -->
-      <div class="profcard" style="border-radius:14px;margin-bottom:12px;">
-        <div class="pct">Your message</div>
-        <textarea id="fb-msg" rows="5" placeholder="Tell us what's on your mind..." style="width:100%;background:none;border:none;outline:none;font-size:13px;color:var(--ink);line-height:1.6;margin-top:6px;resize:none;font-family:inherit;"></textarea>
-      </div>
-      <button onclick="submitFeedback()" style="width:100%;padding:14px;background:var(--a2);color:#fff;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">Send Feedback</button>
-      <div id="fb-success" style="display:none;text-align:center;padding:16px;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks for your feedback!</div>
     </div>
   </div>
 
@@ -961,16 +960,11 @@ create policy "public" on users for all using (true);</pre>
 </div></div>
 
 <!-- DESKTOP FEEDBACK MODAL -->
-<div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')"><div class="mod" style="max-width:480px;">
+<div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')"><div class="mod" style="max-width:420px;">
   <div class="mh">Send Feedback</div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;">
-    <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act">💬 General</button>
-    <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn">🐛 Bug Report</button>
-    <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn">💡 Suggestion</button>
-  </div>
-  <div style="text-align:center;margin-bottom:12px;">
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">Rate your experience</div>
-    <div id="dsk-fb-stars" style="display:flex;justify-content:center;gap:8px;font-size:28px;cursor:pointer;">
+  <div style="text-align:center;margin-bottom:18px;">
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;">How's Prodify treating you?</div>
+    <div id="dsk-fb-stars" style="display:flex;justify-content:center;gap:6px;font-size:30px;cursor:pointer;">
       <span onclick="setFbStar(1)" class="fb-star">☆</span>
       <span onclick="setFbStar(2)" class="fb-star">☆</span>
       <span onclick="setFbStar(3)" class="fb-star">☆</span>
@@ -978,9 +972,14 @@ create policy "public" on users for all using (true);</pre>
       <span onclick="setFbStar(5)" class="fb-star">☆</span>
     </div>
   </div>
-  <div class="fd"><label class="fl">Your message</label><textarea class="fi" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind..." style="resize:none;"></textarea></div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fbtype-btn fbtype-act" style="flex:1;">General</button>
+    <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fbtype-btn" style="flex:1;">Bug</button>
+    <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fbtype-btn" style="flex:1;">Idea</button>
+  </div>
+  <div class="fd"><textarea class="fi" id="dsk-fb-msg" rows="4" placeholder="What's on your mind..." style="resize:none;"></textarea></div>
   <div class="mf"><button class="bol bsm" onclick="closeMo('mo-feedback')">Cancel</button><button class="btn bdk bsm" onclick="submitFeedback(true)">Send</button></div>
-  <div id="dsk-fb-success" style="display:none;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks for your feedback!</div>
+  <div id="dsk-fb-success" style="display:none;text-align:center;padding:8px 0 0;font-size:13px;font-weight:600;color:var(--a2);">✓ Thanks!</div>
 </div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
