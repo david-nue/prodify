@@ -3748,7 +3748,7 @@ End with a short motivational note (1-2 sentences, label it **Note:**).
 Keep it realistic. Group related tasks. Include short breaks. Be specific with times starting from a reasonable morning hour.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
