@@ -2302,6 +2302,59 @@ function closeMo(id){$(id).classList.remove('open');}
 function applyTheme(){
   document.documentElement.setAttribute('data-dark',prefs.dark?'1':'');
   const t=$('tog-dk');if(t)t.className='tog'+(prefs.dark?' on':'');
+  const mt=$('mob-tog-dk');if(mt)mt.className='tog'+(prefs.dark?' on':'');
+  // Apply custom accent color (Pro only)
+  const root = document.documentElement;
+  if(prefs.accentColor && isPro()){
+    const {a, a2, al} = deriveAccent(prefs.accentColor);
+    root.style.setProperty('--a', a);
+    root.style.setProperty('--a2', a2);
+    root.style.setProperty('--al', al);
+  } else {
+    root.style.removeProperty('--a');
+    root.style.removeProperty('--a2');
+    root.style.removeProperty('--al');
+  }
+  // Sync color picker UI
+  const picks = document.querySelectorAll('.accent-swatch.selected');
+  picks.forEach(s => s.classList.remove('selected'));
+  const cur = prefs.accentColor || 'green';
+  document.querySelectorAll(`.accent-swatch[data-key="${cur}"]`).forEach(s => s.classList.add('selected'));
+}
+
+// Derive --a, --a2, --al from a hex color
+function hexToHsl(hex){
+  let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;case b:h=(r-g)/d+4;break;}h/=6;}
+  return [Math.round(h*360),Math.round(s*100),Math.round(l*100)];
+}
+function hslStr(h,s,l){return `hsl(${h},${s}%,${l}%)`;}
+function deriveAccent(key){
+  const presets={
+    green:{a:'#2A5C44',a2:'#3A7D5E',al:'#EBF4EF'},
+    blue:{a:'#1E4A7C',a2:'#2563EB',al:'#EBF0FC'},
+    purple:{a:'#4A2C6E',a2:'#7C3AED',al:'#F0EBFD'},
+    rose:{a:'#7C1D2C',a2:'#E11D48',al:'#FDEEF1'},
+    amber:{a:'#7A4A00',a2:'#D97706',al:'#FEF3C7'},
+    teal:{a:'#0F4C4C',a2:'#0D9488',al:'#EBFAFA'},
+    slate:{a:'#2A3548',a2:'#475569',al:'#EEF0F4'},
+  };
+  if(presets[key]) return presets[key];
+  // custom hex
+  if(key.startsWith('#')){
+    const [h,s,l]=hexToHsl(key);
+    return {a:hslStr(h,Math.max(s-10,20),Math.max(l-15,20)),a2:hslStr(h,s,l),al:hslStr(h,Math.min(s,60),93)};
+  }
+  return presets.green;
+}
+
+function setAccentColor(key){
+  if(!isPro()){showUpgradeModal('Custom Accent Color');return;}
+  prefs.accentColor=key;
+  persist();
+  applyTheme();
 }
 function togDark(btn){prefs.dark=!prefs.dark;persist();applyTheme();}
 

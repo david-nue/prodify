@@ -1537,6 +1537,28 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .aip-loading .aip-spinner{border-color:rgba(58,125,94,.2);border-top-color:var(--a2);}
 @keyframes aip-spin{to{transform:rotate(360deg);}}
 
+
+/* ── ACCENT COLOR PICKER ── */
+.accent-grid{
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.accent-swatch{
+  width:32px;height:32px;border-radius:50%;border:3px solid transparent;
+  cursor:pointer;transition:transform .15s,border-color .15s;
+  position:relative;flex-shrink:0;
+}
+.accent-swatch:hover{transform:scale(1.15);}
+.accent-swatch.selected{border-color:var(--ink)!important;transform:scale(1.1);}
+.accent-swatch.selected::after{
+  content:'';position:absolute;inset:4px;border-radius:50%;
+  border:2px solid #fff;pointer-events:none;
+}
+.accent-custom{
+  background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;
+}
+
 /* ── PRO SYSTEM ── */
 .pro-badge{
   display:inline-flex;align-items:center;gap:4px;

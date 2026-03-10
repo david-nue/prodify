@@ -457,6 +457,25 @@
           </div>
           <div class="setsec"><div class="setsect">Appearance</div>
             <div class="setrow"><div><div class="setlbl">Dark Mode</div><div class="setdsc">Switch to a dark color scheme</div></div><button class="tog" id="tog-dk" onclick="togDark(this)"></button></div>
+            <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:12px;">
+              <div>
+                <div class="setlbl">Accent Color <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div>
+                <div class="setdsc">Customize the app's primary color</div>
+              </div>
+              <div class="accent-grid">
+                <button class="accent-swatch selected" data-key="green" style="background:#3A7D5E;" onclick="setAccentColor('green')" title="Forest Green"></button>
+                <button class="accent-swatch" data-key="blue" style="background:#2563EB;" onclick="setAccentColor('blue')" title="Blue"></button>
+                <button class="accent-swatch" data-key="purple" style="background:#7C3AED;" onclick="setAccentColor('purple')" title="Purple"></button>
+                <button class="accent-swatch" data-key="rose" style="background:#E11D48;" onclick="setAccentColor('rose')" title="Rose"></button>
+                <button class="accent-swatch" data-key="amber" style="background:#D97706;" onclick="setAccentColor('amber')" title="Amber"></button>
+                <button class="accent-swatch" data-key="teal" style="background:#0D9488;" onclick="setAccentColor('teal')" title="Teal"></button>
+                <button class="accent-swatch" data-key="slate" style="background:#475569;" onclick="setAccentColor('slate')" title="Slate"></button>
+                <label class="accent-swatch accent-custom" title="Custom color" onclick="if(!isPro()){showUpgradeModal('Custom Accent Color');event.preventDefault();}">
+                  <input type="color" id="accent-custom-pick" value="#3A7D5E" oninput="setAccentColor(this.value)" style="opacity:0;position:absolute;width:0;height:0;"/>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </label>
+              </div>
+            </div>
           </div>
           <div class="setsec"><div class="setsect">Data</div>
             <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
@@ -787,6 +806,24 @@
       <!-- Appearance -->
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Appearance</div>
+        <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:12px;">
+          <div>
+            <div class="setlbl">Accent Color <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div>
+          </div>
+          <div class="accent-grid">
+            <button class="accent-swatch selected" data-key="green" style="background:#3A7D5E;" onclick="setAccentColor('green')"></button>
+            <button class="accent-swatch" data-key="blue" style="background:#2563EB;" onclick="setAccentColor('blue')"></button>
+            <button class="accent-swatch" data-key="purple" style="background:#7C3AED;" onclick="setAccentColor('purple')"></button>
+            <button class="accent-swatch" data-key="rose" style="background:#E11D48;" onclick="setAccentColor('rose')"></button>
+            <button class="accent-swatch" data-key="amber" style="background:#D97706;" onclick="setAccentColor('amber')"></button>
+            <button class="accent-swatch" data-key="teal" style="background:#0D9488;" onclick="setAccentColor('teal')"></button>
+            <button class="accent-swatch" data-key="slate" style="background:#475569;" onclick="setAccentColor('slate')"></button>
+            <label class="accent-swatch accent-custom" onclick="if(!isPro()){showUpgradeModal('Custom Accent Color');event.preventDefault();}">
+              <input type="color" id="mob-accent-custom-pick" value="#3A7D5E" oninput="setAccentColor(this.value)" style="opacity:0;position:absolute;width:0;height:0;"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:14px;height:14px;"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </label>
+          </div>
+        </div>
         <div class="setrow"><div><div class="setlbl">Dark Mode</div></div><button class="tog" id="mob-tog-dk" onclick="togDark(this);document.getElementById('tog-dk').classList.toggle('on',prefs.dark)"></button></div>
       </div>
       <!-- Data -->
