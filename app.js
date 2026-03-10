@@ -532,8 +532,6 @@ function pomRenderHistory(){
       </div>
     `;
   });
-  // also update focus overlay if open
-  if(typeof _focusRenderHistory==='function')_focusRenderHistory();
 }
 let dragTaskId=null, calOff=0, nextZ=10;
 let _selTask=null;
@@ -2869,8 +2867,8 @@ function buildTimerW(body,w){
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
         <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')" style="flex:1;">${ts.running?'Pause':'Start'}</button>
-        <button class="focus-btn" onclick="enterFocusMode('${w.id}')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        <button class="fcsbtn" onclick="fcsOpen('${w.id}')">
+          <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
           Focus
         </button>
       </div>
@@ -3588,142 +3586,148 @@ function habitSubmit(containerId){
 }
 
 
-// ═══════════════════════════════════════════════════════════
-// SESSION 6: FOCUS MODE
-// ═══════════════════════════════════════════════════════════
-let _focusWid=null, _focusIv=null;
+// ═══════════════════════════════════════════
+// SESSION 6 — FOCUS MODE
+// ═══════════════════════════════════════════
 
-function enterFocusMode(wid){
-  _focusWid=wid;
-  const overlay=document.getElementById('focus-overlay');
-  const card=document.getElementById('focus-card');
-  if(!overlay||!card)return;
-  _focusBuild(wid,card);
-  overlay.classList.add('open');
-  document.body.classList.add('focus-mode');
-  document.addEventListener('keydown',_focusKey);
+let _fcsWid = null;
+let _fcsIv  = null;
+
+// ── Desktop: open overlay ──
+function fcsOpen(wid) {
+  _fcsWid = wid;
+  const body = document.getElementById('fcs-body');
+  if (!body) return;
+  _fcsBuild(wid, body);
+  openMo('fcs-ov');
+  document.body.classList.add('in-focus');
+  document.addEventListener('keydown', _fcsKey);
 }
 
-function exitFocusMode(){
-  const overlay=document.getElementById('focus-overlay');
-  if(!overlay)return;
-  overlay.classList.remove('open');
-  document.body.classList.remove('focus-mode');
-  document.removeEventListener('keydown',_focusKey);
-  clearInterval(_focusIv);_focusIv=null;
-  setTimeout(()=>{
-    const card=document.getElementById('focus-card');
-    if(card)card.innerHTML='';
-  },300);
-  if(_focusWid){
-    const w=widgets.find(x=>x.id===_focusWid);
-    if(w)fillWBody(w);
+function fcsClose() {
+  closeMo('fcs-ov');
+  document.body.classList.remove('in-focus');
+  document.removeEventListener('keydown', _fcsKey);
+  clearInterval(_fcsIv); _fcsIv = null;
+  // re-render source widget
+  if (_fcsWid) {
+    const w = widgets.find(x => x.id === _fcsWid);
+    if (w) fillWBody(w);
   }
-  _focusWid=null;
+  _fcsWid = null;
 }
 
-function _focusKey(e){if(e.key==='Escape')exitFocusMode();}
+// click backdrop to close
+function fcsExit(e) {
+  if (e.target === document.getElementById('fcs-ov')) fcsClose();
+}
 
-function _focusBuild(wid,card){
-  if(!TMS[wid])TMS[wid]={mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,20*60]};
-  const ts=TMS[wid];
-  const canEdit=TMODES[ts.mode]&&!TMODES[ts.mode].locked&&!ts.running;
-  card.innerHTML=`
+function _fcsKey(e) { if (e.key === 'Escape') fcsClose(); }
+
+function _fcsBuild(wid, body) {
+  if (!TMS[wid]) TMS[wid] = {mode:0,sec:25*60,running:false,iv:null,sessions:0,custom:[25*60,20*60]};
+  const ts = TMS[wid];
+  const canEdit = TMODES[ts.mode] && !TMODES[ts.mode].locked && !ts.running;
+
+  body.innerHTML = `
     <div style="text-align:center;margin-bottom:18px;">
-      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--ink4);">Focus Mode</span>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:var(--ink4);">Focus Mode</div>
     </div>
-    <div class="tmmodes" style="margin-bottom:16px;">
-      ${TMODES.map((m,i)=>`<button class="tmm${i===ts.mode?' on':''}" onclick="_focusModeSet('${wid}',${i})">${m.l}</button>`).join('')}
+    <div class="tmmodes" style="margin-bottom:14px;">
+      ${TMODES.map((m,i) => `<button class="tmm${i===ts.mode?' on':''}" onclick="_fcsModeSet('${wid}',${i})">${m.l}</button>`).join('')}
     </div>
-    <div class="tmdis" style="margin-bottom:16px;">
-      <div class="tmtime${canEdit?' tmtime-edit':''}" id="fc-time" style="font-size:clamp(56px,12vw,88px);letter-spacing:-4px;" onclick="_focusEditTime('${wid}')">${fmtSec(ts.sec)}</div>
-      <div class="tminputs" id="fc-inputs">
-        <input class="tm-timeinput" id="fc-inp" type="text" inputmode="numeric" placeholder="25:00"
-          onkeydown="_focusInpKey(event,'${wid}')" oninput="tmInputFmt(event)" style="font-size:28px;text-align:center;"/>
+    <div class="tmdis" style="margin-bottom:14px;">
+      <div class="tmtime${canEdit?' tmtime-edit':''}" id="fcs-time"
+        style="font-size:clamp(52px,11vw,84px);letter-spacing:-3px;cursor:pointer;"
+        onclick="_fcsEditTime('${wid}')">${fmtSec(ts.sec)}</div>
+      <div class="tminputs" id="fcs-inputs">
+        <input class="tm-timeinput" id="fcs-inp" type="text" inputmode="numeric"
+          placeholder="25:00" style="font-size:28px;text-align:center;"
+          onkeydown="_fcsInpKey(event,'${wid}')" oninput="tmInputFmt(event)"/>
         <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
-        <button class="tm-setbtn" onclick="_focusConfirm('${wid}')">Set time</button>
+        <button class="tm-setbtn" onclick="_fcsConfirm('${wid}')">Set time</button>
       </div>
     </div>
-    <div class="tmctrl" style="margin-bottom:16px;">
-      <button class="tm-resetbtn" style="width:44px;height:44px;font-size:20px;" onclick="_focusReset('${wid}')">↺</button>
-      <button class="tm-startbtn${ts.running?' stop':''}" id="fc-btn" style="flex:1;padding:13px 0;font-size:15px;" onclick="_focusToggle('${wid}')">${ts.running?'Pause':'Start'}</button>
+    <div class="tmctrl" style="margin-bottom:14px;">
+      <button class="tm-resetbtn" style="width:44px;height:44px;font-size:20px;" onclick="_fcsReset('${wid}')">↺</button>
+      <button class="tm-startbtn${ts.running?' stop':''}" id="fcs-btn" style="flex:1;" onclick="_fcsToggle('${wid}')">${ts.running?'Pause':'Start'}</button>
     </div>
-    <div class="tmsess" id="fc-sess" style="${ts.mode!==0?'display:none;':''}margin-bottom:14px;">
-      ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
+    <div class="tmsess" id="fcs-sess" style="${ts.mode!==0?'display:none;':''}margin-bottom:14px;">
+      ${Array.from({length:4},(_,i) => `<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
     </div>
-    <div id="fc-hist" style="${ts.mode!==0?'display:none;':''}background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:14px;">
-      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
-      <div id="fc-hist-inner"></div>
+    <div id="fcs-hist-wrap" style="${ts.mode!==0?'display:none;':''}background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:8px;">Session History</div>
+      <div id="fcs-hist"></div>
     </div>`;
-  _focusRenderHistory();
-  clearInterval(_focusIv);
-  _focusIv=setInterval(()=>{
-    const t=document.getElementById('fc-time');
-    const b=document.getElementById('fc-btn');
-    const s=document.getElementById('fc-sess');
-    const cts=TMS[wid];
-    if(!cts)return;
-    if(t)t.textContent=fmtSec(cts.sec);
-    if(b){b.textContent=cts.running?'Pause':'Start';b.classList.toggle('stop',cts.running);}
-    if(s&&cts.mode===0)s.innerHTML=Array.from({length:4},(_,i)=>`<div class="tmsd${i<cts.sessions?' dn':''}"></div>`).join('');
-  },250);
+
+  _fcsRenderHist();
+
+  clearInterval(_fcsIv);
+  _fcsIv = setInterval(() => {
+    const cts = TMS[wid]; if (!cts) return;
+    const t = document.getElementById('fcs-time');
+    const b = document.getElementById('fcs-btn');
+    const s = document.getElementById('fcs-sess');
+    if (t) t.textContent = fmtSec(cts.sec);
+    if (b) { b.textContent = cts.running?'Pause':'Start'; b.classList.toggle('stop', cts.running); }
+    if (s && cts.mode===0) s.innerHTML = Array.from({length:4},(_,i)=>`<div class="tmsd${i<cts.sessions?' dn':''}"></div>`).join('');
+  }, 250);
 }
 
-function _focusRenderHistory(){
-  const el=document.getElementById('fc-hist-inner');
-  if(!el)return;
-  const today=pomGetToday(),week=pomGetWeek(),days=pomGetWeekData();
-  const max=Math.max(...days.map(d=>d.count),1);
-  el.innerHTML=`
-    <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-      <div><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${today}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;">today</div></div>
-      <div style="text-align:right;"><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${week}</div><div style="font-size:10px;color:var(--ink3);font-weight:600;">this week</div></div>
+function _fcsRenderHist() {
+  const el = document.getElementById('fcs-hist'); if (!el) return;
+  const today = pomGetToday(), week = pomGetWeek(), days = pomGetWeekData();
+  const max = Math.max(...days.map(d=>d.count), 1);
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+      <div><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${today}</div><div style="font-size:9px;font-weight:600;color:var(--ink3);margin-top:1px;">today</div></div>
+      <div style="text-align:right;"><div style="font-size:22px;font-weight:800;color:var(--ink);line-height:1;">${week}</div><div style="font-size:9px;font-weight:600;color:var(--ink3);margin-top:1px;">this week</div></div>
     </div>
-    <div style="display:flex;align-items:flex-end;gap:5px;height:44px;">
+    <div style="display:flex;align-items:flex-end;gap:5px;height:40px;">
       ${days.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
-        <div style="width:100%;border-radius:3px;background:var(--a2);opacity:${d.count?1:.18};height:${Math.max(d.count/max*34,d.count?5:3)}px;"></div>
-        <div style="font-size:9px;font-weight:700;color:${d.today?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${d.label}</div>
+        <div style="width:100%;border-radius:3px;background:var(--a2);opacity:${d.count?1:.18};height:${Math.max(d.count/max*30,d.count?4:3)}px;"></div>
+        <div style="font-size:8px;font-weight:700;text-transform:uppercase;color:${d.today?'var(--a2)':'var(--ink4)'};">${d.label}</div>
       </div>`).join('')}
     </div>`;
 }
 
-function _focusModeSet(wid,m){setTMode(wid,m);const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);}
-function _focusReset(wid){resetTimer(wid);const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);}
-function _focusToggle(wid){
+function _fcsModeSet(wid,m) { setTMode(wid,m); const b=document.getElementById('fcs-body'); if(b)_fcsBuild(wid,b); }
+function _fcsReset(wid)     { resetTimer(wid);  const b=document.getElementById('fcs-body'); if(b)_fcsBuild(wid,b); }
+function _fcsToggle(wid) {
   timerBtn(wid);
-  const b=document.getElementById('fc-btn');const ts=TMS[wid];
-  if(b&&ts){b.textContent=ts.running?'Pause':'Start';b.classList.toggle('stop',ts.running);}
+  const ts=TMS[wid], b=document.getElementById('fcs-btn');
+  if (b&&ts) { b.textContent=ts.running?'Pause':'Start'; b.classList.toggle('stop',ts.running); }
 }
-function _focusEditTime(wid){
-  const ts=TMS[wid];if(!ts||TMODES[ts.mode]?.locked||ts.running)return;
-  const t=document.getElementById('fc-time');
-  const inp=document.getElementById('fc-inputs');
-  const i=document.getElementById('fc-inp');
-  if(!t||!inp||!i)return;
+function _fcsEditTime(wid) {
+  const ts=TMS[wid]; if(!ts||TMODES[ts.mode]?.locked||ts.running) return;
+  const t=document.getElementById('fcs-time');
+  const inp=document.getElementById('fcs-inputs');
+  const i=document.getElementById('fcs-inp');
+  if(!t||!inp||!i) return;
   i.value=fmtSec(ts.sec);
-  t.classList.add('hide');inp.classList.add('show');
+  t.classList.add('hide'); inp.classList.add('show');
   setTimeout(()=>{i.focus();i.select();},50);
 }
-function _focusConfirm(wid){
-  const i=document.getElementById('fc-inp');if(!i)return;
-  const total=parseTimeInput(i.value.trim());if(total<1)return;
-  const ts=TMS[wid];if(!ts)return;
-  ts.custom[ts.mode]=total;ts.sec=total;
-  const c=document.getElementById('focus-card');if(c)_focusBuild(wid,c);
+function _fcsConfirm(wid) {
+  const i=document.getElementById('fcs-inp'); if(!i) return;
+  const total=parseTimeInput(i.value.trim()); if(total<1) return;
+  const ts=TMS[wid]; if(!ts) return;
+  ts.custom[ts.mode]=total; ts.sec=total;
+  const b=document.getElementById('fcs-body'); if(b)_fcsBuild(wid,b);
 }
-function _focusInpKey(e,wid){
-  if(e.key==='Enter'){e.preventDefault();_focusConfirm(wid);}
+function _fcsInpKey(e,wid) {
+  if(e.key==='Enter'){e.preventDefault();_fcsConfirm(wid);}
   if(e.key==='Escape'){
-    const t=document.getElementById('fc-time');const inp=document.getElementById('fc-inputs');
-    if(t)t.classList.remove('hide');if(inp)inp.classList.remove('show');
+    document.getElementById('fcs-time')?.classList.remove('hide');
+    document.getElementById('fcs-inputs')?.classList.remove('show');
   }
 }
 
 // ── Mobile focus mode ──
-function mobEnterFocus(){
-  if(typeof _mobPage!=='undefined'&&_mobPage!=='timer')mobGoPage('timer');
-  document.body.classList.add('mob-focus');
+function fcsMobEnter() {
+  if (typeof _mobPage!=='undefined' && _mobPage!=='timer') mobGoPage('timer');
+  document.body.classList.add('in-focus-mob');
 }
-function mobExitFocus(){
-  document.body.classList.remove('mob-focus');
+function fcsMobExit() {
+  document.body.classList.remove('in-focus-mob');
 }
