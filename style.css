@@ -1037,7 +1037,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .tct{font-size:12px;font-weight:500;color:var(--ink);line-height:1.5;margin-bottom:7px;padding-right:16px;}
 .tcf{display:flex;align-items:center;gap:4px;}
 .tcd{font-size:10px;color:var(--ink3);margin-left:auto;}
-.tcdel{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--ink4);cursor:pointer;font-size:12px;opacity:0;padding:1px 3px;border-radius:3px;line-height:1;}
+.tcdel{position:absolute;top:4px;right:4px;background:none;border:none;color:var(--ink4);cursor:pointer;font-size:16px;opacity:0;padding:3px 6px;border-radius:5px;line-height:1;}
 .tc:hover .tcdel{opacity:1;}
 @media(hover:none){.tc{-webkit-tap-highlight-color:transparent;}}
 .tcdel:hover{background:var(--rl);color:var(--red);}

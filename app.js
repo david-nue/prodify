@@ -14,6 +14,33 @@ if('serviceWorker' in navigator){
 
 
 
+
+// ── CUSTOM CONFIRM ──
+let _confirmResolve = null;
+function appConfirm(msg, sub='', okLabel='Delete'){
+  return new Promise(res=>{
+    _confirmResolve = res;
+    const mo = document.getElementById('mo-confirm');
+    const msgEl = document.getElementById('mo-confirm-msg');
+    const subEl = document.getElementById('mo-confirm-sub');
+    const okBtn = document.getElementById('mo-confirm-ok');
+    if(msgEl) msgEl.textContent = msg;
+    if(subEl){ subEl.textContent = sub; subEl.style.display = sub ? '' : 'none'; }
+    if(okBtn) okBtn.textContent = okLabel;
+    if(mo){ mo.style.display='flex'; }
+  });
+}
+function confirmResolve(val){
+  const mo = document.getElementById('mo-confirm');
+  if(mo) mo.style.display='none';
+  if(_confirmResolve){ _confirmResolve(val); _confirmResolve=null; }
+}
+// Close on backdrop click
+document.addEventListener('click', function(e){
+  const mo = document.getElementById('mo-confirm');
+  if(mo && e.target === mo) confirmResolve(false);
+});
+
 // ── Canvas drag-to-pan (mouse + touch) ──
 document.addEventListener('DOMContentLoaded', function(){
   const scroll = document.getElementById('canvas-scroll');
@@ -775,8 +802,8 @@ function mobToggleTask(id){
   t.col=order[(order.indexOf(t.col)+1)%order.length];
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();renderFullCal&&renderFullCal();
 }
-function mobDelTask(id){
-  if(!confirm('Delete this task?'))return;
+async function mobDelTask(id){
+  if(!await appConfirm('Delete this task?','This cannot be undone.'))return;
   tasks=tasks.filter(t=>t.id!==id);
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
@@ -953,15 +980,15 @@ function mobSaveJournal(){
   updateAllStatsW();updateFixedStats();
   if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
-function mobDelJournal(id){
-  if(!confirm('Delete this journal entry?'))return;
+async function mobDelJournal(id){
+  if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;
   journal=journal.filter(j=>j.id!==id);
   persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
   if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
-function mobClrJournal(){
+async function mobClrJournal(){
   if(!journal.length)return;
-  if(!confirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?'))return;
+  if(!await appConfirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?','This cannot be undone.'))return;
   journal=[];persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
   if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
@@ -1022,10 +1049,11 @@ function mobUpdProj(id,val){
   updGrade(id,val);
   setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
 }
-function mobDelProj(id){
-  if(!confirm('Delete this project?'))return;
-  delSub(id);
-  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
+async function mobDelProj(id){
+  if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;
+  subjects=subjects.filter(s=>s.id!==id);persist();
+  if(typeof renderSubFull==='function')renderSubFull();
+  renderAllSubW();updateAllStatsW();updateFixedStats();mobRenderProjects();
 }
 
 // ── CALENDAR ──
@@ -1889,8 +1917,8 @@ function addW(type,opts={}){
   buildWidgetEl(ent);
 }
 
-function removeW(id){
-  if(!confirm('Remove this widget from the canvas?'))return;
+async function removeW(id){
+  if(!await appConfirm('Remove this widget?','Your data is still saved — you can add it back anytime.','Remove'))return;
   widgets=widgets.filter(w=>w.id!==id);
   const el=$(id);if(el)el.remove();
   // stop timer if running
@@ -2057,7 +2085,7 @@ function selTask(e,id){
   _selTask=(_selTask===id)?null:id;
   renderAllTaskW();
 }
-function delTask(id){if(!confirm('Delete this task?'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+async function delTask(id){if(!await appConfirm('Delete this task?','This cannot be undone.'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
 function sortByPriority(arr){return arr.slice().sort((a,b)=>(PRIORITY_ORDER[a.priority]??3)-(PRIORITY_ORDER[b.priority]??3));}
 function renderTaskCols(wid){
@@ -2181,7 +2209,7 @@ function addJournal(wid){
   journal.unshift({id:Date.now(),text:t,mood:curMood,date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),ts:Date.now()});
   persist();renderAllJournalW();updateAllStatsW();updateFixedStats();el.value='';
 }
-function delJournal(id){if(!confirm('Delete this journal entry?'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
+async function delJournal(id){if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>renderJournalW(w.id));}
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
@@ -2499,7 +2527,7 @@ function addSub(){
   ['sn-i','sdesc-i','st-i','sdue-i','sg-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
   $('sstat-i').value='active';
 }
-function delSub(id){if(!confirm('Delete this project? This cannot be undone.'))return;subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();if(typeof mobRenderProjects==='function')mobRenderProjects();}
+async function delSub(id){if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();if(typeof mobRenderProjects==='function')mobRenderProjects();}
 function updProjStatus(id,val){
   const s=subjects.find(x=>x.id===id);if(!s)return;
   s.status=val;if(val==='done')s.progress=100;
@@ -2633,18 +2661,18 @@ function delSub(id){
   persist();renderSubFull();renderAllSubW();updateAllStatsW();
   if(typeof mobRenderProjects==='function')mobRenderProjects();
 }
-function clrDoneTasks(wid){
+async function clrDoneTasks(wid){
   const done=tasks.filter(t=>t.col==='done');
   if(!done.length)return;
-  if(!confirm('Clear all '+done.length+' completed task'+(done.length>1?'s':'')+'?'))return;
+  if(!await appConfirm('Clear all '+done.length+' completed task'+(done.length>1?'s':'')+'?','This cannot be undone.'))return;
   tasks=tasks.filter(t=>t.col!=='done');
   persist();renderAllTaskW();updateAllStatsW();updateFixedStats();
   if(typeof mobRenderTasks==='function')mobRenderTasks();
   if(typeof mobRenderHome==='function')mobRenderHome();
 }
-function clrJournalW(wid){
+async function clrJournalW(wid){
   if(!journal.length)return;
-  if(!confirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?'))return;
+  if(!await appConfirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?','This cannot be undone.'))return;
   journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();
   if(typeof mobRenderJournal==='function')mobRenderJournal();
   if(typeof mobRenderHome==='function')mobRenderHome();
