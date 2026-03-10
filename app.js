@@ -410,6 +410,7 @@ function applyRemoteData(row){
     if(typeof mobRenderHome==='function') mobRenderHome();
     if(typeof mobRenderJournal==='function') mobRenderJournal();
     if(typeof applyDark==='function') applyDark(prefs.dark);
+    if(typeof pomRenderHistory==='function') pomRenderHistory();
     // Apply avatar across all elements
     applyAvatar();
     if(typeof mobUpdateAvatar==='function') mobUpdateAvatar();
@@ -465,6 +466,64 @@ let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
 initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let prefs={dark:false};
+
+// ── POMODORO HISTORY ──
+function pomTodayKey(){ return new Date().toISOString().slice(0,10); }
+function pomRecordSession(){
+  if(!prefs.pomHistory) prefs.pomHistory={};
+  const k=pomTodayKey();
+  prefs.pomHistory[k]=(prefs.pomHistory[k]||0)+1;
+  if(cu){ acc[cu].prefs=prefs; LS.s('pd1_acc',acc); if(sbReady)dbSaveUser(cu,acc[cu]); }
+  pomRenderHistory();
+}
+function pomGetToday(){ return (prefs.pomHistory||{})[pomTodayKey()]||0; }
+function pomGetWeek(){
+  const h=prefs.pomHistory||{};
+  let total=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    total+=(h[d.toISOString().slice(0,10)]||0);
+  }
+  return total;
+}
+function pomGetWeekData(){
+  const h=prefs.pomHistory||{}, days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    days.push({label:d.toLocaleDateString('en-US',{weekday:'short'}),count:h[k]||0,today:i===0});
+  }
+  return days;
+}
+function pomRenderHistory(){
+  ['mob-pom-history','dsk-pom-history'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const today=pomGetToday(), week=pomGetWeek();
+    const days=pomGetWeekData();
+    const max=Math.max(...days.map(d=>d.count),1);
+    el.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--ink);line-height:1;">${today}</div>
+          <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:1px;">today</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--ink);line-height:1;">${week}</div>
+          <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:1px;">this week</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:52px;">
+        ${days.map(d=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:100%;border-radius:4px;background:${d.today?'var(--a2)':'var(--a2)'};opacity:${d.count?1:.18};height:${Math.max(d.count/max*40,d.count?6:4)}px;transition:height .3s;min-height:${d.count?6:4}px;"></div>
+            <div style="font-size:9px;font-weight:700;color:${d.today?'var(--a2)':'var(--ink4)'};text-transform:uppercase;">${d.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  });
+}
 let dragTaskId=null, calOff=0, nextZ=10;
 let _selTask=null;
 let curMood=0;
@@ -597,6 +656,7 @@ function mobGoPage(page){
   else if(page==='calendar')mobRenderCalendar();
   else if(page==='profile')mobRenderProfile();
   else if(page==='settings')mobRenderSettings();
+  else if(page==='timer')pomRenderHistory();
   else if(page==='feedback'){_fbType='general';_fbStar=0;setFbType('general');setTimeout(initFbStars,50);}
   requestAnimationFrame(()=>{
     const next = document.getElementById('mpg-'+page);
@@ -917,6 +977,7 @@ function mobTimerToggle(){
         _mobTimerSessions=(_mobTimerSessions+1)%5;
         _mobTimerSec=0;
         _mobTimerAlarmActive=true;
+        pomRecordSession();
         playAlarm();
       }
       mobTimerRender();
@@ -2423,8 +2484,13 @@ function buildTimerW(body,w){
       <div class="tmsess" id="tmsess-${w.id}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
       </div>
+      <div style="margin:8px 14px 14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
+        <div id="dsk-pom-history"></div>
+      </div>
     </div>`;
   if(ts.running){clearInterval(ts.iv);ts.iv=setInterval(()=>tickTimer(w.id),1000);}
+  pomRenderHistory();
 }
 function scaleTimer(wid,ww,wh){
   // No-op: timer now fills its container via CSS flex, no scale transform needed
@@ -2524,6 +2590,7 @@ function tickTimer(wid){
   if(ts.sec<=0){
     clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;
     ts.alarmActive=true;
+    pomRecordSession();
     playAlarm();
     const btn=$('tmbtn-'+wid);
     if(btn){btn.textContent='Stop';btn.classList.add('stop');}

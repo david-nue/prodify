@@ -208,6 +208,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── TIMER PAGE ── */
 .mob-timer-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px 20px;gap:20px;}
+#mpg-timer{overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .mob-timer-modes{
   display:flex;gap:4px;background:var(--surf2);border-radius:100px;padding:4px;
 }
