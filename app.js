@@ -776,6 +776,7 @@ function mobToggleTask(id){
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();renderFullCal&&renderFullCal();
 }
 function mobDelTask(id){
+  if(!confirm('Delete this task?'))return;
   tasks=tasks.filter(t=>t.id!==id);
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
@@ -953,6 +954,7 @@ function mobSaveJournal(){
   if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
 function mobDelJournal(id){
+  if(!confirm('Delete this journal entry?'))return;
   journal=journal.filter(j=>j.id!==id);
   persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
   if(typeof renderAllJournalW==='function')renderAllJournalW();
@@ -1888,6 +1890,7 @@ function addW(type,opts={}){
 }
 
 function removeW(id){
+  if(!confirm('Remove this widget from the canvas?'))return;
   widgets=widgets.filter(w=>w.id!==id);
   const el=$(id);if(el)el.remove();
   // stop timer if running
@@ -2054,7 +2057,7 @@ function selTask(e,id){
   _selTask=(_selTask===id)?null:id;
   renderAllTaskW();
 }
-function delTask(id){tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+function delTask(id){if(!confirm('Delete this task?'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
 function sortByPriority(arr){return arr.slice().sort((a,b)=>(PRIORITY_ORDER[a.priority]??3)-(PRIORITY_ORDER[b.priority]??3));}
 function renderTaskCols(wid){
@@ -2178,7 +2181,7 @@ function addJournal(wid){
   journal.unshift({id:Date.now(),text:t,mood:curMood,date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),ts:Date.now()});
   persist();renderAllJournalW();updateAllStatsW();updateFixedStats();el.value='';
 }
-function delJournal(id){journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
+function delJournal(id){if(!confirm('Delete this journal entry?'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>renderJournalW(w.id));}
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
@@ -2496,7 +2499,7 @@ function addSub(){
   ['sn-i','sdesc-i','st-i','sdue-i','sg-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
   $('sstat-i').value='active';
 }
-function delSub(id){subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();}
+function delSub(id){if(!confirm('Delete this project? This cannot be undone.'))return;subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();if(typeof mobRenderProjects==='function')mobRenderProjects();}
 function updProjStatus(id,val){
   const s=subjects.find(x=>x.id===id);if(!s)return;
   s.status=val;if(val==='done')s.progress=100;
