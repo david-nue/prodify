@@ -597,6 +597,7 @@ function mobGoPage(page){
   else if(page==='calendar')mobRenderCalendar();
   else if(page==='profile')mobRenderProfile();
   else if(page==='settings')mobRenderSettings();
+  else if(page==='feedback'){_fbType='general';_fbStar=0;setFbType('general');setTimeout(initFbStars,50);}
   requestAnimationFrame(()=>{
     const next = document.getElementById('mpg-'+page);
     if(next)next.classList.add('active');
@@ -1836,7 +1837,7 @@ function renderActivity(barId, streakId, legendId){
       if(actMap[ds])streak++;else break;
     }
     const streakEl=$(streakId);
-    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:streak===1?'🌱 Active today':'';
+    if(streakEl) streakEl.textContent=streak>1?`${streak}-day streak`:streak===1?'Active today':'';
   }
 }
 
@@ -1844,6 +1845,12 @@ function renderActivity(barId, streakId, legendId){
 // FEEDBACK
 // ═══════════════════════════════════════
 let _fbType='general', _fbStar=0;
+function initFbStars(){
+  ['fb-stars','dsk-fb-stars'].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.querySelectorAll('.fb-star').forEach(s=>{s.textContent='☆';s.style.color='var(--ink3)';});
+  });
+}
 function setFbType(t){
   _fbType=t;
   // mobile
@@ -1859,7 +1866,7 @@ function setFbStar(n){
   _fbStar=n;
   ['fb-stars','dsk-fb-stars'].forEach(id=>{
     const el=$(id);if(!el)return;
-    el.querySelectorAll('.fb-star').forEach((s,i)=>{s.textContent=i<n?'★':'☆';s.style.color=i<n?'var(--a2)':'var(--ink4)';});
+    el.querySelectorAll('.fb-star').forEach((s,i)=>{s.textContent=i<n?'★':'☆';s.style.color=i<n?'var(--a2)':'var(--ink3)';});
   });
 }
 async function submitFeedback(isDesktop=false){
