@@ -1770,72 +1770,70 @@ function renderSocialLinks(){
 function renderActivity(barId, streakId, legendId){
   const barEl=$(barId); if(!barEl)return;
   const today=new Date();
-  const DAY=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const MAX_H=60; // px — fixed bar max height
 
-  // Last 7 days
-  const days=[];
-  for(let i=6;i>=0;i--){
+  // Build 30-day activity map
+  const actMap={};
+  journal.forEach(j=>{
+    const ds=new Date(j.ts||j.id).toDateString();
+    actMap[ds]=(actMap[ds]||0)+1;
+  });
+  tasks.filter(t=>t.col==='done').forEach(t=>{
+    const ds=new Date(t.id).toDateString();
+    actMap[ds]=(actMap[ds]||0)+1;
+  });
+
+  const maxVal=Math.max(1,...Object.values(actMap));
+
+  // Color intensity levels based on activity count
+  function cellColor(count){
+    if(!count) return 'var(--bdr)';
+    const lvl=count/maxVal;
+    if(lvl<=0.25) return 'var(--al)';
+    if(lvl<=0.5)  return 'var(--a2)';
+    if(lvl<=0.75) return 'var(--a2)';
+    return 'var(--a)';
+  }
+  function cellOpacity(count){
+    if(!count) return '1';
+    const lvl=count/maxVal;
+    if(lvl<=0.25) return '0.4';
+    if(lvl<=0.5)  return '0.65';
+    if(lvl<=0.75) return '0.85';
+    return '1';
+  }
+
+  // 30 squares in a single row, oldest left → today right
+  let squares='';
+  for(let i=29;i>=0;i--){
     const d=new Date(today);d.setDate(today.getDate()-i);
     const ds=d.toDateString();
-    const jCount=journal.filter(j=>new Date(j.ts||j.id).toDateString()===ds).length;
-    const tCount=tasks.filter(t=>t.col==='done'&&new Date(t.id).toDateString()===ds).length;
-    days.push({d,ds,label:DAY[d.getDay()],jCount,tCount,isToday:i===0});
+    const count=actMap[ds]||0;
+    const isToday=i===0;
+    const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const tip=`${label}${count?`: ${count} activit${count!==1?'ies':'y'}`:''}`;
+    squares+=`<div title="${tip}" style="width:14px;height:14px;border-radius:3px;background:${cellColor(count)};opacity:${cellOpacity(count)};flex-shrink:0;${isToday?'outline:2px solid var(--a2);outline-offset:1px;':''};cursor:default;"></div>`;
   }
-  const maxVal=Math.max(1,...days.map(d=>d.jCount+d.tCount));
 
-  // Summary stats
-  const totalT=days.reduce((s,d)=>s+d.tCount,0);
-  const totalJ=days.reduce((s,d)=>s+d.jCount,0);
-
-  let html=`<div style="display:flex;gap:12px;margin-bottom:14px;">
-    <div style="flex:1;background:var(--surf2);border-radius:10px;padding:10px 12px;">
-      <div style="font-size:18px;font-weight:800;color:var(--a2);">${totalT}</div>
-      <div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">tasks done</div>
-    </div>
-    <div style="flex:1;background:var(--surf2);border-radius:10px;padding:10px 12px;">
-      <div style="font-size:18px;font-weight:800;color:var(--a2);">${totalJ}</div>
-      <div style="font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px;">journal entries</div>
-    </div>
+  let html=`<div style="display:flex;gap:3px;flex-wrap:nowrap;">${squares}</div>`;
+  html+=`<div style="display:flex;justify-content:space-between;margin-top:6px;">
+    <span style="font-size:10px;color:var(--ink4);">30 days ago</span>
+    <span style="font-size:10px;color:var(--ink4);">Today</span>
   </div>`;
-
-  // Bar chart with fixed px heights
-  html+=`<div style="display:flex;align-items:flex-end;gap:5px;height:${MAX_H+20}px;padding:0 2px;">`;
-  days.forEach(day=>{
-    const total=day.jCount+day.tCount;
-    const barH=total?Math.max(8,Math.round((total/maxVal)*MAX_H)):4;
-    const tH=total?Math.round((day.tCount/total)*barH):0;
-    const jH=barH-tH;
-    const tip=`${day.d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}: ${day.tCount} task${day.tCount!==1?'s':''} done · ${day.jCount} journal entr${day.jCount!==1?'ies':'y'}`;
-    html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;" title="${tip}">
-      <div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:${MAX_H}px;">
-        ${total?`<div style="width:100%;border-radius:4px 4px 0 0;overflow:hidden;">
-          ${jH>0?`<div style="height:${jH}px;background:var(--a);"></div>`:''}
-          ${tH>0?`<div style="height:${tH}px;background:var(--a2);"></div>`:''}
-        </div>`:`<div style="width:100%;height:4px;border-radius:2px;background:var(--bdr);"></div>`}
-      </div>
-      <div style="font-size:9px;font-weight:700;color:${day.isToday?'var(--a2)':'var(--ink4)'};letter-spacing:.03em;">${day.label}</div>
-    </div>`;
-  });
-  html+=`</div>`;
-
-  // Legend
-  html+=`<div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
-    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink3);"><span style="width:8px;height:8px;border-radius:2px;background:var(--a2);display:inline-block;"></span>Tasks</span>
-    <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink3);"><span style="width:8px;height:8px;border-radius:2px;background:var(--a);display:inline-block;"></span>Journal</span>
+  html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+    <span style="font-size:10px;color:var(--ink4);">Less</span>
+    ${[0,0.3,0.6,1].map(v=>`<div style="width:10px;height:10px;border-radius:2px;background:${v?'var(--a2)':'var(--bdr)'};opacity:${v||1};flex-shrink:0;"></div>`).join('')}
+    <span style="font-size:10px;color:var(--ink4);">More</span>
   </div>`;
 
   barEl.innerHTML=html;
 
-  // Streak
+  // Streak counter
   if(streakId){
     let streak=0;
     for(let i=0;i<=90;i++){
       const d=new Date(today);d.setDate(today.getDate()-i);
       const ds=d.toDateString();
-      const active=journal.some(j=>new Date(j.ts||j.id).toDateString()===ds)||
-                   tasks.some(t=>t.col==='done'&&new Date(t.id).toDateString()===ds);
-      if(active)streak++;else break;
+      if(actMap[ds])streak++;else break;
     }
     const streakEl=$(streakId);
     if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:streak===1?'🌱 Active today':'';
