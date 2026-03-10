@@ -467,7 +467,7 @@ initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let _jwSearch={},_mobJSearch='';
 const HABIT_MAX_FREE=3;
-const HABIT_EMOJIS=['✅','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','❌','🌿'];
+const HABIT_EMOJIS=['✅','✔️','❌','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🌿'];
 let prefs={dark:false};
 
 // ── POMODORO HISTORY ──
@@ -3403,7 +3403,7 @@ function renderHabits(containerId){
     return `<div style="display:flex;align-items:center;gap:12px;background:${done?'var(--al)':'var(--surf2)'};border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:14px;padding:12px 14px;transition:all .2s;">
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
         <button onclick="habitToggle(${h.id})" title="${done?'Mark undone':'Mark done for today'}"
-          style="width:38px;height:38px;border-radius:50%;border:2.5px solid ${done?'var(--a2)':'var(--bdr)'};background:transparent;display:flex;align-items:center;justify-content:center;font-size:${done?'16px':'20px'};cursor:pointer;transition:all .18s;color:${done?'var(--a2)':'inherit'};">${done?'✔️':h.emoji}</button>
+          style="width:38px;height:38px;border-radius:50%;border:2.5px solid ${done?'var(--a2)':'var(--bdr)'};background:transparent;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .18s;">${done?'✔️':h.emoji}</button>
         <button onclick="habitDelete(${h.id})" title="Delete habit"
           style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;transition:all .15s;"
           onmouseover="this.style.color='var(--red)';this.style.background='var(--rl)'"
