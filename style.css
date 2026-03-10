@@ -1273,7 +1273,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* ── TIMER ── */
 .tmbody{
   flex:1;display:flex;flex-direction:column;align-items:stretch;
-  padding:14px 14px 12px;min-height:0;box-sizing:border-box;gap:0;overflow:hidden;
+  padding:14px 14px 12px;min-height:0;box-sizing:border-box;gap:0;overflow:visible;
 }
 /* Row 1: mode pills — fixed height */
 .tmmodes{
@@ -1705,88 +1705,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
    FOCUS MODE
 ═══════════════════════════════════════ */
 
-/* Desktop: body class that hides chrome */
-body.focus-mode .sb,
-body.focus-mode .wtray,
-body.focus-mode .canvas-topbar,
-body.focus-mode #install-btn {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s ease;
-}
-
-/* The focus overlay — full-screen dark backdrop */
-#focus-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0,0,0,.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  align-items: center;
-  justify-content: center;
-  animation: focusOverlayIn .3s ease;
-}
-#focus-overlay.open {
-  display: flex;
-}
-@keyframes focusOverlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* Timer card inside overlay */
-#focus-timer-wrap {
-  background: var(--surf);
-  border-radius: 28px;
-  box-shadow: var(--sh4);
-  width: min(440px, 92vw);
-  padding: 32px 28px 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  animation: focusIn .35s cubic-bezier(.16,1,.3,1);
-}
-@keyframes focusIn {
-  from { opacity:0; transform:scale(.93) translateY(12px); }
-  to   { opacity:1; transform:scale(1)  translateY(0); }
-}
-
-/* Focus mode exit button — top-right corner */
-#focus-exit-btn {
-  position: fixed;
-  top: 18px;
-  right: 20px;
-  z-index: 2001;
-  background: rgba(255,255,255,.12);
-  border: 1.5px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.7);
-  border-radius: 100px;
-  padding: 7px 16px 7px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  display: none;
-  align-items: center;
-  gap: 6px;
-  transition: background .15s, color .15s;
-  letter-spacing: .2px;
-}
-#focus-exit-btn:hover {
-  background: rgba(255,255,255,.22);
-  color: #fff;
-}
-#focus-exit-btn svg {
-  opacity: .8;
-}
-body.focus-mode #focus-exit-btn {
-  display: flex;
-}
-
-/* Focus button inside timer widget / mobile */
+/* ── Focus trigger button (inside timer widget + mobile) ── */
 .focus-btn {
   display: inline-flex;
   align-items: center;
@@ -1794,7 +1713,7 @@ body.focus-mode #focus-exit-btn {
   background: none;
   border: 1.5px solid var(--bdr);
   border-radius: 100px;
-  padding: 5px 12px;
+  padding: 5px 11px;
   font-size: 11px;
   font-weight: 700;
   color: var(--ink3);
@@ -1802,49 +1721,99 @@ body.focus-mode #focus-exit-btn {
   font-family: inherit;
   transition: all .15s;
   white-space: nowrap;
-}
-.focus-btn:hover {
-  border-color: var(--a2);
-  color: var(--a2);
-  background: var(--al);
-}
-.focus-btn svg {
   flex-shrink: 0;
 }
+.focus-btn:hover { border-color: var(--a2); color: var(--a2); background: var(--al); }
+.focus-btn svg { flex-shrink: 0; }
 
-/* Mobile focus mode: hide nav + topbar */
-body.mob-focus .mob-nav,
-body.mob-focus .mob-topbar,
-body.mob-focus .mob-av-wrap {
-  display: none !important;
+/* ── Desktop overlay ── */
+#focus-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  align-items: center;
+  justify-content: center;
 }
-body.mob-focus #mpg-timer {
-  padding-top: 0;
+#focus-overlay.open {
+  display: flex;
+  animation: focusFadeIn .25s ease;
 }
+@keyframes focusFadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* Timer card in overlay */
+#focus-timer-wrap {
+  background: var(--surf);
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.35);
+  width: min(420px, 90vw);
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: focusCardIn .3s cubic-bezier(.16,1,.3,1);
+}
+@keyframes focusCardIn {
+  from { opacity:0; transform: translateY(20px) scale(.95); }
+  to   { opacity:1; transform: translateY(0)    scale(1);   }
+}
+
+/* Exit focus button — floats top-right over overlay */
+#focus-exit-btn {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9991;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.15);
+  border: 1.5px solid rgba(255,255,255,.25);
+  color: rgba(255,255,255,.85);
+  border-radius: 100px;
+  padding: 8px 16px 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: .2px;
+  transition: background .15s;
+}
+#focus-exit-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
+body.focus-mode #focus-exit-btn { display: flex; }
+
+/* ── Mobile focus mode ── */
+body.mob-focus .mob-nav { display: none !important; }
+body.mob-focus .mob-topbar { display: none !important; }
+body.mob-focus .mob-av { display: none !important; }
+body.mob-focus #mpg-timer { padding-top: 0; }
 body.mob-focus .mob-timer-wrap {
-  padding: env(safe-area-inset-top, 20px) 20px 40px;
+  padding-top: max(env(safe-area-inset-top), 32px);
+  padding-bottom: 48px;
   justify-content: center;
 }
 
-/* Mobile focus exit */
+/* Mobile exit button */
 #mob-focus-exit {
   display: none;
   position: fixed;
-  top: env(safe-area-inset-top, 16px);
+  top: max(env(safe-area-inset-top), 16px);
   right: 16px;
-  z-index: 3000;
-  background: var(--surf2);
-  border: 1.5px solid var(--bdr);
-  border-radius: 100px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink2);
-  cursor: pointer;
-  font-family: inherit;
+  z-index: 9995;
   align-items: center;
   gap: 5px;
+  background: var(--surf);
+  border: 1.5px solid var(--bdr);
+  border-radius: 100px;
+  padding: 8px 14px 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--sh2);
 }
-body.mob-focus #mob-focus-exit {
-  display: flex;
-}
+body.mob-focus #mob-focus-exit { display: flex; }

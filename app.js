@@ -3043,8 +3043,8 @@ function buildTimerW(body,w){
       </div>
       <div class="tmctrl">
         <button class="tm-resetbtn" data-tip="Reset" onclick="resetTimer('${w.id}')">↺</button>
-        <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')">${ts.running?'Pause':'Start'}</button>
-        <button class="focus-btn" onclick="enterFocusMode('${w.id}')" data-tip="Focus mode">
+        <button class="tm-startbtn ${ts.running?'stop':''}" id="tmbtn-${w.id}" onclick="timerBtn('${w.id}')" style="flex:1;">${ts.running?'Pause':'Start'}</button>
+        <button class="focus-btn" onclick="enterFocusMode('${w.id}')" data-tip="Focus mode" style="flex-shrink:0;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
           Focus
         </button>
