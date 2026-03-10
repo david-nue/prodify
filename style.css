@@ -1668,9 +1668,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── DUE DATES ── */
 .task-due-tag{
-  font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;
-  background:var(--surf3,#e8f5ee);color:var(--ink3);border:1px solid var(--bdr);
-  white-space:nowrap;
+  font-size:9px!important;font-weight:700;padding:2px 7px;border-radius:100px;
+  background:var(--surf2);color:var(--ink3);border:1px solid var(--bdr);
+  white-space:nowrap;line-height:1.4;display:inline-flex;align-items:center;
+  flex-shrink:0;
 }
 .task-due-tag.due-today{
   background:rgba(245,183,0,0.15);color:#9a6e00;border-color:rgba(245,183,0,0.4);
