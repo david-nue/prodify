@@ -956,6 +956,12 @@ function mobDelJournal(id){
   persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
   if(typeof renderAllJournalW==='function')renderAllJournalW();
 }
+function mobClrJournal(){
+  if(!journal.length)return;
+  if(!confirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?'))return;
+  journal=[];persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
+  if(typeof renderAllJournalW==='function')renderAllJournalW();
+}
 
 // ── PROJECTS ──
 function gradeLabel(p){if(p>=90)return'A+';if(p>=80)return'A';if(p>=70)return'B';if(p>=60)return'C';if(p>=50)return'D';return'F';}
@@ -2031,7 +2037,7 @@ function buildTaskW(body,w){
     <div class="twcols">
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
       <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#3A7D5E"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
-      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#1B4332"></div>Done</div><span class="twcnt" id="cn-done-${w.id}">0</span></div><div class="twbody" id="col-done-${w.id}" ondragover="dov(event,'done','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'done')"></div></div>
+      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#1B4332"></div>Done</div><div style="display:flex;align-items:center;gap:6px;"><span class="twcnt" id="cn-done-${w.id}">0</span><button class="twbtn" style="padding:2px 7px;font-size:10px;opacity:0.7;" onclick="clrDoneTasks('${w.id}')" data-tip="Clear all done tasks">Clear</button></div></div><div class="twbody" id="col-done-${w.id}" ondragover="dov(event,'done','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'done')"></div></div>
     </div>`;
   renderTaskCols(w.id);
 }
@@ -2150,6 +2156,7 @@ function buildJournalW(body,w){
           </div>
         </div>
         <button class="twbtn" style="padding:5px 11px;font-size:11px;flex-shrink:0;" onclick="addJournal('${w.id}')">Save</button>
+        <button class="twbtn" style="padding:5px 11px;font-size:11px;flex-shrink:0;opacity:0.7;" onclick="clrJournalW('${w.id}')" data-tip="Clear all journal entries">Clear all</button>
       </div>
     </div>`;
   renderJournalW(w.id);
@@ -2388,7 +2395,7 @@ function gradeL(g){return g>=90?'A':g>=80?'B':g>=70?'C':g>=60?'D':'F';}
 function renderSubW(wid){
   const el=$('swb-'+wid);if(!el)return;
   if(!subjects.length){el.innerHTML='<div class="swempty">No projects yet.<br/>Add them from the sidebar.</div>';return;}
-  el.innerHTML=subjects.map(s=>`<div class="swrow"><div class="swdot" style="background:${s.color}"></div><div class="swname">${esc(s.name)}</div><div class="swbar"><div class="swfill" style="width:${s.progress}%;background:${s.color}"></div></div><div class="swg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
+  el.innerHTML=subjects.map(s=>`<div class="swrow"><div class="swdot" style="background:${s.color}"></div><div class="swname">${esc(s.name)}</div><div class="swbar"><div class="swfill" style="width:${s.progress}%;background:${s.color}"></div></div><div class="swg" style="color:${gradeC(s.progress)}">${s.progress}%</div><button class="wclose" style="margin-left:4px;flex-shrink:0;" onclick="delSub(${s.id})" data-tip="Remove project">&times;</button></div>`).join('');
 }
 
 /* ── CALENDAR WIDGET ── */
@@ -2616,6 +2623,27 @@ function chgPw(){
 function clrTasks(){if(!confirm('Delete all tasks?'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function clrJournal(){if(!confirm('Delete all journal entries?'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function clrSubjects(){if(!confirm('Delete all projects??'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
+function delSub(id){
+  subjects=subjects.filter(s=>s.id!==id);
+  persist();renderSubFull();renderAllSubW();updateAllStatsW();
+  if(typeof mobRenderProjects==='function')mobRenderProjects();
+}
+function clrDoneTasks(wid){
+  const done=tasks.filter(t=>t.col==='done');
+  if(!done.length)return;
+  if(!confirm('Clear all '+done.length+' completed task'+(done.length>1?'s':'')+'?'))return;
+  tasks=tasks.filter(t=>t.col!=='done');
+  persist();renderAllTaskW();updateAllStatsW();updateFixedStats();
+  if(typeof mobRenderTasks==='function')mobRenderTasks();
+  if(typeof mobRenderHome==='function')mobRenderHome();
+}
+function clrJournalW(wid){
+  if(!journal.length)return;
+  if(!confirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?'))return;
+  journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();
+  if(typeof mobRenderJournal==='function')mobRenderJournal();
+  if(typeof mobRenderHome==='function')mobRenderHome();
+}
 async function delAcc(){
   if(!confirm('Permanently delete your account and ALL data? This cannot be undone.'))return;
   dbDeleteUser(cu);

@@ -439,9 +439,6 @@ create policy "public" on users for all using (true);</pre>
             <div style="font-size:10px;color:var(--ink4);margin-top:3px;">Click to copy • Then open the file and fill in SB_URL and SB_KEY</div></div></div>
           </div>
           <div class="setsec"><div class="setsect">Data</div>
-            <div class="setrow"><div><div class="setlbl">Clear all tasks</div><div class="setdsc">Remove everything from the task board</div></div><button class="dbtn" onclick="clrTasks()">Clear tasks</button></div>
-            <div class="setrow"><div><div class="setlbl">Clear journal entries</div><div class="setdsc">Remove all diary entries</div></div><button class="dbtn" onclick="clrJournal()">Clear journal</button></div>
-            <div class="setrow"><div><div class="setlbl">Clear projects</div><div class="setdsc">Remove all project cards</div></div><button class="dbtn" onclick="clrSubjects()">Clear projects</button></div>
             <div class="setrow"><div><div class="setlbl">Delete account</div><div class="setdsc">Permanently delete your account and all data</div></div><button class="dbtn full" onclick="delAcc()">Delete account</button></div>
           </div>
           <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
@@ -599,6 +596,7 @@ create policy "public" on users for all using (true);</pre>
       <div class="mob-journal-moods" id="mob-jmoods"></div>
       <div class="mob-journal-foot">
         <button class="mob-journal-save" onclick="mobSaveJournal()">Save Entry</button>
+        <button class="mob-journal-save" style="background:var(--bdr);color:var(--ink3);" onclick="mobClrJournal()">Clear all</button>
       </div>
     </div>
     <div class="mob-journal-list" id="mob-journal-list"></div>
@@ -699,8 +697,6 @@ create policy "public" on users for all using (true);</pre>
       </div>
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Data</div>
-        <div class="setrow"><div><div class="setlbl">Clear all tasks</div></div><button class="dbtn" onclick="clrTasks()">Clear</button></div>
-        <div class="setrow"><div><div class="setlbl">Clear journal</div></div><button class="dbtn" onclick="clrJournal()">Clear</button></div>
         <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
       </div>
       <div style="text-align:center;padding:16px 0;font-size:11px;color:var(--ink4);">
