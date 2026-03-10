@@ -1435,11 +1435,40 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 
 /* ── RECURRING TASKS ── */
-.tw-recur-sel{
+
+/* desktop widget - custom dropdown trigger */
+.tw-recur-dd{
+  position:relative;flex-shrink:0;
   background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;
-  color:var(--ink2);font-size:11px;font-weight:600;font-family:inherit;
-  padding:4px 6px;cursor:pointer;outline:none;flex-shrink:0;
+  padding:5px 8px;cursor:pointer;font-size:11px;font-weight:700;
+  color:var(--ink3);font-family:inherit;user-select:none;
+  transition:border-color .15s,color .15s;white-space:nowrap;
 }
+.tw-recur-dd:hover{border-color:var(--a2);color:var(--ink);}
+.tw-recur-active{border-color:var(--a2)!important;color:var(--a2)!important;background:rgba(58,125,94,0.08)!important;}
+.tw-recur-dd-menu{
+  display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:9999;
+  background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;
+  padding:4px;min-width:110px;box-shadow:var(--sh2);
+}
+.tw-recur-dd-menu.open{display:block;}
+.tw-recur-opt{
+  padding:7px 10px;border-radius:7px;font-size:12px;font-weight:600;
+  color:var(--ink2);cursor:pointer;white-space:nowrap;
+}
+.tw-recur-opt:hover{background:var(--surf2);color:var(--ink);}
+
+/* mobile modal - pill toggles */
+.mob-recur-pill{
+  flex:1;padding:8px 4px;border-radius:100px;border:1.5px solid var(--bdr);
+  background:var(--surf);color:var(--ink3);font-size:12px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.mob-recur-pill.act{
+  background:rgba(58,125,94,0.12);color:var(--a2);border-color:var(--a2);
+}
+
+/* task card recurring badge */
 .tc-recur-tag{
   background:rgba(58,125,94,0.12);color:var(--a2);
   border:1px solid rgba(58,125,94,0.25);

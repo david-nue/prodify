@@ -808,7 +808,7 @@ function mobRenderTasks(){
           ontouchend="mobKTouchEnd(event)">
           <div class="mob-kcard-body">
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
-            ${dueTag?`<div class="mob-kcard-meta" style="margin-top:4px;">${dueTag}</div>`:''}
+            ${(dueTag||( t.recurring&&t.recurring!=='none'))?`<div class="mob-kcard-meta" style="margin-top:4px;">${dueTag}${t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">↺ ${t.recurring}</span>`:''}</div>`:''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:4px;">
             <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
@@ -1057,6 +1057,14 @@ function mobDueReset(){
 
 
 
+
+function mobSetRecur(val) {
+  document.getElementById('mob-add-task-recur').value = val;
+  ['none','daily','weekly'].forEach(v => {
+    const btn = document.getElementById('mrp-'+v);
+    if (btn) btn.classList.toggle('act', v === val);
+  });
+}
 function openMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
   if(modal){modal.classList.add('open');setTimeout(()=>document.getElementById('mob-add-task-input')?.focus(),100);}
@@ -1077,6 +1085,7 @@ function mobSubmitTask(){
   if(inp)inp.value='';
   const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
   const recurEl=document.getElementById('mob-add-task-recur');if(recurEl)recurEl.value='none';
+  mobSetRecur('none');
   closeMobAddTask();
   mobRenderTasks();mobRenderHome();
   updateFixedStats();updateAllStatsW();renderAllTaskW();
@@ -2643,11 +2652,14 @@ function buildTaskW(body,w){
     <div style="display:flex;align-items:center;padding:8px 10px;gap:6px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--surf2);">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
       <input type="date" id="twd-${w.id}" style="display:none;"/>
-      <select id="twr-${w.id}" class="tw-recur-sel" title="Recurring">
-        <option value="none">No repeat</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-      </select>
+      <div class="tw-recur-dd" id="twrd-${w.id}" data-val="none" onclick="toggleRecurDd('${w.id}',event)">
+        <span class="tw-recur-dd-lbl" id="twrdl-${w.id}">↺</span>
+        <div class="tw-recur-dd-menu" id="twrdm-${w.id}">
+          <div class="tw-recur-opt" data-v="none" onclick="setRecurDd('${w.id}','none',event)">No repeat</div>
+          <div class="tw-recur-opt" data-v="daily" onclick="setRecurDd('${w.id}','daily',event)">↺ Daily</div>
+          <div class="tw-recur-opt" data-v="weekly" onclick="setRecurDd('${w.id}','weekly',event)">↺ Weekly</div>
+        </div>
+      </div>
       <button id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit;white-space:nowrap;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
         <span id="twdb-lbl-${w.id}">Due date</span>
@@ -2666,11 +2678,11 @@ function buildTaskW(body,w){
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
-  const rec=$('twr-'+wid)?.value||'none';
+  const rec=$('twrd-'+wid)?.getAttribute('data-val')||'none';
   tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
   persist();renderAllTaskW();inp.value='';
   if($('twd-'+wid))$('twd-'+wid).value='';
-  if($('twr-'+wid))$('twr-'+wid).value='none';
+  if($('twrd-'+wid)){$('twrd-'+wid).setAttribute('data-val','none');const l=$('twrdl-'+wid);if(l)l.textContent='↺';}
   onDueChange(wid);
   inp.focus();
   updateAllStatsW();updateFixedStats();
@@ -3597,6 +3609,32 @@ function habitSubmit(containerId){
 
 
 // ═══════════════════════════════════════════
+
+
+// ── RECUR DROPDOWN (desktop widget) ──
+function toggleRecurDd(wid, e) {
+  e.stopPropagation();
+  const menu = $('twrdm-'+wid);
+  if (!menu) return;
+  const isOpen = menu.classList.contains('open');
+  // close all other recur menus
+  document.querySelectorAll('.tw-recur-dd-menu.open').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
+}
+function setRecurDd(wid, val, e) {
+  e.stopPropagation();
+  const dd = $('twrd-'+wid);
+  const lbl = $('twrdl-'+wid);
+  const menu = $('twrdm-'+wid);
+  if (dd) dd.setAttribute('data-val', val);
+  if (lbl) lbl.textContent = val === 'none' ? '↺' : (val === 'daily' ? '↺ Daily' : '↺ Weekly');
+  if (dd) dd.classList.toggle('tw-recur-active', val !== 'none');
+  if (menu) menu.classList.remove('open');
+}
+// close recur dropdowns on outside click
+document.addEventListener('click', () => {
+  document.querySelectorAll('.tw-recur-dd-menu.open').forEach(m => m.classList.remove('open'));
+});
 
 // ── RECURRING TASK RESET ──
 function checkRecurringReset() {
