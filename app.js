@@ -1463,6 +1463,9 @@ function mobRenderProfile(){
         </div>
       </div>`).join('');
   }
+
+  renderHabits('mob-habit-list');
+  renderHabitAddForm('mob-habit-add-form');
 }
 
 // ── AVATAR DROPDOWN ──
@@ -1966,6 +1969,20 @@ function startRealtime(){
 }
 
 function launch(){
+  // midnight habit reset check
+  const lastDay=LS.g('pd1_habitday',null);
+  const today=new Date().toISOString().slice(0,10);
+  if(lastDay && lastDay!==today){
+    // new day — completions auto-reset since we key by date
+    // just re-render if on profile
+  }
+  LS.s('pd1_habitday',today);
+  // re-render habits at midnight
+  const now=new Date(), msToMidnight=(new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now);
+  setTimeout(()=>{
+    renderHabits('habit-list'); renderHabits('mob-habit-list');
+    renderHabitAddForm('habit-add-form'); renderHabitAddForm('mob-habit-add-form');
+  }, msToMidnight);
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
@@ -3084,8 +3101,10 @@ function renderProfile(){
   const mc=Array(MLAB.length).fill(0);journal.forEach(j=>{if(mc[j.mood]!==undefined)mc[j.mood]++;});
   $('mhist').innerHTML=MLAB.map((m,i)=>mc[i]?`<div class="mhi">${m.e} ${m.l}<span class="mhicnt">${mc[i]}</span></div>`:'').join('')||'<span style="font-size:12px;color:var(--ink4)">No entries yet.</span>';
 
-  if(!subjects.length){$('spllist').innerHTML='<span style="font-size:12px;color:var(--ink4)">No projects yet.</span>';return;}
-  $('spllist').innerHTML=subjects.map(s=>`<div class="splrow"><div class="spldot" style="background:${s.color}"></div><div class="splnm">${esc(s.name)}</div><div class="splg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
+  if(!subjects.length){$('spllist').innerHTML='<span style="font-size:12px;color:var(--ink4)">No projects yet.</span>';}
+  else $('spllist').innerHTML=subjects.map(s=>`<div class="splrow"><div class="spldot" style="background:${s.color}"></div><div class="splnm">${esc(s.name)}</div><div class="splg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
+  renderHabits('habit-list');
+  renderHabitAddForm('habit-add-form');
 }
 
 // ═══════════════════════════════════════
@@ -3255,3 +3274,182 @@ if(isIOS&&!isInStandalone){
   style.textContent = '.sbtip,.wbtip{display:none!important;}';
   document.head.appendChild(style);
 })();
+
+// ═══════════════════════════════════════
+// HABIT TRACKER
+// ═══════════════════════════════════════
+
+const HABIT_MAX_FREE = 3;
+const HABIT_EMOJIS = ['✅','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🚫🍭','🌿'];
+
+function habitToday(){ return new Date().toISOString().slice(0,10); }
+
+function habitSave(){
+  if(cu){ acc[cu].prefs=prefs; LS.s('pd1_acc',acc); if(typeof sbReady!=='undefined'&&sbReady) dbSaveUser(cu,acc[cu]); }
+}
+
+function habitGetAll(){ return prefs.habits||[]; }
+
+function habitGetLog(){ return prefs.habitLog||{}; }
+
+function habitDoneToday(id){
+  const log=habitGetLog();
+  return (log[habitToday()]||[]).includes(id);
+}
+
+function habitToggle(id){
+  if(!prefs.habitLog) prefs.habitLog={};
+  const key=habitToday();
+  const arr=prefs.habitLog[key]||[];
+  if(arr.includes(id)){
+    prefs.habitLog[key]=arr.filter(x=>x!==id);
+  } else {
+    prefs.habitLog[key]=[...arr,id];
+  }
+  habitSave();
+  renderHabits('habit-list');
+  renderHabits('mob-habit-list');
+}
+
+function habitStreak(id){
+  const log=habitGetLog();
+  let streak=0, d=new Date();
+  // if not done today, start checking from yesterday
+  const todayKey=habitToday();
+  if(!(log[todayKey]||[]).includes(id)) d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){
+    const key=d.toISOString().slice(0,10);
+    if((log[key]||[]).includes(id)){ streak++; d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return streak;
+}
+
+function habitActivityGrid(id){
+  const log=habitGetLog();
+  const days=[];
+  const d=new Date();
+  for(let i=27;i>=0;i--){
+    const dd=new Date(d); dd.setDate(dd.getDate()-i);
+    const key=dd.toISOString().slice(0,10);
+    days.push((log[key]||[]).includes(id)?1:0);
+  }
+  return days;
+}
+
+function habitAdd(name, emoji){
+  if(!prefs.habits) prefs.habits=[];
+  if(prefs.habits.length>=HABIT_MAX_FREE){ habitShowProGate(); return; }
+  if(!name.trim()) return;
+  prefs.habits.push({id:Date.now(),name:name.trim(),emoji:emoji||'✅',created:habitToday()});
+  habitSave();
+  renderHabits('habit-list');
+  renderHabits('mob-habit-list');
+}
+
+async function habitDelete(id){
+  if(!await appConfirm('Delete this habit?','Your streak and history will be lost.')) return;
+  prefs.habits=(prefs.habits||[]).filter(h=>h.id!==id);
+  habitSave();
+  renderHabits('habit-list');
+  renderHabits('mob-habit-list');
+}
+
+function habitShowProGate(){
+  // Simple inline alert for now — Pro system in Session 9
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);';
+  modal.innerHTML=`<div style="background:var(--surf);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,.2);">
+    <div style="font-size:32px;margin-bottom:12px;">🔒</div>
+    <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px;">Pro Feature</div>
+    <div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:20px;">Free plan includes up to 3 habits. Upgrade to Pro for unlimited habits.</div>
+    <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:var(--a2);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Got it</button>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
+}
+
+function renderHabits(containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const habits=habitGetAll();
+  const isMob=containerId.startsWith('mob');
+
+  if(!habits.length){
+    el.innerHTML=`<div style="text-align:center;padding:24px 16px;color:var(--ink4);font-size:12px;line-height:2;">
+      No habits yet.<br>Add your first habit below.
+    </div>`;
+    return;
+  }
+
+  el.innerHTML=habits.map(h=>{
+    const done=habitDoneToday(h.id);
+    const streak=habitStreak(h.id);
+    const grid=habitActivityGrid(h.id);
+    const gridHtml=grid.map(v=>`<div style="width:8px;height:8px;border-radius:2px;background:${v?'var(--a2)':'var(--surf2)'};border:1px solid ${v?'var(--a)':'var(--bdr)'};flex-shrink:0;"></div>`).join('');
+
+    return `<div style="background:var(--surf2);border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:16px;padding:14px 16px;transition:border-color .2s;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <button onclick="habitToggle(${h.id})" style="width:36px;height:36px;border-radius:10px;border:2px solid ${done?'var(--a2)':'var(--bdr)'};background:${done?'var(--a2)':'var(--surf)'};display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;transition:all .18s;">${done?'✓':h.emoji}</button>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:${done?'var(--a2)':'var(--ink)'};${done?'text-decoration:line-through;':''}">${esc(h.name)}</div>
+          <div style="font-size:10px;color:var(--ink4);margin-top:1px;">${streak>0?'🔥 '+streak+' day streak':'No streak yet'}</div>
+        </div>
+        <button onclick="habitDelete(${h.id})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px;padding:4px;border-radius:6px;opacity:0;transition:opacity .15s;" class="habit-del-btn">✕</button>
+      </div>
+      <div style="display:flex;gap:2px;flex-wrap:wrap;">${gridHtml}</div>
+    </div>`;
+  }).join('');
+
+  // show delete buttons on hover via CSS trick — inject a style tag once
+  if(!document.getElementById('habit-hover-style')){
+    const s=document.createElement('style');
+    s.id='habit-hover-style';
+    s.textContent=`div:hover > div > .habit-del-btn { opacity: 1 !important; }`;
+    document.head.appendChild(s);
+  }
+}
+
+function renderHabitAddForm(containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const habits=habitGetAll();
+  const atLimit=habits.length>=HABIT_MAX_FREE;
+
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
+      ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:16px;transition:all .13s;">${e}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input id="${containerId}-inp" type="text" placeholder="Habit name…" maxlength="40"
+        style="flex:1;background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--ink);outline:none;font-family:inherit;"
+        onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
+        onkeydown="if(event.key==='Enter')habitSubmit('${containerId}')"/>
+      <button onclick="habitSubmit('${containerId}')" style="background:var(--a2);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;${atLimit?'opacity:.5;':''}">
+        ${atLimit?'🔒 Pro':'+ Add'}
+      </button>
+    </div>
+    ${atLimit?`<div style="font-size:11px;color:var(--ink3);text-align:center;">Free plan: ${HABIT_MAX_FREE} habits max · <span style="color:var(--a2);font-weight:700;cursor:pointer;" onclick="habitShowProGate()">Upgrade to Pro</span></div>`:''}
+  </div>`;
+
+  // set first emoji as selected
+  const firstBtn=el.querySelector('[data-emoji]');
+  if(firstBtn) firstBtn.style.background='var(--al)',firstBtn.style.borderColor='var(--a2)';
+  el._selectedEmoji=HABIT_EMOJIS[0];
+}
+
+function habitSelectEmoji(btn, containerId){
+  const el=document.getElementById(containerId);
+  el.querySelectorAll('[data-emoji]').forEach(b=>{ b.style.background='var(--surf)'; b.style.borderColor='var(--bdr)'; });
+  btn.style.background='var(--al)'; btn.style.borderColor='var(--a2)';
+  el._selectedEmoji=btn.dataset.emoji;
+}
+
+function habitSubmit(containerId){
+  const inp=document.getElementById(containerId+'-inp');
+  const el=document.getElementById(containerId);
+  const emoji=el._selectedEmoji||'✅';
+  habitAdd(inp?.value||'', emoji);
+  renderHabitAddForm(containerId);
+}
+
