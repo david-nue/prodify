@@ -1528,10 +1528,11 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   align-items: center;
   justify-content: center;
   color: var(--ink3);
+  font-size: 13px;
+  line-height: 1;
   transition: background .14s, color .14s;
 }
 .fb-mod-close:hover { background: var(--bdr); color: var(--ink); }
-.fb-mod-close svg { width: 10px; height: 10px; }
 
 .fb-stars-block {
   padding: 20px 26px 0;
@@ -1643,8 +1644,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   justify-content: center;
   cursor: pointer;
   color: var(--ink2);
+  font-size: 20px;
+  line-height: 1;
+  padding-bottom: 1px;
 }
-.mob-fb-back svg { width: 12px; height: 12px; }
 .mob-fb-heading {
   font-size: 17px;
   font-weight: 800;

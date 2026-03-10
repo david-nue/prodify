@@ -778,9 +778,7 @@ create policy "public" on users for all using (true);</pre>
   <!-- FEEDBACK PAGE (mobile) -->
   <div class="mob-page" id="mpg-feedback">
     <div class="mob-fb-topbar">
-      <button class="mob-fb-back" onclick="mobGoPage('settings')">
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 2L3 6l5 4"/></svg>
-      </button>
+      <button class="mob-fb-back" onclick="mobGoPage('settings')">‹</button>
       <div class="mob-fb-heading">Feedback</div>
       <div style="width:32px;"></div>
     </div>
@@ -803,31 +801,16 @@ create policy "public" on users for all using (true);</pre>
       <div class="mob-fb-card">
         <div class="mob-fb-card-title">What kind of feedback?</div>
         <div class="mob-fb-chips">
-          <button id="fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 6v4M7 4.5v.5"/></svg>
-            General
-          </button>
-          <button id="fb-type-bug" onclick="setFbType('bug')" class="fb-chip">
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 2.5C5 1.7 5.9 1 7 1s2 .7 2 1.5"/><path d="M3 5h8M3 9h8M5 5v4M9 5v4"/><path d="M5 5c0-1.1.9-2 2-2s2 .9 2 2"/><path d="M3 5l-1.5-1M11 5l1.5-1M3 9l-1.5 1M11 9l1.5 1"/></svg>
-            Bug Report
-          </button>
-          <button id="fb-type-idea" onclick="setFbType('idea')" class="fb-chip">
-            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 1v1M7 12v1M1 7H2M12 7h1M2.5 2.5l.7.7M10.8 10.8l.7.7M2.5 11.5l.7-.7M10.8 3.2l.7-.7"/><circle cx="7" cy="7" r="2.5"/></svg>
-            Idea
-          </button>
+          <button id="fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">General</button>
+          <button id="fb-type-bug" onclick="setFbType('bug')" class="fb-chip">Bug Report</button>
+          <button id="fb-type-idea" onclick="setFbType('idea')" class="fb-chip">Idea</button>
         </div>
         <textarea class="mob-fb-textarea" id="fb-msg" rows="5" placeholder="Tell us what's on your mind…"></textarea>
       </div>
 
-      <button class="mob-fb-submit" onclick="submitFeedback()">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h12M8 3l5 4-5 4"/></svg>
-        Send Feedback
-      </button>
+      <button class="mob-fb-submit" onclick="submitFeedback()">Send Feedback →</button>
 
-      <div id="fb-success" class="fb-success-msg" style="display:none;">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
-        Thanks for your feedback!
-      </div>
+      <div id="fb-success" class="fb-success-msg" style="display:none;">✓ Thanks for your feedback!</div>
 
     </div>
   </div>
@@ -984,9 +967,7 @@ create policy "public" on users for all using (true);</pre>
     <div class="fb-mod-header">
       <div class="fb-mod-title">Send Feedback</div>
       <div class="fb-mod-sub">We read every message.</div>
-      <button class="fb-mod-close" onclick="closeMo('mo-feedback')">
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
-      </button>
+      <button class="fb-mod-close" onclick="closeMo('mo-feedback')">✕</button>
     </div>
 
     <!-- Stars -->
@@ -1003,18 +984,9 @@ create policy "public" on users for all using (true);</pre>
 
     <!-- Type chips -->
     <div class="fb-type-row">
-      <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 6v4M7 4.5v.5"/></svg>
-        General
-      </button>
-      <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fb-chip">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 2.5C5 1.7 5.9 1 7 1s2 .7 2 1.5"/><path d="M3 5h8M3 9h8M5 5v4M9 5v4"/><path d="M5 5c0-1.1.9-2 2-2s2 .9 2 2"/><path d="M3 5l-1.5-1M11 5l1.5-1M3 9l-1.5 1M11 9l1.5 1"/></svg>
-        Bug Report
-      </button>
-      <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fb-chip">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 1v1M7 12v1M1 7H2M12 7h1M2.5 2.5l.7.7M10.8 10.8l.7.7M2.5 11.5l.7-.7M10.8 3.2l.7-.7"/><circle cx="7" cy="7" r="2.5"/></svg>
-        Idea
-      </button>
+      <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">General</button>
+      <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fb-chip">Bug Report</button>
+      <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fb-chip">Idea</button>
     </div>
 
     <!-- Message -->
@@ -1025,16 +997,10 @@ create policy "public" on users for all using (true);</pre>
     <!-- Actions -->
     <div class="fb-actions">
       <button class="fb-cancel" onclick="closeMo('mo-feedback')">Cancel</button>
-      <button class="fb-submit" onclick="submitFeedback(true)">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h12M8 3l5 4-5 4"/></svg>
-        Send
-      </button>
+      <button class="fb-submit" onclick="submitFeedback(true)">Send →</button>
     </div>
 
-    <div id="dsk-fb-success" class="fb-success-msg" style="display:none;">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
-      Thanks for your feedback!
-    </div>
+    <div id="dsk-fb-success" class="fb-success-msg" style="display:none;">✓ Thanks for your feedback!</div>
   </div>
 </div>
 
