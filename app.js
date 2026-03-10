@@ -559,7 +559,17 @@ function recordLoginFailure(username){
 }
 function clearLoginAttempts(username){delete _loginAttempts[username.toLowerCase()];}
 function ce(...ids){ids.forEach(id=>fe(id,''));}
-function fmtSec(s){const m=Math.floor(s/60),sc=s%60;return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;}
+function fmtSec(s){
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
+  if(h>0)return `${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
+}
+function parseTimeInput(raw){
+  const parts=raw.split(':');
+  if(parts.length===3)return (parseInt(parts[0])||0)*3600+(parseInt(parts[1])||0)*60+(parseInt(parts[2])||0);
+  if(parts.length===2)return (parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);
+  return (parseInt(raw)||0)*60;
+}
 
 // ═══════════════════════════════════════
 // SCREENS & PAGES
@@ -892,7 +902,11 @@ function mobSubmitTask(){
 }
 
 // ── TIMER ──
-function mobFmtSec(s){const m=Math.floor(s/60),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function mobFmtSec(s){
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+  if(h>0)return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
 function mobTimerRender(){
   _syncMobCustom();
   const timeEl=document.getElementById('mob-timer-time');
@@ -936,21 +950,16 @@ function mobTimerEdit(){
   if(_mobTimerRunning||MOB_TMODES[_mobTimerMode]?.locked)return;
   const t=document.getElementById('mob-timer-time'),i=document.getElementById('mob-timer-inputs');
   if(!t||!i)return;
-  const m=Math.floor(_mobTimerSec/60),s=_mobTimerSec%60;
   const inp=document.getElementById('mob-tminp');
-  if(inp)inp.value=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  if(inp)inp.value=mobFmtSec(_mobTimerSec);
   t.classList.add('hide');i.classList.add('show');
   setTimeout(()=>{if(inp){inp.focus();inp.select();}},50);
 }
 function mobTimerConfirmEdit(){
   const inp=document.getElementById('mob-tminp');
   if(!inp)return;
-  const raw=inp.value.trim();
-  let total=0;
-  if(raw.includes(':')){const parts=raw.split(':');total=(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);}
-  else{total=(parseInt(raw)||0)*60;}
-  total=Math.max(1,total);
-  if(total===0)return;
+  const total=parseTimeInput(inp.value.trim());
+  if(total<1)return;
   _mobTimerCustom[_mobTimerMode]=total;
   _mobTimerSec=total;
   // Also sync to any desktop timer widget
@@ -2480,7 +2489,7 @@ function buildTimerW(body,w){
         <div class="tminputs" id="tminputs-${w.id}">
           <input class="tm-timeinput" id="tminp-${w.id}" type="text" inputmode="numeric" placeholder="25:00"
             onkeydown="tmInputKey(event,'${w.id}')" oninput="tmInputFmt(event)"/>
-          <div class="tm-inputhint">MM:SS &nbsp;·&nbsp; Enter to set &nbsp;·&nbsp; Esc to cancel</div>
+          <div class="tm-inputhint">1:00:00 &nbsp;·&nbsp; MM:SS &nbsp;·&nbsp; Enter to set</div>
           <button class="tm-setbtn" onclick="tmConfirmEdit('${w.id}')">Set time</button>
         </div>
       </div>
@@ -2509,20 +2518,15 @@ function tmStartEdit(wid){
   const inpEl=$('tminputs-'+wid);
   const inp=$('tminp-'+wid);
   if(!timeEl||!inpEl||!inp)return;
-  // Pre-fill with current MM:SS
-  const m=Math.floor(ts.sec/60);
-  const s=ts.sec%60;
-  inp.value=(m>0?String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):String(s).padStart(2,'0'));
+  // Pre-fill with current time in H:MM:SS or MM:SS
+  inp.value=fmtSec(ts.sec);
   timeEl.classList.add('hide');
   inpEl.classList.add('show');
   setTimeout(()=>{inp.focus();inp.select();},50);
 }
 function tmInputFmt(e){
-  // Auto-insert colon after 2 digits
-  let v=e.target.value.replace(/[^0-9:]/g,'');
-  const digits=v.replace(/:/g,'');
-  if(digits.length>=3&&!v.includes(':'))v=digits.slice(0,-2)+':'+digits.slice(-2);
-  e.target.value=v;
+  // Strip anything that isn't a digit or colon
+  e.target.value=e.target.value.replace(/[^0-9:]/g,'');
 }
 function tmInputKey(e,wid){
   if(e.key==='Enter'){e.preventDefault();tmConfirmEdit(wid);}
@@ -2532,16 +2536,8 @@ function tmConfirmEdit(wid){
   const ts=TMS[wid];if(!ts)return;
   const inp=$('tminp-'+wid);
   if(!inp)return;
-  const raw=inp.value.trim();
-  let total=0;
-  if(raw.includes(':')){
-    const parts=raw.split(':');
-    total=(parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);
-  } else {
-    total=(parseInt(raw)||0)*60;
-  }
-  total=Math.max(1,total);
-  if(total===0)return;
+  const total=parseTimeInput(inp.value.trim());
+  if(total<1)return;
   ts.custom[ts.mode]=total;
   ts.sec=total;
   if(ts.mode===1){_mobTimerCustom[1]=total;_mobTimerSec=total;}

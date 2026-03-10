@@ -557,10 +557,10 @@
       <div class="tmdis" style="flex:1;justify-content:center;">
         <div id="mob-timer-time" class="tmtime" style="font-size:clamp(72px,22vw,120px);letter-spacing:-6px;" onclick="mobTimerEdit()">25:00</div>
         <div class="tminputs" id="mob-timer-inputs" style="gap:8px;align-items:center;">
-          <input class="tm-timeinput" id="mob-tminp" type="text" inputmode="numeric" placeholder="MM:SS"
+          <input class="tm-timeinput" id="mob-tminp" type="text" inputmode="numeric" placeholder="1:00:00"
             style="font-size:36px;width:160px;text-align:center;letter-spacing:-1px;"
             onkeydown="mobTimerInputKey(event)" oninput="tmInputFmt(event)"/>
-          <div class="tm-inputhint">MM:SS · Enter to set · Esc to cancel</div>
+          <div class="tm-inputhint">H:MM:SS or MM:SS · Enter to set</div>
           <button class="tm-setbtn" style="padding:10px 24px;font-size:15px;" onclick="mobTimerConfirmEdit()">Set time</button>
         </div>
       </div>
