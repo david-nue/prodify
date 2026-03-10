@@ -605,7 +605,10 @@ function goPg(id,btn){
 }
 
 // ── MOBILE HELPERS ──
-function isMobile(){return window.innerWidth<=768;}
+function isMobile(){
+  const result = window.innerWidth<=768;
+  return result;
+}
 function setTab(id){
   document.querySelectorAll('.btab').forEach(b=>b.classList.toggle('act',b.id==='bt-'+id));
 }
@@ -3592,6 +3595,7 @@ let _fcsIv  = null;
 
 // ── Desktop: open overlay ──
 function fcsOpen(wid) {
+  console.log('[FOCUS DSK] fcsOpen called, wid =', wid);
   _fcsWid = wid;
   const body = document.getElementById('fcs-body');
   if (!body) return;
@@ -3602,6 +3606,7 @@ function fcsOpen(wid) {
 }
 
 function fcsClose() {
+  console.log('[FOCUS DSK] fcsClose called');
   closeMo('fcs-ov');
   document.body.classList.remove('in-focus');
   document.removeEventListener('keydown', _fcsKey);
@@ -3722,6 +3727,10 @@ function _fcsInpKey(e,wid) {
 
 // ── Mobile focus mode ──
 function fcsMobEnter() {
+  console.log('[FOCUS MOB] fcsMobEnter called');
+  console.log('[FOCUS MOB] _mobPage =', _mobPage);
+  console.log('[FOCUS MOB] isMobile() =', isMobile());
+  console.log('[FOCUS MOB] window.innerWidth =', window.innerWidth);
   if (_mobPage !== 'timer') {
     mobGoPage('timer');
     setTimeout(() => document.body.classList.add('in-focus-mob'), 280);
@@ -3730,5 +3739,6 @@ function fcsMobEnter() {
   }
 }
 function fcsMobExit() {
+  console.log('[FOCUS MOB] fcsMobExit called');
   document.body.classList.remove('in-focus-mob');
 }
