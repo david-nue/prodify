@@ -918,7 +918,8 @@ function mobRenderJournal(){
     list.innerHTML='<div class="mob-journal-empty">No entries yet.<br><span style="font-size:11px;">Write how your day is going above!</span></div>';
     return;
   }
-  list.innerHTML=journal.map(j=>{
+  const mobJHdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px;"><span style="font-size:11px;color:var(--ink4);">${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="mobClrJournal()" style="background:none;border:none;font-size:11px;color:var(--ink4);cursor:pointer;padding:2px 6px;border-radius:6px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  list.innerHTML=mobJHdr+journal.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
     return`<div class="mob-journal-entry">
       <div class="mob-je-hd">
@@ -2156,7 +2157,7 @@ function buildJournalW(body,w){
           </div>
         </div>
         <button class="twbtn" style="padding:5px 11px;font-size:11px;flex-shrink:0;" onclick="addJournal('${w.id}')">Save</button>
-        <button class="twbtn" style="padding:5px 11px;font-size:11px;flex-shrink:0;opacity:0.7;" onclick="clrJournalW('${w.id}')" data-tip="Clear all journal entries">Clear all</button>
+
       </div>
     </div>`;
   renderJournalW(w.id);
@@ -2182,7 +2183,8 @@ function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>re
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
   if(!journal.length){el.innerHTML='<div class="jwempty">Your journal is empty.<br/>Write something below.</div>';return;}
-  el.innerHTML=journal.map(j=>{
+  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  el.innerHTML=hdr+journal.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
     return `<div class="jwje"><div class="jwjehd"><div class="jwm">${m.e}</div><span class="jwdt">${j.date} · ${m.l}</span><button class="jwdel" onclick="delJournal(${j.id})">&times;</button></div><div class="jwtx">${esc(j.text)}</div></div>`;
   }).join('');
@@ -2395,7 +2397,7 @@ function gradeL(g){return g>=90?'A':g>=80?'B':g>=70?'C':g>=60?'D':'F';}
 function renderSubW(wid){
   const el=$('swb-'+wid);if(!el)return;
   if(!subjects.length){el.innerHTML='<div class="swempty">No projects yet.<br/>Add them from the sidebar.</div>';return;}
-  el.innerHTML=subjects.map(s=>`<div class="swrow"><div class="swdot" style="background:${s.color}"></div><div class="swname">${esc(s.name)}</div><div class="swbar"><div class="swfill" style="width:${s.progress}%;background:${s.color}"></div></div><div class="swg" style="color:${gradeC(s.progress)}">${s.progress}%</div><button class="wclose" style="margin-left:4px;flex-shrink:0;" onclick="delSub(${s.id})" data-tip="Remove project">&times;</button></div>`).join('');
+  el.innerHTML=subjects.map(s=>`<div class="swrow"><div class="swdot" style="background:${s.color}"></div><div class="swname">${esc(s.name)}</div><div class="swbar"><div class="swfill" style="width:${s.progress}%;background:${s.color}"></div></div><div class="swg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
 }
 
 /* ── CALENDAR WIDGET ── */
