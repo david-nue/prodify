@@ -380,7 +380,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   transition:color .15s;padding:6px 0;-webkit-tap-highlight-color:transparent;
 }
 .mob-nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.mob-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.2px;}
+.mob-nav-btn span{font-size:9px;font-weight:600;letter-spacing:.2px;}
 .mob-nav-btn.act{color:var(--a2);}
 
 /* ── MOBILE AVATAR DROPDOWN ── */

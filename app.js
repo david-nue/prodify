@@ -2459,22 +2459,52 @@ function fillWBody(w){
 /* ── HABIT TRACKER ── */
 function buildHabitW(body,w){
   body.style.cssText='display:flex;flex-direction:column;height:100%;overflow:hidden;';
-  body.innerHTML=`
-    <div id="hwrap-${w.id}" style="flex:1;overflow-y:auto;padding:10px 10px 4px;">
-      <div id="hlist-${w.id}" style="display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
-    <div style="padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0;">
-      <div id="hadd-${w.id}" style="display:flex;gap:6px;">
-        <input id="hinp-${w.id}" type="text" placeholder="New habit…" maxlength="40"
-          style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;font-family:inherit;"
-          onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
-          onkeydown="if(event.key==='Enter')habitWSubmit('${w.id}')"/>
-        <button onclick="habitWSubmit('${w.id}')" style="background:var(--a2);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Add</button>
-      </div>
-    </div>`;
-  renderHabitW(w.id);
-}
+  const wid=w.id;
+  const emojiWrap=document.createElement('div');
+  emojiWrap.id='wemoji-'+wid;
+  emojiWrap.style.cssText='display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;';
+  HABIT_EMOJIS.forEach(e=>{
+    const btn=document.createElement('button');
+    btn.dataset.emoji=e;
+    btn.textContent=e;
+    btn.style.cssText='width:24px;height:24px;border-radius:6px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:12px;transition:all .13s;';
+    btn.onclick=function(){habitWSelectEmoji(this,wid);};
+    emojiWrap.appendChild(btn);
+  });
+  emojiWrap._sel=HABIT_EMOJIS[0];
+  // select first
+  const firstBtn=emojiWrap.querySelector('[data-emoji]');
+  if(firstBtn){firstBtn.style.background='var(--al)';firstBtn.style.borderColor='var(--a2)';}
 
+  const inp=document.createElement('input');
+  inp.id='hinp-'+wid;inp.type='text';inp.placeholder='New habit…';inp.maxLength=40;
+  inp.style.cssText='flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;font-family:inherit;';
+  inp.onfocus=function(){this.style.borderColor='var(--a2)';};
+  inp.onblur=function(){this.style.borderColor='var(--bdr)';};
+  inp.onkeydown=function(e){if(e.key==='Enter')habitWSubmit(wid);};
+
+  const addBtn=document.createElement('button');
+  addBtn.textContent='+ Add';
+  addBtn.style.cssText='background:var(--a2);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
+  addBtn.onclick=function(){habitWSubmit(wid);};
+
+  const inputRow=document.createElement('div');
+  inputRow.style.cssText='display:flex;gap:6px;';
+  inputRow.appendChild(inp);inputRow.appendChild(addBtn);
+
+  const footer=document.createElement('div');
+  footer.style.cssText='padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0;';
+  footer.appendChild(emojiWrap);footer.appendChild(inputRow);
+
+  const list=document.createElement('div');
+  list.id='hlist-'+wid;list.style.cssText='display:flex;flex-direction:column;gap:6px;';
+  const scroll=document.createElement('div');
+  scroll.id='hwrap-'+wid;scroll.style.cssText='flex:1;overflow-y:auto;padding:10px 10px 4px;';
+  scroll.appendChild(list);
+
+  body.appendChild(scroll);body.appendChild(footer);
+  renderHabitW(wid);
+}
 function renderHabitW(wid){
   const list=document.getElementById('hlist-'+wid);
   if(!list)return;
