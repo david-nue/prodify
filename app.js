@@ -890,156 +890,144 @@ async function mobDelTask(id){
 }
 // ── CUSTOM DATE PICKER ──
 // ═══════════════════════════════════════
-// DUE DATE PICKER — unified modal for desktop + mobile
+// DUE DATE PICKER
 // ═══════════════════════════════════════
-let _calViewYear=0, _calViewMonth=0, _dskCalWid=null;
+let _calViewYear=0,_calViewMonth=0,_dskCalWid=null,_dpSelected='',_dpCallback=null;
+function calToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function calFmt(d){return d.toISOString().slice(0,10);}
+function calDisplay(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 
-function calToday(){ const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
-function calFmt(d){ return d.toISOString().slice(0,10); }
-function calDisplay(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
-
-function _ensureDuePicker(){
-  if(document.getElementById('due-picker-modal')) return;
-  const el=document.createElement('div');
-  el.id='due-picker-modal';
-  el.innerHTML=`<div id="due-picker-backdrop"></div><div id="due-picker-sheet"><div id="due-picker-handle"></div><div id="due-picker-header"><span id="due-picker-title">Pick a date</span><button id="due-picker-clear" onclick="dueClear()">Clear</button></div><div id="due-picker-cal"><div id="due-picker-nav"><button class="dpnavbtn" id="dpnav-prev" onclick="dueCalNav('prev')">&#8249;</button><span id="dpnav-month"></span><button class="dpnavbtn" onclick="dueCalNav('next')">&#8250;</button></div><div id="due-picker-grid"></div></div><button id="due-picker-confirm" onclick="dueConfirm()">Confirm</button></div>`;
-  document.body.appendChild(el);
-  document.getElementById('due-picker-backdrop').addEventListener('click', dueCancel);
-}
-
-function _renderDueCal(){
-  const today=calToday();
-  const firstDay=new Date(_calViewYear,_calViewMonth,1);
-  const lastDay=new Date(_calViewYear,_calViewMonth+1,0);
-  const startDow=firstDay.getDay();
-  const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const prevOk=new Date(_calViewYear,_calViewMonth,1)>new Date(today.getFullYear(),today.getMonth(),1);
-  document.getElementById('dpnav-month').textContent=monthName;
-  const prevBtn=document.getElementById('dpnav-prev');
-  if(prevBtn) prevBtn.disabled=!prevOk;
-  const sel=_dpSelected||'';
-  let html='';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{ html+=`<div class="dp-dh">${d}</div>`; });
-  for(let i=0;i<startDow;i++) html+=`<div></div>`;
-  for(let d=1;d<=lastDay.getDate();d++){
-    const date=new Date(_calViewYear,_calViewMonth,d);
-    const val=calFmt(date);
-    const isPast=date<today;
-    const isSel=val===sel;
-    const isToday=val===calFmt(today);
-    let cls='dp-day';
-    if(isPast) cls+=' dp-past';
-    else if(isSel) cls+=' dp-sel';
-    else if(isToday) cls+=' dp-today';
-    html+=isPast?`<div class="${cls}">${d}</div>`:`<div class="${cls}" onclick="_dpPick('${val}')">${d}</div>`;
+function dpOpen(currentVal,onConfirm){
+  let modal=document.getElementById('dp-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='dp-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .25s;pointer-events:none;';
+    modal.innerHTML=`
+      <div id="dp-sheet" style="position:relative;width:100%;max-width:440px;background:var(--surf);border-radius:24px 24px 0 0;padding:0 0 28px;box-shadow:0 -12px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);">
+        <div style="width:40px;height:4px;border-radius:2px;background:var(--bdr);margin:14px auto 0;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
+          <span style="font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;">Pick a date</span>
+          <button onclick="dpClear()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:all .15s;" onmouseover="this.style.background='var(--rl)';this.style.color='var(--red)'" onmouseout="this.style.background='none';this.style.color='var(--ink3)'">Clear</button>
+        </div>
+        <div style="margin:0 16px;background:var(--surf2);border-radius:18px;border:1.5px solid var(--bdr);padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <button id="dp-prev" onclick="dpNav(-1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">‹</button>
+            <span id="dp-month" style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;"></span>
+            <button onclick="dpNav(1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">›</button>
+          </div>
+          <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
+        </div>
+        <button id="dp-confirm" onclick="dpConfirm()" style="display:block;width:calc(100% - 32px);margin:14px 16px 0;background:var(--a2);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.2px;transition:background .15s;">Confirm</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',function(e){if(e.target===modal)dpClose();});
   }
-  document.getElementById('due-picker-grid').innerHTML=html;
-  document.querySelectorAll('.dpchip').forEach(c=>c.classList.remove('active'));
-  if(sel){
-    const t=calFmt(calToday());
-    const tm=new Date(calToday()); tm.setDate(tm.getDate()+1); const tmf=calFmt(tm);
-    const wk=new Date(calToday()); wk.setDate(wk.getDate()+7); const wkf=calFmt(wk);
-    if(sel===t) document.querySelector('.dpchip[onclick*="today"]')?.classList.add('active');
-    else if(sel===tmf) document.querySelector('.dpchip[onclick*="tomorrow"]')?.classList.add('active');
-    else if(sel===wkf) document.querySelector('.dpchip[onclick*="week"]')?.classList.add('active');
-  }
-  const confirmBtn=document.getElementById('due-picker-confirm');
-  if(confirmBtn) confirmBtn.textContent=sel?'Confirm — '+calDisplay(new Date(sel+'T00:00:00')):'Confirm';
-}
-
-let _dpSelected='', _dpCallback=null;
-
-function _dpPick(val){
-  _dpSelected=val;
-  _renderDueCal();
-}
-function dueCalNav(dir){
-  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
-  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
-  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
-  _renderDueCal();
-}
-function duePreset(preset){
-  const d=calToday();
-  if(preset==='tomorrow')d.setDate(d.getDate()+1);
-  else if(preset==='week')d.setDate(d.getDate()+7);
-  _dpSelected=calFmt(d);
-  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
-  _renderDueCal();
-}
-function dueClear(){
-  _dpSelected='';
-  _renderDueCal();
-}
-function dueConfirm(){
-  if(_dpCallback) _dpCallback(_dpSelected||null);
-  _closeDuePicker();
-}
-function dueCancel(){ _closeDuePicker(); }
-function _closeDuePicker(){
-  const modal=document.getElementById('due-picker-modal');
-  if(!modal) return;
-  modal.classList.remove('dp-open');
-  _dpCallback=null; _dskCalWid=null;
-}
-function _openDuePicker(currentVal, onConfirm){
-  _ensureDuePicker();
   _dpSelected=currentVal||'';
   _dpCallback=onConfirm;
   const base=_dpSelected?new Date(_dpSelected+'T00:00:00'):calToday();
   _calViewYear=base.getFullYear();_calViewMonth=base.getMonth();
-  _renderDueCal();
-  const modal=document.getElementById('due-picker-modal');
-  // Use rAF twice to ensure paint before transition
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ modal.classList.add('dp-open'); }));
+  dpRender();
+  // show
+  modal.style.pointerEvents='auto';
+  requestAnimationFrame(()=>{
+    modal.style.background='rgba(0,0,0,.5)';
+    document.getElementById('dp-sheet').style.transform='translateY(0)';
+  });
+}
+
+function dpRender(){
+  const today=calToday();
+  const first=new Date(_calViewYear,_calViewMonth,1);
+  const last=new Date(_calViewYear,_calViewMonth+1,0);
+  const prevOk=new Date(_calViewYear,_calViewMonth,1)>new Date(today.getFullYear(),today.getMonth(),1);
+  document.getElementById('dp-month').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const prev=document.getElementById('dp-prev');
+  if(prev){prev.disabled=!prevOk;prev.style.opacity=prevOk?'1':'0.2';prev.style.cursor=prevOk?'pointer':'default';}
+  const sel=_dpSelected||'';
+  let html='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
+    html+=`<div style="font-size:9px;font-weight:800;color:var(--ink4);text-align:center;padding:2px 0 8px;text-transform:uppercase;letter-spacing:.5px;">${d}</div>`;
+  });
+  for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
+  for(let d=1;d<=last.getDate();d++){
+    const date=new Date(_calViewYear,_calViewMonth,d);
+    const val=calFmt(date);
+    const past=date<today,isSel=val===sel,isToday=val===calFmt(today);
+    let bg='transparent',color='var(--ink)',border='none',fw='600',cursor='pointer',op='1';
+    if(past){color='var(--ink4)';op='.3';cursor='default';}
+    else if(isSel){bg='var(--a2)';color='#fff';fw='800';border='none';}
+    else if(isToday){bg='var(--surf)';border='2px solid var(--a2)';color='var(--a2)';fw='800';}
+    const click=past?'':`onclick="_dpPick('${val}')"`;
+    html+=`<div ${click} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:${fw};color:${color};background:${bg};border:${border};border-radius:10px;cursor:${cursor};opacity:${op};transition:all .12s;">${d}</div>`;
+  }
+  document.getElementById('dp-grid').innerHTML=html;
+  const btn=document.getElementById('dp-confirm');
+  if(btn)btn.textContent=sel?'Confirm — '+calDisplay(new Date(sel+'T00:00:00')):'Confirm';
+}
+
+function _dpPick(val){_dpSelected=val;dpRender();}
+function dpNav(dir){
+  _calViewMonth+=dir;
+  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
+  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
+  dpRender();
+}
+function dpClear(){_dpSelected='';dpRender();}
+function dpConfirm(){
+  if(_dpCallback)_dpCallback(_dpSelected||null);
+  dpClose();
+}
+function dpClose(){
+  const modal=document.getElementById('dp-modal');
+  const sheet=document.getElementById('dp-sheet');
+  if(!modal)return;
+  modal.style.background='rgba(0,0,0,0)';
+  if(sheet)sheet.style.transform='translateY(100%)';
+  modal.style.pointerEvents='none';
+  _dpCallback=null;_dskCalWid=null;
 }
 function openDskDuePicker(wid){
   _dskCalWid=wid;
   const inp=$('twd-'+wid);
-  _openDuePicker(inp?.value||'', function(val){
+  dpOpen(inp?.value||'',function(val){
     const btn=$('twdb-'+wid);
-    if(inp) inp.value=val||'';
+    if(inp)inp.value=val||'';
     if(btn){
-      if(val){ btn.textContent=calDisplay(new Date(val+'T00:00:00')); btn.classList.add('active'); }
-      else { btn.textContent='+ Due date'; btn.classList.remove('active'); }
+      if(val){btn.textContent=calDisplay(new Date(val+'T00:00:00'));btn.classList.add('active');}
+      else{btn.textContent='+ Due date';btn.classList.remove('active');}
     }
   });
 }
-function openDuePicker(wid){ openDskDuePicker(wid); }
+function openDuePicker(wid){openDskDuePicker(wid);}
 function onDueChange(wid){}
 function openMobDuePicker(){
   const inp=document.getElementById('mob-add-task-due');
-  _openDuePicker(inp?.value||'', function(val){
-    if(inp) inp.value=val||'';
-    const lbl2=document.getElementById('mob-due-selected-lbl2');
-    if(lbl2) lbl2.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
+  dpOpen(inp?.value||'',function(val){
+    if(inp)inp.value=val||'';
+    const lbl=document.getElementById('mob-due-selected-lbl2');
+    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
     const btn=document.querySelector('.mob-due-pick-btn');
-    if(btn) btn.classList.toggle('active',!!val);
+    if(btn)btn.classList.toggle('active',!!val);
   });
 }
 function mobSetDue(preset){
   const d=calToday();
   if(preset==='none'){
-    const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value='';
-    const lbl=document.getElementById('mob-due-selected-lbl'); if(lbl)lbl.textContent='';
-    document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+    const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
+    const lbl=document.getElementById('mob-due-selected-lbl2');if(lbl)lbl.textContent='Choose a date';
+    const btn=document.querySelector('.mob-due-pick-btn');if(btn)btn.classList.remove('active');
     return;
   }
   if(preset==='tomorrow')d.setDate(d.getDate()+1);
   else if(preset==='week')d.setDate(d.getDate()+7);
   const val=calFmt(d);
-  const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value=val;
-  const lbl=document.getElementById('mob-due-selected-lbl');
-  if(lbl)lbl.textContent='· '+calDisplay(d);
-  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
-  const labels={today:'Today',tomorrow:'Tomorrow',week:'This week'};
-  document.querySelectorAll('.mob-due-chip').forEach(c=>{ if(c.textContent===labels[preset])c.classList.add('active'); });
+  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value=val;
+  const lbl=document.getElementById('mob-due-selected-lbl2');if(lbl)lbl.textContent=calDisplay(d);
+  const btn=document.querySelector('.mob-due-pick-btn');if(btn)btn.classList.add('active');
 }
-function mobDueReset(){
-  const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value='';
-  const lbl=document.getElementById('mob-due-selected-lbl'); if(lbl)lbl.textContent='';
-  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
-}
+function mobDueReset(){mobSetDue('none');}
+
 
 
 function openMobAddTask(){
