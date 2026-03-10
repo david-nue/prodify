@@ -306,23 +306,22 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* ── CALENDAR PAGE ── */
 .mob-cal-nav{
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 16px 12px;flex-shrink:0;
+  padding:4px 16px 8px;flex-shrink:0;
 }
 .mob-cal-nav-btn{
   background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
-  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
   cursor:pointer;
 }
-.mob-cal-nav-btn svg{width:16px;height:16px;stroke:var(--ink2);fill:none;stroke-width:2;stroke-linecap:round;}
+.mob-cal-nav-btn svg{width:14px;height:14px;stroke:var(--ink2);fill:none;stroke-width:2;stroke-linecap:round;}
 .mob-cal-week-lbl{font-size:13px;font-weight:700;color:var(--ink2);}
 .mob-cal-days{
-  display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;
-  -webkit-overflow-scrolling:touch;flex-shrink:0;
+  display:flex;gap:4px;padding:0 12px 10px;flex-shrink:0;
 }
 .mob-cal-days::-webkit-scrollbar{display:none;}
 .mob-cal-day{
-  flex-shrink:0;width:52px;background:var(--surf);border:1.5px solid var(--bdr);
-  border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer;
+  flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--bdr);
+  border-radius:12px;padding:7px 2px;text-align:center;cursor:pointer;
   transition:all .14s;
 }
 .mob-cal-day.today{border-color:var(--a2);background:var(--al);}
@@ -335,7 +334,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-cal-day-dots{display:flex;justify-content:center;gap:2px;height:6px;}
 .mob-cal-day-dot{width:4px;height:4px;border-radius:50%;background:var(--a2);}
 .mob-cal-day.sel .mob-cal-day-dot{background:rgba(255,255,255,.7);}
-.mob-cal-events{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;}
+.mob-cal-events{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 12px 12px;}
 .mob-cal-date-hd{
   font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;
   padding-bottom:8px;border-bottom:1px solid var(--bdr);
