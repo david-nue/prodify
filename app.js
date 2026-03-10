@@ -2656,11 +2656,6 @@ function chgPw(){
 function clrTasks(){if(!confirm('Delete all tasks?'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function clrJournal(){if(!confirm('Delete all journal entries?'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function clrSubjects(){if(!confirm('Delete all projects??'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
-function delSub(id){
-  subjects=subjects.filter(s=>s.id!==id);
-  persist();renderSubFull();renderAllSubW();updateAllStatsW();
-  if(typeof mobRenderProjects==='function')mobRenderProjects();
-}
 async function clrDoneTasks(wid){
   const done=tasks.filter(t=>t.col==='done');
   if(!done.length)return;
