@@ -1423,6 +1423,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* ── FEEDBACK ── */
 /* .fbtype-btn + .fb-star: replaced by redesigned feedback styles at bottom of file */
+.fbtype-btn{padding:6px 14px;border-radius:100px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit;}
+.fbtype-btn.fbtype-act{background:var(--a2);color:#fff;border-color:var(--a2);}
+.fbtype-btn:not(.fbtype-act):hover{border-color:var(--ink3);color:var(--ink);}
 
 /* ══════════════════════════════════════
    FEEDBACK — SHARED
