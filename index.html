@@ -479,6 +479,8 @@
           </div>
           <div class="setsec"><div class="setsect">Data</div>
             <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
+            <div class="setrow"><div><div class="setlbl">Cloud Backup History <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Restore from up to 30 daily snapshots</div></div><button class="bol bsm" onclick="showBackupModal()">View</button></div>
+            <div class="setrow"><div><div class="setlbl">Active Devices <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Manage sessions across your devices</div></div><button class="bol bsm" onclick="showDevicesModal()">Manage</button></div>
             <div class="setrow"><div><div class="setlbl">Delete account</div><div class="setdsc">Permanently delete your account and all data</div></div><button class="dbtn full" onclick="delAcc()">Delete account</button></div>
           </div>
           <div class="setsec"><div class="setsect">Export</div>
@@ -830,6 +832,8 @@
       <div class="setsec" style="border-radius:14px;overflow:hidden;margin-bottom:10px;">
         <div class="setsect">Data</div>
         <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
+        <div class="setrow"><div><div class="setlbl">Cloud Backup <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Restore from up to 30 daily snapshots</div></div><button class="bol bsm" onclick="showBackupModal()">View</button></div>
+        <div class="setrow"><div><div class="setlbl">Active Devices <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Manage your sessions</div></div><button class="bol bsm" onclick="showDevicesModal()">Manage</button></div>
         <div class="setrow"><div><div class="setlbl">Delete account</div></div><button class="dbtn full" onclick="delAcc()">Delete</button></div>
       </div>
       <!-- Export -->
@@ -1258,6 +1262,30 @@ function fbRate(n) {
     <button class="btn bdk" style="width:100%;padding:14px;font-size:15px;" onclick="closeMo('mo-upgrade')">Coming Soon — Stay tuned 🚀</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--ink4);">No payment required yet · Just building out the UI</div>
   </div>
+</div></div>
+
+<!-- BACKUP HISTORY MODAL -->
+<div class="ov" id="mo-backup" onclick="if(event.target===this)closeMo('mo-backup')"><div class="mod" style="max-width:460px;">
+  <div class="modhd">
+    <div>
+      <div class="modt">Cloud Backup History</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Auto-saved daily · Up to 30 snapshots</div>
+    </div>
+    <button class="modx" onclick="closeMo('mo-backup')">×</button>
+  </div>
+  <div id="mo-backup-list" style="max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
+</div></div>
+
+<!-- ACTIVE DEVICES MODAL -->
+<div class="ov" id="mo-devices" onclick="if(event.target===this)closeMo('mo-devices')"><div class="mod" style="max-width:400px;">
+  <div class="modhd">
+    <div>
+      <div class="modt">Active Devices</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Sessions from the last 7 days</div>
+    </div>
+    <button class="modx" onclick="closeMo('mo-devices')">×</button>
+  </div>
+  <div id="mo-devices-list" style="display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
 </div></div>
 
 </body>

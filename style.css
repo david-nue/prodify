@@ -1952,3 +1952,108 @@ body.in-focus-mob .fcs-mob-inline-exit{display:flex;}
 }
 body.in-focus #fcs-exit-overlay{display:flex;}
 #fcs-exit-overlay svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;}
+
+/* ═══════════════════════════════════════
+   PRO BADGE RING & GLOW
+═══════════════════════════════════════ */
+@keyframes pro-ring-spin {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Shared ring wrapper — applied to sbav, mob-av, pbav */
+.pro-ring {
+  border: 2.5px solid transparent !important;
+  background-clip: padding-box !important;
+  position: relative;
+}
+.pro-ring::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1B4332, #3A7D5E, #74c69d, #1B4332);
+  background-size: 300% 300%;
+  animation: pro-ring-spin 3s linear infinite;
+  z-index: -1;
+}
+/* Slightly larger cutout on bigger avatars */
+.pbav.pro-ring::before { inset: -4px; }
+
+/* Pro badge chip — upgrade version */
+.pro-badge {
+  background: linear-gradient(135deg, #1B4332, #2d6a4f);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 100px;
+  gap: 4px;
+  box-shadow: 0 2px 10px rgba(58,125,94,0.4), 0 0 0 1.5px rgba(116,198,157,0.3);
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════
+   CLOUD BACKUP
+═══════════════════════════════════════ */
+.backup-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--bdr);
+  background: var(--surf2);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.backup-row:hover { border-color: var(--a2); background: rgba(58,125,94,0.05); }
+.backup-row-left { flex: 1; }
+.backup-row-date { font-size: 13px; font-weight: 700; color: var(--ink); }
+.backup-row-meta { font-size: 11px; color: var(--ink4); margin-top: 2px; }
+.backup-restore-btn {
+  font-size: 11px; font-weight: 700; color: var(--a2);
+  background: rgba(58,125,94,0.1); border: 1.5px solid rgba(58,125,94,0.3);
+  border-radius: 8px; padding: 5px 12px; cursor: pointer;
+  font-family: inherit; transition: all .15s; flex-shrink: 0;
+}
+.backup-restore-btn:hover { background: var(--a2); color: #fff; border-color: var(--a2); }
+
+/* ═══════════════════════════════════════
+   ACTIVE DEVICES
+═══════════════════════════════════════ */
+.device-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surf2);
+  border: 1.5px solid var(--bdr);
+}
+.device-icon { font-size: 22px; flex-shrink: 0; }
+.device-remove-btn {
+  font-size: 11px; font-weight: 700; color: var(--ink3);
+  background: var(--surf); border: 1.5px solid var(--bdr);
+  border-radius: 8px; padding: 5px 10px; cursor: pointer;
+  font-family: inherit; transition: all .15s; flex-shrink: 0;
+}
+.device-remove-btn:hover { background: #fef2f2; color: #dc2626; border-color: #dc2626; }
+
+/* ═══════════════════════════════════════
+   MULTI-DEVICE BANNER
+═══════════════════════════════════════ */
+.multi-device-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(245,183,0,0.1);
+  border-bottom: 1px solid rgba(245,183,0,0.3);
+  font-size: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}

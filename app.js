@@ -1997,7 +1997,8 @@ function launch(){
   $('ev-d').value=new Date().toISOString().slice(0,10);
   applyTheme();
   scheduleRecurringCheck();
-  renderProBadge();show('app');goPg(LS.g('pd1_pg','canvas'),null);
+  renderProBadge();renderProBadgeRing();show('app');goPg(LS.g('pd1_pg','canvas'),null);
+  setTimeout(registerDeviceSession, 800);
   renderCanvas();
   renderFixedQuote();
   updateFixedStats();
@@ -4058,4 +4059,254 @@ function fcsMobEnter() {
 }
 function fcsMobExit() {
   document.body.classList.remove('in-focus-mob');
+}
+
+// ═══════════════════════════════════════
+// PRO BADGE — VISUAL RING & GLOW
+// ═══════════════════════════════════════
+function renderProBadgeRing() {
+  const pro = isPro();
+  // Sidebar avatar ring
+  const sbav = document.getElementById('sbav');
+  if (sbav) {
+    sbav.classList.toggle('pro-ring', pro);
+  }
+  // Mobile topbar avatar ring
+  const mobAv = document.getElementById('mob-av');
+  if (mobAv) {
+    mobAv.classList.toggle('pro-ring', pro);
+  }
+  // Profile page avatar (desktop + mobile)
+  document.querySelectorAll('.pbav').forEach(el => el.classList.toggle('pro-ring', pro));
+  // Pro badge text chips
+  document.querySelectorAll('.pro-badge').forEach(el => {
+    el.style.display = pro ? 'inline-flex' : 'none';
+  });
+  // Upgrade prompt vs active indicator
+  document.querySelectorAll('.pro-upgrade-btn').forEach(el => el.style.display = pro ? 'none' : 'flex');
+  document.querySelectorAll('.pro-active-indicator').forEach(el => el.style.display = pro ? 'flex' : 'none');
+}
+
+// Override renderProBadge to also call ring version
+const _origRenderProBadge = typeof renderProBadge === 'function' ? renderProBadge : () => {};
+function renderProBadge() {
+  _origRenderProBadge();
+  renderProBadgeRing();
+}
+
+// ═══════════════════════════════════════
+// CLOUD BACKUP HISTORY (PRO)
+// ═══════════════════════════════════════
+const BACKUP_MAX_DAYS = 30;
+
+function backupSnapshotToday() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!prefs.backups) prefs.backups = [];
+  // Only one snapshot per calendar day
+  if (prefs.backups.length > 0 && prefs.backups[0].date === today) return;
+  const snap = {
+    date: today,
+    ts: Date.now(),
+    tasks: JSON.parse(JSON.stringify(tasks || [])),
+    journal: JSON.parse(JSON.stringify(journal || [])),
+    habits: JSON.parse(JSON.stringify(prefs.habits || [])),
+    subjects: JSON.parse(JSON.stringify(subjects || [])),
+    calEvs: JSON.parse(JSON.stringify(calEvs || [])),
+    notes: JSON.parse(JSON.stringify(notes || {})),
+  };
+  prefs.backups.unshift(snap);
+  if (prefs.backups.length > BACKUP_MAX_DAYS) prefs.backups = prefs.backups.slice(0, BACKUP_MAX_DAYS);
+}
+
+function showBackupModal() {
+  if (!isPro()) { showUpgradeModal('Cloud Backup History'); return; }
+  openMo('mo-backup');
+  renderBackupList();
+}
+
+function renderBackupList() {
+  const el = document.getElementById('mo-backup-list');
+  if (!el) return;
+  const backups = prefs.backups || [];
+  if (backups.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--ink4);font-size:13px;">No backups yet.<br><span style="font-size:11px;">Snapshots are saved automatically each day.</span></div>`;
+    return;
+  }
+  el.innerHTML = backups.map((b, i) => {
+    const d = new Date(b.ts);
+    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const taskCount = (b.tasks || []).length;
+    const jCount = (b.journal || []).length;
+    const hCount = (b.habits || []).length;
+    return `<div class="backup-row" onclick="restoreBackup(${i})">
+      <div class="backup-row-left">
+        <div class="backup-row-date">${label}</div>
+        <div class="backup-row-meta">${taskCount} tasks · ${jCount} journal entries · ${hCount} habits</div>
+      </div>
+      <button class="backup-restore-btn" onclick="event.stopPropagation();restoreBackup(${i})">Restore</button>
+    </div>`;
+  }).join('');
+}
+
+async function restoreBackup(idx) {
+  const b = (prefs.backups || [])[idx];
+  if (!b) return;
+  const d = new Date(b.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const ok = await appConfirm(`Restore backup from ${d}? Your current data will be replaced.`);
+  if (!ok) return;
+  if (b.tasks)    { tasks = b.tasks;       acc[cu].tasks = tasks; }
+  if (b.journal)  { journal = b.journal;   acc[cu].journal = journal; }
+  if (b.subjects) { subjects = b.subjects; acc[cu].subjects = subjects; }
+  if (b.calEvs)   { calEvs = b.calEvs;     acc[cu].calEvs = calEvs; }
+  if (b.notes)    { notes = b.notes;       acc[cu].notes = notes; }
+  if (b.habits)   { prefs.habits = b.habits; }
+  closeMo('mo-backup');
+  persist();
+  renderAllTaskW(); renderCanvas(); updateAllStatsW(); updateFixedStats();
+  if (typeof mobRenderTasks === 'function') mobRenderTasks();
+  if (typeof mobRenderHome === 'function') mobRenderHome();
+  if (typeof mobRenderJournal === 'function') mobRenderJournal();
+  if (typeof renderCal === 'function') renderCal();
+}
+
+// Hook backupSnapshotToday into persist — patch after load
+(function patchPersistForBackup() {
+  const _origPersist = window.persist;
+  if (typeof _origPersist !== 'function') { setTimeout(patchPersistForBackup, 500); return; }
+  window.persist = function() {
+    backupSnapshotToday();
+    _origPersist.apply(this, arguments);
+  };
+})();
+
+// ═══════════════════════════════════════
+// MULTI-DEVICE SESSION TRACKING (PRO)
+// ═══════════════════════════════════════
+const _DEVICE_KEY = 'pd1_device_id';
+
+function getOrCreateDeviceId() {
+  let id = localStorage.getItem(_DEVICE_KEY);
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+    localStorage.setItem(_DEVICE_KEY, id);
+  }
+  return id;
+}
+
+function getDeviceName() {
+  const ua = navigator.userAgent;
+  if (/iPhone/i.test(ua)) return 'iPhone';
+  if (/iPad/i.test(ua)) return 'iPad';
+  if (/Android.*Mobile/i.test(ua)) return 'Android Phone';
+  if (/Android/i.test(ua)) return 'Android Tablet';
+  if (/Mac/i.test(ua)) return 'Mac';
+  if (/Windows/i.test(ua)) return 'Windows PC';
+  if (/Linux/i.test(ua)) return 'Linux';
+  return 'Unknown Device';
+}
+
+function registerDeviceSession() {
+  if (!cu) return;
+  const id = getOrCreateDeviceId();
+  const name = getDeviceName();
+  const now = Date.now();
+  if (!prefs.activeSessions) prefs.activeSessions = [];
+  // Upsert this device
+  const idx = prefs.activeSessions.findIndex(s => s.id === id);
+  if (idx >= 0) {
+    prefs.activeSessions[idx].lastSeen = now;
+    prefs.activeSessions[idx].name = name;
+  } else {
+    prefs.activeSessions.push({ id, name, lastSeen: now });
+  }
+  // Prune stale sessions (> 30 days old)
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000;
+  prefs.activeSessions = prefs.activeSessions.filter(s => s.lastSeen > cutoff);
+  // Free plan: warn if more than 1 active session in last 7 days
+  if (!isPro()) {
+    const week = now - 7 * 24 * 60 * 60 * 1000;
+    const recent = prefs.activeSessions.filter(s => s.lastSeen > week);
+    if (recent.length > 1) {
+      showMultiDeviceBanner();
+    }
+  }
+  // Don't call persist here to avoid recursion — save directly
+  if (cu) { acc[cu].prefs = prefs; LS.s('pd1_acc', acc); if (sbReady) dbSaveUser(cu, acc[cu]); }
+}
+
+function showMultiDeviceBanner() {
+  const existing = document.getElementById('multi-device-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'multi-device-banner';
+  banner.className = 'multi-device-banner';
+  banner.innerHTML = `
+    <span style="font-size:16px;">📱</span>
+    <div style="flex:1;">
+      <div style="font-weight:700;font-size:12px;color:var(--ink);">Multiple devices detected</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:1px;">Free plan supports 1 active device. <span style="color:var(--a2);cursor:pointer;font-weight:700;" onclick="showUpgradeModal('Multi-Device Sync')">Upgrade to Pro →</span></div>
+    </div>
+    <button onclick="document.getElementById('multi-device-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--ink4);font-size:16px;padding:0;">×</button>
+  `;
+  // Insert at top of main content area
+  const main = document.getElementById('main') || document.querySelector('.main') || document.body;
+  main.prepend(banner);
+}
+
+function showDevicesModal() {
+  if (!isPro()) { showUpgradeModal('Multi-Device Sync'); return; }
+  openMo('mo-devices');
+  renderDevicesList();
+}
+
+function renderDevicesList() {
+  const el = document.getElementById('mo-devices-list');
+  if (!el) return;
+  const sessions = prefs.activeSessions || [];
+  const myId = getOrCreateDeviceId();
+  const now = Date.now();
+  const week = now - 7 * 24 * 60 * 60 * 1000;
+  const recent = sessions.filter(s => s.lastSeen > week).sort((a, b) => b.lastSeen - a.lastSeen);
+  if (recent.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--ink4);font-size:13px;">No active sessions found.</div>`;
+    return;
+  }
+  el.innerHTML = recent.map(s => {
+    const isMe = s.id === myId;
+    const ago = _timeAgo(s.lastSeen);
+    return `<div class="device-row">
+      <div class="device-icon">${_deviceIcon(s.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">${s.name}${isMe ? ' <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span>' : ''}</div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Last active ${ago}</div>
+      </div>
+      ${isMe ? `<div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>` :
+        `<button class="device-remove-btn" onclick="removeDeviceSession('${s.id}')">Remove</button>`}
+    </div>`;
+  }).join('');
+}
+
+function removeDeviceSession(id) {
+  if (!prefs.activeSessions) return;
+  prefs.activeSessions = prefs.activeSessions.filter(s => s.id !== id);
+  if (cu) { acc[cu].prefs = prefs; LS.s('pd1_acc', acc); if (sbReady) dbSaveUser(cu, acc[cu]); }
+  renderDevicesList();
+}
+
+function _timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  return Math.floor(hrs / 24) + 'd ago';
+}
+
+function _deviceIcon(name) {
+  if (/iPhone|Android Phone/i.test(name)) return '📱';
+  if (/iPad|Tablet/i.test(name)) return '📱';
+  if (/Mac/i.test(name)) return '💻';
+  if (/Windows/i.test(name)) return '🖥️';
+  return '💻';
 }
