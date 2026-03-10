@@ -2094,18 +2094,18 @@ function renderActivity(barId, streakId, legendId){
     const isToday=i===0;
     const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const tip=`${label}${count?`: ${count} activit${count!==1?'ies':'y'}`:''}`;
-    squares+=`<div title="${tip}" style="width:14px;height:14px;border-radius:3px;background:${cellColor(count)};opacity:${cellOpacity(count)};flex-shrink:0;${isToday?'outline:2px solid var(--a2);outline-offset:1px;':''};cursor:default;"></div>`;
+    squares+=`<div title="${tip}" style="width:100%;aspect-ratio:1;border-radius:3px;background:${cellColor(count)};opacity:${cellOpacity(count)};${isToday?'outline:2px solid var(--a2);outline-offset:1px;':''};cursor:default;"></div>`;
   }
 
-  let html=`<div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><div style="display:flex;gap:3px;flex-wrap:nowrap;min-width:max-content;">${squares}</div></div>`;
-  html+=`<div style="display:flex;justify-content:space-between;margin-top:6px;">
+  let html=`<div style="overflow:hidden;"><div style="display:grid;grid-template-columns:repeat(30,1fr);gap:3px;">${squares}</div></div>`;
+  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
     <span style="font-size:10px;color:var(--ink4);">30 days ago</span>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span style="font-size:10px;color:var(--ink4);">Less</span>
+      ${[0,0.3,0.6,1].map(v=>`<div style="width:8px;height:8px;border-radius:2px;background:${v?'var(--a2)':'var(--bdr)'};opacity:${v||1};"></div>`).join('')}
+      <span style="font-size:10px;color:var(--ink4);">More</span>
+    </div>
     <span style="font-size:10px;color:var(--ink4);">Today</span>
-  </div>`;
-  html+=`<div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-    <span style="font-size:10px;color:var(--ink4);">Less</span>
-    ${[0,0.3,0.6,1].map(v=>`<div style="width:10px;height:10px;border-radius:2px;background:${v?'var(--a2)':'var(--bdr)'};opacity:${v||1};flex-shrink:0;"></div>`).join('')}
-    <span style="font-size:10px;color:var(--ink4);">More</span>
   </div>`;
 
   barEl.innerHTML=html;
@@ -3547,8 +3547,8 @@ function renderHabitAddForm(containerId){
   const isPage=containerId.includes('page');
   el.innerHTML=`<div style="${isPage?'':'border-top:1px solid var(--bdr);'}padding-top:${isPage?'0':'12px'};margin-top:4px;">
     <div style="font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Add a new habit</div>
-    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">
-      ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="width:30px;height:30px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:14px;transition:all .13s;" title="${e}">${e}</button>`).join('')}
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:10px;">
+      ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="aspect-ratio:1;width:100%;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:clamp(12px,3.5vw,18px);transition:all .13s;" title="${e}">${e}</button>`).join('')}
     </div>
     <div style="display:flex;gap:8px;">
       <input id="${containerId}-inp" type="text" placeholder="e.g. Read 20 mins, Drink water…" maxlength="40"
