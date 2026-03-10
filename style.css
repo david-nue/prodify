@@ -1722,10 +1722,15 @@ body.in-focus .wtray{opacity:0;pointer-events:none;transition:opacity .3s;}
 body.in-focus-mob .mob-nav{display:none!important;}
 body.in-focus-mob .mob-topbar{display:none!important;}
 body.in-focus-mob .mob-av{display:none!important;}
-/* keep mob-app clipping intact but let timer fill the freed space */
 body.in-focus-mob .mob-app{overflow:hidden;}
-body.in-focus-mob #mpg-timer{flex:1;min-height:0;overflow:visible;}
-body.in-focus-mob .mob-timer-wrap{flex:1;justify-content:center;padding-top:40px;}
+/* timer page and wrap fill all freed space */
+body.in-focus-mob #mpg-timer{
+  flex:1;min-height:0;overflow:visible;
+  display:flex;flex-direction:column;
+}
+body.in-focus-mob .mob-timer-wrap{
+  flex:1;justify-content:center;padding-top:24px;padding-bottom:24px;
+}
 /* hide session history in focus mode */
 body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
 body.in-focus-mob .mob-timer-sessions{display:flex;}
@@ -1746,11 +1751,12 @@ body.in-focus-mob #fcs-mob-exit{display:flex;}
 #fcs-exit-overlay{
   display:none;position:fixed;top:18px;right:18px;z-index:99999;
   align-items:center;gap:6px;
-  background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.22);
-  color:rgba(255,255,255,.88);border-radius:100px;
+  background:var(--surf);border:1.5px solid var(--bdr);
+  color:var(--ink);border-radius:100px;
   padding:8px 16px 8px 12px;font-size:12px;font-weight:700;
   cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:.1px;
-  transition:background .15s;
+  box-shadow:var(--sh2);transition:background .15s;
 }
 body.in-focus #fcs-exit-overlay{display:flex;}
+#fcs-exit-overlay:hover{background:var(--warm);}
 #fcs-exit-overlay svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;}
