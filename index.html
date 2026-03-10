@@ -445,28 +445,28 @@
     </div>
   </div>
 
+  <!-- FOCUS MODE OVERLAY — inside #app for correct stacking context -->
+  <div id="focus-overlay">
+    <div id="focus-timer-wrap"></div>
+  </div>
+  <button id="focus-exit-btn" onclick="exitFocusMode()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    Exit Focus
+  </button>
+
   <!-- BOTTOM TAB BAR (mobile only) -->
 </div>
-
-<!-- ══════════════════════════════════════
-     FOCUS MODE
-══════════════════════════════════════ -->
-<div id="focus-overlay">
-  <div id="focus-timer-wrap"></div>
-</div>
-<button id="focus-exit-btn" onclick="exitFocusMode()">
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-  Exit Focus
-</button>
-<button id="mob-focus-exit" onclick="mobExitFocus()">
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-  Exit Focus
-</button>
 
 <!-- ══════════════════════════════════════
      MOBILE FULL-SCREEN APP
 ══════════════════════════════════════ -->
 <div class="mob-app" id="mob-app">
+
+  <!-- MOBILE FOCUS EXIT BUTTON -->
+  <button id="mob-focus-exit" onclick="mobExitFocus()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    Exit Focus
+  </button>
 
   <!-- HOME PAGE -->
   <div class="mob-page active" id="mpg-home">

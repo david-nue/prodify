@@ -1921,26 +1921,25 @@ function enterFocusMode(wid) {
   const wrap    = document.getElementById('focus-timer-wrap');
   if (!overlay || !wrap) return;
   _buildFocusTimer(wid, wrap);
-  overlay.style.display = 'flex';
+  // Add open class — CSS handles display:flex + backdrop
+  overlay.classList.add('open');
   document.body.classList.add('focus-mode');
-  requestAnimationFrame(() => {
-    overlay.style.background = 'rgba(0,0,0,.72)';
-  });
   document.addEventListener('keydown', _focusKeyHandler);
 }
 
 function exitFocusMode() {
   const overlay = document.getElementById('focus-overlay');
   if (!overlay) return;
-  overlay.style.background = 'rgba(0,0,0,0)';
-  setTimeout(() => {
-    overlay.style.display = 'none';
-    const w = document.getElementById('focus-timer-wrap');
-    if (w) w.innerHTML = '';
-  }, 350);
+  overlay.classList.remove('open');
   document.body.classList.remove('focus-mode');
   document.removeEventListener('keydown', _focusKeyHandler);
   clearInterval(_focusTickIv); _focusTickIv = null;
+  // Clear wrap content after transition
+  setTimeout(() => {
+    const wrap = document.getElementById('focus-timer-wrap');
+    if (wrap) wrap.innerHTML = '';
+  }, 400);
+  // Re-sync source widget
   if (_focusWid) {
     const w = widgets.find(x => x.id === _focusWid);
     if (w) fillWBody(w);

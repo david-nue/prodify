@@ -1721,16 +1721,19 @@ body.focus-mode #install-btn {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: rgba(0,0,0,0);
-  transition: background .4s ease;
-  align-items: center;
-  justify-content: center;
-}
-#focus-overlay.open {
-  display: flex;
   background: rgba(0,0,0,.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  animation: focusOverlayIn .3s ease;
+}
+#focus-overlay.open {
+  display: flex;
+}
+@keyframes focusOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Timer card inside overlay */
@@ -1779,8 +1782,7 @@ body.focus-mode #install-btn {
 #focus-exit-btn svg {
   opacity: .8;
 }
-body.focus-mode #focus-exit-btn,
-#focus-overlay.open ~ #focus-exit-btn {
+body.focus-mode #focus-exit-btn {
   display: flex;
 }
 
