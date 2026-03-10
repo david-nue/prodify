@@ -57,12 +57,10 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* Each mobile page */
 .mob-page{
-  display:flex;flex:1;flex-direction:column;overflow:hidden;
-  opacity:0;pointer-events:none;transform:translateY(10px);
-  transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1);
-  position:absolute;inset:0;
+  display:none;flex:1;flex-direction:column;overflow:hidden;
 }
-.mob-page.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.mob-page.active{display:flex;animation:mobPageIn .25s cubic-bezier(.16,1,.3,1);}
+@keyframes mobPageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .mob-page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;}
 
 /* Mobile top bar */

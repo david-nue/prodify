@@ -1270,27 +1270,7 @@ function initMobApp(){
   mobTimerRender();
   mobRenderJournal();
   const savedPg=LS.g('pd1_mobpg','home');
-  // Set initial page instantly (no transition flash)
-  _mobPage=savedPg||'home';
-  document.querySelectorAll('.mob-page').forEach(p=>{
-    p.style.transition='none';
-    p.classList.toggle('active',p.id==='mpg-'+_mobPage);
-  });
-  document.querySelectorAll('.mob-nav-btn').forEach(b=>{
-    b.classList.toggle('act',b.id==='mnb-'+_mobPage);
-  });
-  if(_mobPage!=='home'){
-    if(_mobPage==='tasks')mobRenderTasks();
-    else if(_mobPage==='journal')mobRenderJournal();
-    else if(_mobPage==='projects')mobRenderProjects();
-    else if(_mobPage==='calendar')mobRenderCalendar();
-    else if(_mobPage==='profile')mobRenderProfile();
-    else if(_mobPage==='settings')mobRenderSettings();
-  }
-  // Re-enable transitions after first paint
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    document.querySelectorAll('.mob-page').forEach(p=>p.style.transition='');
-  }));
+  if(savedPg&&savedPg!=='home')mobGoPage(savedPg);
 }
 
 // Stub out old functions so desktop code doesn't break
