@@ -1688,45 +1688,6 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   background:rgba(220,38,38,0.04)!important;
 }
 
-/* ── MOBILE DUE DATE BUTTON ── */
-.mob-due-picker{display:flex;flex-direction:column;gap:6px;}
-.mob-due-label{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.8px;text-transform:uppercase;}
-.mob-due-pick-btn{
-  display:flex;align-items:center;gap:10px;
-  background:var(--surf);border:1.5px solid var(--bdr);border-radius:12px;
-  padding:12px 14px;font-size:13px;font-weight:600;color:var(--ink3);
-  cursor:pointer;font-family:inherit;transition:all .18s;text-align:left;width:100%;
-}
-.mob-due-pick-btn .dp-cal-icon{
-  width:32px;height:32px;border-radius:8px;background:var(--surf2);border:1px solid var(--bdr);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;
-}
-.mob-due-pick-btn .dp-cal-icon svg{width:15px;height:15px;stroke:var(--ink3);fill:none;stroke-width:2;stroke-linecap:round;transition:stroke .18s;}
-.mob-due-pick-btn .dp-label{flex:1;transition:color .18s;}
-.mob-due-pick-btn .dp-chevron{width:16px;height:16px;stroke:var(--ink4);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;}
-.mob-due-pick-btn.active{border-color:var(--a2);background:var(--al);}
-.mob-due-pick-btn.active .dp-cal-icon{background:var(--a2);border-color:var(--a2);}
-.mob-due-pick-btn.active .dp-cal-icon svg{stroke:#fff;}
-.mob-due-pick-btn.active .dp-label{color:var(--a2);font-weight:700;}
-.mob-due-pick-btn:active{transform:scale(.99);}
-
-/* ── DESKTOP TASK WIDGET ADD ROW ── */
-.twadd{
-  display:flex;align-items:center;gap:6px;
-  padding:8px 10px;border-bottom:1px solid var(--bdr);
-  flex-shrink:0;background:var(--surf2);
-}
-.tw-due-btn{
-  display:flex;align-items:center;gap:5px;
-  background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;
-  font-size:11px;font-weight:600;color:var(--ink3);
-  padding:5px 9px;cursor:pointer;font-family:inherit;
-  transition:all .15s;white-space:nowrap;flex-shrink:0;
-}
-.tw-due-btn svg{width:11px;height:11px;stroke:var(--ink4);fill:none;stroke-width:2;stroke-linecap:round;transition:stroke .15s;}
-.tw-due-btn:hover{border-color:var(--a2);color:var(--a2);}
-.tw-due-btn:hover svg{stroke:var(--a2);}
-.tw-due-btn.active{border-color:var(--a2);color:var(--a2);background:var(--al);}
-.tw-due-btn.active svg{stroke:var(--a2);}
+/* due date picker buttons — inline styled */
 
 

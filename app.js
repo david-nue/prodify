@@ -992,10 +992,12 @@ function openDskDuePicker(wid){
   const inp=$('twd-'+wid);
   dpOpen(inp?.value||'',function(val){
     const btn=$('twdb-'+wid);
+    const lbl=$('twdb-lbl-'+wid);
     if(inp)inp.value=val||'';
+    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Due date';
     if(btn){
-      if(val){btn.textContent=calDisplay(new Date(val+'T00:00:00'));btn.classList.add('active');}
-      else{btn.textContent='+ Due date';btn.classList.remove('active');}
+      if(val){btn.style.borderColor='var(--a2)';btn.style.color='var(--a2)';btn.style.background='var(--al)';btn.classList.add('active');}
+      else{btn.style.borderColor='var(--bdr)';btn.style.color='var(--ink3)';btn.style.background='var(--surf)';btn.classList.remove('active');}
     }
   });
 }
@@ -1005,10 +1007,21 @@ function openMobDuePicker(){
   const inp=document.getElementById('mob-add-task-due');
   dpOpen(inp?.value||'',function(val){
     if(inp)inp.value=val||'';
-    const lbl=document.getElementById('mob-due-selected-lbl2');
-    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
-    const btn=document.querySelector('.mob-due-pick-btn');
-    if(btn)btn.classList.toggle('active',!!val);
+    const lbl=document.getElementById('mob-due-lbl');
+    const btn=document.getElementById('mob-due-pick-btn');
+    const icon=document.getElementById('mob-due-icon-wrap');
+    if(lbl){
+      lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
+      lbl.style.color=val?'var(--a2)':'var(--ink3)';
+      lbl.style.fontWeight=val?'700':'600';
+    }
+    if(btn){btn.style.borderColor=val?'var(--a2)':'var(--bdr)';btn.style.background=val?'var(--al)':'var(--surf2)';}
+    if(icon){
+      icon.style.background=val?'var(--a2)':'var(--surf)';
+      icon.style.borderColor=val?'var(--a2)':'var(--bdr)';
+      const svg=icon.querySelector('svg');
+      if(svg)svg.setAttribute('stroke',val?'#fff':'var(--ink3)');
+    }
   });
 }
 function mobSetDue(preset){
@@ -1026,7 +1039,15 @@ function mobSetDue(preset){
   const lbl=document.getElementById('mob-due-selected-lbl2');if(lbl)lbl.textContent=calDisplay(d);
   const btn=document.querySelector('.mob-due-pick-btn');if(btn)btn.classList.add('active');
 }
-function mobDueReset(){mobSetDue('none');}
+function mobDueReset(){
+  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
+  const lbl=document.getElementById('mob-due-lbl');
+  const btn=document.getElementById('mob-due-pick-btn');
+  const icon=document.getElementById('mob-due-icon-wrap');
+  if(lbl){lbl.textContent='Choose a date';lbl.style.color='var(--ink3)';lbl.style.fontWeight='600';}
+  if(btn){btn.style.borderColor='var(--bdr)';btn.style.background='var(--surf2)';}
+  if(icon){icon.style.background='var(--surf)';icon.style.borderColor='var(--bdr)';const svg=icon.querySelector('svg');if(svg)svg.setAttribute('stroke','var(--ink3)');}
+}
 
 
 
@@ -1038,6 +1059,7 @@ function openMobAddTask(){
 function closeMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
   if(modal)modal.classList.remove('open');
+  mobDueReset();
 }
 function mobSubmitTask(){
   const inp=document.getElementById('mob-add-task-input');
@@ -2465,10 +2487,13 @@ function startResize(e,id){
 function buildTaskW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   body.innerHTML=`
-    <div class="twadd">
+    <div style="display:flex;align-items:center;padding:8px 10px;gap:6px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--surf2);">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <button class="tw-due-btn" id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>Due date</button>
-      <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
+      <input type="date" id="twd-${w.id}" style="display:none;"/>
+      <button id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit;white-space:nowrap;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
+        <span id="twdb-lbl-${w.id}">Due date</span>
+      </button>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
