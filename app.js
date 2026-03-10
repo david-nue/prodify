@@ -3604,6 +3604,9 @@ function fcsOpen(wid) {
   _fcsOpenTime = Date.now();
   document.body.classList.add('in-focus');
   document.addEventListener('keydown', _fcsKey);
+  // Prevent clicks inside the modal from bubbling to the overlay
+  const mod = document.getElementById('fcs-mod');
+  if (mod) mod.addEventListener('click', e => e.stopPropagation());
 }
 
 function fcsClose() {
@@ -3623,7 +3626,8 @@ function fcsClose() {
 // click backdrop to close — guard against same click that opened it
 let _fcsOpenTime = 0;
 function fcsExit(e) {
-  if (Date.now() - _fcsOpenTime < 300) return; // ignore clicks within 300ms of opening
+  if (Date.now() - _fcsOpenTime < 300) return;
+  // only close if clicking the raw overlay backdrop, not anything inside it
   if (e.target === document.getElementById('fcs-ov')) fcsClose();
 }
 

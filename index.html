@@ -1039,7 +1039,7 @@ function fbRate(n) {
       <div id="fcs-body"></div>
     </div>
   </div>
-  <button id="fcs-exit-overlay" onclick="fcsClose()">
+  <button id="fcs-exit-overlay" onclick="event.stopPropagation();fcsClose()">
     <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
     Exit Focus
   </button>

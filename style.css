@@ -1729,10 +1729,10 @@ body.in-focus-mob #mob-pom-history-wrap{display:none!important;}
 
 /* mobile exit btn */
 #fcs-mob-exit{
-  display:none;position:fixed;top:18px;right:16px;z-index:99999;
+  display:none;position:fixed;bottom:24px;right:50%;transform:translateX(50%);z-index:99999;
   align-items:center;gap:6px;
   background:var(--surf);border:1.5px solid var(--bdr);border-radius:100px;
-  padding:8px 14px 8px 10px;font-size:12px;font-weight:700;
+  padding:10px 20px 10px 14px;font-size:13px;font-weight:700;
   color:var(--ink);cursor:pointer;
   font-family:'Plus Jakarta Sans',sans-serif;box-shadow:var(--sh2);
 }
