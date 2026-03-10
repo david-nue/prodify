@@ -2097,7 +2097,7 @@ function renderActivity(barId, streakId, legendId){
     squares+=`<div title="${tip}" style="width:14px;height:14px;border-radius:3px;background:${cellColor(count)};opacity:${cellOpacity(count)};flex-shrink:0;${isToday?'outline:2px solid var(--a2);outline-offset:1px;':''};cursor:default;"></div>`;
   }
 
-  let html=`<div style="display:flex;gap:3px;flex-wrap:nowrap;">${squares}</div>`;
+  let html=`<div style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;"><div style="display:flex;gap:3px;flex-wrap:nowrap;min-width:max-content;">${squares}</div></div>`;
   html+=`<div style="display:flex;justify-content:space-between;margin-top:6px;">
     <span style="font-size:10px;color:var(--ink4);">30 days ago</span>
     <span style="font-size:10px;color:var(--ink4);">Today</span>
@@ -2610,8 +2610,9 @@ function startResize(e,id){
   try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX/scale, startY=e.clientY/scale, startW=w.w, startH=w.h;
   const isTimer=w.type==='timer';
-  const minW=isTimer?260:200, maxW=99999;
-  const minH=isTimer?400:130, maxH=99999;
+  const isHabit=w.type==='habits';
+  const minW=isTimer?260:isHabit?340:200, maxW=99999;
+  const minH=isTimer?400:isHabit?380:130, maxH=99999;
   const mm=e=>{
     w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
     w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
