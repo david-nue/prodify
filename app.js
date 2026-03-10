@@ -1361,6 +1361,8 @@ async function doSI(){
       }
     }
 
+    const siPrefs=JSON.parse(dbUser.prefs||'{}');
+    if(dbUser.avatar_url) siPrefs.avatarUrl=dbUser.avatar_url;
     acc[u]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||'',
@@ -1370,7 +1372,7 @@ async function doSI(){
       calEvs:JSON.parse(dbUser.cal_evs||'[]'),
       widgets:JSON.parse(dbUser.widgets||'[]'),
       notes:JSON.parse(dbUser.notes||'{}'),
-      prefs:JSON.parse(dbUser.prefs||'{}'),
+      prefs:siPrefs,
       joined:new Date(dbUser.joined_at).getTime()||Date.now(),
     };
     LS.s('pd1_acc',acc);
