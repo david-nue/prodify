@@ -980,7 +980,6 @@ function _closeDuePicker(){
   const modal=document.getElementById('due-picker-modal');
   if(!modal) return;
   modal.classList.remove('dp-open');
-  setTimeout(()=>{ modal.style.display='none'; },300);
   _dpCallback=null; _dskCalWid=null;
 }
 function _openDuePicker(currentVal, onConfirm){
@@ -989,10 +988,10 @@ function _openDuePicker(currentVal, onConfirm){
   _dpCallback=onConfirm;
   const base=_dpSelected?new Date(_dpSelected+'T00:00:00'):calToday();
   _calViewYear=base.getFullYear();_calViewMonth=base.getMonth();
-  const modal=document.getElementById('due-picker-modal');
-  modal.style.display='flex';
-  requestAnimationFrame(()=>{ modal.classList.add('dp-open'); });
   _renderDueCal();
+  const modal=document.getElementById('due-picker-modal');
+  // Use rAF twice to ensure paint before transition
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ modal.classList.add('dp-open'); }));
 }
 function openDskDuePicker(wid){
   _dskCalWid=wid;
@@ -2492,22 +2491,7 @@ function buildTaskW(body,w){
   renderTaskCols(w.id);
 }
 
-function openDuePicker(wid){
-  const inp=$('twd-'+wid);if(!inp)return;
-  const today=new Date().toISOString().slice(0,10);
-  inp.min=today;
-  inp.showPicker?inp.showPicker():inp.click();
-}
-function onDueChange(wid){
-  const inp=$('twd-'+wid),btn=$('twdb-'+wid);if(!inp||!btn)return;
-  if(inp.value){
-    const d=new Date(inp.value+'T00:00:00');
-    btn.textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    btn.style.color='var(--a2)';btn.style.borderColor='var(--a2)';
-  } else {
-    btn.textContent='Due date';btn.style.color='';btn.style.borderColor='';
-  }
-}
+// openDuePicker + onDueChange handled above
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
