@@ -794,7 +794,10 @@ function mobRenderTasks(){
         const priBg=t.priority==='high'?'var(--rl)':t.priority==='medium'?'var(--aml)':'';
         const priColor=t.priority==='high'?'var(--red)':t.priority==='medium'?'var(--amb)':'';
         const due=taskDueInfo(t);
-        const dueTag=due?`<span class="task-due-tag${due.overdue?' overdue':due.today?' due-today':''}">${due.label}</span>`:'';
+        const dueColor=due?.overdue?'var(--red)':due?.today?'#9a6e00':'var(--ink3)';
+        const dueBg=due?.overdue?'var(--rl)':due?.today?'rgba(245,183,0,0.15)':'var(--surf2)';
+        const dueBorder=due?.overdue?'rgba(220,38,38,0.3)':due?.today?'rgba(245,183,0,0.4)':'var(--bdr)';
+        const dueTag=due?`<span class="mob-kcard-pri" style="background:${dueBg};color:${dueColor};border:1px solid ${dueBorder};">📅 ${due.label}</span>`:'';
         html+=`<div class="mob-kcard${due?.overdue?' tc-overdue':''}" draggable="true"
           ondragstart="mobKDragStart(event,${t.id})"
           ondragend="mobKDragEnd()"
@@ -2375,7 +2378,10 @@ function renderTaskCols(wid){
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
     el.innerHTML=cols[c].map(t=>{
       const due=taskDueInfo(t);
-      const dueTag=due?`<span class="task-due-tag${due.overdue?' overdue':due.today?' due-today':''}">${due.label}</span>`:'';
+      const dueColor=due?.overdue?'var(--red)':due?.today?'#9a6e00':'var(--ink3)';
+      const dueBg=due?.overdue?'var(--rl)':due?.today?'rgba(245,183,0,0.15)':'var(--surf2)';
+      const dueBorder=due?.overdue?'rgba(220,38,38,0.3)':due?.today?'rgba(245,183,0,0.4)':'var(--bdr)';
+      const dueTag=due?`<span class="tag tl" style="background:${dueBg};color:${dueColor};border:1px solid ${dueBorder};">📅 ${due.label}</span>`:'';
       return `<div class="tc${_selTask===t.id?' tc-selected':''}${due?.overdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
       <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
       <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
