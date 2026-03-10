@@ -580,18 +580,16 @@ function isMobile(){return window.innerWidth<=600;}
 
 function mobGoPage(page){
   if(!isMobile())return;
-  // deactivate current
+  if(page===_mobPage)return;
+  // fade out current
   const cur = document.getElementById('mpg-'+_mobPage);
   if(cur)cur.classList.remove('active');
   const curBtn = document.getElementById('mnb-'+_mobPage);
   if(curBtn)curBtn.classList.remove('act');
   _mobPage = page;
-  // activate new
-  const next = document.getElementById('mpg-'+page);
-  if(next)next.classList.add('active');
   const nextBtn = document.getElementById('mnb-'+page);
   if(nextBtn)nextBtn.classList.add('act');
-  // render page content
+  // render content first, then fade in after a frame
   if(page==='home')mobRenderHome();
   else if(page==='tasks')mobRenderTasks();
   else if(page==='journal')mobRenderJournal();
@@ -599,6 +597,10 @@ function mobGoPage(page){
   else if(page==='calendar')mobRenderCalendar();
   else if(page==='profile')mobRenderProfile();
   else if(page==='settings')mobRenderSettings();
+  requestAnimationFrame(()=>{
+    const next = document.getElementById('mpg-'+page);
+    if(next)next.classList.add('active');
+  });
   LS.s('pd1_mobpg',page);
 }
 
@@ -1268,7 +1270,27 @@ function initMobApp(){
   mobTimerRender();
   mobRenderJournal();
   const savedPg=LS.g('pd1_mobpg','home');
-  if(savedPg&&savedPg!=='home')mobGoPage(savedPg);
+  // Set initial page instantly (no transition flash)
+  _mobPage=savedPg||'home';
+  document.querySelectorAll('.mob-page').forEach(p=>{
+    p.style.transition='none';
+    p.classList.toggle('active',p.id==='mpg-'+_mobPage);
+  });
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>{
+    b.classList.toggle('act',b.id==='mnb-'+_mobPage);
+  });
+  if(_mobPage!=='home'){
+    if(_mobPage==='tasks')mobRenderTasks();
+    else if(_mobPage==='journal')mobRenderJournal();
+    else if(_mobPage==='projects')mobRenderProjects();
+    else if(_mobPage==='calendar')mobRenderCalendar();
+    else if(_mobPage==='profile')mobRenderProfile();
+    else if(_mobPage==='settings')mobRenderSettings();
+  }
+  // Re-enable transitions after first paint
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.querySelectorAll('.mob-page').forEach(p=>p.style.transition='');
+  }));
 }
 
 // Stub out old functions so desktop code doesn't break
