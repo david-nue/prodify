@@ -1420,3 +1420,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .sa-mb-pw-wrap .sa-mb-input{flex:1;min-width:0;padding-right:44px;box-sizing:border-box;}
 .sa-mb-eye{position:absolute;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background:none;border:none;cursor:pointer;opacity:0.4;padding:0;line-height:0;color:#fff;display:flex;align-items:center;}
 .sa-mb-eye:hover{opacity:0.8;}
+
+/* ── FEEDBACK ── */
+.fbtype-btn{padding:7px 14px;border-radius:100px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.fbtype-btn.fbtype-act{background:var(--a2);color:#fff;border-color:var(--a2);}
+.fb-star{transition:color .1s;color:var(--ink4);user-select:none;}
+.fb-star:hover{color:var(--a2);}

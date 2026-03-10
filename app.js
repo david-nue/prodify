@@ -1155,6 +1155,8 @@ function mobRenderProfile(){
   const d=acc[cu];if(!d)return;
   const nm=d.displayName||d.display_name||cu;
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  mobRenderProfileBio();
+  renderActivity('mob-actbar','mob-act-streak',null);
   // Render profile avatar — use photo if available
   const pbavInner=document.getElementById('mob-pbav-inner');
   if(pbavInner){
@@ -1718,6 +1720,126 @@ function launch(){
   startRealtime();
   startRealtimeSync(cu);
 }
+// ═══════════════════════════════════════
+// PROFILE — BIO + SOCIAL + ACTIVITY
+// ═══════════════════════════════════════
+function openBioModal(){
+  const p=prefs;
+  const bi=$('bio-i');if(bi)bi.value=p.bio||'';
+  ['github','web','twitter','linkedin'].forEach(k=>{
+    const el=$('social-'+k);if(el)el.value=p['social_'+k]||'';
+  });
+  openMo('mo-bio');
+}
+function saveBio(){
+  prefs.bio=$('bio-i')?.value.trim()||'';
+  ['github','web','twitter','linkedin'].forEach(k=>{
+    const val=$('social-'+k)?.value.trim()||'';
+    if(val)prefs['social_'+k]=val;
+    else delete prefs['social_'+k];
+  });
+  if(acc[cu])acc[cu].prefs=prefs;
+  persist();
+  renderProfileBio();
+  mobRenderProfileBio();
+  closeMo('mo-bio');
+}
+function renderProfileBio(){
+  const bioEl=$('prof-bio');
+  const socEl=$('prof-socials');
+  if(bioEl) bioEl.textContent=prefs.bio||'No bio yet — click Edit to add one.';
+  if(socEl) socEl.innerHTML=renderSocialLinks();
+}
+function mobRenderProfileBio(){
+  const bioEl=$('mob-prof-bio');
+  const socEl=$('mob-prof-socials');
+  if(bioEl) bioEl.textContent=prefs.bio||'No bio yet — tap Edit to add one.';
+  if(socEl) socEl.innerHTML=renderSocialLinks();
+}
+function renderSocialLinks(){
+  const links=[];
+  const map={github:'GitHub',web:'Website',twitter:'Twitter',linkedin:'LinkedIn'};
+  Object.entries(map).forEach(([k,label])=>{
+    const url=prefs['social_'+k];
+    if(url)links.push(`<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink);text-decoration:none;">${label}</a>`);
+  });
+  return links.join('');
+}
+
+// ── Enhanced Activity Bar ──
+function renderActivity(barId, streakId, legendId){
+  const barEl=$(barId); if(!barEl)return;
+  const today=new Date();
+  const jds=new Set(journal.map(j=>new Date(j.ts||j.id).toDateString()));
+  const tds=new Set(tasks.filter(t=>t.col==='done').map(t=>new Date(t.id).toDateString()));
+  let html='';
+  for(let i=29;i>=0;i--){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const ds=d.toDateString();
+    const hasJ=jds.has(ds),hasT=tds.has(ds),isToday=i===0;
+    const cls=['abd',hasJ||hasT?'has':'',isToday?'tod':''].filter(Boolean).join(' ');
+    const tip=d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(hasJ?' · journaled':'')+(hasT?' · tasks done':'');
+    html+=`<div class="${cls}" title="${tip}" style="${hasJ&&hasT?'background:var(--a);':''}" ></div>`;
+  }
+  barEl.innerHTML=html;
+  // Streak
+  if(streakId){
+    let streak=0;
+    for(let i=0;i<=29;i++){
+      const d=new Date(today);d.setDate(today.getDate()-i);
+      const ds=d.toDateString();
+      if(jds.has(ds)||tds.has(ds))streak++;
+      else break;
+    }
+    const streakEl=$(streakId);
+    if(streakEl) streakEl.textContent=streak>1?`🔥 ${streak}-day streak`:(streak===1?'🌱 Active today':'');
+  }
+  // Legend
+  if(legendId){
+    const legEl=$(legendId);
+    if(legEl)legEl.innerHTML='<span>30 days ago</span><span>Today</span>';
+  }
+}
+
+// ═══════════════════════════════════════
+// FEEDBACK
+// ═══════════════════════════════════════
+let _fbType='general', _fbStar=0;
+function setFbType(t){
+  _fbType=t;
+  // mobile
+  ['gen','bug','idea'].forEach(k=>{
+    const el=$('fb-type-'+k);if(el)el.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
+  });
+  // desktop
+  ['gen','bug','idea'].forEach(k=>{
+    const el=$('dsk-fb-type-'+k);if(el)el.classList.toggle('fbtype-act',('general'===t&&k==='gen')||t===k);
+  });
+}
+function setFbStar(n){
+  _fbStar=n;
+  ['fb-stars','dsk-fb-stars'].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.querySelectorAll('.fb-star').forEach((s,i)=>{s.textContent=i<n?'★':'☆';s.style.color=i<n?'var(--a2)':'var(--ink4)';});
+  });
+}
+async function submitFeedback(isDesktop=false){
+  const msgId=isDesktop?'dsk-fb-msg':'fb-msg';
+  const msg=$(msgId)?.value.trim();
+  if(!msg){alert('Please write a message before sending.');return;}
+  const body={type:_fbType,rating:_fbStar,message:msg,user:cu,ts:new Date().toISOString()};
+  // Send via mailto as fallback (replace with your email endpoint if available)
+  const subject=encodeURIComponent(`[Prodify Feedback] ${_fbType} from ${cu}`);
+  const emailBody=encodeURIComponent(`Type: ${_fbType}\nRating: ${_fbStar}/5\n\n${msg}`);
+  window.open(`mailto:david@prodify.cc?subject=${subject}&body=${emailBody}`,'_blank');
+  // Show success
+  const succId=isDesktop?'dsk-fb-success':'fb-success';
+  const succEl=$(succId);if(succEl){succEl.style.display='block';}
+  if($(msgId))$(msgId).value='';
+  _fbStar=0;setFbStar(0);
+  setTimeout(()=>{if(succEl)succEl.style.display='none';if(isDesktop)closeMo('mo-feedback');},2500);
+}
+
 // Boot: load local first, sync cloud silently after
 (async function boot(){
   const u=LS.g('pd1_cur',null);
@@ -2584,6 +2706,10 @@ function renderFullCal(){
 function renderProfile(){
   const d=acc[cu],nm=d.displayName||cu;
   const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
+  // Bio + social
+  renderProfileBio();
+  // Enhanced activity
+  renderActivity('actbar','act-streak','act-legend');
   const pbavEl=$('pbav');
   if(pbavEl){
     if(photo){
@@ -2598,11 +2724,7 @@ function renderProfile(){
   $('pp-tot').textContent=tot;$('pp-dn').textContent=dn;$('pp-rt').textContent=tot?Math.round(dn/tot*100)+'%':'—';
   const mc=Array(MLAB.length).fill(0);journal.forEach(j=>{if(mc[j.mood]!==undefined)mc[j.mood]++;});
   $('mhist').innerHTML=MLAB.map((m,i)=>mc[i]?`<div class="mhi">${m.e} ${m.l}<span class="mhicnt">${mc[i]}</span></div>`:'').join('')||'<span style="font-size:12px;color:var(--ink4)">No entries yet.</span>';
-  const today=new Date();
-  const jds=new Set(journal.map(j=>new Date(j.ts||j.id).toDateString()));
-  const tds=new Set(tasks.map(t=>new Date(t.id).toDateString()));
-  let bh='';for(let i=29;i>=0;i--){const d2=new Date(today);d2.setDate(today.getDate()-i);const ds=d2.toDateString();bh+=`<div class="abd${jds.has(ds)||tds.has(ds)?' has':''}${i===0?' tod':''}" title="${d2.toLocaleDateString()}"></div>`;}
-  $('actbar').innerHTML=bh;
+
   if(!subjects.length){$('spllist').innerHTML='<span style="font-size:12px;color:var(--ink4)">No projects yet.</span>';return;}
   $('spllist').innerHTML=subjects.map(s=>`<div class="splrow"><div class="spldot" style="background:${s.color}"></div><div class="splnm">${esc(s.name)}</div><div class="splg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
 }
