@@ -1698,36 +1698,9 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   cursor:pointer;transition:all .15s;font-family:inherit;
 }
 .mob-due-chip:active{transform:scale(.96);}
-.mob-due-chip.active{
-  background:var(--a2);border-color:var(--a2);color:#fff;
-}
-/* ── CUSTOM CALENDAR ── */
-.cal-wrap{background:var(--surf);border-radius:14px;padding:12px;border:1.5px solid var(--bdr);box-sizing:border-box;}
-.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.cal-month{font-size:12px;font-weight:700;color:var(--ink);}
-.cal-nav-btn{background:none;border:1.5px solid var(--bdr);border-radius:8px;width:28px;height:28px;cursor:pointer;color:var(--ink);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
-.cal-nav-btn:hover:not(:disabled){border-color:var(--a2);color:var(--a2);}
-.cal-nav-btn:disabled{opacity:.3;cursor:default;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;width:100%;}
-.cal-dh{font-size:9px;font-weight:700;color:var(--ink4);text-align:center;padding:4px 0;text-transform:uppercase;min-width:0;}
-.cal-day{font-size:11px;font-weight:600;color:var(--ink);text-align:center;padding:6px 2px;border-radius:8px;cursor:pointer;transition:all .13s;line-height:1;min-width:0;}
-.cal-day:hover:not(.cal-past){background:var(--al);color:var(--a2);}
-.cal-day.cal-today{background:var(--surf2);border:1.5px solid var(--a2);color:var(--a2);}
-.cal-day.cal-sel{background:var(--a2);color:#fff !important;border-radius:8px;}
-.cal-day.cal-past{color:var(--ink4);cursor:default;opacity:.4;}
+.mob-due-chip.active{background:var(--a2);border-color:var(--a2);color:#fff;}
 
-/* Desktop calendar dropdown — rendered as body portal via JS */
-.tw-due-dropdown{
-  width:252px;
-  box-shadow:var(--sh3);border-radius:14px;overflow:hidden;
-  background:var(--surf);
-}
-.tw-due-dropdown .cal-wrap{border-radius:0;border:none;width:100%;box-sizing:border-box;}
-
-/* Mobile calendar */
-#mob-cal-wrap .cal-wrap{border:none;border-top:1.5px solid var(--bdr);border-radius:0;padding:12px 0 4px;width:100%;box-sizing:border-box;}
-
-/* Due date button */
+/* Due date button (desktop task widget) */
 .tw-due-btn{
   background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;
   font-size:11px;font-weight:600;color:var(--ink3);padding:5px 10px;
@@ -1735,4 +1708,92 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .tw-due-btn.active{color:var(--a2);border-color:var(--a2);}
 .tw-due-btn:hover{border-color:var(--a2);color:var(--a2);}
-.twadd{position:relative;}
+.twadd{display:flex;gap:5px;padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;background:var(--surf2);}
+
+/* ── DUE DATE PICKER MODAL ── */
+#due-picker-modal{
+  display:none;position:fixed;inset:0;z-index:10000;
+  align-items:flex-end;justify-content:center;
+}
+#due-picker-modal.dp-open #due-picker-backdrop{opacity:1;}
+#due-picker-modal.dp-open #due-picker-sheet{transform:translateY(0);}
+#due-picker-backdrop{
+  position:absolute;inset:0;background:rgba(0,0,0,.45);
+  backdrop-filter:blur(2px);opacity:0;transition:opacity .3s;
+}
+#due-picker-sheet{
+  position:relative;z-index:1;
+  background:var(--surf);border-radius:24px 24px 0 0;
+  padding:0 0 max(24px,env(safe-area-inset-bottom));
+  width:100%;max-width:480px;
+  transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);
+  box-shadow:0 -8px 40px rgba(0,0,0,.18);
+}
+#due-picker-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--bdr);margin:12px auto 0;
+}
+#due-picker-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 10px;
+}
+#due-picker-title{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px;}
+#due-picker-clear{
+  background:none;border:none;font-size:12px;font-weight:700;
+  color:var(--ink3);cursor:pointer;font-family:inherit;padding:4px 0;
+  transition:color .15s;
+}
+#due-picker-clear:hover{color:var(--red);}
+#due-picker-chips{
+  display:flex;gap:6px;padding:0 20px 14px;flex-wrap:wrap;
+}
+.dpchip{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:7px 14px;font-size:12px;font-weight:600;color:var(--ink2);
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.dpchip:hover{border-color:var(--a2);color:var(--a2);}
+.dpchip.active{background:var(--a2);border-color:var(--a2);color:#fff;}
+#due-picker-cal{
+  margin:0 16px;background:var(--surf2);border-radius:16px;
+  border:1.5px solid var(--bdr);padding:14px;
+}
+#due-picker-nav{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+}
+#dpnav-month{font-size:13px;font-weight:700;color:var(--ink);}
+.dpnavbtn{
+  background:none;border:1.5px solid var(--bdr);border-radius:8px;
+  width:30px;height:30px;cursor:pointer;color:var(--ink);font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:inherit;transition:all .15s;line-height:1;
+}
+.dpnavbtn:hover:not(:disabled){border-color:var(--a2);color:var(--a2);}
+.dpnavbtn:disabled{opacity:.25;cursor:default;}
+#due-picker-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:3px;
+}
+.dp-dh{
+  font-size:9px;font-weight:700;color:var(--ink4);
+  text-align:center;padding:3px 0 6px;text-transform:uppercase;
+}
+.dp-day{
+  font-size:12px;font-weight:600;color:var(--ink);text-align:center;
+  padding:8px 2px;border-radius:8px;cursor:pointer;transition:all .13s;line-height:1;
+}
+.dp-day:hover:not(.dp-past){background:var(--al);color:var(--a2);}
+.dp-day.dp-today{
+  background:var(--surf);border:1.5px solid var(--a2);color:var(--a2);border-radius:8px;
+}
+.dp-day.dp-sel{
+  background:var(--a2);color:#fff;border-radius:8px;
+}
+.dp-day.dp-past{color:var(--ink4);cursor:default;opacity:.35;}
+#due-picker-confirm{
+  display:block;width:calc(100% - 32px);margin:14px 16px 0;
+  background:var(--a2);color:#fff;border:none;border-radius:14px;
+  padding:15px;font-size:14px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:opacity .15s,transform .1s;
+}
+#due-picker-confirm:active{opacity:.85;transform:scale(.99);}
+

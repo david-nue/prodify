@@ -889,136 +889,166 @@ async function mobDelTask(id){
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
 // ── CUSTOM DATE PICKER ──
+// ═══════════════════════════════════════
+// DUE DATE PICKER — unified modal for desktop + mobile
+// ═══════════════════════════════════════
 let _calViewYear=0, _calViewMonth=0, _dskCalWid=null;
 
 function calToday(){ const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
 function calFmt(d){ return d.toISOString().slice(0,10); }
 function calDisplay(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
-function buildCal(year,month,selectedVal,containerId,pickFn,navFn){
-  const container=document.getElementById(containerId);
-  if(!container)return;
-  const today=calToday();
-  const firstDay=new Date(year,month,1);
-  const lastDay=new Date(year,month+1,0);
-  const startDow=firstDay.getDay();
-  const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const prevOk=new Date(year,month,1)>new Date(today.getFullYear(),today.getMonth(),1);
-  let cells='';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{ cells+=`<div class="cal-dh">${d}</div>`; });
-  for(let i=0;i<startDow;i++) cells+=`<div class="cal-empty"></div>`;
-  for(let d=1;d<=lastDay.getDate();d++){
-    const date=new Date(year,month,d);
-    const val=calFmt(date);
-    const isPast=date<today;
-    const isSel=val===selectedVal;
-    const isToday=val===calFmt(today);
-    const cls=`cal-day${isSel?' cal-sel':''}${isToday&&!isSel?' cal-today':''}${isPast?' cal-past':''}`;
-    const click=!isPast?` onclick="${pickFn}('${val}')"`:'';
-    cells+=`<div class="${cls}"${click}>${d}</div>`;
-  }
-  container.innerHTML=`<div class="cal-wrap"><div class="cal-nav"><button class="cal-nav-btn"${!prevOk?' disabled':''} onclick="${navFn}('prev')">‹</button><span class="cal-month">${monthName}</span><button class="cal-nav-btn" onclick="${navFn}('next')">›</button></div><div class="cal-grid">${cells}</div></div>`;
+function _ensureDuePicker(){
+  if(document.getElementById('due-picker-modal')) return;
+  const el=document.createElement('div');
+  el.id='due-picker-modal';
+  el.innerHTML=`<div id="due-picker-backdrop"></div><div id="due-picker-sheet"><div id="due-picker-handle"></div><div id="due-picker-header"><span id="due-picker-title">Pick a date</span><button id="due-picker-clear" onclick="dueClear()">Clear</button></div><div id="due-picker-chips"><button class="dpchip" onclick="duePreset('today')">Today</button><button class="dpchip" onclick="duePreset('tomorrow')">Tomorrow</button><button class="dpchip" onclick="duePreset('week')">In a week</button></div><div id="due-picker-cal"><div id="due-picker-nav"><button class="dpnavbtn" id="dpnav-prev" onclick="dueCalNav('prev')">&#8249;</button><span id="dpnav-month"></span><button class="dpnavbtn" onclick="dueCalNav('next')">&#8250;</button></div><div id="due-picker-grid"></div></div><button id="due-picker-confirm" onclick="dueConfirm()">Confirm</button></div>`;
+  document.body.appendChild(el);
+  document.getElementById('due-picker-backdrop').addEventListener('click', dueCancel);
 }
 
-// ── MOBILE PICKER ──
-function mobDueReset(){
-  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
-  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
-  const lbl=document.getElementById('mob-due-selected-lbl');if(lbl)lbl.textContent='';
+function _renderDueCal(){
   const today=calToday();
-  _calViewYear=today.getFullYear();_calViewMonth=today.getMonth();
-  buildCal(_calViewYear,_calViewMonth,'','mob-cal-wrap','mobCalPick','mobCalNav');
+  const firstDay=new Date(_calViewYear,_calViewMonth,1);
+  const lastDay=new Date(_calViewYear,_calViewMonth+1,0);
+  const startDow=firstDay.getDay();
+  const monthName=firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const prevOk=new Date(_calViewYear,_calViewMonth,1)>new Date(today.getFullYear(),today.getMonth(),1);
+  document.getElementById('dpnav-month').textContent=monthName;
+  const prevBtn=document.getElementById('dpnav-prev');
+  if(prevBtn) prevBtn.disabled=!prevOk;
+  const sel=_dpSelected||'';
+  let html='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{ html+=`<div class="dp-dh">${d}</div>`; });
+  for(let i=0;i<startDow;i++) html+=`<div></div>`;
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(_calViewYear,_calViewMonth,d);
+    const val=calFmt(date);
+    const isPast=date<today;
+    const isSel=val===sel;
+    const isToday=val===calFmt(today);
+    let cls='dp-day';
+    if(isPast) cls+=' dp-past';
+    else if(isSel) cls+=' dp-sel';
+    else if(isToday) cls+=' dp-today';
+    html+=isPast?`<div class="${cls}">${d}</div>`:`<div class="${cls}" onclick="_dpPick('${val}')">${d}</div>`;
+  }
+  document.getElementById('due-picker-grid').innerHTML=html;
+  document.querySelectorAll('.dpchip').forEach(c=>c.classList.remove('active'));
+  if(sel){
+    const t=calFmt(calToday());
+    const tm=new Date(calToday()); tm.setDate(tm.getDate()+1); const tmf=calFmt(tm);
+    const wk=new Date(calToday()); wk.setDate(wk.getDate()+7); const wkf=calFmt(wk);
+    if(sel===t) document.querySelector('.dpchip[onclick*="today"]')?.classList.add('active');
+    else if(sel===tmf) document.querySelector('.dpchip[onclick*="tomorrow"]')?.classList.add('active');
+    else if(sel===wkf) document.querySelector('.dpchip[onclick*="week"]')?.classList.add('active');
+  }
+  const confirmBtn=document.getElementById('due-picker-confirm');
+  if(confirmBtn) confirmBtn.textContent=sel?'Confirm — '+calDisplay(new Date(sel+'T00:00:00')):'Confirm';
 }
-function mobSetDue(preset){
-  const inp=document.getElementById('mob-add-task-due');if(!inp)return;
-  if(preset==='none'){mobDueReset();return;}
+
+let _dpSelected='', _dpCallback=null;
+
+function _dpPick(val){
+  _dpSelected=val;
+  _renderDueCal();
+}
+function dueCalNav(dir){
+  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
+  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
+  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
+  _renderDueCal();
+}
+function duePreset(preset){
   const d=calToday();
   if(preset==='tomorrow')d.setDate(d.getDate()+1);
   else if(preset==='week')d.setDate(d.getDate()+7);
+  _dpSelected=calFmt(d);
+  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
+  _renderDueCal();
+}
+function dueClear(){
+  _dpSelected='';
+  _renderDueCal();
+}
+function dueConfirm(){
+  if(_dpCallback) _dpCallback(_dpSelected||null);
+  _closeDuePicker();
+}
+function dueCancel(){ _closeDuePicker(); }
+function _closeDuePicker(){
+  const modal=document.getElementById('due-picker-modal');
+  if(!modal) return;
+  modal.classList.remove('dp-open');
+  setTimeout(()=>{ modal.style.display='none'; },300);
+  _dpCallback=null; _dskCalWid=null;
+}
+function _openDuePicker(currentVal, onConfirm){
+  _ensureDuePicker();
+  _dpSelected=currentVal||'';
+  _dpCallback=onConfirm;
+  const base=_dpSelected?new Date(_dpSelected+'T00:00:00'):calToday();
+  _calViewYear=base.getFullYear();_calViewMonth=base.getMonth();
+  const modal=document.getElementById('due-picker-modal');
+  modal.style.display='flex';
+  requestAnimationFrame(()=>{ modal.classList.add('dp-open'); });
+  _renderDueCal();
+}
+function openDskDuePicker(wid){
+  _dskCalWid=wid;
+  const inp=$('twd-'+wid);
+  _openDuePicker(inp?.value||'', function(val){
+    const btn=$('twdb-'+wid);
+    if(inp) inp.value=val||'';
+    if(btn){
+      if(val){ btn.textContent=calDisplay(new Date(val+'T00:00:00')); btn.classList.add('active'); }
+      else { btn.textContent='+ Due date'; btn.classList.remove('active'); }
+    }
+  });
+}
+function openDuePicker(wid){ openDskDuePicker(wid); }
+function onDueChange(wid){}
+function openMobDuePicker(){
+  const inp=document.getElementById('mob-add-task-due');
+  _openDuePicker(inp?.value||'', function(val){
+    if(inp) inp.value=val||'';
+    const lbl=document.getElementById('mob-due-selected-lbl');
+    if(lbl) lbl.textContent=val?'· '+calDisplay(new Date(val+'T00:00:00')):'';
+    document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+    if(val){
+      const t=calFmt(calToday());
+      const tm=new Date(calToday()); tm.setDate(tm.getDate()+1);
+      const wk=new Date(calToday()); wk.setDate(wk.getDate()+7);
+      if(val===t) document.querySelector('.mob-due-chip[onclick*="today"]')?.classList.add('active');
+      else if(val===calFmt(tm)) document.querySelector('.mob-due-chip[onclick*="tomorrow"]')?.classList.add('active');
+      else if(val===calFmt(wk)) document.querySelector('.mob-due-chip[onclick*="week"]')?.classList.add('active');
+    }
+  });
+}
+function mobSetDue(preset){
+  const d=calToday();
+  if(preset==='none'){
+    const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value='';
+    const lbl=document.getElementById('mob-due-selected-lbl'); if(lbl)lbl.textContent='';
+    document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+    return;
+  }
+  if(preset==='tomorrow')d.setDate(d.getDate()+1);
+  else if(preset==='week')d.setDate(d.getDate()+7);
   const val=calFmt(d);
-  inp.value=val;
+  const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value=val;
+  const lbl=document.getElementById('mob-due-selected-lbl');
+  if(lbl)lbl.textContent='· '+calDisplay(d);
   document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
   const labels={today:'Today',tomorrow:'Tomorrow',week:'This week'};
-  document.querySelectorAll('.mob-due-chip').forEach(c=>{if(c.textContent===labels[preset])c.classList.add('active');});
-  const lbl=document.getElementById('mob-due-selected-lbl');
-  if(lbl)lbl.textContent='\u00b7 '+calDisplay(d);
-  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
-  buildCal(_calViewYear,_calViewMonth,val,'mob-cal-wrap','mobCalPick','mobCalNav');
+  document.querySelectorAll('.mob-due-chip').forEach(c=>{ if(c.textContent===labels[preset])c.classList.add('active'); });
 }
-function mobCalNav(dir){
-  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
-  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
-  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
-  const inp=document.getElementById('mob-add-task-due');
-  buildCal(_calViewYear,_calViewMonth,inp?.value||'','mob-cal-wrap','mobCalPick','mobCalNav');
-}
-function mobCalPick(val){
-  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value=val;
+function mobDueReset(){
+  const inp=document.getElementById('mob-add-task-due'); if(inp)inp.value='';
+  const lbl=document.getElementById('mob-due-selected-lbl'); if(lbl)lbl.textContent='';
   document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
-  const d=new Date(val+'T00:00:00');
-  const lbl=document.getElementById('mob-due-selected-lbl');
-  if(lbl)lbl.textContent='\u00b7 '+calDisplay(d);
-  buildCal(_calViewYear,_calViewMonth,val,'mob-cal-wrap','mobCalPick','mobCalNav');
 }
 
-// ── DESKTOP PICKER ──
-function openDskDuePicker(wid){
-  // Portal-based dropdown: lives on <body> to escape overflow:hidden on .widget
-  const btn=document.getElementById('twdb-'+wid);
-  let dp=document.getElementById('due-portal');
-  if(!dp){
-    dp=document.createElement('div');
-    dp.id='due-portal';
-    dp.className='tw-due-dropdown';
-    dp.style.cssText='display:none;position:fixed;z-index:9999;';
-    document.body.appendChild(dp);
-  }
-  // Close if already open for this widget
-  if(dp.dataset.wid===wid&&dp.style.display==='block'){dp.style.display='none';_dskCalWid=null;return;}
-  // Close any other open pickers
-  dp.style.display='none';
-  _dskCalWid=wid;
-  dp.dataset.wid=wid;
-  const inp=$('twd-'+wid);
-  const d=inp?.value?new Date(inp.value+'T00:00:00'):calToday();
-  _calViewYear=d.getFullYear();_calViewMonth=d.getMonth();
-  buildCal(_calViewYear,_calViewMonth,inp?.value||'','due-portal','dskCalPick','dskCalNav');
-  // Position below the button using fixed coords
-  if(btn){
-    const r=btn.getBoundingClientRect();
-    dp.style.top=(r.bottom+4)+'px';
-    dp.style.left=r.left+'px';
-  }
-  dp.style.display='block';
-}
-function dskCalNav(dir){
-  if(!_dskCalWid)return;
-  if(dir==='prev')_calViewMonth--;else _calViewMonth++;
-  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
-  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
-  const inp=$('twd-'+_dskCalWid);
-  buildCal(_calViewYear,_calViewMonth,inp?.value||'','due-portal','dskCalPick','dskCalNav');
-}
-function dskCalPick(val){
-  if(!_dskCalWid)return;
-  const inp=$('twd-'+_dskCalWid),btn=$('twdb-'+_dskCalWid);
-  if(inp)inp.value=val;
-  const d=new Date(val+'T00:00:00');
-  if(btn){btn.textContent=calDisplay(d);btn.classList.add('active');}
-  const dp=document.getElementById('due-portal');
-  if(dp){dp.style.display='none';}
-  _dskCalWid=null;
-}
-function onDueChange(wid){}
-function openDuePicker(wid){ openDskDuePicker(wid); }
-
-document.addEventListener('click',function(e){
-  if(_dskCalWid&&!e.target.closest('#due-portal')&&!e.target.closest('.tw-due-btn')){
-    const dp=document.getElementById('due-portal');
-    if(dp)dp.style.display='none';
-    _dskCalWid=null;
-  }
-});
 
 function openMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
