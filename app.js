@@ -1846,6 +1846,7 @@ function renderActivity(barId, streakId, legendId){
 // ═══════════════════════════════════════
 let _fbType='general', _fbStar=0;
 function initFbStars(){
+  _fbStar=0;
   ['fb-stars','dsk-fb-stars'].forEach(id=>{
     const el=$(id);if(!el)return;
     el.querySelectorAll('.fb-star').forEach(s=>s.classList.remove('filled'));
