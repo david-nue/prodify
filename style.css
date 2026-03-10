@@ -1665,3 +1665,24 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 }
 .mob-fb-submit:active { opacity: .85; transform: scale(.98); }
 .mob-fb-submit svg { width: 15px; height: 15px; }
+
+/* ── DUE DATES ── */
+.task-due-tag{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;
+  background:var(--surf3,#e8f5ee);color:var(--ink3);border:1px solid var(--bdr);
+  white-space:nowrap;
+}
+.task-due-tag.due-today{
+  background:rgba(245,183,0,0.15);color:#9a6e00;border-color:rgba(245,183,0,0.4);
+}
+.task-due-tag.overdue{
+  background:var(--rl);color:var(--red);border-color:rgba(220,38,38,0.3);
+}
+.tc-overdue{
+  border-color:rgba(220,38,38,0.35)!important;
+  background:rgba(220,38,38,0.04)!important;
+}
+.mob-kcard.tc-overdue{
+  border-color:rgba(220,38,38,0.35)!important;
+  background:rgba(220,38,38,0.04)!important;
+}

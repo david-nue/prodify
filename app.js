@@ -793,7 +793,9 @@ function mobRenderTasks(){
       colTasks.forEach(t=>{
         const priBg=t.priority==='high'?'var(--rl)':t.priority==='medium'?'var(--aml)':'';
         const priColor=t.priority==='high'?'var(--red)':t.priority==='medium'?'var(--amb)':'';
-        html+=`<div class="mob-kcard" draggable="true"
+        const due=taskDueInfo(t);
+        const dueTag=due?`<span class="task-due-tag${due.overdue?' overdue':due.today?' due-today':''}">${due.label}</span>`:'';
+        html+=`<div class="mob-kcard${due?.overdue?' tc-overdue':''}" draggable="true"
           ondragstart="mobKDragStart(event,${t.id})"
           ondragend="mobKDragEnd()"
           ontouchstart="mobKTouchStart(event,${t.id})"
@@ -803,6 +805,7 @@ function mobRenderTasks(){
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
             <div class="mob-kcard-meta">
               ${t.priority&&t.priority!=='low'?`<span class="mob-kcard-pri" style="background:${priBg};color:${priColor}">${t.priority==='high'?'High':'Med'}</span>`:''}
+              ${dueTag}
               <span class="mob-kcard-date">${t.date||''}</span>
             </div>
           </div>
@@ -900,9 +903,11 @@ function mobSubmitTask(){
   const t=inp?.value.trim();if(!t)return;
   const pri=document.getElementById('mob-add-task-pri')?.value||'medium';
   const col=document.getElementById('mob-add-task-col')?.value||'todo';
-  tasks.unshift({id:Date.now(),text:t,priority:pri,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  const due=document.getElementById('mob-add-task-due')?.value||'';
+  tasks.unshift({id:Date.now(),text:t,priority:pri,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
   persist();
   if(inp)inp.value='';
+  const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
   closeMobAddTask();
   mobRenderTasks();mobRenderHome();
   updateFixedStats();updateAllStatsW();renderAllTaskW();
@@ -2325,6 +2330,7 @@ function buildTaskW(body,w){
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
       <select class="twsel" id="twp-${w.id}"><option value="low">Low</option><option value="medium" selected>Med</option><option value="high">High</option></select>
       <select class="twsel" id="twc-${w.id}"><option value="todo">To Do</option><option value="inprog">In Progress</option><option value="done">Done</option></select>
+      <input type="date" class="twsel" id="twd-${w.id}" title="Due date" style="color:var(--ink);cursor:pointer;" />
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
@@ -2337,9 +2343,18 @@ function buildTaskW(body,w){
 
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
-  tasks.unshift({id:Date.now(),text:t,priority:$('twp-'+wid).value,col:$('twc-'+wid).value,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
-  persist();renderAllTaskW();inp.value='';inp.focus();
+  const due=$('twd-'+wid)?.value||'';
+  tasks.unshift({id:Date.now(),text:t,priority:$('twp-'+wid).value,col:$('twc-'+wid).value,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  persist();renderAllTaskW();inp.value='';if($('twd-'+wid))$('twd-'+wid).value='';inp.focus();
   updateAllStatsW();updateFixedStats();
+}
+function taskDueInfo(t){
+  if(!t.dueDate||t.col==='done')return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const due=new Date(t.dueDate+'T00:00:00');
+  const diff=Math.round((due-today)/(1000*60*60*24));
+  const label=diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return {label,overdue:diff<0,today:diff===0};
 }
 function selTask(e,id){
   e.stopPropagation();
@@ -2358,11 +2373,15 @@ function renderTaskCols(wid){
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
-    el.innerHTML=cols[c].map(t=>`<div class="tc${_selTask===t.id?' tc-selected':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
+    el.innerHTML=cols[c].map(t=>{
+      const due=taskDueInfo(t);
+      const dueTag=due?`<span class="task-due-tag${due.overdue?' overdue':due.today?' due-today':''}">${due.label}</span>`:'';
+      return `<div class="tc${_selTask===t.id?' tc-selected':''}${due?.overdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
       <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
       <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
-      <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span><span class="tcd">${t.date}</span></div>
-    </div>`).join('');
+      <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span>${dueTag}<span class="tcd">${t.date}</span></div>
+    </div>`;
+    }).join('');
   });
 }
 function dstart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=$('tc-'+id);if(el)el.classList.add('dragging');},0);}
