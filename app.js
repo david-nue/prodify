@@ -467,7 +467,7 @@ initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let _jwSearch={},_mobJSearch='';
 const HABIT_MAX_FREE=3;
-const HABIT_EMOJIS=['✅','✔️','❌','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🌿'];
+const HABIT_EMOJIS=['✔️','❌','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🌿'];
 let prefs={dark:false};
 
 // ── POMODORO HISTORY ──
