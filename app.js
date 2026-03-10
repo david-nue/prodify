@@ -682,6 +682,10 @@ function mobGoPage(page){
   else if(page==='timer')pomRenderHistory();
   else if(page==='habits'){renderHabits('mob-habit-page-list');renderHabitAddForm('mob-habit-page-form');}
   else if(page==='feedback'){_fbType='general';_fbStar=0;setFbType('general');setTimeout(initFbStars,50);}
+  else if(page==='aiplanner'){if(!isPro()){showUpgradeModal('AI Daily Planner');return;}renderAIPlanner('mob-aip-body',true);}
+  // AI Planner FAB visibility
+  const _aipFab=document.getElementById('mob-aip-fab');
+  if(_aipFab)_aipFab.style.display=(page==='home'||page==='tasks')?'flex':'none';
   requestAnimationFrame(()=>{
     const next = document.getElementById('mpg-'+page);
     if(next)next.classList.add('active');
@@ -3841,15 +3845,6 @@ function formatPlan(text) {
     .replace(/\n/g, '<br>')
     .replace(/^/, '<div class="aip-block">')
     .replace(/$/, '</div>');
-}
-
-// Hook mobile FAB visibility
-const _origMobGoPage = mobGoPage;
-function mobGoPage(page) {
-  _origMobGoPage(page);
-  const fab = document.getElementById('mob-aip-fab');
-  if (fab) fab.style.display = (page === 'home' || page === 'tasks') ? 'flex' : 'none';
-  if (page === 'aiplanner') renderAIPlanner('mob-aip-body', true);
 }
 
 // ═══════════════════════════════════════
