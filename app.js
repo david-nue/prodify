@@ -2462,12 +2462,12 @@ function buildHabitW(body,w){
   const wid=w.id;
   const emojiWrap=document.createElement('div');
   emojiWrap.id='wemoji-'+wid;
-  emojiWrap.style.cssText='display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;';
+  emojiWrap.style.cssText='display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-bottom:6px;';
   HABIT_EMOJIS.forEach(e=>{
     const btn=document.createElement('button');
     btn.dataset.emoji=e;
     btn.textContent=e;
-    btn.style.cssText='width:24px;height:24px;border-radius:6px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:12px;transition:all .13s;';
+    btn.style.cssText='aspect-ratio:1;width:100%;border-radius:6px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:clamp(10px,1.8vw,14px);transition:all .13s;';
     btn.onclick=function(){habitWSelectEmoji(this,wid);};
     emojiWrap.appendChild(btn);
   });
@@ -3580,4 +3580,3 @@ function habitSubmit(containerId){
   habitAdd(inp?.value||'', emoji);
   renderHabitAddForm(containerId);
 }
-
