@@ -993,7 +993,7 @@ function mobTimerToggle(){
         _mobTimerSessions=(_mobTimerSessions+1)%5;
         _mobTimerSec=0;
         _mobTimerAlarmActive=true;
-        pomRecordSession();
+        if(_mobTimerMode===0) pomRecordSession();
         playAlarm();
       }
       mobTimerRender();
@@ -2169,14 +2169,18 @@ async function removeW(id){
   if(!await appConfirm('Remove this widget?','Your data is still saved — you can add it back anytime.','Remove'))return;
   widgets=widgets.filter(w=>w.id!==id);
   const el=$(id);if(el)el.remove();
-  // stop timer if running
-  if(TMS[id]){clearInterval(TMS[id].iv);delete TMS[id];}
+  // stop timer and alarm if running
+  if(TMS[id]){
+    clearInterval(TMS[id].iv);
+    if(TMS[id].alarmActive) stopAlarm();
+    delete TMS[id];
+  }
   persist();
 }
 
 function clearCanvas(){
   if(!confirm('Remove all widgets from the canvas? Your data is still saved.'))return;
-  widgets.forEach(w=>{if(TMS[w.id]){clearInterval(TMS[w.id].iv);delete TMS[w.id];}});
+  widgets.forEach(w=>{if(TMS[w.id]){clearInterval(TMS[w.id].iv);if(TMS[w.id].alarmActive)stopAlarm();delete TMS[w.id];}});
   widgets=[];persist();$('canvas').innerHTML='';
 }
 
@@ -2600,7 +2604,7 @@ function tickTimer(wid){
   if(ts.sec<=0){
     clearInterval(ts.iv);ts.running=false;ts.sessions=(ts.sessions+1)%5;
     ts.alarmActive=true;
-    pomRecordSession();
+    if(ts.mode===0) pomRecordSession();
     playAlarm();
     const btn=$('tmbtn-'+wid);
     if(btn){btn.textContent='Stop';btn.classList.add('stop');}
