@@ -1687,3 +1687,22 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   border-color:rgba(220,38,38,0.35)!important;
   background:rgba(220,38,38,0.04)!important;
 }
+
+/* ── CUSTOM DUE DATE PICKER ── */
+.mob-due-picker{display:flex;flex-direction:column;gap:8px;}
+.mob-due-label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;}
+.mob-due-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.mob-due-chip{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
+  padding:7px 14px;font-size:12px;font-weight:600;color:var(--ink2);
+  cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.mob-due-chip:active{transform:scale(.96);}
+.mob-due-chip.active{
+  background:var(--a2);border-color:var(--a2);color:#fff;
+}
+.tw-due-btn{
+  background:var(--surf2);border:1.5px solid var(--bdr) !important;
+  border-radius:10px;font-size:12px;font-weight:600;color:var(--ink3);
+  padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s;
+}

@@ -721,7 +721,7 @@ function mobRenderHome(){
     }
   }
   // pending tasks (show up to 5 non-done)
-  const pending = sortByPriority(tasks.filter(t=>t.col!=='done')).slice(0,5);
+  const pending = sortByDue(tasks.filter(t=>t.col!=='done')).slice(0,5);
   const taskEl = document.getElementById('mob-home-tasks');
   const taskHd = document.getElementById('mob-tasks-hd-lbl');
   const pendingCount = tasks.filter(t=>t.col!=='done').length;
@@ -778,7 +778,7 @@ function mobRenderTasks(){
   ];
   let html='';
   cols.forEach(({key,label,color})=>{
-    const colTasks=sortByPriority(tasks.filter(t=>t.col===key));
+    const colTasks=sortByDue(tasks.filter(t=>t.col===key));
     html+=`<div class="mob-kcol">
       <div class="mob-kcol-hd" style="color:${color}">
         <span>${label}</span><span class="mob-kcol-cnt">${colTasks.length}</span>
@@ -791,14 +791,10 @@ function mobRenderTasks(){
       html+=`<div class="mob-kcol-empty">Empty</div>`;
     } else {
       colTasks.forEach(t=>{
-        const priBg=t.priority==='high'?'var(--rl)':t.priority==='medium'?'var(--aml)':'';
-        const priColor=t.priority==='high'?'var(--red)':t.priority==='medium'?'var(--amb)':'';
         const due=taskDueInfo(t);
-        const dueColor=due?.overdue?'var(--red)':due?.today?'#9a6e00':'var(--ink3)';
-        const dueBg=due?.overdue?'var(--rl)':due?.today?'rgba(245,183,0,0.15)':'var(--surf2)';
-        const dueBorder=due?.overdue?'rgba(220,38,38,0.3)':due?.today?'rgba(245,183,0,0.4)':'var(--bdr)';
-        const dueTag=due?`<span class="mob-kcard-pri" style="background:${dueBg};color:${dueColor};border:1px solid ${dueBorder};">📅 ${due.label}</span>`:'';
-        html+=`<div class="mob-kcard${due?.overdue?' tc-overdue':''}" draggable="true"
+        const dueTag=due?`<span class="mob-kcard-pri" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
+        const isOverdue=due?.label==='Overdue';
+        html+=`<div class="mob-kcard${isOverdue?' tc-overdue':''}" draggable="true"
           ondragstart="mobKDragStart(event,${t.id})"
           ondragend="mobKDragEnd()"
           ontouchstart="mobKTouchStart(event,${t.id})"
@@ -807,7 +803,6 @@ function mobRenderTasks(){
           <div class="mob-kcard-body">
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
             <div class="mob-kcard-meta">
-              ${t.priority&&t.priority!=='low'?`<span class="mob-kcard-pri" style="background:${priBg};color:${priColor}">${t.priority==='high'?'High':'Med'}</span>`:''}
               ${dueTag}
               <span class="mob-kcard-date">${t.date||''}</span>
             </div>
@@ -893,9 +888,42 @@ async function mobDelTask(id){
   tasks=tasks.filter(t=>t.id!==id);
   persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
 }
+function mobDueReset(){
+  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
+}
+function mobSetDue(preset){
+  const inp=document.getElementById('mob-add-task-due');if(!inp)return;
+  const d=new Date();
+  if(preset==='today'){}
+  else if(preset==='tomorrow')d.setDate(d.getDate()+1);
+  else if(preset==='week')d.setDate(d.getDate()+7);
+  inp.value=d.toISOString().slice(0,10);
+  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+  const labels={today:'Today',tomorrow:'Tomorrow',week:'This week'};
+  document.querySelectorAll('.mob-due-chip').forEach(c=>{if(c.textContent===labels[preset])c.classList.add('active');});
+}
+function mobPickDue(){
+  const inp=document.getElementById('mob-add-task-due');if(!inp)return;
+  const today=new Date().toISOString().slice(0,10);
+  inp.min=today;
+  inp.showPicker?inp.showPicker():inp.click();
+}
+function mobOnDuePick(){
+  document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
+  const inp=document.getElementById('mob-add-task-due');
+  const pickBtn=document.querySelector('.mob-due-chip-pick');
+  if(inp?.value&&pickBtn){
+    const d=new Date(inp.value+'T00:00:00');
+    pickBtn.textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    pickBtn.classList.add('active');
+  } else if(pickBtn){pickBtn.textContent='Pick date';}
+}
 function openMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
   if(modal){modal.classList.add('open');setTimeout(()=>document.getElementById('mob-add-task-input')?.focus(),100);}
+  mobDueReset();
+  const pickBtn=document.querySelector('.mob-due-chip-pick');if(pickBtn)pickBtn.textContent='Pick date';
 }
 function closeMobAddTask(){
   const modal=document.getElementById('mob-add-modal');
@@ -904,10 +932,9 @@ function closeMobAddTask(){
 function mobSubmitTask(){
   const inp=document.getElementById('mob-add-task-input');
   const t=inp?.value.trim();if(!t)return;
-  const pri=document.getElementById('mob-add-task-pri')?.value||'medium';
   const col=document.getElementById('mob-add-task-col')?.value||'todo';
   const due=document.getElementById('mob-add-task-due')?.value||'';
-  tasks.unshift({id:Date.now(),text:t,priority:pri,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  tasks.unshift({id:Date.now(),text:t,col,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
   persist();
   if(inp)inp.value='';
   const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
@@ -2331,9 +2358,9 @@ function buildTaskW(body,w){
   body.innerHTML=`
     <div class="twadd">
       <input class="twi" id="twi-${w.id}" type="text" placeholder="New task — Enter to add" onkeydown="if(event.key==='Enter')addTask('${w.id}')"/>
-      <select class="twsel" id="twp-${w.id}"><option value="low">Low</option><option value="medium" selected>Med</option><option value="high">High</option></select>
       <select class="twsel" id="twc-${w.id}"><option value="todo">To Do</option><option value="inprog">In Progress</option><option value="done">Done</option></select>
-      <input type="date" class="twsel" id="twd-${w.id}" title="Due date" style="color:var(--ink);cursor:pointer;" />
+      <button class="twsel tw-due-btn" id="twdb-${w.id}" onclick="openDuePicker('${w.id}')" style="cursor:pointer;white-space:nowrap;">Due date</button>
+      <input type="date" id="twd-${w.id}" style="display:none;" onchange="onDueChange('${w.id}')"/>
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
@@ -2344,20 +2371,56 @@ function buildTaskW(body,w){
   renderTaskCols(w.id);
 }
 
+function openDuePicker(wid){
+  const inp=$('twd-'+wid);if(!inp)return;
+  const today=new Date().toISOString().slice(0,10);
+  inp.min=today;
+  inp.showPicker?inp.showPicker():inp.click();
+}
+function onDueChange(wid){
+  const inp=$('twd-'+wid),btn=$('twdb-'+wid);if(!inp||!btn)return;
+  if(inp.value){
+    const d=new Date(inp.value+'T00:00:00');
+    btn.textContent=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    btn.style.color='var(--a2)';btn.style.borderColor='var(--a2)';
+  } else {
+    btn.textContent='Due date';btn.style.color='';btn.style.borderColor='';
+  }
+}
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
-  tasks.unshift({id:Date.now(),text:t,priority:$('twp-'+wid).value,col:$('twc-'+wid).value,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
-  persist();renderAllTaskW();inp.value='';if($('twd-'+wid))$('twd-'+wid).value='';inp.focus();
+  tasks.unshift({id:Date.now(),text:t,col:$('twc-'+wid).value,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due});
+  persist();renderAllTaskW();inp.value='';
+  if($('twd-'+wid))$('twd-'+wid).value='';
+  onDueChange(wid);
+  inp.focus();
   updateAllStatsW();updateFixedStats();
 }
 function taskDueInfo(t){
-  if(!t.dueDate||t.col==='done')return null;
+  if(!t.dueDate)return null;
   const today=new Date(); today.setHours(0,0,0,0);
   const due=new Date(t.dueDate+'T00:00:00');
   const diff=Math.round((due-today)/(1000*60*60*24));
-  const label=diff===0?'Today':diff===1?'Tomorrow':diff===-1?'Yesterday':due.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  return {label,overdue:diff<0,today:diff===0};
+  const done=t.col==='done';
+  // overdue: only if not done and past due
+  if(diff<0&&!done){
+    return{label:'Overdue',color:'var(--red)',bg:'var(--rl)',border:'rgba(220,38,38,0.3)',priority:0};
+  }
+  if(done)return null; // done tasks show nothing
+  if(diff===0) return{label:'Today',    color:'var(--red)',bg:'var(--rl)',border:'rgba(220,38,38,0.3)',priority:1};
+  if(diff===1) return{label:'Tomorrow', color:'var(--red)',bg:'var(--rl)',border:'rgba(220,38,38,0.3)',priority:2};
+  if(diff<=7)  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'#8a6500',bg:'rgba(245,183,0,0.15)',border:'rgba(245,183,0,0.45)',priority:3};
+  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'var(--a2)',bg:'rgba(58,125,94,0.12)',border:'rgba(58,125,94,0.3)',priority:4};
+}
+function sortByDue(arr){
+  return arr.slice().sort((a,b)=>{
+    const da=taskDueInfo(a), db=taskDueInfo(b);
+    const pa=da?da.priority:5, pb=db?db.priority:5;
+    if(pa!==pb)return pa-pb;
+    if(a.dueDate&&b.dueDate)return a.dueDate.localeCompare(b.dueDate);
+    return 0;
+  });
 }
 function selTask(e,id){
   e.stopPropagation();
@@ -2366,26 +2429,24 @@ function selTask(e,id){
 }
 async function delTask(id){if(!await appConfirm('Delete this task?','This cannot be undone.'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
-function sortByPriority(arr){return arr.slice().sort((a,b)=>(PRIORITY_ORDER[a.priority]??3)-(PRIORITY_ORDER[b.priority]??3));}
+function sortByDueLegacy(arr){return sortByDue(arr);} // alias
 function renderTaskCols(wid){
   if(!$('col-todo-'+wid))return;
   const cols={todo:[],inprog:[],done:[]};
   tasks.forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
-  Object.keys(cols).forEach(k=>{cols[k]=sortByPriority(cols[k]);});
+  Object.keys(cols).forEach(k=>{cols[k]=sortByDue(cols[k]);});
   ['todo','inprog','done'].forEach(c=>{
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
     if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
     el.innerHTML=cols[c].map(t=>{
       const due=taskDueInfo(t);
-      const dueColor=due?.overdue?'var(--red)':due?.today?'#9a6e00':'var(--ink3)';
-      const dueBg=due?.overdue?'var(--rl)':due?.today?'rgba(245,183,0,0.15)':'var(--surf2)';
-      const dueBorder=due?.overdue?'rgba(220,38,38,0.3)':due?.today?'rgba(245,183,0,0.4)':'var(--bdr)';
-      const dueTag=due?`<span class="tag tl" style="background:${dueBg};color:${dueColor};border:1px solid ${dueBorder};">📅 ${due.label}</span>`:'';
-      return `<div class="tc${_selTask===t.id?' tc-selected':''}${due?.overdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
+      const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
+      const isOverdue=due?.label==='Overdue';
+      return `<div class="tc${_selTask===t.id?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
       <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
       <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
-      <div class="tcf"><span class="tag ${t.priority==='high'?'th':t.priority==='medium'?'tm':'tl'}">${t.priority}</span>${dueTag}<span class="tcd">${t.date}</span></div>
+      <div class="tcf">${dueTag}<span class="tcd">${t.date}</span></div>
     </div>`;
     }).join('');
   });
