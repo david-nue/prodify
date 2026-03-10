@@ -337,6 +337,7 @@
           <button class="wb" onclick="addW('note')" data-tip="Note"><svg viewBox="0 0 14 14"><path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M12 11H9v2"/></svg><span class="wbtip">Note</span></button>
           <button class="wb" onclick="addW('subjects')" data-tip="Projects"><svg viewBox="0 0 14 14"><path d="M2 4h10M2 7h7M2 10h8"/></svg><span class="wbtip">Projects</span></button>
           <button class="wb" onclick="addW('calendar')" data-tip="Calendar"><svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="11" rx="1.5"/><path d="M1 6h12M5 1v2M9 1v2"/></svg><span class="wbtip">Calendar</span></button>
+          <button class="wb" onclick="addW('habits')" data-tip="Habits"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5"/><path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6"/></svg><span class="wbtip">Habits</span></button>
           <div class="wtdiv"></div>
           <button class="wb wt-clr" onclick="clearCanvas()" data-tip="Clear all"><svg viewBox="0 0 14 14"><path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4"/></svg><span class="wbtip">Clear canvas</span></button>
         </div>
@@ -411,12 +412,6 @@
               <div id="actbar" style="margin-top:8px;"></div>
             </div>
             <div class="profcard"><div class="pct">Project Progress</div><div class="spl" id="spllist"></div></div>
-          </div>
-          <!-- HABITS -->
-          <div class="profcard" style="margin-top:14px;">
-            <div class="pct" style="margin-bottom:12px;">Daily Habits <span style="font-size:10px;color:var(--ink4);font-weight:500;margin-left:6px;">resets at midnight</span></div>
-            <div id="habit-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-            <div id="habit-add-form"></div>
           </div>
         </div>
       </div>
@@ -701,12 +696,8 @@
         <div class="pct">Project Progress</div>
         <div class="spl" id="mob-spllist"></div>
       </div>
-      <!-- HABITS -->
-      <div class="profcard" style="border-radius:14px;margin-bottom:10px;">
-        <div class="pct" style="margin-bottom:12px;">Daily Habits <span style="font-size:10px;color:var(--ink4);font-weight:500;margin-left:6px;">resets at midnight</span></div>
-        <div id="mob-habit-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
-        <div id="mob-habit-add-form"></div>
-      </div>
+    </div>
+  </div>
     </div>
   </div>
 

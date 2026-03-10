@@ -1467,8 +1467,6 @@ function mobRenderProfile(){
       </div>`).join('');
   }
 
-  renderHabits('mob-habit-list');
-  renderHabitAddForm('mob-habit-add-form');
 }
 
 // ── AVATAR DROPDOWN ──
@@ -3193,8 +3191,6 @@ function renderProfile(){
 
   if(!subjects.length){$('spllist').innerHTML='<span style="font-size:12px;color:var(--ink4)">No projects yet.</span>';}
   else $('spllist').innerHTML=subjects.map(s=>`<div class="splrow"><div class="spldot" style="background:${s.color}"></div><div class="splnm">${esc(s.name)}</div><div class="splg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
-  renderHabits('habit-list');
-  renderHabitAddForm('habit-add-form');
 }
 
 // ═══════════════════════════════════════
@@ -3396,7 +3392,6 @@ function habitToggle(id){
   }
   habitSave();
   renderHabits('habit-list');
-  renderHabits('mob-habit-list');
   renderHabits('mob-habit-page-list');
   widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
 }
