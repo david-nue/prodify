@@ -59,7 +59,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .mob-page{
   display:none;flex:1;flex-direction:column;overflow:hidden;
 }
-.mob-page.active{display:flex;animation:mobPageIn .25s cubic-bezier(.16,1,.3,1);}
+.mob-page.active{display:flex;flex-direction:column;animation:mobPageIn .25s cubic-bezier(.16,1,.3,1);}
 @keyframes mobPageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .mob-page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px;}
 
