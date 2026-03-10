@@ -803,9 +803,11 @@ function mobRenderTasks(){
           <div class="mob-kcard-body">
             <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
             ${dueTag?`<div class="mob-kcard-meta" style="margin-top:4px;">${dueTag}</div>`:''}
-            ${t.date?`<div class="mob-kcard-date" style="margin-top:3px;">${t.date}</div>`:''}
           </div>
-          <button class="mob-kcard-del" style="flex-shrink:0;margin-top:-2px;" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:4px;">
+            <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
+            ${t.date?`<span class="mob-kcard-date">${t.date}</span>`:''}
+          </div>
         </div>`;
       });
     }
