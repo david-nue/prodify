@@ -495,6 +495,12 @@ function pomGetWeekData(){
   }
   return days;
 }
+function clearPomHistory(){
+  if(!confirm('Clear all pomodoro session history?'))return;
+  prefs.pomHistory={};
+  if(cu){acc[cu].prefs=prefs;LS.s('pd1_acc',acc);if(sbReady)dbSaveUser(cu,acc[cu]);}
+  pomRenderHistory();
+}
 function pomRenderHistory(){
   ['mob-pom-history','dsk-pom-history'].forEach(id=>{
     const el=document.getElementById(id);
