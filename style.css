@@ -1479,6 +1479,64 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 
 
+
+/* ── AI DAILY PLANNER ── */
+.aip-intro{text-align:center;padding:32px 0 24px;}
+.aip-intro-icon{font-size:40px;margin-bottom:12px;}
+.aip-intro-title{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:6px;}
+.aip-intro-sub{font-size:13px;color:var(--ink3);line-height:1.6;max-width:420px;margin:0 auto;}
+
+.aip-section{margin-bottom:16px;}
+.aip-label{font-size:11px;font-weight:700;color:var(--ink4);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;}
+.aip-textarea{
+  width:100%;box-sizing:border-box;
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;
+  padding:12px 14px;font-size:13px;font-family:inherit;color:var(--ink);
+  resize:vertical;outline:none;line-height:1.6;transition:border-color .15s;
+}
+.aip-textarea:focus{border-color:var(--a2);}
+
+.aip-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:linear-gradient(135deg,#1B4332,#3A7D5E);color:#fff;
+  border:none;border-radius:14px;padding:15px;
+  font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;
+  transition:opacity .15s;margin-bottom:20px;
+}
+.aip-btn:hover{opacity:.9;}
+.aip-btn:disabled{opacity:.6;cursor:not-allowed;}
+
+.aip-result{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:16px;
+  padding:20px;margin-top:4px;
+}
+.aip-loading{display:flex;align-items:center;gap:10px;color:var(--ink3);font-size:14px;padding:8px 0;}
+.aip-error{color:#c0392b;font-size:13px;line-height:1.6;padding:8px 0;}
+
+/* plan output */
+.aip-plan-title{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--bdr);}
+.aip-block{margin-bottom:12px;padding:12px 14px;background:var(--surf);border-radius:12px;border:1px solid var(--bdr);font-size:13px;line-height:1.7;color:var(--ink2);}
+.aip-time-block{font-size:12px;font-weight:800;color:var(--a2);letter-spacing:.2px;display:inline-block;margin-bottom:2px;}
+.aip-tip{font-size:12px;color:var(--ink3);margin-top:4px;padding-left:10px;border-left:2px solid var(--a2);font-style:italic;}
+.aip-note-label{font-weight:800;color:var(--ink);}
+
+.aip-regen-btn{
+  display:flex;align-items:center;gap:6px;margin-top:14px;
+  background:none;border:1.5px solid var(--bdr);border-radius:100px;
+  padding:7px 14px;font-size:12px;font-weight:700;color:var(--ink3);
+  font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.aip-regen-btn:hover{border-color:var(--a2);color:var(--a2);}
+
+/* spinner */
+.aip-spinner{
+  width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;
+  display:inline-block;animation:aip-spin .7s linear infinite;flex-shrink:0;
+}
+.aip-loading .aip-spinner{border-color:rgba(58,125,94,.2);border-top-color:var(--a2);}
+@keyframes aip-spin{to{transform:rotate(360deg);}}
+
 /* ── PRO SYSTEM ── */
 .pro-badge{
   display:inline-flex;align-items:center;gap:4px;

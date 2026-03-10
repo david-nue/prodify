@@ -601,6 +601,7 @@ function goPg(id,btn){
   if(id==='calendar')renderFullCal();
   if(id==='settings')renderSettings();
   if(id==='subjects')renderSubFull();
+  if(id==='aiplanner'){if(!isPro()){showUpgradeModal('AI Daily Planner');return;}renderAIPlanner('aip-body',false);}
   LS.s('pd1_pg',id);
 }
 
@@ -3661,6 +3662,142 @@ function scheduleRecurringCheck() {
 }
 
 
+
+
+// ═══════════════════════════════════════
+// SESSION 10 — AI DAILY PLANNER
+// ═══════════════════════════════════════
+
+function openAIPlanner() {
+  if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
+  goPg('aiplanner', null);
+  renderAIPlanner('aip-body', false);
+}
+
+function renderAIPlanner(containerId, isMobile) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  // Gather today's tasks (todo + inprog)
+  const pending = tasks.filter(t => t.col !== 'done');
+  const taskList = pending.map(t => {
+    let line = `• ${t.text}`;
+    if (t.dueDate) line += ` (due ${t.dueDate})`;
+    if (t.recurring && t.recurring !== 'none') line += ` [${t.recurring}]`;
+    return line;
+  }).join('\n') || '(no tasks yet)';
+
+  el.innerHTML = `
+    <div class="aip-intro">
+      <div class="aip-intro-icon">🤖</div>
+      <div class="aip-intro-title">Your AI Daily Planner</div>
+      <div class="aip-intro-sub">Tell me about your day and I'll build you a focused, time-blocked plan.</div>
+    </div>
+
+    <div class="aip-section">
+      <div class="aip-label">Your tasks today</div>
+      <textarea class="aip-textarea" id="${containerId}-tasks" rows="5" placeholder="Edit or add tasks...">${taskList}</textarea>
+    </div>
+
+    <div class="aip-section">
+      <div class="aip-label">Context <span style="font-size:10px;color:var(--ink4);font-weight:500;">(optional)</span></div>
+      <textarea class="aip-textarea" id="${containerId}-ctx" rows="2" placeholder="e.g. I have 6 hours, meetings at 2pm, feeling low energy..."></textarea>
+    </div>
+
+    <button class="aip-btn" id="${containerId}-genbtn" onclick="generatePlan('${containerId}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Generate My Plan
+    </button>
+
+    <div class="aip-result" id="${containerId}-result" style="display:none;"></div>
+  `;
+}
+
+async function generatePlan(containerId) {
+  if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
+
+  const tasksVal = document.getElementById(containerId + '-tasks')?.value?.trim() || '';
+  const ctxVal = document.getElementById(containerId + '-ctx')?.value?.trim() || '';
+  const btn = document.getElementById(containerId + '-genbtn');
+  const result = document.getElementById(containerId + '-result');
+
+  if (!result) return;
+
+  // Loading state
+  btn.disabled = true;
+  btn.innerHTML = `<span class="aip-spinner"></span> Generating…`;
+  result.style.display = 'block';
+  result.innerHTML = `<div class="aip-loading"><span class="aip-spinner"></span> Building your plan…</div>`;
+
+  const prompt = `You are a productivity coach. Create a practical, time-blocked daily schedule.
+
+TASKS:
+${tasksVal}
+${ctxVal ? '\nCONTEXT:\n' + ctxVal : ''}
+
+Respond ONLY with a clean daily plan using this exact format — no preamble, no markdown fences:
+
+## Your Plan for Today
+
+For each time block use this format:
+**HH:MM – HH:MM** Task name
+> One sentence tip or note
+
+End with a short motivational note (1-2 sentences, label it **Note:**).
+
+Keep it realistic. Group related tasks. Include short breaks. Be specific with times starting from a reasonable morning hour.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+
+    if (!text) throw new Error('Empty response');
+
+    result.innerHTML = `<div class="aip-plan">${formatPlan(text)}</div>
+      <button class="aip-regen-btn" onclick="generatePlan('${containerId}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/></svg>
+        Regenerate
+      </button>`;
+  } catch (err) {
+    result.innerHTML = `<div class="aip-error">⚠️ Something went wrong. Check your connection and try again.<br><small style="opacity:.6;">${err.message}</small></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate My Plan`;
+  }
+}
+
+function formatPlan(text) {
+  // Convert markdown-like format to styled HTML
+  return text
+    .replace(/^## (.+)$/gm, '<div class="aip-plan-title">$1</div>')
+    .replace(/\*\*(\d{1,2}:\d{2}[\s–\-]+\d{1,2}:\d{2})\*\*/g, '<span class="aip-time-block">$1</span>')
+    .replace(/\*\*Note:\*\*/g, '<span class="aip-note-label">Note:</span>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^> (.+)$/gm, '<div class="aip-tip">$1</div>')
+    .replace(/\n\n/g, '</div><div class="aip-block">')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<div class="aip-block">')
+    .replace(/$/, '</div>');
+}
+
+// Hook mobile FAB visibility
+const _origMobGoPage = mobGoPage;
+function mobGoPage(page) {
+  _origMobGoPage(page);
+  const fab = document.getElementById('mob-aip-fab');
+  if (fab) fab.style.display = (page === 'home' || page === 'tasks') ? 'flex' : 'none';
+  if (page === 'aiplanner') renderAIPlanner('mob-aip-body', true);
+}
 
 // ═══════════════════════════════════════
 // SESSION 9 — PRO SYSTEM
