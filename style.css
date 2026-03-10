@@ -1013,7 +1013,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 .wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;container-type:inline-size;}
 
 /* \\u2500\\u2500 TASK WIDGET \\u2500\\u2500 */
-.twadd{padding:8px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;gap:5px;background:var(--surf2);}
+
 .twi{flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r6);padding:6px 9px;font-size:12px;color:var(--ink);outline:none;}
 .twi:focus{border-color:var(--a2);}
 .twi::placeholder{color:var(--ink4);}
@@ -1691,14 +1691,17 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 /* ── CUSTOM DUE DATE PICKER ── */
 .mob-due-picker{display:flex;flex-direction:column;gap:8px;}
 .mob-due-label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;}
-.mob-due-chips{display:flex;gap:6px;flex-wrap:wrap;}
-.mob-due-chip{
-  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
-  padding:7px 14px;font-size:12px;font-weight:600;color:var(--ink2);
-  cursor:pointer;transition:all .15s;font-family:inherit;
+.mob-due-pick-btn{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;
+  padding:11px 14px;font-size:13px;font-weight:600;color:var(--ink3);
+  cursor:pointer;font-family:inherit;transition:all .15s;text-align:left;width:100%;
 }
-.mob-due-chip:active{transform:scale(.96);}
-.mob-due-chip.active{background:var(--a2);border-color:var(--a2);color:#fff;}
+.mob-due-pick-btn svg{stroke:var(--ink4);flex-shrink:0;transition:stroke .15s;}
+.mob-due-pick-btn.active{border-color:var(--a2);color:var(--a2);}
+.mob-due-pick-btn.active svg{stroke:var(--a2);}
+.mob-due-pick-btn:active{transform:scale(.99);}
+
 
 /* Due date button (desktop task widget) */
 .tw-due-btn{
@@ -1715,6 +1718,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   display:none;position:fixed;inset:0;z-index:10000;
   align-items:flex-end;justify-content:center;
 }
+#due-picker-modal.dp-open{display:flex;}
 #due-picker-modal.dp-open #due-picker-backdrop{opacity:1;}
 #due-picker-modal.dp-open #due-picker-sheet{transform:translateY(0);}
 #due-picker-backdrop{
@@ -1744,16 +1748,7 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   transition:color .15s;
 }
 #due-picker-clear:hover{color:var(--red);}
-#due-picker-chips{
-  display:flex;gap:6px;padding:0 20px 14px;flex-wrap:wrap;
-}
-.dpchip{
-  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;
-  padding:7px 14px;font-size:12px;font-weight:600;color:var(--ink2);
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.dpchip:hover{border-color:var(--a2);color:var(--a2);}
-.dpchip.active{background:var(--a2);border-color:var(--a2);color:#fff;}
+#due-picker-chips{display:none;}
 #due-picker-cal{
   margin:0 16px;background:var(--surf2);border-radius:16px;
   border:1.5px solid var(--bdr);padding:14px;

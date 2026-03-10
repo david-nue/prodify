@@ -902,7 +902,7 @@ function _ensureDuePicker(){
   if(document.getElementById('due-picker-modal')) return;
   const el=document.createElement('div');
   el.id='due-picker-modal';
-  el.innerHTML=`<div id="due-picker-backdrop"></div><div id="due-picker-sheet"><div id="due-picker-handle"></div><div id="due-picker-header"><span id="due-picker-title">Pick a date</span><button id="due-picker-clear" onclick="dueClear()">Clear</button></div><div id="due-picker-chips"><button class="dpchip" onclick="duePreset('today')">Today</button><button class="dpchip" onclick="duePreset('tomorrow')">Tomorrow</button><button class="dpchip" onclick="duePreset('week')">In a week</button></div><div id="due-picker-cal"><div id="due-picker-nav"><button class="dpnavbtn" id="dpnav-prev" onclick="dueCalNav('prev')">&#8249;</button><span id="dpnav-month"></span><button class="dpnavbtn" onclick="dueCalNav('next')">&#8250;</button></div><div id="due-picker-grid"></div></div><button id="due-picker-confirm" onclick="dueConfirm()">Confirm</button></div>`;
+  el.innerHTML=`<div id="due-picker-backdrop"></div><div id="due-picker-sheet"><div id="due-picker-handle"></div><div id="due-picker-header"><span id="due-picker-title">Pick a date</span><button id="due-picker-clear" onclick="dueClear()">Clear</button></div><div id="due-picker-cal"><div id="due-picker-nav"><button class="dpnavbtn" id="dpnav-prev" onclick="dueCalNav('prev')">&#8249;</button><span id="dpnav-month"></span><button class="dpnavbtn" onclick="dueCalNav('next')">&#8250;</button></div><div id="due-picker-grid"></div></div><button id="due-picker-confirm" onclick="dueConfirm()">Confirm</button></div>`;
   document.body.appendChild(el);
   document.getElementById('due-picker-backdrop').addEventListener('click', dueCancel);
 }
@@ -1012,17 +1012,10 @@ function openMobDuePicker(){
   const inp=document.getElementById('mob-add-task-due');
   _openDuePicker(inp?.value||'', function(val){
     if(inp) inp.value=val||'';
-    const lbl=document.getElementById('mob-due-selected-lbl');
-    if(lbl) lbl.textContent=val?'· '+calDisplay(new Date(val+'T00:00:00')):'';
-    document.querySelectorAll('.mob-due-chip').forEach(c=>c.classList.remove('active'));
-    if(val){
-      const t=calFmt(calToday());
-      const tm=new Date(calToday()); tm.setDate(tm.getDate()+1);
-      const wk=new Date(calToday()); wk.setDate(wk.getDate()+7);
-      if(val===t) document.querySelector('.mob-due-chip[onclick*="today"]')?.classList.add('active');
-      else if(val===calFmt(tm)) document.querySelector('.mob-due-chip[onclick*="tomorrow"]')?.classList.add('active');
-      else if(val===calFmt(wk)) document.querySelector('.mob-due-chip[onclick*="week"]')?.classList.add('active');
-    }
+    const lbl2=document.getElementById('mob-due-selected-lbl2');
+    if(lbl2) lbl2.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
+    const btn=document.querySelector('.mob-due-pick-btn');
+    if(btn) btn.classList.toggle('active',!!val);
   });
 }
 function mobSetDue(preset){

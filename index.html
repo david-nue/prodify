@@ -830,13 +830,10 @@
       <input class="mob-add-input" id="mob-add-task-input" placeholder="What needs to be done?" />
       <div class="mob-due-picker">
         <div class="mob-due-label">Due date <span id="mob-due-selected-lbl" style="color:var(--a2);font-weight:700;"></span></div>
-        <div class="mob-due-chips">
-          <button class="mob-due-chip" onclick="mobSetDue('today')">Today</button>
-          <button class="mob-due-chip" onclick="mobSetDue('tomorrow')">Tomorrow</button>
-          <button class="mob-due-chip" onclick="mobSetDue('week')">This week</button>
-          <button class="mob-due-chip" onclick="mobSetDue('none')">None</button>
-          <button class="mob-due-chip" onclick="openMobDuePicker()">📅 Pick date</button>
-        </div>
+        <button class="mob-due-pick-btn" onclick="openMobDuePicker()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
+          <span id="mob-due-selected-lbl2">Choose a date</span>
+        </button>
         <input type="date" id="mob-add-task-due" style="display:none;" />
       </div>
       <button class="mob-add-submit" onclick="mobSubmitTask()">Add Task</button>
