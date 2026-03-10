@@ -963,17 +963,18 @@ create policy "public" on users for all using (true);</pre>
 
 <!-- DESKTOP FEEDBACK MODAL -->
 <div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')">
-  <div class="mod fb-mod">
-    <div class="fb-mod-header">
-      <div class="fb-mod-title">Send Feedback</div>
-      <div class="fb-mod-sub">We read every message.</div>
-      <button class="fb-mod-close" onclick="closeMo('mo-feedback')">✕</button>
+  <div class="mod" style="max-width:420px;">
+
+    <!-- Header -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.3px;">Send Feedback</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">We read every message.</div>
     </div>
 
     <!-- Stars -->
-    <div class="fb-stars-block">
-      <div class="fb-stars-label">How's Prodify treating you?</div>
-      <div class="fb-stars-row" id="dsk-fb-stars">
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--ink3);">How's Prodify treating you?</div>
+      <div id="dsk-fb-stars" style="display:flex;gap:3px;">
         <span class="fb-star" onclick="setFbStar(1)">★</span>
         <span class="fb-star" onclick="setFbStar(2)">★</span>
         <span class="fb-star" onclick="setFbStar(3)">★</span>
@@ -983,24 +984,23 @@ create policy "public" on users for all using (true);</pre>
     </div>
 
     <!-- Type chips -->
-    <div class="fb-type-row">
+    <div style="display:flex;gap:7px;margin-bottom:12px;">
       <button id="dsk-fb-type-gen" onclick="setFbType('general')" class="fb-chip fb-chip-act">General</button>
       <button id="dsk-fb-type-bug" onclick="setFbType('bug')" class="fb-chip">Bug Report</button>
       <button id="dsk-fb-type-idea" onclick="setFbType('idea')" class="fb-chip">Idea</button>
     </div>
 
     <!-- Message -->
-    <div class="fb-field">
-      <textarea class="fb-textarea" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind…"></textarea>
-    </div>
+    <textarea class="fb-textarea" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind…" style="margin-bottom:14px;"></textarea>
 
     <!-- Actions -->
-    <div class="fb-actions">
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
       <button class="fb-cancel" onclick="closeMo('mo-feedback')">Cancel</button>
       <button class="fb-submit" onclick="submitFeedback(true)">Send →</button>
     </div>
 
     <div id="dsk-fb-success" class="fb-success-msg" style="display:none;">✓ Thanks for your feedback!</div>
+
   </div>
 </div>
 
