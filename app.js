@@ -2531,6 +2531,14 @@ function fillWBody(w){
 
 
 /* ── HABIT TRACKER ── */
+function habitWSelectEmoji(btn, wid){
+  const wrap=document.getElementById('wemoji-'+wid);
+  if(!wrap)return;
+  wrap.querySelectorAll('button').forEach(b=>{b.style.background='var(--surf)';b.style.borderColor='var(--bdr)';});
+  btn.style.background='var(--al)';btn.style.borderColor='var(--a2)';
+  wrap._sel=btn.dataset.emoji;
+}
+
 function buildHabitW(body,w){
   body.style.cssText='display:flex;flex-direction:column;height:100%;overflow:hidden;';
   const wid=w.id;
