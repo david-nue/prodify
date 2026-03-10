@@ -1433,8 +1433,8 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
 
 /* Stars (shared between desktop modal + mobile page) */
 .fb-star {
-  font-size: 30px;
-  color: var(--bdr);
+  font-size: 32px;
+  color: rgba(255,255,255,.25);
   cursor: pointer;
   user-select: none;
   transition: color .15s, transform .15s;
@@ -1442,8 +1442,13 @@ button,input,select,textarea{font-family:'Plus Jakarta Sans',sans-serif;}
   display: inline-block;
 }
 .fb-star:hover,
-.fb-star.filled { color: #F0A500; }
-.fb-star:hover  { transform: scale(1.18); }
+.fb-star.filled { color: #F5B800; }
+.fb-star:hover  { transform: scale(1.2); }
+/* desktop stars — darker bg so use different unselected color */
+#dsk-fb-stars .fb-star { color: var(--bdr); }
+#dsk-fb-stars .fb-star:hover,
+#dsk-fb-stars .fb-star.filled { color: #F5B800; }
+.fb-star-lg { font-size: 40px; }
 
 /* Type chips (shared) */
 .fb-chip {
