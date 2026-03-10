@@ -1848,7 +1848,7 @@ let _fbType='general', _fbStar=0;
 function initFbStars(){
   ['fb-stars','dsk-fb-stars'].forEach(id=>{
     const el=$(id);if(!el)return;
-    el.querySelectorAll('.fb-star').forEach(s=>{s.textContent='☆';s.style.color='var(--ink3)';});
+    el.querySelectorAll('.fb-star').forEach(s=>s.classList.remove('filled'));
   });
 }
 function setFbType(t){
@@ -1866,7 +1866,7 @@ function setFbStar(n){
   _fbStar=n;
   ['fb-stars','dsk-fb-stars'].forEach(id=>{
     const el=$(id);if(!el)return;
-    el.querySelectorAll('.fb-star').forEach((s,i)=>{s.textContent=i<n?'★':'☆';s.style.color=i<n?'var(--a2)':'var(--ink3)';});
+    el.querySelectorAll('.fb-star').forEach((s,i)=>s.classList.toggle('filled',i<n));
   });
 }
 async function submitFeedback(isDesktop=false){
