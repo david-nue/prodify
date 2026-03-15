@@ -12,31 +12,23 @@
       ]
     },
     {
-      "source": "/sitemap.xml",
+      "source": "/sw.js",
       "headers": [
-        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
-        { "key": "Cache-Control", "value": "public, max-age=86400" }
+        { "key": "Cache-Control", "value": "no-cache" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     },
     {
-      "source": "/robots.txt",
-      "headers": [
-        { "key": "Content-Type", "value": "text/plain; charset=utf-8" }
-      ]
+      "source": "/style.css",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/app.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ],
-  "routes": [
-    { "src": "/api/ai", "dest": "/api/ai.js" },
-    { "src": "/sw.js", "headers": { "Cache-Control": "no-cache", "Service-Worker-Allowed": "/" }, "dest": "/sw.js" },
-    { "src": "/style.css", "headers": { "Cache-Control": "no-cache" }, "dest": "/style.css" },
-    { "src": "/app.js", "headers": { "Cache-Control": "no-cache" }, "dest": "/app.js" },
-    { "src": "/sitemap.xml", "dest": "/sitemap.xml" },
-    { "src": "/robots.txt", "dest": "/robots.txt" },
-    { "src": "/manifest.json", "dest": "/manifest.json" },
-    { "src": "/icons/(.*)", "dest": "/icons/$1" },
-    { "src": "/(.*\\.png)", "dest": "/$1" },
-    { "src": "/(.*\\.ico)", "dest": "/$1" },
-    { "src": "/", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }, "dest": "/index.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/api/ai", "destination": "/api/ai.js" },
+    { "source": "/((?!sitemap\\.xml|robots\\.txt|manifest\\.json|sw\\.js|style\\.css|app\\.js|icons/|.*\\.png|.*\\.ico).*)", "destination": "/index.html" }
   ]
 }
