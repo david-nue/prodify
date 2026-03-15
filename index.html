@@ -1755,8 +1755,7 @@
         </a>
         <div class="login-note">
           Free forever · No credit card needed<br/>
-          iPhone: Share → Add to Home Screen<br/>
-          <a href="#" onclick="window._mobileDismissed=true;document.getElementById('mobile-only-screen').style.display='none';document.body.style.overflow='';return false;">Use desktop version instead</a>
+          iPhone: Share → Add to Home Screen
         </div>
       </div>
       <div class="login-features">
@@ -1792,7 +1791,6 @@
   <script>
     (function () {
       function checkMobile() {
-        if (window._mobileDismissed) return;
         if (window.innerWidth <= 768) {
           document.getElementById('mobile-only-screen').style.display = 'block';
           document.body.style.overflow = 'hidden';
