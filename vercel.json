@@ -19,6 +19,7 @@
     { "src": "/app.js", "headers": { "Cache-Control": "no-cache" }, "dest": "/app.js" },
     { "src": "/manifest.json", "dest": "/manifest.json" },
     { "src": "/icons/(.*)", "dest": "/icons/$1" },
+    { "src": "/", "headers": { "Cache-Control": "no-cache, no-store, must-revalidate" }, "dest": "/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

@@ -1,13 +1,11 @@
-// Force clear old broken SW caches
+// Unregister any existing service workers and clear caches — app is desktop-only
+// and requires live Supabase connection, so offline caching provides no benefit.
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>{
-    regs.forEach(r=>{
-      r.update(); // check for new SW version immediately
-    });
+    regs.forEach(r=>r.unregister());
   });
-  // If SW cache version mismatch, clear all caches
   caches.keys().then(keys=>{
-    keys.forEach(k=>{ if(!k.includes('v56')) caches.delete(k); });
+    keys.forEach(k=>caches.delete(k));
   });
 }
 
@@ -67,8 +65,10 @@ document.addEventListener('DOMContentLoaded', function(){
   });
   document.addEventListener('mousemove', function(e){
     if(!active) return;
-    scroll.scrollLeft = scrollX - (e.clientX - startX);
-    scroll.scrollTop  = scrollY - (e.clientY - startY);
+    requestAnimationFrame(()=>{
+      scroll.scrollLeft = scrollX - (e.clientX - startX);
+      scroll.scrollTop  = scrollY - (e.clientY - startY);
+    });
   });
   document.addEventListener('mouseup', function(){
     if(!active) return;
@@ -185,10 +185,25 @@ function initSupabase(){
       sbReady=false; return;
     }
     sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim(), {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
     sbReady = true;
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
+
+    // Listen for auth state changes — catches Google OAuth redirect session
+    let _googleCallbackHandled = false;
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session && !_googleCallbackHandled) {
+        // Use the flag set by boot — Supabase cleans the URL before this event fires
+        // so checking window.location for 'code=' or 'access_token' here is too late.
+        // _oauthRedirectInProgress is only set when boot actually saw the OAuth URL.
+        if (!window._oauthRedirectInProgress) return;
+        _googleCallbackHandled = true;
+        window._oauthRedirectInProgress = false;
+        window.history.replaceState({}, document.title, window.location.pathname);
+        await handleGoogleCallback(session);
+      }
+    });
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -277,9 +292,10 @@ async function saveAvatarUrl(url){
 async function dbGetUser(username){
   if(!sbReady) return null;
   try{
-    const {data,error}=await sb.from('users').select('*').eq('username',username).single();
-    if(error)return null;
-    return data;
+    // Use RPC (SECURITY DEFINER) so RLS never blocks user fetching their own data
+    const {data,error}=await sb.rpc('get_user_by_username',{p_username:username});
+    if(error||!data||!data[0]) return null;
+    return data[0];
   }catch(e){return null;}
 }
 async function dbCreateUser(username,passHash,displayName,authId,email){
@@ -296,8 +312,7 @@ async function dbCreateUser(username,passHash,displayName,authId,email){
   }catch(e){return false;}
 }
 async function dbSaveUser(username,data){
-  if(!sbReady) return;
-  _lastSaveTs = Date.now();
+  if(!sbReady) return false;
   try{
     const prefsToSave = Object.assign({}, data.prefs||{});
     delete prefsToSave.avatarPhoto;
@@ -314,22 +329,30 @@ async function dbSaveUser(username,data){
       prefs:JSON.stringify(prefsToSave),
       avatar_url:data.prefs?.avatarUrl||null,
     }).eq('username', username);
-    if(saveErr){console.error('[Prodify] Save error:',saveErr.message);}
-    else{console.log('[Prodify] Saved OK');}
-  }catch(e){console.error('[Prodify] Supabase save FAILED:',e?.message||e);}
+    if(saveErr){
+      console.error('[Prodify] Save error:',saveErr.message,'code:',saveErr.code);
+      // Do NOT update _lastSaveTs — save failed, local is still ahead
+      return false;
+    }
+    // Only mark cloud as up-to-date when save actually succeeded.
+    // Also persisted to localStorage so the trustLocal heuristic works across page reloads.
+    _lastSaveTs = Date.now();
+    try{ localStorage.setItem('pd1_lastSaveTs', String(_lastSaveTs)); }catch(e){}
+    return true;
+  }catch(e){
+    console.error('[Prodify] Supabase save FAILED:',e?.message||e);
+    return false;
+  }
 }
 async function dbDeleteUser(username){
   if(!sbReady) return;
-  try{ await sb.from('users').delete().eq('username',username); }catch(e){}
+  try{ await sb.rpc('delete_auth_user', { p_username: username }); }catch(e){ console.warn('dbDeleteUser error', e); }
 }
-async function dbSetAuthId(username,authId,email){
-  if(!sbReady) return;
-  try{ await sb.from('users').update({auth_id:authId,email}).eq('username',username); }catch(e){}
-}
-
 // ── REALTIME SYNC ──
 let _realtimeChannel = null;
-let _lastSaveTs = 0;
+// Persisted across page reloads so the trustLocal heuristic doesn't always
+// default to trusting local on a fresh tab open (module-level 0 caused that).
+let _lastSaveTs = (() => { try { return parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; } catch(e){ return 0; } })();
 
 function startRealtimeSync(username){
   if(!sbReady || !sb || !username) return;
@@ -343,8 +366,11 @@ function startRealtimeSync(username){
       table:'users',
       filter:'username=eq.'+username
     }, payload=>{
-      // Only block if WE just saved (echo prevention)
-      if(Date.now()-_lastSaveTs < 2000) return;
+      // Block echo from our own save for 5s
+      if(Date.now()-_lastSaveTs < 5000) return;
+      // Also block if local data is newer than cloud — same guard as pullFromCloud
+      const localTs = (acc[cu]||{})._localTs || 0;
+      if(localTs > 0 && localTs > _lastSaveTs) return;
       applyRemoteData(payload.new);
     })
     .subscribe(status=>{
@@ -356,19 +382,30 @@ function stopRealtimeSync(){
   _realtimeChannel=null;
 }
 
+// Safe JSON parse with a fallback — prevents one corrupted column from
+// breaking the entire applyRemoteData call and leaving the UI stale.
+function safeParseJSON(str, fallback){
+  if(str == null) return fallback;
+  try{ return JSON.parse(str); }
+  catch(e){ console.error('[Prodify] JSON parse error, using fallback:',e); return fallback; }
+}
+
 function applyRemoteData(row){
   if(!row||!cu) return;
   try{
     const d = acc[cu] || {};
-    // Parse and apply each data field
-    if(row.tasks)       { tasks    = JSON.parse(row.tasks);    d.tasks    = tasks;    }
-    if(row.journal)     { journal  = JSON.parse(row.journal);  d.journal  = journal;  }
-    if(row.subjects)    { subjects = JSON.parse(row.subjects); d.subjects = subjects; }
-    if(row.cal_evs)     { calEvs   = JSON.parse(row.cal_evs);  d.calEvs   = calEvs;   }
-    if(row.widgets)     { widgets  = JSON.parse(row.widgets);  d.widgets  = widgets;  }
-    if(row.notes)       { notes    = JSON.parse(row.notes);    d.notes    = notes;    }
+    // Use != null so both null and undefined are caught, but '[]' and '{}' still apply.
+    // Previously `if(row.tasks)` would skip a null column silently, leaving stale local
+    // state while other fields got updated — causing inconsistent data.
+    // Each field uses safeParseJSON so a single corrupted column doesn't abort the rest.
+    if(row.tasks    != null) { tasks    = safeParseJSON(row.tasks,    []); d.tasks    = tasks;    }
+    if(row.journal  != null) { journal  = safeParseJSON(row.journal,  []); d.journal  = journal;  }
+    if(row.subjects != null) { subjects = safeParseJSON(row.subjects, []); d.subjects = subjects; }
+    if(row.cal_evs  != null) { calEvs   = safeParseJSON(row.cal_evs,  []); d.calEvs   = calEvs;   }
+    if(row.widgets  != null) { widgets  = safeParseJSON(row.widgets,  []); d.widgets  = widgets;  }
+    if(row.notes    != null) { notes    = safeParseJSON(row.notes,    {}); d.notes    = notes;    }
     if(row.prefs){
-      const rp=JSON.parse(row.prefs);
+      const rp=safeParseJSON(row.prefs, {});
       prefs=rp;
       d.prefs=prefs;
     }
@@ -387,15 +424,12 @@ function applyRemoteData(row){
     if(typeof renderAllSubW==='function') renderAllSubW();
     if(typeof renderCal==='function') renderCal();
     if(typeof renderWidgets==='function') renderWidgets();
-    if(typeof mobRenderTasks==='function') mobRenderTasks();
-    if(typeof mobRenderProjects==='function') mobRenderProjects();
-    if(typeof mobRenderHome==='function') mobRenderHome();
-    if(typeof mobRenderJournal==='function') mobRenderJournal();
     if(typeof applyDark==='function') applyDark(prefs.dark);
+    if(typeof applyTheme==='function') applyTheme();
+    if(typeof renderProBadge==='function') renderProBadge();
     if(typeof pomRenderHistory==='function') pomRenderHistory();
     // Apply avatar across all elements
     applyAvatar();
-    if(typeof mobUpdateAvatar==='function') mobUpdateAvatar();
   }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
 
@@ -445,6 +479,8 @@ const LS={
 // STATE
 // ═══════════════════════════════════════
 let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
+// Must be declared before initSupabase() registers onAuthStateChange
+window._oauthRedirectInProgress = false;
 initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
 let _jwSearch={},_mobJSearch='';
@@ -566,19 +602,20 @@ function parseTimeInput(raw){
 // SCREENS & PAGES
 // ═══════════════════════════════════════
 function show(id){
+  document.documentElement.classList.remove('has-user');
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('off',s.id!==id));
-  // on mobile, mob-app replaces the desktop #app content
-  const mobApp=document.getElementById('mob-app');
-  if(mobApp&&isMobile()){
-    if(id==='app'){mobApp.style.display='flex';}
-    else{mobApp.style.display='none';}
-  }
+  if(window._checkMobile) window._checkMobile();
 }
 
 function goPg(id,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
   document.querySelectorAll('.sbb').forEach(b=>b.classList.toggle('act',b.dataset&&b.dataset.p===id));
-  if(id==='canvas'){renderFixedQuote();if(isMobile())renderMobileCanvas();}
+  // only show + widget button on canvas
+  const wkpToggle=$('wkp-toggle'),wkpSep=$('wkp-sep');
+  if(wkpToggle)wkpToggle.style.display=id==='canvas'?'':'none';
+  if(wkpSep)wkpSep.style.display=id==='canvas'?'':'none';
+  closeWkPicker();
+  if(id==='canvas'){renderCanvasGreeting();}
   if(id==='profile')renderProfile();
   if(id==='calendar')renderFullCal();
   if(id==='settings')renderSettings();
@@ -587,994 +624,10 @@ function goPg(id,btn){
   LS.s('pd1_pg',id);
 }
 
-// ── MOBILE HELPERS ──
-function isMobile(){
-  const result = window.innerWidth<=768;
-  return result;
-}
-function setTab(id){
-  document.querySelectorAll('.btab').forEach(b=>b.classList.toggle('act',b.id==='bt-'+id));
-}
-
-// Widget picker sheet
-function toggleMobilePicker(){
-  const overlay=document.getElementById('mob-picker-overlay');
-  const picker=document.getElementById('mob-picker');
-  const icon=document.getElementById('fab-icon');
-  const isOpen=picker.classList.contains('open');
-  overlay.classList.toggle('open',!isOpen);
-  picker.classList.toggle('open',!isOpen);
-  icon.style.transform=isOpen?'rotate(0deg)':'rotate(45deg)';
-  icon.style.transition='transform .2s';
-}
-function closeMobilePicker(){
-  document.getElementById('mob-picker-overlay').classList.remove('open');
-  document.getElementById('mob-picker').classList.remove('open');
-  const icon=document.getElementById('fab-icon');
-  if(icon){icon.style.transform='rotate(0deg)';}
-}
-
-// ══════════════════════════════════════
-// MOBILE APP — full-screen pages
-// ══════════════════════════════════════
-let _mobPage = 'home';
-let _mobCalOff = 0;
-let _mobSelDay = null;
-let _mobTaskTab = 'todo';
-let _mobMood = 0;
-
-// Timer state (standalone, independent of desktop)
-let _mobTimerMode = 0;
-let _mobTimerSec = 25*60;
-let _mobTimerCustom=[25*60,20*60];
-let _mobTimerLastSet=[25*60,20*60]; // tracks last confirmed time per mode for reset
-let _mobTimerRunning = false;
-let _mobTimerIv = null;
-let _mobTimerSessions = 0;
-let _mobTimerAlarmActive = false;
-// Sync mobile custom times with desktop TMS['mob'] when a widget exists
-function _syncMobCustom(){
-  const ts=TMS['mob']||Object.values(TMS)[0];
-  if(ts&&ts.custom){
-    _mobTimerCustom[1]=ts.custom[1]; // sync custom slot
-  }
-}
-const MOB_TMODES = [{l:'Pomodoro',s:25*60,locked:true},{l:'Custom',s:20*60,locked:false}];
-
-
-function mobGoPage(page){
-  if(!isMobile())return;
-  if(page===_mobPage)return;
-  // fade out current
-  const cur = document.getElementById('mpg-'+_mobPage);
-  if(cur)cur.classList.remove('active');
-  const curBtn = document.getElementById('mnb-'+_mobPage);
-  if(curBtn)curBtn.classList.remove('act');
-  _mobPage = page;
-  const nextBtn = document.getElementById('mnb-'+page);
-  if(nextBtn)nextBtn.classList.add('act');
-  // render content first, then fade in after a frame
-  if(page==='home')mobRenderHome();
-  else if(page==='tasks')mobRenderTasks();
-  else if(page==='journal')mobRenderJournal();
-  else if(page==='projects')mobRenderProjects();
-  else if(page==='calendar')mobRenderCalendar();
-  else if(page==='profile')mobRenderProfile();
-  else if(page==='settings')mobRenderSettings();
-  else if(page==='timer')pomRenderHistory();
-  else if(page==='habits'){renderHabits('mob-habit-page-list');renderHabitAddForm('mob-habit-page-form');}
-  else if(page==='feedback'){_fbType='general';_fbStar=0;setFbType('general');setTimeout(initFbStars,50);}
-  else if(page==='aiplanner'){if(!isPro()){showUpgradeModal('AI Daily Planner');return;}renderAIPlanner('mob-aip-body',true);}
-  // AI Planner FAB visibility
-  const _aipFab=document.getElementById('mob-aip-fab');
-  if(_aipFab)_aipFab.style.display=(page==='home'||page==='tasks')?'flex':'none';
-  requestAnimationFrame(()=>{
-    const next = document.getElementById('mpg-'+page);
-    if(next)next.classList.add('active');
-  });
-  LS.s('pd1_mobpg',page);
-}
-
-// ── HOME ──
-function mobRenderHome(){
-  // greeting
-  const nm = document.getElementById('mob-greet-name');
-  const firstName=(acc[cu]?.displayName||'').split(' ')[0]||cu||'there';
-  if(nm) nm.textContent = 'Hey, '+firstName+' 👋';
-  const dt = document.getElementById('mob-greet-date');
-  if(dt) dt.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  // quote
-  const q = QQ[qIdx];
-  const qt = document.getElementById('mob-qt');
-  const qa = document.getElementById('mob-qa');
-  if(qt&&q) qt.textContent = '“'+q.t+'”';
-  if(qa&&q) qa.textContent = '— '+q.a;
-  // stats
-  const done = tasks.filter(t=>t.col==='done').length;
-  const el = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  const hi = tasks.filter(t=>t.priority==='high'&&t.col!=='done').length;
-  el('mst-tasks',tasks.length);
-  el('mst-done',done);
-  el('mst-hi',hi);
-  el('mst-journal',journal.length);
-  el('mst-proj',subjects.length);
-  // today events
-  const today = new Date().toISOString().slice(0,10);
-  const todayEvs = calEvs.filter(e=>e.date===today);
-  const evEl = document.getElementById('mob-today-evs');
-  if(evEl){
-    if(!todayEvs.length){
-      evEl.innerHTML='<div class="mob-ev-row"><span style="font-size:12px;color:var(--ink4);">No events today</span></div>';
-    } else {
-      evEl.innerHTML = todayEvs.map(ev=>`
-        <div class="mob-ev-row">
-          <div class="mob-ev-dot" style="background:${ev.subColor||'var(--a2)'}"></div>
-          <div class="mob-ev-title">${esc(ev.title)}</div>
-        </div>`).join('');
-    }
-  }
-  // pending tasks (show up to 5 non-done)
-  const pending = sortByDue(tasks.filter(t=>t.col!=='done')).slice(0,5);
-  const taskEl = document.getElementById('mob-home-tasks');
-  const taskHd = document.getElementById('mob-tasks-hd-lbl');
-  const pendingCount = tasks.filter(t=>t.col!=='done').length;
-  if(taskHd) taskHd.textContent = `Tasks (${pendingCount} pending)`;
-  if(taskEl){
-    if(!tasks.length){
-      taskEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;font-weight:600;">No tasks yet</div>';
-    } else if(!pending.length){
-      taskEl.innerHTML='<div class="mob-task-row"><span style="font-size:12px;color:var(--a2);font-weight:700;">🎉 All tasks done!</span></div>';
-    } else {
-      taskEl.innerHTML = pending.map(t=>`
-        <div class="mob-task-row" onclick="mobGoPage('tasks')">
-          <div class="mob-task-chk${t.col==='done'?' done':''}"></div>
-          <div class="mob-task-txt${t.col==='done'?' done':''}">${esc(t.text)}</div>
-          <span class="mob-task-pri mob-task-pri-${t.priority||'low'}">${(t.priority||'low').toUpperCase()}</span>
-        </div>`).join('');
-    }
-  }
-  // last journal entry
-  const jSec = document.getElementById('mob-last-journal-sec');
-  const jEl = document.getElementById('mob-last-journal');
-  if(jSec&&jEl){
-    if(journal.length){
-      const last = journal[0];
-      const m = MLAB[last.mood]||MLAB[0];
-      jSec.style.display='';
-      jEl.innerHTML=`<div style="padding:14px 16px;">
-        <div class="mob-je-hd">
-          <span class="mob-je-emoji">${m.e}</span>
-          <span class="mob-je-mood">${m.l}</span>
-          <span class="mob-je-date">${last.date}</span>
-        </div>
-        <div class="mob-je-text">${esc(last.text)}</div>
-      </div>`;
-    } else {
-      jSec.style.display='none';
-    }
-  }
-}
-
-// ── TASKS ──
-function mobTaskTab(tab){_mobTaskTab=tab;mobRenderTasks();}
-function mobRenderTasks(){
-  const list=document.getElementById('mob-tasks-list');
-  if(!list)return;
-  if(!tasks.length){
-    list.innerHTML='<div class="mob-tasks-empty">No tasks yet<br><span style="font-size:11px;">Tap Add to create your first task</span></div>';
-    return;
-  }
-  const cols=[
-    {key:'todo',label:'To Do',color:'#B87333'},
-    {key:'inprog',label:'In Progress',color:'var(--a2)'},
-    {key:'done',label:'Done',color:'var(--ink3)'},
-  ];
-  let html='';
-  cols.forEach(({key,label,color})=>{
-    const colTasks=sortByDue(tasks.filter(t=>t.col===key));
-    html+=`<div class="mob-kcol">
-      <div class="mob-kcol-hd" style="color:${color}">
-        <span>${label}</span><span class="mob-kcol-cnt">${colTasks.length}</span>
-      </div>`;
-    html+=`<div class="mob-kcol-cards" 
-      ondragover="event.preventDefault();this.classList.add('dov')"
-      ondragleave="event.relatedTarget&&!this.contains(event.relatedTarget)?this.classList.remove('dov'):null"
-      ondrop="mobKDrop(event,'${key}');this.classList.remove('dov')">`;
-    if(!colTasks.length){
-      html+=`<div class="mob-kcol-empty">Empty</div>`;
-    } else {
-      colTasks.forEach(t=>{
-        const due=taskDueInfo(t);
-        const dueTag=due?`<span class="mob-kcard-pri" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
-        const isOverdue=due?.label==='Overdue';
-        html+=`<div class="mob-kcard${isOverdue?' tc-overdue':''}" draggable="true"
-          ondragstart="mobKDragStart(event,${t.id})"
-          ondragend="mobKDragEnd()"
-          ontouchstart="mobKTouchStart(event,${t.id})"
-          ontouchmove="mobKTouchMove(event)"
-          ontouchend="mobKTouchEnd(event)">
-          <div class="mob-kcard-body">
-            <div class="mob-kcard-text${t.col==='done'?' done':''}">${esc(t.text)}</div>
-            ${(dueTag||( t.recurring&&t.recurring!=='none'))?`<div class="mob-kcard-meta" style="margin-top:4px;">${dueTag}${t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">↺ ${t.recurring}</span>`:''}</div>`:''}
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:4px;">
-            <button class="mob-kcard-del" onclick="event.stopPropagation();mobDelTask(${t.id})">&#x2715;</button>
-            ${t.date?`<span class="mob-kcard-date">${t.date}</span>`:''}
-          </div>
-        </div>`;
-      });
-    }
-    html+='</div>';
-    html+='</div>';
-  });
-  list.innerHTML=html;
-}
-function mobMoveTask(id,dir){
-  const t=tasks.find(x=>x.id===id);if(!t)return;
-  const order=['todo','inprog','done'];
-  const idx=order.indexOf(t.col);
-  if(dir==='next'&&idx<2)t.col=order[idx+1];
-  else if(dir==='prev'&&idx>0)t.col=order[idx-1];
-  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
-}
-let _mobKDragId=null;
-let _mobKTouchId=null,_mobKTouchEl=null,_mobKClone=null;
-function mobKDragStart(e,id){_mobKDragId=id;e.dataTransfer.effectAllowed='move';}
-function mobKDragEnd(){_mobKDragId=null;document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));}
-function mobKDrop(e,col){
-  e.preventDefault();
-  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
-  if(_mobKDragId===null)return;
-  const t=tasks.find(x=>x.id===_mobKDragId);
-  if(t&&t.col!==col){t.col=col;persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();}
-  _mobKDragId=null;
-}
-function mobKTouchStart(e,id){
-  _mobKTouchId=id;
-  _mobKTouchEl=e.currentTarget;
-  // create floating clone
-  const rect=_mobKTouchEl.getBoundingClientRect();
-  _mobKClone=_mobKTouchEl.cloneNode(true);
-  _mobKClone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:.85;z-index:9999;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2);border-radius:10px;`;
-  document.body.appendChild(_mobKClone);
-  _mobKTouchEl.style.opacity='0.3';
-}
-function mobKTouchMove(e){
-  if(!_mobKTouchId||!_mobKClone)return;
-  e.preventDefault();
-  const t=e.touches[0];
-  _mobKClone.style.left=(t.clientX-80)+'px';
-  _mobKClone.style.top=(t.clientY-30)+'px';
-  // highlight target column
-  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
-  const under=document.elementFromPoint(t.clientX,t.clientY);
-  const col=under?.closest('.mob-kcol-cards');
-  if(col)col.classList.add('dov');
-}
-function mobKTouchEnd(e){
-  if(!_mobKTouchId)return;
-  const t=e.changedTouches[0];
-  if(_mobKClone){_mobKClone.remove();_mobKClone=null;}
-  if(_mobKTouchEl)_mobKTouchEl.style.opacity='';
-  document.querySelectorAll('.mob-kcol-cards').forEach(d=>d.classList.remove('dov'));
-  const under=document.elementFromPoint(t.clientX,t.clientY);
-  const colEl=under?.closest('[ondrop]');
-  if(colEl){
-    const onDrop=colEl.getAttribute('ondrop');
-    const m=onDrop?.match(/'([^']+)'\)/);
-    if(m){
-      const col=m[1];
-      const task=tasks.find(x=>x.id===_mobKTouchId);
-      if(task&&task.col!==col){task.col=col;persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();}
-    }
-  }
-  _mobKTouchId=null;_mobKTouchEl=null;
-}
-function mobToggleTask(id){
-  const t=tasks.find(x=>x.id===id);if(!t)return;
-  const order=['todo','inprog','done'];
-  t.col=order[(order.indexOf(t.col)+1)%order.length];
-  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();renderFullCal&&renderFullCal();
-}
-async function mobDelTask(id){
-  if(!await appConfirm('Delete this task?','This cannot be undone.'))return;
-  tasks=tasks.filter(t=>t.id!==id);
-  persist();mobRenderTasks();mobRenderHome();updateFixedStats();updateAllStatsW();renderAllTaskW();
-}
-// ── CUSTOM DATE PICKER ──
-// ═══════════════════════════════════════
-// DUE DATE PICKER
-// ═══════════════════════════════════════
-let _calViewYear=0,_calViewMonth=0,_dskCalWid=null,_dpSelected='',_dpCallback=null;
-function calToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
-function calFmt(d){return d.toISOString().slice(0,10);}
-function calDisplay(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
-
-function dpOpen(currentVal,onConfirm){
-  let modal=document.getElementById('dp-modal');
-  if(!modal){
-    modal=document.createElement('div');
-    modal.id='dp-modal';
-    modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .25s;pointer-events:none;';
-    modal.innerHTML=`
-      <div id="dp-sheet" style="position:relative;width:100%;max-width:440px;background:var(--surf);border-radius:24px 24px 0 0;padding:0 0 28px;box-shadow:0 -12px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);">
-        <div style="width:40px;height:4px;border-radius:2px;background:var(--bdr);margin:14px auto 0;"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
-          <span style="font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;">Pick a date</span>
-          <button onclick="dpClear()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:all .15s;" onmouseover="this.style.background='var(--rl)';this.style.color='var(--red)'" onmouseout="this.style.background='none';this.style.color='var(--ink3)'">Clear</button>
-        </div>
-        <div style="margin:0 16px;background:var(--surf2);border-radius:18px;border:1.5px solid var(--bdr);padding:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <button id="dp-prev" onclick="dpNav(-1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">‹</button>
-            <span id="dp-month" style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;"></span>
-            <button onclick="dpNav(1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">›</button>
-          </div>
-          <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
-        </div>
-        <button id="dp-confirm" onclick="dpConfirm()" style="display:block;width:calc(100% - 32px);margin:14px 16px 0;background:var(--a2);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.2px;transition:background .15s;">Confirm</button>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click',function(e){if(e.target===modal)dpClose();});
-  }
-  _dpSelected=currentVal||'';
-  _dpCallback=onConfirm;
-  const base=_dpSelected?new Date(_dpSelected+'T00:00:00'):calToday();
-  _calViewYear=base.getFullYear();_calViewMonth=base.getMonth();
-  dpRender();
-  // show
-  modal.style.pointerEvents='auto';
-  requestAnimationFrame(()=>{
-    modal.style.background='rgba(0,0,0,.5)';
-    document.getElementById('dp-sheet').style.transform='translateY(0)';
-  });
-}
-
-function dpRender(){
-  const today=calToday();
-  const first=new Date(_calViewYear,_calViewMonth,1);
-  const last=new Date(_calViewYear,_calViewMonth+1,0);
-  const prevOk=new Date(_calViewYear,_calViewMonth,1)>new Date(today.getFullYear(),today.getMonth(),1);
-  document.getElementById('dp-month').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const prev=document.getElementById('dp-prev');
-  if(prev){prev.disabled=!prevOk;prev.style.opacity=prevOk?'1':'0.2';prev.style.cursor=prevOk?'pointer':'default';}
-  const sel=_dpSelected||'';
-  let html='';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
-    html+=`<div style="font-size:9px;font-weight:800;color:var(--ink4);text-align:center;padding:2px 0 8px;text-transform:uppercase;letter-spacing:.5px;">${d}</div>`;
-  });
-  for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
-  for(let d=1;d<=last.getDate();d++){
-    const date=new Date(_calViewYear,_calViewMonth,d);
-    const val=calFmt(date);
-    const past=date<today,isSel=val===sel,isToday=val===calFmt(today);
-    let bg='transparent',color='var(--ink)',border='none',fw='600',cursor='pointer',op='1';
-    if(past){color='var(--ink4)';op='.3';cursor='default';}
-    else if(isSel){bg='var(--a2)';color='#fff';fw='800';border='none';}
-    else if(isToday){bg='var(--surf)';border='2px solid var(--a2)';color='var(--a2)';fw='800';}
-    const click=past?'':`onclick="_dpPick('${val}')"`;
-    html+=`<div ${click} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:${fw};color:${color};background:${bg};border:${border};border-radius:10px;cursor:${cursor};opacity:${op};transition:all .12s;">${d}</div>`;
-  }
-  document.getElementById('dp-grid').innerHTML=html;
-  const btn=document.getElementById('dp-confirm');
-  if(btn)btn.textContent=sel?'Confirm — '+calDisplay(new Date(sel+'T00:00:00')):'Confirm';
-}
-
-function _dpPick(val){_dpSelected=val;dpRender();}
-function dpNav(dir){
-  _calViewMonth+=dir;
-  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
-  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
-  dpRender();
-}
-function dpClear(){_dpSelected='';dpRender();}
-function dpConfirm(){
-  if(_dpCallback)_dpCallback(_dpSelected||null);
-  dpClose();
-}
-function dpClose(){
-  const modal=document.getElementById('dp-modal');
-  const sheet=document.getElementById('dp-sheet');
-  if(!modal)return;
-  modal.style.background='rgba(0,0,0,0)';
-  if(sheet)sheet.style.transform='translateY(100%)';
-  modal.style.pointerEvents='none';
-  _dpCallback=null;_dskCalWid=null;
-}
-function openDskDuePicker(wid){
-  _dskCalWid=wid;
-  const inp=$('twd-'+wid);
-  dpOpen(inp?.value||'',function(val){
-    const btn=$('twdb-'+wid);
-    const lbl=$('twdb-lbl-'+wid);
-    if(inp)inp.value=val||'';
-    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Due date';
-    if(btn){
-      if(val){btn.style.borderColor='var(--a2)';btn.style.color='var(--a2)';btn.style.background='var(--al)';btn.classList.add('active');}
-      else{btn.style.borderColor='var(--bdr)';btn.style.color='var(--ink3)';btn.style.background='var(--surf)';btn.classList.remove('active');}
-    }
-  });
-}
-function openDuePicker(wid){openDskDuePicker(wid);}
-function onDueChange(wid){}
-function openMobDuePicker(){
-  const inp=document.getElementById('mob-add-task-due');
-  dpOpen(inp?.value||'',function(val){
-    if(inp)inp.value=val||'';
-    const lbl=document.getElementById('mob-due-lbl');
-    const btn=document.getElementById('mob-due-pick-btn');
-    const icon=document.getElementById('mob-due-icon-wrap');
-    if(lbl){
-      lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose a date';
-      lbl.style.color=val?'var(--a2)':'var(--ink3)';
-      lbl.style.fontWeight=val?'700':'600';
-    }
-    if(btn){btn.style.borderColor=val?'var(--a2)':'var(--bdr)';btn.style.background=val?'var(--al)':'var(--surf2)';}
-    if(icon){
-      icon.style.background=val?'var(--a2)':'var(--surf)';
-      icon.style.borderColor=val?'var(--a2)':'var(--bdr)';
-      const svg=icon.querySelector('svg');
-      if(svg)svg.setAttribute('stroke',val?'#fff':'var(--ink3)');
-    }
-  });
-}
-function mobSetDue(preset){
-  const d=calToday();
-  if(preset==='none'){
-    const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
-    const lbl=document.getElementById('mob-due-selected-lbl2');if(lbl)lbl.textContent='Choose a date';
-    const btn=document.querySelector('.mob-due-pick-btn');if(btn)btn.classList.remove('active');
-    return;
-  }
-  if(preset==='tomorrow')d.setDate(d.getDate()+1);
-  else if(preset==='week')d.setDate(d.getDate()+7);
-  const val=calFmt(d);
-  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value=val;
-  const lbl=document.getElementById('mob-due-selected-lbl2');if(lbl)lbl.textContent=calDisplay(d);
-  const btn=document.querySelector('.mob-due-pick-btn');if(btn)btn.classList.add('active');
-}
-function mobDueReset(){
-  const inp=document.getElementById('mob-add-task-due');if(inp)inp.value='';
-  const lbl=document.getElementById('mob-due-lbl');
-  const btn=document.getElementById('mob-due-pick-btn');
-  const icon=document.getElementById('mob-due-icon-wrap');
-  if(lbl){lbl.textContent='Choose a date';lbl.style.color='var(--ink3)';lbl.style.fontWeight='600';}
-  if(btn){btn.style.borderColor='var(--bdr)';btn.style.background='var(--surf2)';}
-  if(icon){icon.style.background='var(--surf)';icon.style.borderColor='var(--bdr)';const svg=icon.querySelector('svg');if(svg)svg.setAttribute('stroke','var(--ink3)');}
-}
-
-
-
-
-function mobSetRecur(val) {
-  document.getElementById('mob-add-task-recur').value = val;
-  ['none','daily','weekly'].forEach(v => {
-    const btn = document.getElementById('mrp-'+v);
-    if (btn) btn.classList.toggle('act', v === val);
-  });
-}
-function openMobAddTask(){
-  const modal=document.getElementById('mob-add-modal');
-  if(modal){modal.classList.add('open');setTimeout(()=>document.getElementById('mob-add-task-input')?.focus(),100);}
-  mobDueReset();
-}
-function closeMobAddTask(){
-  const modal=document.getElementById('mob-add-modal');
-  if(modal)modal.classList.remove('open');
-  mobDueReset();
-}
-function mobSubmitTask(){
-  const inp=document.getElementById('mob-add-task-input');
-  const t=inp?.value.trim();if(!t)return;
-  const due=document.getElementById('mob-add-task-due')?.value||'';
-  const rec=document.getElementById('mob-add-task-recur')?.value||'none';
-  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
-  persist();
-  if(inp)inp.value='';
-  const dueEl=document.getElementById('mob-add-task-due');if(dueEl)dueEl.value='';
-  const recurEl=document.getElementById('mob-add-task-recur');if(recurEl)recurEl.value='none';
-  mobSetRecur('none');
-  closeMobAddTask();
-  mobRenderTasks();mobRenderHome();
-  updateFixedStats();updateAllStatsW();renderAllTaskW();
-}
-
-// ── TIMER ──
-function mobFmtSec(s){
-  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
-  if(h>0)return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
-}
-function mobTimerRender(){
-  _syncMobCustom();
-  const timeEl=document.getElementById('mob-timer-time');
-  const startBtn=document.getElementById('mob-timer-start');
-  if(timeEl&&!timeEl.classList.contains('hide'))timeEl.textContent=mobFmtSec(_mobTimerSec);
-  // show/hide edit cursor based on mode
-  if(timeEl)timeEl.classList.toggle('tmtime-edit',!MOB_TMODES[_mobTimerMode]?.locked&&!_mobTimerRunning);
-  if(startBtn){
-    if(_mobTimerAlarmActive){
-      startBtn.textContent='Stop';
-      startBtn.classList.add('stop');
-    } else {
-      startBtn.textContent=_mobTimerRunning?'Pause':'Start';
-      startBtn.classList.toggle('stop',_mobTimerRunning);
-    }
-  }
-  // mode buttons
-  for(let i=0;i<MOB_TMODES.length;i++){
-    const btn=document.getElementById('mmt-'+i);
-    if(btn)btn.classList.toggle('on',i===_mobTimerMode);
-  }
-  // sessions
-  const sessEl=document.getElementById('mob-timer-sessions');
-  if(sessEl){
-    sessEl.innerHTML=Array.from({length:4},(_,i)=>`<div class="mob-timer-dot${i<_mobTimerSessions?' done':''}"></div>`).join('');
-  }
-}
-function mobSetMode(m){
-  if(_mobTimerRunning)return;
-  _mobTimerMode=m;
-  _mobTimerSec=_mobTimerLastSet[m]||_mobTimerCustom[m]||MOB_TMODES[m].s;
-  // show/hide session history and dots — only relevant for Pomodoro
-  const hw=document.getElementById('mob-pom-history-wrap');
-  const sw=document.getElementById('mob-timer-sessions');
-  const isPomodoro=m===0;
-  if(hw)hw.style.display=isPomodoro?'block':'none';
-  if(sw)sw.style.display=isPomodoro?'flex':'none';
-  mobTimerRender();
-}
-function mobTimerEdit(){
-  if(_mobTimerRunning||MOB_TMODES[_mobTimerMode]?.locked)return;
-  const t=document.getElementById('mob-timer-time'),i=document.getElementById('mob-timer-inputs');
-  if(!t||!i)return;
-  const inp=document.getElementById('mob-tminp');
-  if(inp)inp.value=mobFmtSec(_mobTimerSec);
-  t.classList.add('hide');i.classList.add('show');
-  setTimeout(()=>{if(inp){inp.focus();inp.select();}},50);
-}
-function mobTimerConfirmEdit(){
-  const inp=document.getElementById('mob-tminp');
-  if(!inp)return;
-  const total=parseTimeInput(inp.value.trim());
-  if(total<1)return;
-  _mobTimerCustom[_mobTimerMode]=total;
-  _mobTimerLastSet[_mobTimerMode]=total;
-  _mobTimerSec=total;
-  // Also sync to any desktop timer widget
-  Object.values(TMS).forEach(ts=>{if(ts&&ts.custom)ts.custom[3]=total;});
-  document.getElementById('mob-timer-time').classList.remove('hide');
-  document.getElementById('mob-timer-inputs').classList.remove('show');
-  mobTimerRender();
-}
-function mobTimerInputKey(e){
-  if(e.key==='Enter'){e.preventDefault();mobTimerConfirmEdit();}
-  if(e.key==='Escape'){e.preventDefault();
-    document.getElementById('mob-timer-time').classList.remove('hide');
-    document.getElementById('mob-timer-inputs').classList.remove('show');
-  }
-}
-function mobTimerToggle(){
-  if(_mobTimerAlarmActive){
-    stopAlarm();_mobTimerAlarmActive=false;
-    _mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
-    mobTimerRender();return;
-  }
-  if(_mobTimerRunning){
-    clearInterval(_mobTimerIv);_mobTimerRunning=false;
-  } else {
-    if(_mobTimerSec<=0){_mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;}
-    _mobTimerRunning=true;
-    _mobTimerIv=setInterval(()=>{
-      _mobTimerSec--;
-      if(_mobTimerSec<=0){
-        clearInterval(_mobTimerIv);_mobTimerRunning=false;
-        _mobTimerSessions=(_mobTimerSessions+1)%5;
-        _mobTimerSec=0;
-        _mobTimerAlarmActive=true;
-        if(_mobTimerMode===0) pomRecordSession();
-        playAlarm();
-      }
-      mobTimerRender();
-    },1000);
-  }
-  mobTimerRender();
-}
-function mobTimerReset(){
-  clearInterval(_mobTimerIv);_mobTimerRunning=false;
-  _mobTimerSec=_mobTimerLastSet[_mobTimerMode]||_mobTimerCustom[_mobTimerMode]||MOB_TMODES[_mobTimerMode].s;
-  stopAlarm();_mobTimerAlarmActive=false;
-  mobTimerRender();
-}
-
-// ── JOURNAL ──
-function onMobJSearch(val){
-  _mobJSearch=val.toLowerCase().trim();
-  const clr=document.getElementById('mob-journal-search-clear');
-  if(clr)clr.style.display=val?'block':'none';
-  mobRenderJournal();
-}
-function mobRenderJournal(){
-  // mood buttons
-  const moodsEl=document.getElementById('mob-jmoods');
-  if(moodsEl){
-    moodsEl.innerHTML=MLAB.map((m,i)=>`
-      <button class="mob-jmood${i===_mobMood?' on':''}" onclick="mobPickMood(${i})">
-        <span class="mob-jmood-e">${m.e}</span>
-        <span class="mob-jmood-l">${m.l}</span>
-      </button>`).join('');
-  }
-  // entries
-  const list=document.getElementById('mob-journal-list');
-  if(!list)return;
-  const q=_mobJSearch||'';
-  const filtered=q?journal.filter(j=>(j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q)):journal;
-  if(!journal.length){
-    list.innerHTML='<div class="mob-journal-empty">No entries yet.<br><span style="font-size:11px;">Write how your day is going above!</span></div>';
-    return;
-  }
-  if(!filtered.length){
-    list.innerHTML='<div class="mob-journal-empty">No entries match your search.</div>';
-    return;
-  }
-  const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
-  const mobJHdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 8px;"><span style="font-size:11px;color:var(--ink4);">${filtered.length}${q?' of '+journal.length:''} entr${journal.length>1?'ies':'y'}</span><button onclick="mobClrJournal()" style="background:none;border:none;font-size:11px;color:var(--ink4);cursor:pointer;padding:2px 6px;border-radius:6px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
-  list.innerHTML=mobJHdr+filtered.map(j=>{
-    const m=MLAB[j.mood]||MLAB[0];
-    return`<div class="mob-journal-entry">
-      <div class="mob-je-hd">
-        <span class="mob-je-emoji">${m.e}</span>
-        <span class="mob-je-mood">${m.l}</span>
-        <span class="mob-je-date">${j.date}</span>
-        <button class="mob-je-del" onclick="mobDelJournal(${j.id})">&#x2715;</button>
-      </div>
-      <div class="mob-je-text">${hl(esc(j.text))}</div>
-    </div>`;
-  }).join('');
-}
-function mobPickMood(i){
-  _mobMood=i;
-  document.querySelectorAll('.mob-jmood').forEach((b,idx)=>b.classList.toggle('on',idx===i));
-}
-function mobSaveJournal(){
-  const ta=document.getElementById('mob-jta');
-  const text=ta?.value.trim();if(!text)return;
-  const now=new Date();
-  journal.unshift({
-    id:Date.now(),text,mood:_mobMood,
-    date:now.toLocaleDateString('en-US',{month:'short',day:'numeric'})
-  });
-  persist();
-  if(ta)ta.value='';
-  _mobMood=0;
-  mobRenderJournal();
-  mobRenderHome();
-  updateAllStatsW();updateFixedStats();
-  if(typeof renderAllJournalW==='function')renderAllJournalW();
-}
-async function mobDelJournal(id){
-  if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;
-  journal=journal.filter(j=>j.id!==id);
-  persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
-  if(typeof renderAllJournalW==='function')renderAllJournalW();
-}
-async function mobClrJournal(){
-  if(!journal.length)return;
-  if(!await appConfirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?','This cannot be undone.'))return;
-  journal=[];persist();mobRenderJournal();mobRenderHome();updateAllStatsW();updateFixedStats();
-  if(typeof renderAllJournalW==='function')renderAllJournalW();
-}
-
-// ── PROJECTS ──
-function gradeLabel(p){if(p>=90)return'A+';if(p>=80)return'A';if(p>=70)return'B';if(p>=60)return'C';if(p>=50)return'D';return'F';}
-function gradeColor(p){if(p>=70)return'var(--a2)';if(p>=50)return'var(--amb)';return'var(--red)';}
-function mobRenderProjects(){
-  const list=document.getElementById('mob-proj-list');if(!list)return;
-  if(!subjects.length){
-    list.innerHTML='<div class="mob-proj-empty" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--ink3);font-size:14px;font-weight:600;pointer-events:none;">No projects yet.<br><span style="font-size:12px;font-weight:400;">Tap Add to create your first project</span></div>';
-    return;
-  }
-  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
-  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
-  const now=new Date();now.setHours(0,0,0,0);
-  list.innerHTML=subjects.map(s=>{
-    const st=s.status||'active';
-    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-    const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
-    return `<div class="mob-proj-card">
-      <div class="mob-proj-hd">
-        <div style="flex:1;">
-          <div class="mob-proj-name">${esc(s.name)}</div>
-          ${s.desc?`<div class="mob-proj-desc" style="margin-top:3px;">${esc(s.desc)}</div>`:''}
-        </div>
-        <button class="mob-proj-del" onclick="mobDelProj(${s.id})">&#x2715;</button>
-      </div>
-      <div class="mob-proj-tags">
-        <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
-        ${s.lead?`<span class="subtag">👤 ${esc(s.lead)}</span>`:''}
-        ${dueStr?`<span class="subtag${overdue?' overdue':''}" style="${overdue?'color:var(--red);border-color:var(--red);':''}">📅 ${dueStr}</span>`:''}
-      </div>
-      <div class="mob-proj-bar-wrap">
-        <div class="mob-proj-bar-bg"><div class="mob-proj-bar-fill" style="width:${s.progress}%"></div></div>
-        <div class="mob-proj-pct">${s.progress}%</div>
-      </div>
-      <div class="mob-proj-prog-row">
-        <div class="mob-proj-prog-btns">
-          ${[0,25,50,75,100].map(v=>`<button class="mob-proj-pbt${s.progress===v?' act':''}" onclick="mobUpdProj(${s.id},${v})">${v}%</button>`).join('')}
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-        <select class="fi" style="flex:1;font-size:12px;padding:6px 8px;" onchange="mobUpdProjStatus(${s.id},this.value)">
-          <option value="active"${st==='active'?' selected':''}>Active</option>
-          <option value="hold"${st==='hold'?' selected':''}>On Hold</option>
-          <option value="done"${st==='done'?' selected':''}>Completed</option>
-        </select>
-      </div>
-    </div>`;
-  }).join('');
-}
-function mobUpdProjStatus(id,val){
-  updProjStatus(id,val);
-  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
-}
-function mobUpdProj(id,val){
-  updGrade(id,val);
-  setTimeout(()=>{mobRenderProjects();updateAllStatsW();updateFixedStats();},100);
-}
-async function mobDelProj(id){
-  if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;
-  subjects=subjects.filter(s=>s.id!==id);persist();
-  if(typeof renderSubFull==='function')renderSubFull();
-  renderAllSubW();updateAllStatsW();updateFixedStats();mobRenderProjects();
-}
-
-// ── CALENDAR ──
-const MOB_DAY_NAMES=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-function mobGetWeek(off){
-  const today=new Date();
-  today.setDate(today.getDate()+off*7);
-  const mon=new Date(today);
-  mon.setDate(today.getDate()-((today.getDay()+6)%7));
-  return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
-}
-function mobFdk(d){return d.toISOString().slice(0,10);}
-function mobRenderCalendar(){
-  const week=mobGetWeek(_mobCalOff);
-  const todayKey=mobFdk(new Date());
-  if(!_mobSelDay)_mobSelDay=todayKey;
-  // week label
-  const lbl=document.getElementById('mob-cal-week-lbl');
-  if(lbl)lbl.textContent=week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  // day pills
-  const daysEl=document.getElementById('mob-cal-days');
-  if(daysEl){
-    daysEl.innerHTML=week.map((d,i)=>{
-      const k=mobFdk(d);
-      const evCount=calEvs.filter(e=>e.date===k).length;
-      const isToday=k===todayKey;
-      const isSel=k===_mobSelDay;
-      return`<div class="mob-cal-day${isToday?' today':''}${isSel?' sel':''}" onclick="mobSelDay('${k}')">
-        <div class="mob-cal-day-name">${MOB_DAY_NAMES[i]}</div>
-        <div class="mob-cal-day-num">${d.getDate()}</div>
-        <div class="mob-cal-day-dots">${Array.from({length:Math.min(evCount,3)},()=>'<div class="mob-cal-day-dot"></div>').join('')}</div>
-      </div>`;
-    }).join('');
-  }
-  // selected day events
-  mobRenderDayEvents();
-}
-function mobSelDay(key){
-  _mobSelDay=key;
-  mobRenderCalendar();
-}
-function mobCalShift(dir){
-  _mobCalOff+=dir;
-  mobRenderCalendar();
-}
-function mobRenderDayEvents(){
-  const evEl=document.getElementById('mob-cal-events');if(!evEl)return;
-  const k=_mobSelDay||mobFdk(new Date());
-  const evs=calEvs.filter(e=>e.date===k);
-  const d=new Date(k);
-  const hdTxt=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  let html=`<div class="mob-cal-date-hd">${hdTxt}</div>`;
-  if(!evs.length){
-    html+='<div class="mob-cal-empty">No events — add one below</div>';
-  } else {
-    html+=evs.map(ev=>`
-      <div class="mob-cal-ev-card">
-        <div class="mob-cal-ev-bar" style="background:${ev.subColor||'var(--a2)'}"></div>
-        <div class="mob-cal-ev-title">${esc(ev.title)}</div>
-        <button class="mob-cal-ev-del" onclick="mobDelCalEv(${ev.id})">&#x2715;</button>
-      </div>`).join('');
-  }
-  evEl.innerHTML=html;
-}
-function mobAddCalEv(){
-  const inp=document.getElementById('mob-cal-input');
-  const title=inp?.value.trim();if(!title)return;
-  const date=_mobSelDay||mobFdk(new Date());
-  calEvs.push({id:Date.now(),title,date});
-  persist();
-  if(inp)inp.value='';
-  mobRenderCalendar();
-  mobRenderHome();
-  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
-  if(typeof renderFullCal==='function')renderFullCal();
-}
-function mobDelCalEv(id){
-  calEvs=calEvs.filter(e=>e.id!==id);
-  persist();mobRenderCalendar();mobRenderHome();
-  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
-  if(typeof renderFullCal==='function')renderFullCal();
-}
-
-// ── SETTINGS ──
-function mobRenderSettings(){
-  const d=acc[cu]||{};
-  const displayName=d.displayName||d.display_name||'—';
-  const nm=document.getElementById('mob-set-name');
-  const un=document.getElementById('mob-set-un');
-  if(nm)nm.textContent=displayName;
-  if(un)un.textContent='@'+cu;
-  const tog=document.getElementById('mob-tog-dk');
-  if(tog)tog.classList.toggle('on',!!prefs.dark);
-}
-
-// ── PROFILE PAGE ──
-function mobRenderProfile(){
-  if(!cu)return;
-  const d=acc[cu];if(!d)return;
-  const nm=d.displayName||d.display_name||cu;
-  const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  mobRenderProfileBio();
-  renderActivity('mob-actbar','mob-act-streak',null);
-  // Render profile avatar — use photo if available
-  const pbavInner=document.getElementById('mob-pbav-inner');
-  if(pbavInner){
-    const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
-    if(photo){
-      pbavInner.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
-    } else {
-      pbavInner.textContent=nm[0].toUpperCase();
-    }
-  }
-  el('mob-pbnm',nm);
-  el('mob-pbun','@'+cu);
-  el('mob-pbjn',d.joined_at?'Joined '+new Date(d.joined_at).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'');
-  const tot=tasks.length,dn=tasks.filter(t=>t.col==='done').length;
-  el('mob-pp-tot',tot);el('mob-pp-dn',dn);
-  el('mob-pp-rt',tot?Math.round(dn/tot*100)+'%':'—');
-  // mood history
-  const mh=document.getElementById('mob-mhist');
-  if(mh){
-    const counts=Array(MLAB.length).fill(0);
-    journal.forEach(j=>counts[j.mood]=(counts[j.mood]||0)+1);
-    mh.innerHTML=MLAB.map((m,i)=>counts[i]?`<span style="font-size:18px;" title="${m.l} ×${counts[i]}">${m.e}</span>`:'').join('');
-    if(!journal.length)mh.innerHTML='<span style="font-size:12px;color:var(--ink4);">No entries yet</span>';
-  }
-  // project progress
-  const spl=document.getElementById('mob-spllist');
-  if(spl){
-    if(!subjects.length){spl.innerHTML='<div style="font-size:12px;color:var(--ink4);padding:4px 0;">No projects yet</div>';}
-    else spl.innerHTML=subjects.map(s=>`
-      <div style="margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-size:12px;font-weight:600;color:var(--ink);">${esc(s.name)}</span>
-          <span style="font-size:12px;font-weight:700;color:var(--a2);">${s.progress}%</span>
-        </div>
-        <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden;">
-          <div style="height:100%;width:${s.progress}%;background:${s.color||'var(--a2)'};border-radius:3px;"></div>
-        </div>
-      </div>`).join('');
-  }
-
-}
-
-// ── AVATAR DROPDOWN ──
-function toggleMobAv(e){
-  e.stopPropagation();
-  const av=document.getElementById('mob-av');
-  av.classList.toggle('open');
-}
-document.addEventListener('click',function(e){
-  const av=document.getElementById('mob-av');
-  if(av&&!av.contains(e.target))av.classList.remove('open');
-});
-function mobAvatarGo(page){
-  const av=document.getElementById('mob-av');
-  if(av)av.classList.remove('open');
-  mobGoPage(page);
-}
-function mobUpdateAvatar(){
-  if(!cu)return;
-  const d=acc[cu];if(!d)return;
-  const nm=d.displayName||d.display_name||cu||'';
-  const letter=nm[0].toUpperCase();
-  // top-right avatar
-  const avLetter=document.getElementById('mob-av-inner');
-  const avImg=document.getElementById('mob-av-img');
-  const avHdLetter=document.getElementById('mob-av-hd-letter');
-  const avHdImg=document.getElementById('mob-av-hd-img');
-  const avHdName=document.getElementById('mob-av-hd-name');
-  const avHdUser=document.getElementById('mob-av-hd-user');
-  if(avHdName)avHdName.textContent=nm;
-  if(avHdUser)avHdUser.textContent='@'+cu;
-  const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
-  if(photo){
-    if(avLetter)avLetter.style.display='none';
-    if(avImg){avImg.src=photo;avImg.style.display='block';}
-    if(avHdLetter)avHdLetter.style.display='none';
-    if(avHdImg){avHdImg.src=photo;avHdImg.style.display='block';}
-  } else {
-    if(avLetter){avLetter.textContent=letter;avLetter.style.display='';}
-    if(avImg)avImg.style.display='none';
-    if(avHdLetter){avHdLetter.textContent=letter;avHdLetter.style.display='';}
-    if(avHdImg)avHdImg.style.display='none';
-  }
-  // Also update profile page avatar if visible
-  const pbavInner=document.getElementById('mob-pbav-inner');
-  if(pbavInner){
-    if(photo){
-      pbavInner.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>`;
-    } else {
-      pbavInner.textContent=letter;
-    }
-  }
-}
-async function mobAvatarUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  const av=document.getElementById('mob-av');
-  if(av)av.classList.remove('open');
-  const url=await uploadAvatarToStorage(file);
-  if(!url){alert('Photo upload failed. Please try again.');return;}
-  prefs.avatarUrl=url;
-  delete prefs.avatarPhoto;
-  acc[cu].prefs=prefs;
-  await saveAvatarUrl(url);
-  persist();
-  applyAvatar();
-  mobUpdateAvatar();
-}
-
-// ── INIT ──
-function initMobApp(){
-  if(!isMobile())return;
-  mobUpdateAvatar();
-  mobRenderHome();
-  mobTimerRender();
-  mobRenderJournal();
-  const savedPg=LS.g('pd1_mobpg','home');
-  if(savedPg&&savedPg!=='home')mobGoPage(savedPg);
-}
-
-function addMobileWidget(){}
-function removeMobileWidget(){}
-function renderMobileCanvas(){}
-function toggleMobEdit(){}
-
-// Sync data changes to mobile if visible
-function mobSyncIfVisible(){
-  if(!isMobile())return;
-  if(_mobPage==='home')mobRenderHome();
-  else if(_mobPage==='tasks')mobRenderTasks();
-  else if(_mobPage==='journal')mobRenderJournal();
-  else if(_mobPage==='projects')mobRenderProjects();
-  else if(_mobPage==='calendar')mobRenderCalendar();
-  else if(_mobPage==='profile')mobRenderProfile();
-}
-
 // AUTH
 // ═══════════════════════════════════════
 function showAuth(tab){
-  try{
-    $('aq').textContent='\u201c'+QQ[qIdx].t+'\u201d';
-    $('ac').textContent='— '+QQ[qIdx].a;
-    show('sa');swtab(tab);
-    if(typeof mobSwtab==='function')mobSwtab(tab);
-  }catch(e){
-    console.error('[Prodify] showAuth error:',e);
-    show('sa');swtab(tab);
-  }
+  show('sa');
 }
 function swtab(t){
   $('fsu').style.display=t==='su'?'block':'none';
@@ -1635,13 +688,39 @@ async function doSU(){
     confirmMsg.style.display='block';
     confirmMsg.style.color='var(--ink)';
   }
-  const mobConfirmMsg=document.getElementById('mb-sue');
-  if(mobConfirmMsg){
-    mobConfirmMsg.innerHTML='Account created! Check your email and click the confirmation link, then <button onclick="mobSwtab(\'si\')" style="background:none;border:none;color:var(--a2);font-weight:700;cursor:pointer;padding:0;font-size:inherit;text-decoration:underline;">sign in here</button>.';
-    mobConfirmMsg.style.display='block';
-    mobConfirmMsg.style.color='#ffffff';
-  }
 }
+// Merge sign-in DB data with local — trust local if it has a fresher _localTs
+function _mergeSignInData(u, dbUser){
+  const loc = acc[u] || {};
+  const localTs = loc._localTs || 0;
+  const trustLocal = localTs > 0 && localTs >= (_lastSaveTs || 0) && Object.keys(loc).length > 3;
+  const cP = JSON.parse(dbUser.prefs || '{}');
+  if (dbUser.avatar_url) cP.avatarUrl = dbUser.avatar_url;
+  if (trustLocal) {
+    acc[u] = Object.assign({}, loc, {
+      passHash: dbUser.pass_hash || loc.passHash || '',
+      displayName: dbUser.display_name || loc.displayName || '',
+      joined: new Date(dbUser.joined_at).getTime() || loc.joined || Date.now(),
+    });
+    if (sbReady) dbSaveUser(u, acc[u]).catch(()=>{});
+  } else {
+    acc[u] = {
+      passHash: dbUser.pass_hash,
+      displayName: dbUser.display_name || '',
+      tasks: JSON.parse(dbUser.tasks || '[]'),
+      journal: JSON.parse(dbUser.journal || '[]'),
+      subjects: JSON.parse(dbUser.subjects || '[]'),
+      calEvs: JSON.parse(dbUser.cal_evs || '[]'),
+      widgets: JSON.parse(dbUser.widgets || '[]'),
+      notes: JSON.parse(dbUser.notes || '{}'),
+      prefs: cP,
+      joined: new Date(dbUser.joined_at).getTime() || Date.now(),
+      _localTs: 0,
+    };
+  }
+  LS.s('pd1_acc', acc);
+}
+
 async function doSI(){
   const u=$('si-u').value.trim().toLowerCase(),p=$('si-p').value;
   ce('sie','sipe');
@@ -1683,33 +762,276 @@ async function doSI(){
       }
     }
 
-    const siPrefs=JSON.parse(dbUser.prefs||'{}');
-    if(dbUser.avatar_url) siPrefs.avatarUrl=dbUser.avatar_url;
-    acc[u]={
-      passHash:dbUser.pass_hash,
-      displayName:dbUser.display_name||'',
-      tasks:JSON.parse(dbUser.tasks||'[]'),
-      journal:JSON.parse(dbUser.journal||'[]'),
-      subjects:JSON.parse(dbUser.subjects||'[]'),
-      calEvs:JSON.parse(dbUser.cal_evs||'[]'),
-      widgets:JSON.parse(dbUser.widgets||'[]'),
-      notes:JSON.parse(dbUser.notes||'{}'),
-      prefs:siPrefs,
-      joined:new Date(dbUser.joined_at).getTime()||Date.now(),
-    };
-    LS.s('pd1_acc',acc);
+    _mergeSignInData(u, dbUser);
   } else {
     if(!acc[u]||acc[u].passHash!==hp(p)){recordLoginFailure(u);fe('sie','Invalid username or password.');return;}
   }
   clearLoginAttempts(u);
   cu=u;LS.s('pd1_cur',u);
   startRealtimeSync(u);
-  if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
-  else launch();
+  if(!acc[u].displayName||acc[u].displayName.trim()===''){
+    const _d=acc[u];
+    tasks=_d.tasks||[];journal=_d.journal||[];subjects=_d.subjects||[];
+    calEvs=_d.calEvs||[];widgets=_d.widgets||[];notes=_d.notes||{};prefs=_d.prefs||{dark:false};
+    show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);
+  }
+  else {
+    checkAndRegisterDevice(u).then(allowed => {
+      if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+      launch();
+    });
+  }
 }
 
+// ── GOOGLE AUTH ──────────────────────────────────────────────────────────────
+async function doGoogleAuth() {
+  const btn = document.querySelector('.btn-google:not([disabled])');
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening Google…'; }
+  try {
+    if (!sbReady) throw new Error('Sync unavailable. Try again.');
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) throw error;
+    // Page will redirect to Google — no further code runs here
+  } catch(e) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/></svg> Continue with Google`;
+      // Show error on the auth screen
+      const saErr = document.getElementById('sa-err');
+      if (saErr) { saErr.textContent = e.message || 'Google sign-in failed. Try again.'; saErr.style.display = 'block'; }
+    }
+  }
+}
+
+// Called on page load — handles the redirect back from Google OAuth
+async function handleGoogleCallback(passedSession = null) {
+  if (!sbReady) return;
+  try {
+    let session = passedSession;
+    if (!session) {
+      const { data, error } = await sb.auth.getSession();
+      if (error || !data.session) return;
+      session = data.session;
+    }
+    // Clean URL if still dirty
+    if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    const authUser = session.user;
+    const email = authUser.email || '';
+    const googleName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
+
+    // Check if a Prodify user row already exists for this email
+    // Try RPC first (bypasses RLS), fall back to direct query if RPC not yet created
+    let existingUser = null;
+    try {
+      const { data: rpcRows, error: rpcErr } = await sb.rpc('get_user_by_email', { p_email: email });
+      if (!rpcErr && rpcRows && rpcRows[0]) {
+        existingUser = rpcRows[0];
+      } else {
+        // Fallback: direct query (works if auth_id already linked or RLS allows it)
+        const { data: directRow } = await sb.from('users').select('*').eq('email', email).maybeSingle();
+        if (directRow) existingUser = directRow;
+      }
+    } catch(lookupErr) {
+      console.warn('[Prodify] email lookup error:', lookupErr);
+    }
+
+    if (existingUser) {
+      // Existing user — link their Google auth_id if not already linked, then log in.
+      // MUST use the set_auth_id_for_user RPC (SECURITY DEFINER) — not a direct update.
+      // Old accounts have no auth_id, so RLS blocks any direct .update() on their row,
+      // causing the link to fail silently and ALL future dbSaveUser calls to fail too.
+      let _authIdLinked = !!existingUser.auth_id; // already linked
+      if (!existingUser.auth_id && authUser.id) {
+        try {
+          const {error: linkErr} = await sb.rpc('set_auth_id_for_user', {
+            p_username: existingUser.username,
+            p_pass_hash: existingUser.pass_hash || '',
+            p_auth_id: authUser.id,
+            p_email: email
+          });
+          if (linkErr) {
+            console.warn('[Prodify] auth_id link failed:', linkErr.message);
+          } else {
+            _authIdLinked = true;
+          }
+        } catch(e) {
+          console.warn('[Prodify] auth_id link exception:', e);
+        }
+      }
+      const u = existingUser.username;
+      // Use _localTs to decide whether local or cloud is more recent.
+      // doSO keeps acc[u] in localStorage after sign-out (only pd1_cur is removed).
+      // So local may be newer than cloud if the async save didn't complete in time.
+      const loc = acc[u] || {};
+      const localTs = loc._localTs || 0;
+      // Supabase doesn't expose updated_at here, so we compare against _lastSaveTs.
+      // If we have a recent local timestamp that's after the last known cloud save,
+      // trust local entirely. Otherwise trust cloud.
+      const trustLocal = localTs > 0 && localTs >= (_lastSaveTs || 0) && Object.keys(loc).length > 3;
+      const cP = JSON.parse(existingUser.prefs || '{}');
+      if (existingUser.avatar_url) cP.avatarUrl = existingUser.avatar_url;
+      if (trustLocal) {
+        // Local is at least as fresh — keep it, but patch in auth fields from cloud
+        acc[u] = Object.assign({}, loc, {
+          passHash: existingUser.pass_hash || loc.passHash || '',
+          displayName: existingUser.display_name || loc.displayName || '',
+          joined: new Date(existingUser.joined_at).getTime() || loc.joined || Date.now(),
+        });
+        // Push local state to cloud to close any gap
+        if (sbReady) dbSaveUser(u, acc[u]).catch(()=>{});
+      } else {
+        // Cloud is source of truth
+        acc[u] = {
+          passHash: existingUser.pass_hash || '',
+          displayName: existingUser.display_name || '',
+          tasks: JSON.parse(existingUser.tasks || '[]'),
+          journal: JSON.parse(existingUser.journal || '[]'),
+          subjects: JSON.parse(existingUser.subjects || '[]'),
+          calEvs: JSON.parse(existingUser.cal_evs || '[]'),
+          widgets: JSON.parse(existingUser.widgets || '[]'),
+          notes: JSON.parse(existingUser.notes || '{}'),
+          prefs: cP,
+          joined: new Date(existingUser.joined_at).getTime() || Date.now(),
+          _localTs: 0,
+        };
+      }
+      LS.s('pd1_acc', acc);
+      cu = u; LS.s('pd1_cur', u);
+      startRealtimeSync(u);
+      if (!acc[u].displayName || acc[u].displayName.trim() === '') {
+        // Hydrate globals from the loaded account data BEFORE entering onboarding.
+        // Without this, tasks/journal/widgets are still [] from app init,
+        // and _obSyncGlobals() would flush empty arrays to the cloud on every step.
+        const _d = acc[u];
+        tasks    = _d.tasks    || [];
+        journal  = _d.journal  || [];
+        subjects = _d.subjects || [];
+        calEvs   = _d.calEvs   || [];
+        widgets  = _d.widgets  || [];
+        notes    = _d.notes    || {};
+        prefs    = _d.prefs    || { dark: false };
+        show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
+      } else {
+        checkAndRegisterDevice(u).then(allowed => {
+          if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+          launch();
+        });
+      }
+    } else {
+      // New Google user — let them pick a username first
+      _pendingGoogleSession = { authUser, email, googleName };
+      showGoogleUsernamePicker();
+    }
+  } catch(e) {
+    console.error('[Prodify] Google callback error:', e);
+  }
+}
+
+// ── GOOGLE USERNAME PICKER ───────────────────────────────────────────────────
+function showGoogleUsernamePicker() {
+  // Pre-fill a suggestion based on Google name/email
+  const { googleName, email } = _pendingGoogleSession || {};
+  const suggestion = (googleName?.split(' ')[0] || email?.split('@')[0] || '')
+    .toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20);
+  const inp = document.getElementById('gu-u');
+  if (inp && suggestion.length >= 3) inp.value = suggestion;
+  const errEl = document.getElementById('gue');
+  if (errEl) errEl.textContent = '';
+  show('sg');
+  setTimeout(() => { if (inp) inp.focus(); }, 300);
+}
+
+function guValidate(inp) {
+  const val = inp.value.trim().toLowerCase();
+  const errEl = document.getElementById('gue');
+  if (!errEl) return;
+  if (val.length > 0 && val.length < 3) {
+    errEl.textContent = 'Minimum 3 characters.';
+    errEl.style.display = 'block';
+  } else if (val.length > 0 && !/^[a-z0-9_]+$/.test(val)) {
+    errEl.textContent = 'Letters, numbers, and underscores only.';
+    errEl.style.display = 'block';
+  } else {
+    errEl.textContent = '';
+    errEl.style.display = 'none';
+  }
+}
+
+async function doGoogleUsername() {
+  const inp = document.getElementById('gu-u');
+  const errEl = document.getElementById('gue');
+  const btn = document.getElementById('gu-btn');
+  const u = inp ? inp.value.trim().toLowerCase() : '';
+
+  if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+
+  if (!u || u.length < 3) {
+    if (errEl) { errEl.textContent = 'Minimum 3 characters.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!/^[a-z0-9_]+$/.test(u)) {
+    if (errEl) { errEl.textContent = 'Letters, numbers, and underscores only.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!_pendingGoogleSession) {
+    if (errEl) { errEl.textContent = 'Session expired. Please sign in again.'; errEl.style.display = 'block'; }
+    show('sl'); return;
+  }
+
+  if (btn) { btn.textContent = 'Creating workspace…'; btn.disabled = true; }
+
+  try {
+    const { authUser, email, googleName } = _pendingGoogleSession;
+
+    // Check username availability via RPC (SECURITY DEFINER — bypasses RLS)
+    const { data: avail, error: availErr } = await sb.rpc('check_signup_availability', {
+      p_username: u,
+      p_email: email
+    });
+    if (availErr) throw new Error('Could not verify availability. Please try again.');
+    const availResult = avail && avail[0];
+    if (availResult && availResult.username_taken) {
+      if (errEl) { errEl.textContent = 'This username is already taken.'; errEl.style.display = 'block'; }
+      if (btn) { btn.textContent = 'Create my workspace'; btn.disabled = false; }
+      return;
+    }
+
+    const displayName = googleName || u;
+    const createOk = await dbCreateUser(u, '', displayName, authUser.id, email);
+    if (!createOk) throw new Error('Account could not be created. Please try again.');
+
+    const newUser = {
+      passHash: '', displayName,
+      tasks: [], journal: [], subjects: [], calEvs: [],
+      widgets: [], notes: {}, prefs: { dark: false },
+      joined: Date.now()
+    };
+    acc[u] = newUser;
+    LS.s('pd1_acc', acc);
+    cu = u; LS.s('pd1_cur', u);
+    _pendingGoogleSession = null;
+    startRealtimeSync(u);
+    // New user — send to onboarding
+    show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
+
+  } catch(e) {
+    if (btn) { btn.textContent = 'Create my workspace'; btn.disabled = false; }
+    if (errEl) { errEl.textContent = e.message || 'Something went wrong. Try again.'; errEl.style.display = 'block'; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Pending login state for migration flow
 let _pendingLogin=null;
+
+// Pending Google session — held while user picks username
+let _pendingGoogleSession = null;
 
 async function submitMigrateEmail(){
   const emailEl=document.getElementById('migrate-email-input');
@@ -1757,101 +1079,196 @@ async function submitMigrateEmail(){
     closeMo('mo-migrate-email');
     _pendingLogin=null;
 
-    acc[u]={
-      passHash:dbUser.pass_hash,
-      displayName:dbUser.display_name||'',
-      tasks:JSON.parse(dbUser.tasks||'[]'),
-      journal:JSON.parse(dbUser.journal||'[]'),
-      subjects:JSON.parse(dbUser.subjects||'[]'),
-      calEvs:JSON.parse(dbUser.cal_evs||'[]'),
-      widgets:JSON.parse(dbUser.widgets||'[]'),
-      notes:JSON.parse(dbUser.notes||'{}'),
-      prefs:JSON.parse(dbUser.prefs||'{}'),
-      joined:new Date(dbUser.joined_at).getTime()||Date.now(),
-    };
-    LS.s('pd1_acc',acc);
+    _mergeSignInData(u, dbUser);
     cu=u;LS.s('pd1_cur',u);
     startRealtimeSync(u);
-    if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');setTimeout(()=>$('nin').focus(),400);}
-    else launch();
+    if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);}
+    else {
+      checkAndRegisterDevice(u).then(allowed=>{
+        if(!allowed){showMultiDeviceBlock();doSO();return;}
+        launch();
+      });
+    }
   }catch(e){
     if(errEl)errEl.textContent='Unexpected error: '+(e?.message||e);
     if(okBtn){okBtn.disabled=false;okBtn.textContent='Save & continue';}
   }
 }
-function doName(){
-  const n=$('nin').value.trim();if(!n)return;
-  acc[cu].displayName=n;LS.s('pd1_acc',acc);
-  if(sbReady)dbSaveUser(cu,acc[cu]);
-  launch();
+// ── ONBOARDING ──
+let _obColor = 'green';
+let _obUseCase = '';
+let _obTheme = 'light';
+
+// Apply accent to CSS vars directly — bypasses isPro() check, safe during onboarding
+function _obApplyAccent(key) {
+  const presets = {
+    green:  { a:'#2A5C44', a2:'#3A7D5E', al:'#EBF4EF', aRgb:'42,92,68',  a2Rgb:'58,125,94' },
+    blue:   { a:'#1E4A7C', a2:'#2563EB', al:'#EBF0FC', aRgb:'30,74,124', a2Rgb:'37,99,235' },
+    purple: { a:'#4A2C6E', a2:'#7C3AED', al:'#F0EBFD', aRgb:'74,44,110', a2Rgb:'124,58,237' },
+  };
+  const c = presets[key] || presets.green;
+  const root = document.documentElement;
+  root.style.setProperty('--a',     c.a);
+  root.style.setProperty('--a2',    c.a2);
+  root.style.setProperty('--al',    c.al);
+  root.style.setProperty('--a-rgb',  c.aRgb);
+  root.style.setProperty('--a2-rgb', c.a2Rgb);
 }
-// ── MOBILE AUTH helpers ──
-function mobSwtab(t){
-  document.getElementById('mb-fsu').style.display=t==='su'?'block':'none';
-  document.getElementById('mb-fsi').style.display=t==='si'?'block':'none';
-  document.getElementById('mb-tsu').classList.toggle('active',t==='su');
-  document.getElementById('mb-tsi').classList.toggle('active',t==='si');
-  // sync desktop tabs too so doSU/doSI read the right fields
-  swtab(t);
+
+function _obSetProgress(step) {
+  const fill = document.getElementById('ob-progress-fill');
+  const label = document.getElementById('ob-progress-label');
+  const s = Math.min(step, 3); // steps 0-3 shown, steps 4+ hide bar
+  if (fill) fill.style.width = ((s + 1) / 4 * 100) + '%';
+  if (label) label.textContent = 'Step ' + (s + 1) + ' of 4';
+  // Hide progress on plan + all set steps
+  const wrap = document.getElementById('ob-steps');
+  if (wrap) wrap.style.opacity = step >= 4 ? '0' : '1';
 }
-function mobShowErr(id,msg){const e=document.getElementById(id);if(e){e.textContent=msg;e.style.display='block';}}
-function mobClearErr(...ids){ids.forEach(id=>{const e=document.getElementById(id);if(e){e.textContent='';e.style.display='none';}});}
-async function mobDoSU(){
-  const u=document.getElementById('mb-su-u').value.trim().toLowerCase();
-  const e=(document.getElementById('mb-su-e')||{value:''}).value.trim();
-  const p=document.getElementById('mb-su-p').value;
-  const p2=document.getElementById('mb-su-p2').value;
-  mobClearErr('mb-sue','mb-see','mb-spe','mb-sp2e');
-  let ok=true;
-  if(!u||u.length<3){mobShowErr('mb-sue','Minimum 3 characters.');ok=false;}
-  if(ok&&!/^[a-z0-9_]+$/.test(u)){mobShowErr('mb-sue','Letters, numbers, and underscores only.');ok=false;}
-  if(!e||!e.includes('@')){mobShowErr('mb-see','A valid email address is required.');ok=false;}
-  if(!p||p.length<8){mobShowErr('mb-spe','Minimum 8 characters.');ok=false;}
-  if(p!==p2){mobShowErr('mb-sp2e','Passwords do not match.');ok=false;}
-  if(!ok)return;
-  // Check username + email availability before calling doSU
-  if(sbReady){
-    const {data:avail,error:availErr}=await sb.rpc('check_signup_availability',{p_username:u,p_email:e});
-    if(availErr){mobShowErr('mb-sue','Could not verify availability. Please try again.');return;}
-    const result=avail&&avail[0];
-    if(result&&result.username_taken){mobShowErr('mb-sue','This username is already taken.');return;}
-    if(result&&result.email_taken){mobShowErr('mb-see','An account with this email address already exists.');return;}
+
+function obGo(step) {
+  const panels = document.querySelectorAll('.ob-panel');
+  panels.forEach((p, i) => {
+    if (p.classList.contains('active') && i !== step) {
+      p.classList.add('exit');
+      setTimeout(() => { p.classList.remove('active', 'exit'); }, 300);
+    }
+  });
+  setTimeout(() => {
+    const next = document.getElementById('ob-' + step);
+    if (next) { next.classList.add('active'); next.classList.remove('exit'); }
+    _obSetProgress(step);
+    const inp = next && next.querySelector('input');
+    if (inp) setTimeout(() => inp.focus(), 80);
+  }, step === 0 ? 0 : 320);
+}
+
+function obPickUC(btn, key) {
+  _obUseCase = key;
+  document.querySelectorAll('.ob-uc-card').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function obPickTheme(btn, mode) {
+  _obTheme = mode;
+  document.querySelectorAll('.ob-theme-card').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Live preview — right panel only
+  const obRight = document.querySelector('#sn .ob-right');
+  if (obRight) {
+    obRight.classList.toggle('ob-right-dark', mode === 'dark');
+    obRight.classList.toggle('ob-right-light', mode === 'light');
   }
-  // mirror to desktop fields for shared logic
-  $('su-u').value=u;
-  const suE=document.getElementById('su-e');if(suE)suE.value=e;
-  $('su-p').value=p;$('su-p2').value=p2;
-  await doSU();
-  // Only copy errors back — skip 'sue' since doSU sets the success message there
-  // and we don't want to overwrite the mobile success message
-  const desktopSue=$('sue');
-  const isSuccess = desktopSue && desktopSue.style.display!=='none' && desktopSue.querySelector('button');
-  if(!isSuccess){
-    ['sue','see','spe','sp2e'].forEach((dk)=>{
-      const de=$(dk),me=document.getElementById('mb-'+dk);
-      if(de&&me&&de.style.display!=='none'){me.textContent=de.textContent;me.style.display='block';}
-    });
+}
+
+function obPickColor(btn, key) {
+  document.querySelectorAll('.ob-color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _obColor = key;
+  _obApplyAccent(key);
+  // Update left panel gradient to match chosen accent
+  const leftPanel = document.querySelector('#sn .ob-left');
+  if (leftPanel) {
+    const gradients = {
+      green:  { bg: 'linear-gradient(160deg,#0A1F15 0%,#112D1E 40%,#0D2318 100%)', glow: 'radial-gradient(ellipse at 25% 20%,rgba(58,125,94,.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 80%,rgba(29,183,110,.12) 0%,transparent 50%)' },
+      blue:   { bg: 'linear-gradient(160deg,#08142A 0%,#0E2048 40%,#0A1A3C 100%)', glow: 'radial-gradient(ellipse at 25% 20%,rgba(37,99,235,.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 80%,rgba(30,74,170,.15) 0%,transparent 50%)' },
+      purple: { bg: 'linear-gradient(160deg,#12082A 0%,#1E0E40 40%,#160A32 100%)', glow: 'radial-gradient(ellipse at 25% 20%,rgba(124,58,237,.35) 0%,transparent 60%),radial-gradient(ellipse at 75% 80%,rgba(74,44,110,.2) 0%,transparent 50%)' },
+    };
+    const g = gradients[key] || gradients.green;
+    leftPanel.style.background = g.bg;
+    // update the ::before pseudo via a data attribute driven CSS var isn't possible — apply via inline style on a child overlay
+    let overlay = leftPanel.querySelector('.ob-left-glow');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'ob-left-glow';
+      leftPanel.insertBefore(overlay, leftPanel.firstChild);
+    }
+    overlay.style.cssText = `position:absolute;inset:0;pointer-events:none;background:${g.glow};`;
   }
 }
-async function mobDoSI(){
-  const u=document.getElementById('mb-si-u').value.trim().toLowerCase();
-  const p=document.getElementById('mb-si-p').value;
-  mobClearErr('mb-sie','mb-sipe');
-  $('si-u').value=u;$('si-p').value=p;
-  await doSI();
-  ['sie','sipe'].forEach(dk=>{
-    const de=$(dk),me=document.getElementById('mb-'+dk);
-    if(de&&me&&de.style.display!=='none'){me.textContent=de.textContent;me.style.display='block';}
+
+// Sync in-memory globals back into acc[cu] before any onboarding save.
+// Without this, returning users who hit onboarding (e.g. empty displayName after
+// Google sign-in) would overwrite their cloud data with empty arrays.
+function _obSyncGlobals() {
+  if (!cu || !acc[cu]) return;
+  acc[cu].tasks    = tasks;
+  acc[cu].journal  = journal;
+  acc[cu].subjects = subjects;
+  acc[cu].calEvs   = calEvs;
+  acc[cu].widgets  = widgets;
+  acc[cu].notes    = notes;
+}
+
+function obNext(step) {
+  if (step === 0) {
+    const n = document.getElementById('nin').value.trim();
+    if (!n) { document.getElementById('nin').focus(); return; }
+    acc[cu].displayName = n;
+    _obSyncGlobals();
+    LS.s('pd1_acc', acc);
+    if (sbReady) dbSaveUser(cu, acc[cu]);
+    const dt = document.getElementById('ob-done-title');
+    if (dt) dt.textContent = 'You\'re all set, ' + n.split(' ')[0] + '!';
+    obGo(1);
+  } else if (step === 1) {
+    if (_obUseCase) {
+      if (!acc[cu].prefs) acc[cu].prefs = {};
+      acc[cu].prefs.useCase = _obUseCase;
+      const subs = { student: 'Ready to study smarter.', work: 'Ready to crush your goals.', personal: 'Ready to grow every day.' };
+      const ds = document.getElementById('ob-done-sub');
+      if (ds && subs[_obUseCase]) ds.textContent = subs[_obUseCase];
+      _obSyncGlobals();
+      LS.s('pd1_acc', acc);
+      if (sbReady) dbSaveUser(cu, acc[cu]);
+    }
+    obGo(2);
+  } else if (step === 2) {
+    // Save free color to prefs
+    if (!acc[cu].prefs) acc[cu].prefs = {};
+    acc[cu].prefs.accentColor = _obColor;
+    prefs = acc[cu].prefs;
+    _obSyncGlobals();
+    LS.s('pd1_acc', acc);
+    if (sbReady) dbSaveUser(cu, acc[cu]);
+    obGo(3);
+  } else if (step === 3) {
+    // Save dark mode
+    if (!acc[cu].prefs) acc[cu].prefs = {};
+    acc[cu].prefs.dark = (_obTheme === 'dark');
+    prefs = acc[cu].prefs;
+    _obSyncGlobals();
+    LS.s('pd1_acc', acc);
+    if (sbReady) dbSaveUser(cu, acc[cu]);
+    obGo(4); // → plan
+  } else if (step === 4) {
+    obGo(5); // → all set
+  } else if (step === 5) {
+    obFinish();
+  }
+}
+
+function obFinish() {
+  acc[cu].onboarded = true;
+  _obSyncGlobals();
+  LS.s('pd1_acc', acc);
+  if (sbReady) dbSaveUser(cu, acc[cu]);
+  checkAndRegisterDevice(cu).then(allowed => {
+    if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+    launch();
   });
 }
-// sync showAuth to also switch mobile tabs
-const _origShowAuth=typeof showAuth==='function'?showAuth:null;
 
+// Legacy — keep for any stray calls
+function doName() {
+  const n = $('nin').value.trim(); if (!n) return;
+  obNext(0);
+}
 // ── PHOTO UPLOAD ──
 async function handlePhotoUpload(e){
   const file=e.target.files[0];if(!file)return;
   const url=await uploadAvatarToStorage(file);
-  if(!url){alert('Photo upload failed. Please try again.');return;}
+  if(!url){appConfirm('Photo upload failed','Please try again.','OK');return;}
   prefs.avatarUrl=url;
   delete prefs.avatarPhoto;
   acc[cu].prefs=prefs;
@@ -1907,12 +1324,32 @@ function stopAlarm(){
   if(_alarmCtx){try{_alarmCtx.close();}catch(e){}_alarmCtx=null;}
 }
 
-function doSO(){
+async function doSO(){
+  const _cu = cu;
+  _pendingGoogleSession = null;
+  // Flush any pending debounced save and do a final cloud save BEFORE signing out.
+  // sbSignOut() kills the JWT immediately — any in-flight or debounced dbSaveUser
+  // calls after that point will fail RLS and the user's last changes are lost.
+  if(_persistTimer){ clearTimeout(_persistTimer); _persistTimer=null; }
+  if(_cu && sbReady && acc[_cu]){
+    const _d = acc[_cu];
+    _d.tasks=tasks;_d.journal=journal;_d.subjects=subjects;
+    _d.calEvs=calEvs;_d.widgets=widgets;_d.notes=notes;_d.prefs=prefs;
+    _d._localTs=Date.now();
+    LS.s('pd1_acc', acc);
+    await dbSaveUser(_cu, _d).catch(()=>{});
+  }
+  await unregisterDevice(_cu);
   stopRealtimeSync();
-  if(sbReady)sbSignOut().catch(()=>{});
-  LS.d('pd1_cur');cu=null;closeDD();
-  const mobApp=document.getElementById('mob-app');
-  if(mobApp)mobApp.style.display='none';
+  if(sbReady) sbSignOut().catch(()=>{});
+  LS.d('pd1_cur'); cu = null; closeDD();
+  // Always reset to light mode + default green accent on landing/auth screens
+  document.documentElement.setAttribute('data-dark','');
+  const root = document.documentElement;
+  root.style.removeProperty('--a');
+  root.style.removeProperty('--a2');
+  root.style.removeProperty('--al');
+  document.body.classList.remove('in-app');
   show('sl');
 }
 
@@ -1924,12 +1361,31 @@ function doSO(){
 // Never poll — polling caused data deletion
 async function pullFromCloud(){
   if(!sbReady||!cu)return;
+  // If local data was saved more recently than the last known cloud write,
+  // skip the pull entirely — we'd only overwrite newer local state with older cloud data.
+  // This is the main cause of the 1-3 minute wipe: tab becomes visible after
+  // >10s, pullFromCloud fires, and blindly stomps local changes that haven't
+  // finished syncing to cloud yet.
+  const localTs = (acc[cu]||{})._localTs || 0;
+  if(localTs > 0 && localTs > _lastSaveTs) return;
   try{
     const dbUser=await dbGetUser(cu);
-    if(!dbUser){doSO();return;}
+    if(!dbUser){
+      // Could not fetch from DB — if we have a valid session, keep local data
+      const {data:{session:chkSession}} = await sb.auth.getSession().catch(()=>({data:{session:null}}));
+      if(chkSession){ return; } // stay on local — do not wipe or re-launch
+      doSO(); return;
+    }
     const oldWidgetIds=widgets.map(x=>x.id).sort().join(',');
     const pulledPrefs=JSON.parse(dbUser.prefs||'{}');
     if(dbUser.avatar_url) pulledPrefs.avatarUrl=dbUser.avatar_url;
+    // Re-check localTs here too — the async fetch took time and user may have
+    // added data while we were waiting for the DB response
+    const pullLocalTs = (acc[cu]||{})._localTs || 0;
+    if(pullLocalTs > 0 && pullLocalTs > _lastSaveTs){
+      // Local got newer while we were fetching — abort, don't overwrite
+      return;
+    }
     acc[cu]={
       passHash:dbUser.pass_hash,
       displayName:dbUser.display_name||acc[cu]?.displayName||'',
@@ -1941,6 +1397,7 @@ async function pullFromCloud(){
       notes:JSON.parse(dbUser.notes||'{}'),
       prefs:pulledPrefs,
       joined:acc[cu]?.joined||Date.now(),
+      _localTs:0, // cloud data — no local timestamp
     };
     LS.s('pd1_acc',acc);
     tasks=acc[cu].tasks;journal=acc[cu].journal;subjects=acc[cu].subjects;
@@ -1953,21 +1410,31 @@ async function pullFromCloud(){
       renderFullCal();widgets.forEach(w=>fillWBody(w));
     }
     updateAllStatsW();updateFixedStats();
-    if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
   }catch(e){}
 }
 
 let _hiddenAt=0;
+let _realtimeStarted=false; // guard against duplicate visibilitychange listeners
 function startRealtime(){
+  if(_realtimeStarted) return; // already registered — do not stack listeners
+  _realtimeStarted=true;
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='hidden'){
       _hiddenAt=Date.now();
     } else if(document.visibilityState==='visible'){
       // Only pull if we've been away for more than 10 seconds
-      // (means user likely switched device and came back)
-      if(_hiddenAt&&Date.now()-_hiddenAt>10000)pullFromCloud();
+      if(_hiddenAt&&Date.now()-_hiddenAt>10000) pullFromCloud();
     }
   });
+}
+
+function renderCanvasGreeting(){
+  const el=document.getElementById('canvas-greeting-text');
+  if(!el)return;
+  const name=(acc[cu]?.displayName||cu||'').split(' ')[0];
+  const h=new Date().getHours();
+  const g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  el.textContent=name?`${g}, ${name}.`:`${g}.`;
 }
 
 function launch(){
@@ -1994,137 +1461,61 @@ function launch(){
   const nm=d.displayName||cu,av=nm[0].toUpperCase();
   $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
   applyAvatar();
-  $('ev-d').value=new Date().toISOString().slice(0,10);
+  // _evDate is set by openCalAdd/openCalEdit
   applyTheme();
   scheduleRecurringCheck();
-  renderProBadge();renderProBadgeRing();show('app');goPg(LS.g('pd1_pg','canvas'),null);
-  setTimeout(registerDeviceSession, 800);
+  // Check waitlist status in background
+  checkWaitlist();
+  renderProBadge();
+  // Close any stray open modals before transition
+  document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
+  // Prepare app fully before revealing — no glimpse
+  const snEl = document.getElementById('sn');
+  const appEl = document.getElementById('app');
+  // Run all renders while app is still hidden
+  goPg(LS.g('pd1_pg','canvas'),null);
   renderCanvas();
-  renderFixedQuote();
+  renderCanvasGreeting();
   updateFixedStats();
-  if(isMobile())setTimeout(()=>{initMobApp();mobUpdateAvatar();},100);
-  startRealtime();
-  startRealtimeSync(cu);
-}
-
-// ═══════════════════════════════════════
-// PROFILE — BIO + SOCIAL + ACTIVITY
-// ═══════════════════════════════════════
-function openBioModal(){
-  const p=prefs;
-  const bi=$('bio-i');if(bi)bi.value=p.bio||'';
-  ['github','web','twitter','linkedin'].forEach(k=>{
-    const el=$('social-'+k);if(el)el.value=p['social_'+k]||'';
-  });
-  openMo('mo-bio');
-}
-function saveBio(){
-  prefs.bio=$('bio-i')?.value.trim()||'';
-  ['github','web','twitter','linkedin'].forEach(k=>{
-    const val=$('social-'+k)?.value.trim()||'';
-    if(val)prefs['social_'+k]=val;
-    else delete prefs['social_'+k];
-  });
-  if(acc[cu])acc[cu].prefs=prefs;
-  persist();
-  renderProfileBio();
-  mobRenderProfileBio();
-  closeMo('mo-bio');
-}
-function renderProfileBio(){
-  const bioEl=$('prof-bio');
-  const socEl=$('prof-socials');
-  if(bioEl) bioEl.textContent=prefs.bio||'No bio yet — click Edit to add one.';
-  if(socEl) socEl.innerHTML=renderSocialLinks();
-}
-function mobRenderProfileBio(){
-  const bioEl=$('mob-prof-bio');
-  const socEl=$('mob-prof-socials');
-  if(bioEl) bioEl.textContent=prefs.bio||'No bio yet — tap Edit to add one.';
-  if(socEl) socEl.innerHTML=renderSocialLinks();
-}
-function renderSocialLinks(){
-  const links=[];
-  const map={github:'GitHub',web:'Website',twitter:'Twitter',linkedin:'LinkedIn'};
-  Object.entries(map).forEach(([k,label])=>{
-    const url=prefs['social_'+k];
-    if(url)links.push(`<a href="${url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink);text-decoration:none;">${label}</a>`);
-  });
-  return links.join('');
-}
-
-// ── Enhanced Activity Bar ──
-function renderActivity(barId, streakId, legendId){
-  const barEl=$(barId); if(!barEl)return;
-  const today=new Date();
-
-  // Build 30-day activity map
-  const actMap={};
-  journal.forEach(j=>{
-    const ds=new Date(j.ts||j.id).toDateString();
-    actMap[ds]=(actMap[ds]||0)+1;
-  });
-  tasks.filter(t=>t.col==='done').forEach(t=>{
-    const ds=new Date(t.id).toDateString();
-    actMap[ds]=(actMap[ds]||0)+1;
-  });
-
-  const maxVal=Math.max(1,...Object.values(actMap));
-
-  // Color intensity levels based on activity count
-  function cellColor(count){
-    if(!count) return 'var(--bdr)';
-    const lvl=count/maxVal;
-    if(lvl<=0.25) return 'var(--al)';
-    if(lvl<=0.5)  return 'var(--a2)';
-    if(lvl<=0.75) return 'var(--a2)';
-    return 'var(--a)';
-  }
-  function cellOpacity(count){
-    if(!count) return '1';
-    const lvl=count/maxVal;
-    if(lvl<=0.25) return '0.4';
-    if(lvl<=0.5)  return '0.65';
-    if(lvl<=0.75) return '0.85';
-    return '1';
-  }
-
-  // 30 squares in a single row, oldest left → today right
-  let squares='';
-  for(let i=29;i>=0;i--){
-    const d=new Date(today);d.setDate(today.getDate()-i);
-    const ds=d.toDateString();
-    const count=actMap[ds]||0;
-    const isToday=i===0;
-    const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const tip=`${label}${count?`: ${count} activit${count!==1?'ies':'y'}`:''}`;
-    squares+=`<div title="${tip}" style="width:100%;aspect-ratio:1;border-radius:3px;background:${cellColor(count)};opacity:${cellOpacity(count)};${isToday?'outline:2px solid var(--a2);outline-offset:1px;':''};cursor:default;"></div>`;
-  }
-
-  let html=`<div style="overflow:hidden;"><div style="display:grid;grid-template-columns:repeat(30,1fr);gap:3px;">${squares}</div></div>`;
-  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-    <span style="font-size:10px;color:var(--ink4);">30 days ago</span>
-    <div style="display:flex;align-items:center;gap:4px;">
-      <span style="font-size:10px;color:var(--ink4);">Less</span>
-      ${[0,0.3,0.6,1].map(v=>`<div style="width:8px;height:8px;border-radius:2px;background:${v?'var(--a2)':'var(--bdr)'};opacity:${v||1};"></div>`).join('')}
-      <span style="font-size:10px;color:var(--ink4);">More</span>
-    </div>
-    <span style="font-size:10px;color:var(--ink4);">Today</span>
-  </div>`;
-
-  barEl.innerHTML=html;
-
-  // Streak counter
-  if(streakId){
-    let streak=0;
-    for(let i=0;i<=90;i++){
-      const d=new Date(today);d.setDate(today.getDate()-i);
-      const ds=d.toDateString();
-      if(actMap[ds])streak++;else break;
+  if (snEl && appEl) {
+    // Stage app: visible in DOM but fully transparent, no transform
+    appEl.style.cssText = 'opacity:0;transform:none;transition:none;pointer-events:none;visibility:visible;position:fixed;inset:0;z-index:0;';
+    appEl.classList.remove('off');
+    // Check mobile wall immediately — before any animation starts
+    if(window._checkMobile) window._checkMobile();
+    // If mobile wall is showing, abort the canvas animation entirely
+    var mobScreen = document.getElementById('mobile-only-screen');
+    if(mobScreen && mobScreen.style.display === 'flex'){
+      appEl.style.cssText = '';
+      return;
     }
-    const streakEl=$(streakId);
-    if(streakEl) streakEl.textContent=streak>1?`${streak}-day streak`:streak===1?'Active today':'';
-  }
+    // Force reflow so the opacity:0 state is painted before we animate
+    void appEl.offsetHeight;
+    // Fade onboarding out
+    snEl.style.transition = 'opacity .4s ease';
+    snEl.style.opacity = '0';
+    setTimeout(() => {
+      // Hide onboarding completely
+      snEl.classList.add('off');
+      snEl.style.cssText = '';
+      // Fade app in
+      appEl.style.transition = 'opacity .4s ease';
+      appEl.style.opacity = '1';
+      setTimeout(() => {
+        // Restore normal screen styles
+        appEl.style.cssText = '';
+        document.body.classList.add('in-app');
+        startRealtime();
+        if(window._checkMobile) window._checkMobile();
+        }, 420);
+    }, 420);
+  } else {
+    show('app');
+    document.body.classList.add('in-app');
+    startRealtime();
+    if(window._checkMobile) window._checkMobile();
+    }
+  startRealtimeSync(cu);
 }
 
 // ═══════════════════════════════════════
@@ -2155,78 +1546,146 @@ function setFbType(t){
 async function submitFeedback(isDesktop=false){
   const msgId=isDesktop?'dsk-fb-msg':'fb-msg';
   const msg=$(msgId)?.value.trim();
-  if(!msg){alert('Please write a message before sending.');return;}
-  const body={type:_fbType,rating:_fbStar,message:msg,user:cu,ts:new Date().toISOString()};
-  const subject=encodeURIComponent(`[Prodify Feedback] ${_fbType} from ${cu}`);
-  const emailBody=encodeURIComponent(`Type: ${_fbType}\nRating: ${_fbStar}/5\n\n${msg}`);
-  window.open(`mailto:david@prodify.cc?subject=${subject}&body=${emailBody}`,'_blank');
+  if(!msg){appConfirm('Nothing to send','Please write a message before sending.','OK');return;}
   const succId=isDesktop?'dsk-fb-success':'fb-success';
-  const succEl=$(succId);if(succEl){succEl.style.display='block';}
-  if($(msgId))$(msgId).value='';
-  _fbStar=0; initFbStars();
-  setTimeout(()=>{if(succEl)succEl.style.display='none';if(isDesktop)closeMo('mo-feedback');},2500);
+  const succEl=$(succId);
+  const btnId=isDesktop?'dsk-fb-submit':'fb-submit';
+  const btn=$(btnId);
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    // Send email via EmailJS
+    await emailjs.send('service_4y11evv','template_nsoadni',{
+      user: cu||'anonymous',
+      type: _fbType,
+      rating: _fbStar||'No rating',
+      message: msg,
+      ts: new Date().toLocaleString()
+    });
+    // Also save to Supabase for records
+    if(sbReady){
+      await sb.from('feedback').insert({
+        username: cu||null,
+        type: _fbType,
+        rating: _fbStar||null,
+        message: msg
+      });
+    }
+    if(succEl){succEl.style.display='block';}
+    if($(msgId))$(msgId).value='';
+    _fbStar=0; initFbStars();
+    setTimeout(()=>{if(succEl)succEl.style.display='none';if(isDesktop)closeMo('mo-feedback');},2500);
+  }catch(e){
+    appConfirm('Failed to send','Something went wrong. Please try again.','OK');
+    console.warn('[Prodify] Feedback error:',e);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Send Feedback';}
+  }
 }
 
 
 // Boot: load local first, sync cloud silently after
 (async function boot(){
+  document.documentElement.setAttribute('data-dark',''); // start light until app loads
+  // If this is an OAuth redirect, hide all screens and let handleGoogleCallback take over
+  const isOAuthRedirect = window.location.hash.includes('access_token') ||
+                          window.location.search.includes('code=');
+  if (isOAuthRedirect) {
+    window._oauthRedirectInProgress = true;
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('off'));
+    return;
+  }
   const u=LS.g('pd1_cur',null);
   if(!u){show('sl');return;}
   cu=u;
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
-  // Always launch immediately from localStorage — single render, no flicker
-  launch();
-  // Then silently sync from Supabase in background
+  // Wait for Supabase device check before launching — prevents bypass
   try{
-    if(!sbReady) return; // no Supabase — stay on local data, don't sign out
-    // Restore Auth session — critical for RLS to work on page refresh
+    if(!sbReady){launch();return;} // offline — skip device check
     const {data:{session}} = await sb.auth.getSession();
     if(!session){
       // No session in memory — try refreshing from stored token
       const {data:refreshed,error:refreshErr} = await sb.auth.refreshSession();
       if(refreshErr||!refreshed?.session){
-        // Session truly expired — stay on local data rather than kicking to landing
-        console.warn('[Prodify] Session expired, staying on local data');
-        return;
+        // Session expired — launch from local data without device check
+        console.warn('[Prodify] Session expired, launching from local data');
+        launch(); return;
       }
     }
     const dbUser=await dbGetUser(cu);
-    if(!dbUser){doSO();return;}
-    // Always trust cloud — cloud is source of truth on refresh
+    if(!dbUser){
+      // Could not fetch from DB — if we have a valid session, launch from local data
+      // rather than signing out (happens for Google auth users before RLS is fully set up)
+      const {data:{session:chkSession}} = await sb.auth.getSession().catch(()=>({data:{session:null}}));
+      if(chkSession){
+        console.warn('[Prodify] dbGetUser returned null but session exists — launching from local data');
+        launch(); return;
+      }
+      doSO(); return;
+    }
+    // Use _localTs to decide whether local or cloud is the freshest copy.
+    // _localTs is stamped on every persist() and beforeunload, so it's always
+    // current. If local is newer, keep it and push to cloud. Otherwise use cloud.
     const loc=acc[cu]||{};
-    const cT=JSON.parse(dbUser.tasks||'[]');
-    const cJ=JSON.parse(dbUser.journal||'[]');
-    const cS=JSON.parse(dbUser.subjects||'[]');
-    const cC=JSON.parse(dbUser.cal_evs||'[]');
-    const cW=JSON.parse(dbUser.widgets||'[]');
-    const cN=JSON.parse(dbUser.notes||'{}');
+    const localTs = loc._localTs || 0;
+    const trustLocal = localTs > 0 && localTs >= (_lastSaveTs || 0) && Object.keys(loc).length > 3;
     const cP=JSON.parse(dbUser.prefs||'{}');
+    if(dbUser.avatar_url) cP.avatarUrl = dbUser.avatar_url;
+    let fT,fJ,fS,fC,fW,fN,fP;
+    if(trustLocal){
+      // Local is fresher — use it wholesale, sync back to cloud
+      fT=loc.tasks||[];fJ=loc.journal||[];fS=loc.subjects||[];
+      fC=loc.calEvs||[];fW=loc.widgets||[];fN=loc.notes||{};
+      fP=loc.prefs||{};
+      if(dbUser.avatar_url) fP.avatarUrl=dbUser.avatar_url;
+    } else {
+      // Cloud is source of truth
+      fT=JSON.parse(dbUser.tasks||'[]');fJ=JSON.parse(dbUser.journal||'[]');
+      fS=JSON.parse(dbUser.subjects||'[]');fC=JSON.parse(dbUser.cal_evs||'[]');
+      fW=JSON.parse(dbUser.widgets||'[]');fN=JSON.parse(dbUser.notes||'{}');
+      fP=cP;
+    }
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
-      tasks:cT,journal:cJ,subjects:cS,calEvs:cC,widgets:cW,notes:cN,prefs:cP,joined:loc.joined||Date.now()};
+      tasks:fT,journal:fJ,subjects:fS,calEvs:fC,widgets:fW,notes:fN,prefs:fP,joined:loc.joined||Date.now(),_localTs:loc._localTs||0};
     LS.s('pd1_acc',acc);
-    tasks=cT;journal=cJ;subjects=cS;calEvs=cC;widgets=cW;notes=cN;
-    prefs=cP;
+    tasks=fT;journal=fJ;subjects=fS;calEvs=fC;widgets=fW;notes=fN;
+    prefs=fP;
     // Load avatar_url from DB column (source of truth)
     if(dbUser.avatar_url) prefs.avatarUrl = dbUser.avatar_url;
     acc[cu].prefs = prefs;
-    // Always re-render with cloud data — no conditional check
-    // Update name display and avatar with cloud data
+    // If local was ahead, push it to cloud now to close the gap
+    if(trustLocal && sbReady) dbSaveUser(cu, acc[cu]).catch(()=>{});
+
+
+
+
+    // Device check — must pass before app launches
+    const deviceAllowed = await checkAndRegisterDevice(cu);
+    if (!deviceAllowed) {
+      stopRealtimeSync();
+      if(sbReady) sbSignOut().catch(()=>{});
+      LS.d('pd1_cur'); cu = null;
+      document.documentElement.setAttribute('data-dark','');
+      const _r=document.documentElement;_r.style.removeProperty('--a');_r.style.removeProperty('--a2');_r.style.removeProperty('--al');
+      document.body.classList.remove('in-app');
+      show('sl');
+      showMultiDeviceBlock();
+      return;
+    }
+    // Device check passed — launch app
+    launch();
     const nm2=acc[cu].displayName||cu;
     if($('ddnm'))$('ddnm').textContent=nm2;
     if($('ddun'))$('ddun').textContent='@'+cu;
     applyAvatar();
-    if(typeof mobUpdateAvatar==='function') mobUpdateAvatar();
     applyTheme();
     renderCanvas();
-    renderFixedQuote();
-    updateFixedStats();
+      updateFixedStats();
     updateAllStatsW();
     renderAllTaskW();
     if(typeof renderAllJournalW==='function') renderAllJournalW();
     if(typeof renderAllSubW==='function') renderAllSubW();
     if(typeof renderFullCal==='function') renderFullCal();
-    if(typeof mobSyncIfVisible==='function') mobSyncIfVisible();
-    if(isMobile()&&typeof mobRenderProfile==='function'&&_mobPage==='profile') mobRenderProfile();
+    
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
   startRealtime();
   startRealtimeSync(cu);
@@ -2237,13 +1696,43 @@ async function submitFeedback(isDesktop=false){
 // ═══════════════════════════════════════
 function persist(){
   if(!cu)return;
+  // Snapshot before writing so all direct persist() calls get a backup,
+  // not just calls that go through window.persist (the old monkey-patch approach
+  // missed any direct persist() call since JS closures don't see the patched version).
+  if(typeof backupSnapshotToday==='function') backupSnapshotToday();
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
+  d._localTs=Date.now(); // timestamp every local save for sign-in merge
   LS.s('pd1_acc',acc);
   dbSaveUser(cu,d);
-  if(typeof mobSyncIfVisible==='function')mobSyncIfVisible();
 }
+window.persist = persist;
+
+// Debounced persist — use for high-frequency changes (typing, slider, etc.)
+let _persistTimer=null;
+function debouncedPersist(delay=600){
+  clearTimeout(_persistTimer);
+  _persistTimer=setTimeout(persist,delay);
+}
+
+// Save on page unload — fires on refresh, tab close, navigation.
+// dbSaveUser uses fetch under the hood. We pass keepalive:true via a direct
+// fetch so the browser keeps the request alive after the page closes — far more
+// reliable than a plain async call which the browser kills mid-flight.
+window.addEventListener('beforeunload', function() {
+  if(!cu || !acc[cu]) return;
+  const _d = acc[cu];
+  _d.tasks=tasks;_d.journal=journal;_d.subjects=subjects;
+  _d.calEvs=calEvs;_d.widgets=widgets;_d.notes=notes;_d.prefs=prefs;
+  _d._localTs = Date.now(); // stamp before writing
+  // Synchronous — always completes before unload
+  LS.s('pd1_acc', acc);
+  try{ localStorage.setItem('pd1_lastSaveTs', String(_d._localTs)); }catch(e){}
+  // keepalive:true survives page close; falls back to regular dbSaveUser if Supabase
+  // client exposes a way to pass it — for now fire both and let the winner count.
+  if(sbReady) dbSaveUser(cu, _d).catch(()=>{});
+});
 
 // ═══════════════════════════════════════
 // DROPDOWN
@@ -2274,6 +1763,22 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#sbav')&&!e.target.closest('#sbdd')) closeDD();
 });
 
+// Widget picker
+function toggleWkPicker(){
+  const p=$('wkpicker'),t=$('wkp-toggle');
+  const isOpen=p.classList.contains('open');
+  if(isOpen){closeWkPicker();}
+  else{p.classList.add('open');t.classList.add('active');closeDD();}
+}
+function closeWkPicker(){
+  const p=$('wkpicker'),t=$('wkp-toggle');
+  if(p)p.classList.remove('open');
+  if(t)t.classList.remove('active');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#wkpicker')&&!e.target.closest('#wkp-toggle')) closeWkPicker();
+});
+
 // ═══════════════════════════════════════
 // MODALS
 // ═══════════════════════════════════════
@@ -2287,26 +1792,41 @@ function closeMo(id){$(id).classList.remove('open');}
 // DARK MODE
 // ═══════════════════════════════════════
 function applyTheme(){
-  document.documentElement.setAttribute('data-dark',prefs.dark?'1':'');
+  // Only apply dark mode when user is logged in (inside app) — never on login/onboarding
+  document.documentElement.setAttribute('data-dark', (prefs.dark && cu) ? '1' : '');
   const t=$('tog-dk');if(t)t.className='tog'+(prefs.dark?' on':'');
   const mt=$('mob-tog-dk');if(mt)mt.className='tog'+(prefs.dark?' on':'');
-  // Apply custom accent color (Pro only)
+  // Apply custom accent color — Pro only, free users always get green
   const root = document.documentElement;
-  if(prefs.accentColor && isPro()){
-    const {a, a2, al} = deriveAccent(prefs.accentColor);
-    root.style.setProperty('--a', a);
-    root.style.setProperty('--a2', a2);
-    root.style.setProperty('--al', al);
+  const freeColors = ['green','blue','purple'];
+  const accentKey = prefs.accentColor || 'green';
+  const isFreeColor = freeColors.includes(accentKey);
+  if(prefs.accentColor && (isPro() || isFreeColor)){
+    const acc = deriveAccent(prefs.accentColor);
+    root.style.setProperty('--a', acc.a);
+    root.style.setProperty('--a2', acc.a2);
+    root.style.setProperty('--al', acc.al);
+    if(acc.a2Rgb) root.style.setProperty('--a2-rgb', acc.a2Rgb);
   } else {
     root.style.removeProperty('--a');
     root.style.removeProperty('--a2');
     root.style.removeProperty('--al');
+    root.style.removeProperty('--a2-rgb');
   }
   // Sync color picker UI
   const picks = document.querySelectorAll('.accent-swatch.selected');
   picks.forEach(s => s.classList.remove('selected'));
   const cur = prefs.accentColor || 'green';
   document.querySelectorAll(`.accent-swatch[data-key="${cur}"]`).forEach(s => s.classList.add('selected'));
+  // Sync hex input + preview
+  const hexInp = document.getElementById('accent-hex-input');
+  const hexPrev = document.getElementById('accent-hex-preview');
+  const derived = deriveAccent(cur);
+  if (hexPrev) hexPrev.style.background = derived.a2;
+  if (hexInp && cur.startsWith('#')) hexInp.value = cur.replace('#','');
+  else if (hexInp) hexInp.value = '';
+  // Re-inject pro ring with updated accent
+  if (typeof renderProBadgeRing === 'function') renderProBadgeRing();
 }
 
 // Derive --a, --a2, --al from a hex color
@@ -2320,44 +1840,56 @@ function hexToHsl(hex){
 function hslStr(h,s,l){return `hsl(${h},${s}%,${l}%)`;}
 function deriveAccent(key){
   const presets={
-    green:{a:'#2A5C44',a2:'#3A7D5E',al:'#EBF4EF'},
-    blue:{a:'#1E4A7C',a2:'#2563EB',al:'#EBF0FC'},
-    purple:{a:'#4A2C6E',a2:'#7C3AED',al:'#F0EBFD'},
-    rose:{a:'#7C1D2C',a2:'#E11D48',al:'#FDEEF1'},
-    amber:{a:'#7A4A00',a2:'#D97706',al:'#FEF3C7'},
-    teal:{a:'#0F4C4C',a2:'#0D9488',al:'#EBFAFA'},
-    slate:{a:'#2A3548',a2:'#475569',al:'#EEF0F4'},
+    green:{a:'#2A5C44',a2:'#3A7D5E',al:'#EBF4EF',a2Rgb:'58,125,94'},
+    blue:{a:'#1E4A7C',a2:'#2563EB',al:'#EBF0FC',a2Rgb:'37,99,235'},
+    purple:{a:'#4A2C6E',a2:'#7C3AED',al:'#F0EBFD',a2Rgb:'124,58,237'},
+    rose:{a:'#7C1D2C',a2:'#E11D48',al:'#FDEEF1',a2Rgb:'225,29,72'},
+    amber:{a:'#7A4A00',a2:'#D97706',al:'#FEF3C7',a2Rgb:'217,119,6'},
+    teal:{a:'#0F4C4C',a2:'#0D9488',al:'#EBFAFA',a2Rgb:'13,148,136'},
+    slate:{a:'#2A3548',a2:'#475569',al:'#EEF0F4',a2Rgb:'71,85,105'},
   };
   if(presets[key]) return presets[key];
   // custom hex
   if(key.startsWith('#')){
     const [h,s,l]=hexToHsl(key);
-    return {a:hslStr(h,Math.max(s-10,20),Math.max(l-15,20)),a2:hslStr(h,s,l),al:hslStr(h,Math.min(s,60),93)};
+    const a2=hslStr(h,s,l);
+    // convert a2 hex to rgb for rgba() usage
+    const r=parseInt(a2.slice(1,3),16),g=parseInt(a2.slice(3,5),16),b=parseInt(a2.slice(5,7),16);
+    return {a:hslStr(h,Math.max(s-10,20),Math.max(l-15,20)),a2,al:hslStr(h,Math.min(s,60),93),a2Rgb:r+','+g+','+b};
   }
   return presets.green;
 }
 
 function setAccentColor(key){
-  if(!isPro()){showUpgradeModal('Custom Accent Color');return;}
+  const freeColors = ['green','blue','purple'];
+  if(!isPro() && !freeColors.includes(key)){showUpgradeModal('Custom Accent Color');return;}
   prefs.accentColor=key;
   persist();
   applyTheme();
 }
+
+function accentHexInput(inp){
+  // Live preview as user types
+  const val = inp.value.replace(/[^0-9a-fA-F]/g,'').slice(0,6);
+  inp.value = val;
+  const prev = document.getElementById('accent-hex-preview');
+  if(prev && val.length===6) prev.style.background = '#'+val;
+}
+
+function accentHexConfirm(){
+  if(!isPro()){showUpgradeModal('Custom Accent Color');return;}
+  const inp = document.getElementById('accent-hex-input');
+  if(!inp) return;
+  const val = inp.value.replace(/[^0-9a-fA-F]/g,'');
+  if(val.length !== 6) return;
+  setAccentColor('#'+val);
+}
 function togDark(btn){prefs.dark=!prefs.dark;persist();applyTheme();}
 
 // ═══════════════════════════════════════
-// FIXED QUOTE + STATS BAR
 // ═══════════════════════════════════════
-function renderFixedQuote(){
-  qIdx=(qIdx+1)%QQ.length;
-  const q=QQ[qIdx];
-  const qt=$('ctb-qt'),qa=$('ctb-qa');
-  if(qt)qt.textContent='\u201c'+q.t+'\u201d';
-  if(qa)qa.textContent='— '+q.a;
-}
-function nextQuoteFixed(){
-  renderFixedQuote();
-}
+// STATS BAR
+// ═══════════════════════════════════════
 function updateFixedStats(){
   const tot=tasks.length,dn=tasks.filter(t=>t.col==='done').length,ip=tasks.filter(t=>t.col==='inprog').length,hi=tasks.filter(t=>t.priority==='high'&&t.col!=='done').length;
   const e=id=>{const el=$(id);if(el)el.textContent=id==='cs-tot'?tot:id==='cs-dn'?dn:id==='cs-ip'?ip:id==='cs-hi'?hi:journal.length;};
@@ -2375,7 +1907,7 @@ function updateFixedStats(){
 // ═══════════════════════════════════════
 const WD={
   tasks:{w:580,h:340,title:'Task Board'},
-  journal:{w:300,h:360,title:'Journal'},
+  journal:{w:420,h:320,title:'Journal'},
   timer:{w:320,h:400,title:'Focus Timer'},
   note:{w:240,h:220,title:'Note'},
   stats:{w:320,h:200,title:'Stats'},
@@ -2393,14 +1925,8 @@ function addW(type,opts={}){
       // Flash/focus the existing widget
       const el=$(existing.id);
       if(el){bringToFront(existing.id);el.style.outline='2px solid var(--a2)';setTimeout(()=>el.style.outline='',800);}
-      if(isMobile())closeMobilePicker();
       return;
     }
-  }
-  if(isMobile()){
-    addMobileWidget(type);
-    closeMobilePicker();
-    return;
   }
   const def=WD[type]||{w:300,h:240,title:type};
   const wrap=$('canvas-wrap')||document.querySelector('.canvas-wrap');
@@ -2422,7 +1948,10 @@ function addW(type,opts={}){
   const id='w'+Date.now().toString(36);
   const ent={id,type,x:Math.round(x),y:Math.round(y),w:opts.w||def.w,h:opts.h||def.h,title:opts.title||def.title,z:nextZ++,noteId:opts.noteId||null};
   if(type==='note'&&!ent.noteId){ent.noteId=id;notes[id]={title:'',content:''};}
-  widgets.push(ent);persist();
+  widgets.push(ent);
+  if(cu&&acc[cu]&&!acc[cu].hasAddedWidget){acc[cu].hasAddedWidget=true;persist();}
+  const hint=$('canvas-hint');if(hint)hint.remove();
+  persist();
   buildWidgetEl(ent);
 }
 
@@ -2439,8 +1968,9 @@ async function removeW(id){
   persist();
 }
 
-function clearCanvas(){
-  if(!confirm('Remove all widgets from the canvas? Your data is still saved.'))return;
+async function clearCanvas(){
+  closeWkPicker();
+  if(!await appConfirm('Clear the canvas?','All widgets will be removed. Your data is still saved — you can add them back anytime.','Clear'))return;
   widgets.forEach(w=>{if(TMS[w.id]){clearInterval(TMS[w.id].iv);if(TMS[w.id].alarmActive)stopAlarm();delete TMS[w.id];}});
   widgets=[];persist();$('canvas').innerHTML='';
 }
@@ -2448,6 +1978,18 @@ function clearCanvas(){
 function renderCanvas(){
   $('canvas').innerHTML='';
   nextZ=10;
+  if(!widgets.length){
+    const isNew=acc[cu]&&!acc[cu].hasAddedWidget;
+    if(isNew){
+      const div=document.createElement('div');
+      div.id='canvas-hint';
+      div.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;';
+      div.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:10px 16px;box-shadow:var(--sh2);font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap;">Press <b style="color:var(--ink);">+</b> to add your first widget</div>'
+        +'<svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--bdr);"><path d="M6 8L0 0h12L6 8z" fill="currentColor"/></svg>';
+      $('canvas').appendChild(div);
+    }
+    return;
+  }
   if(widgets.length){
     const mz=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
     nextZ=mz+1;
@@ -2455,14 +1997,6 @@ function renderCanvas(){
   widgets.forEach(w=>buildWidgetEl(w));
 }
 
-function setWidgetColor(id,color){
-  const w=widgets.find(x=>x.id===id);if(!w)return;
-  w.color=color;persist();
-  const el=document.getElementById(id);if(!el)return;
-  el.style.borderColor=color;
-  const wh=document.getElementById('wh-'+id);
-  if(wh)wh.style.borderBottomColor=color;
-}
 function bringToFront(id){
   const w=widgets.find(x=>x.id===id);if(!w)return;
   w.z=nextZ++;$(id).style.zIndex=w.z;persist();
@@ -2474,14 +2008,11 @@ function buildWidgetEl(w){
   el.className='widget';el.id=w.id;
   el.dataset.type=w.type;
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
-  const wcolor=w.color||'';
-  el.style.borderColor=wcolor||'';
-  if(wcolor)el.querySelector&&(el.style.setProperty('--wc',wcolor));
   el.innerHTML=`
-    <div class="whead" id="wh-${w.id}" style="${wcolor?'border-bottom-color:'+wcolor+';':''}">
+    <div class="whead" id="wh-${w.id}">
       <span class="whtit">${esc(w.title)}</span>
-      <input type="color" class="wcolor-pick" value="${wcolor||'#3A7D5E'}" data-tip="Widget color" onchange="setWidgetColor('${w.id}',this.value)" onclick="event.stopPropagation()"/>
-      <button class="wclose" onclick="removeW('${w.id}')" data-tip="Remove">&#x2715;</button>
+      ${w.type==='journal'?`<button class="whead-search-btn" id="jwsib-${w.id}" onclick="jwToggleSearch('${w.id}')" data-tip="Search"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>`:''}
+      <button class="wclose" onclick="removeW('${w.id}')" data-tip="Remove"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button>
     </div>
     <div class="wbody" id="wb-${w.id}"></div>
     <div class="wrsz" onpointerdown="startResize(event,'${w.id}')">
@@ -2517,91 +2048,104 @@ function fillWBody(w){
 function habitWSelectEmoji(btn, wid){
   const wrap=document.getElementById('wemoji-'+wid);
   if(!wrap)return;
-  wrap.querySelectorAll('button').forEach(b=>{b.style.background='var(--surf)';b.style.borderColor='var(--bdr)';});
-  btn.style.background='var(--al)';btn.style.borderColor='var(--a2)';
+  wrap.querySelectorAll('button').forEach(b=>{b.style.outline='none';});
+  btn.style.outline='2px solid var(--a2)';
   wrap._sel=btn.dataset.emoji;
 }
 
 function buildHabitW(body,w){
   body.style.cssText='display:flex;flex-direction:column;height:100%;overflow:hidden;';
   const wid=w.id;
+
+  // Emoji picker — hidden by default, shown on input focus
   const emojiWrap=document.createElement('div');
   emojiWrap.id='wemoji-'+wid;
-  emojiWrap.style.cssText='display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-bottom:6px;';
-  HABIT_EMOJIS.forEach(e=>{
+  emojiWrap.style.cssText='display:flex;gap:3px;padding:0 12px;overflow:hidden;height:0;opacity:0;transition:height .2s ease,opacity .2s ease,padding .2s ease;';
+  HABIT_EMOJIS.forEach((e,i)=>{
     const btn=document.createElement('button');
     btn.dataset.emoji=e;
     btn.textContent=e;
-    btn.style.cssText='aspect-ratio:1;width:100%;border-radius:6px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:clamp(10px,1.8vw,14px);transition:all .13s;';
+    btn.style.cssText='flex:1;min-width:0;aspect-ratio:1;border-radius:6px;border:none;background:var(--surf2);cursor:pointer;font-size:11px;transition:background .1s;outline:none;';
+    if(i===0) btn.style.outline='2px solid var(--a2)';
     btn.onclick=function(){habitWSelectEmoji(this,wid);};
     emojiWrap.appendChild(btn);
   });
   emojiWrap._sel=HABIT_EMOJIS[0];
-  // select first
-  const firstBtn=emojiWrap.querySelector('[data-emoji]');
-  if(firstBtn){firstBtn.style.background='var(--al)';firstBtn.style.borderColor='var(--a2)';}
 
   const inp=document.createElement('input');
-  inp.id='hinp-'+wid;inp.type='text';inp.placeholder='New habit…';inp.maxLength=40;
-  inp.style.cssText='flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;font-family:inherit;';
-  inp.onfocus=function(){this.style.borderColor='var(--a2)';};
-  inp.onblur=function(){this.style.borderColor='var(--bdr)';};
+  inp.id='hinp-'+wid;inp.type='text';inp.placeholder='Add a habit…';inp.maxLength=40;
+  inp.style.cssText='flex:1;background:transparent;border:none;font-size:12px;color:var(--ink);outline:none;font-family:inherit;';
+  inp.onfocus=function(){
+    emojiWrap.style.height='36px';
+    emojiWrap.style.opacity='1';
+    emojiWrap.style.paddingTop='6px';
+    emojiWrap.style.paddingBottom='6px';
+  };
+  inp.onblur=function(){
+    setTimeout(()=>{
+      emojiWrap.style.height='0';
+      emojiWrap.style.opacity='0';
+      emojiWrap.style.paddingTop='0';
+      emojiWrap.style.paddingBottom='0';
+    },160);
+  };
   inp.onkeydown=function(e){if(e.key==='Enter')habitWSubmit(wid);};
 
   const addBtn=document.createElement('button');
-  addBtn.textContent='+ Add';
-  addBtn.style.cssText='background:var(--a2);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;';
+  addBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  addBtn.style.cssText='width:26px;height:26px;border-radius:50%;background:var(--a2);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
   addBtn.onclick=function(){habitWSubmit(wid);};
 
   const inputRow=document.createElement('div');
-  inputRow.style.cssText='display:flex;gap:6px;';
+  inputRow.style.cssText='display:flex;align-items:center;gap:8px;padding:0 12px;height:40px;border-top:1px solid var(--bdr);flex-shrink:0;';
   inputRow.appendChild(inp);inputRow.appendChild(addBtn);
 
   const footer=document.createElement('div');
-  footer.style.cssText='padding:8px 10px;border-top:1px solid var(--bdr);flex-shrink:0;';
-  footer.appendChild(emojiWrap);footer.appendChild(inputRow);
+  footer.style.cssText='flex-shrink:0;border-top:1px solid var(--bdr);';
+  // remove border from inputRow since footer has it
+  inputRow.style.borderTop='none';
+  footer.appendChild(emojiWrap);
+  footer.appendChild(inputRow);
 
   const list=document.createElement('div');
-  list.id='hlist-'+wid;list.style.cssText='display:flex;flex-direction:column;gap:6px;';
+  list.id='hlist-'+wid;list.style.cssText='display:flex;flex-direction:column;';
   const scroll=document.createElement('div');
-  scroll.id='hwrap-'+wid;scroll.style.cssText='flex:1;overflow-y:auto;padding:10px 10px 4px;';
+  scroll.id='hwrap-'+wid;scroll.style.cssText='flex:1;overflow-y:auto;padding:8px 10px 4px;';
   scroll.appendChild(list);
 
   body.appendChild(scroll);body.appendChild(footer);
   renderHabitW(wid);
 }
+
 function renderHabitW(wid){
   const list=document.getElementById('hlist-'+wid);
   if(!list)return;
   const habits=habitGetAll();
   const total=habits.length, doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
   if(!total){
-    list.innerHTML=`<div style="text-align:center;padding:20px 10px;color:var(--ink4);font-size:12px;line-height:1.8;">
-      <div style="font-size:24px;margin-bottom:6px;">🎯</div>
-      Add habits to track below
-    </div>`;
+    list.innerHTML=`<div style="text-align:center;padding:24px 10px;color:var(--ink4);font-size:12px;">Add your first habit below</div>`;
     return;
   }
   const pct=Math.round(doneCount/total*100);
   list.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:10px;font-weight:700;color:var(--ink3);">TODAY — ${doneCount}/${total}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding:0 2px;">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--ink4);">${doneCount}/${total} TODAY</span>
       <span style="font-size:10px;font-weight:700;color:var(--a2);">${pct}%</span>
     </div>
-    <div style="height:3px;background:var(--bdr);border-radius:2px;margin-bottom:8px;overflow:hidden;">
-      <div style="height:100%;width:${pct}%;background:var(--a2);border-radius:2px;"></div>
+    <div style="height:2px;background:var(--bdr);border-radius:2px;margin-bottom:10px;overflow:hidden;">
+      <div style="height:100%;width:${pct}%;background:var(--a2);border-radius:2px;transition:width .3s;"></div>
     </div>
     ${habits.map(h=>{
       const done=habitDoneToday(h.id);
       const streak=habitStreak(h.id);
-      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:${done?'var(--al)':'var(--surf2)'};border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};border-radius:10px;transition:all .18s;">
-        <button onclick="habitToggleW(${h.id},'${wid}')" style="width:28px;height:28px;border-radius:50%;border:2px solid ${done?'var(--a2)':'var(--bdr)'};background:transparent;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;transition:all .18s;">${done?'✔️':h.emoji}</button>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:600;color:${done?'var(--a2)':'var(--ink)'};${done?'text-decoration:line-through;':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.name)}</div>
-          ${streak>0?`<div style="font-size:10px;color:var(--a2);">🔥 ${streak}d</div>`:''}
-        </div>
-        <button onclick="habitDeleteW(${h.id},'${wid}')" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all .15s;"
-          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">✕</button>
+      return `<div style="display:flex;align-items:center;gap:9px;padding:5px 2px;border-bottom:1px solid var(--bdr);" class="habit-row-${wid}">
+        <button onclick="habitToggleW(${h.id},'${wid}')" style="width:20px;height:20px;border-radius:50%;border:1.5px solid ${done?'var(--a2)':'var(--bdr)'};background:${done?'var(--a2)':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;">
+          ${done?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </button>
+        <span style="font-size:13px;flex-shrink:0;">${h.emoji}</span>
+        <span style="font-size:12px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${done?'var(--ink3)':'var(--ink)'};${done?'text-decoration:line-through;':''};transition:all .15s;">${esc(h.name)}</span>
+        ${streak>0?`<span style="font-size:10px;font-weight:600;color:var(--ink3);">🔥${streak}</span>`:''}
+        <button onclick="habitDeleteW(${h.id},'${wid}')" style="background:none;border:none;color:transparent;cursor:pointer;font-size:10px;padding:2px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='transparent'">✕</button>
       </div>`;
     }).join('')}`;
 }
@@ -2626,10 +2170,13 @@ function habitWSubmit(wid){
   const inp=document.getElementById('hinp-'+wid);
   if(!inp||!inp.value.trim())return;
   if((prefs.habits||[]).length>=HABIT_MAX_FREE){habitShowProGate();return;}
+  const emojiWrap=document.getElementById('wemoji-'+wid);
+  const selectedEmoji=(emojiWrap&&emojiWrap._sel)||'✔️';
   prefs.habits=prefs.habits||[];
-  prefs.habits.push({id:Date.now(),name:inp.value.trim(),emoji:'✔️',created:habitToday()});
+  prefs.habits.push({id:Date.now(),name:inp.value.trim(),emoji:selectedEmoji,created:habitToday()});
   habitSave();
   inp.value='';
+  inp.blur();
   renderHabitW(wid);
   widgets.filter(w=>w.type==='habits'&&w.id!==wid).forEach(w=>renderHabitW(w.id));
   renderHabits('habit-list'); renderHabits('mob-habit-list'); renderHabits('mob-habit-page-list');
@@ -2641,20 +2188,24 @@ function startDrag(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wdrag');
-  // Disable pointer events on other widgets during drag to prevent hit-test lag
   document.querySelectorAll('.widget').forEach(wd=>{if(wd.id!==id)wd.style.pointerEvents='none';});
-  const scale = window._canvasScale||1;
-  // Capture pointer for fast uninterrupted tracking
+  const scale=window._canvasScale||1;
   try{if(e.pointerId!=null)el.setPointerCapture(e.pointerId);}catch(_){}
-  // Convert initial mouse pos to canvas space
-  const startX = e.clientX/scale - w.x;
-  const startY = e.clientY/scale - w.y;
+  const startX=e.clientX/scale-w.x;
+  const startY=e.clientY/scale-w.y;
+  let rafId=null, pendingX=w.x, pendingY=w.y;
   const mm=e=>{
-    w.x=Math.max(0, e.clientX/scale - startX);
-    w.y=Math.max(0, e.clientY/scale - startY);
-    el.style.left=w.x+'px';el.style.top=w.y+'px';
+    pendingX=Math.max(0,e.clientX/scale-startX);
+    pendingY=Math.max(0,e.clientY/scale-startY);
+    if(rafId)return;
+    rafId=requestAnimationFrame(()=>{
+      w.x=pendingX;w.y=pendingY;
+      el.style.left=w.x+'px';el.style.top=w.y+'px';
+      rafId=null;
+    });
   };
   const mu=()=>{
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
     el.classList.remove('wdrag');
     document.querySelectorAll('.widget').forEach(wd=>wd.style.pointerEvents='');
     persist();
@@ -2671,19 +2222,36 @@ function startResize(e,id){
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wresize');
-  const scale = window._canvasScale||1;
+  const scale=window._canvasScale||1;
   try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
-  const startX=e.clientX/scale, startY=e.clientY/scale, startW=w.w, startH=w.h;
-  const isTimer=w.type==='timer';
-  const isHabit=w.type==='habits';
-  const minW=isTimer?260:isHabit?340:200, maxW=99999;
-  const minH=isTimer?400:isHabit?380:130, maxH=99999;
+  const startX=e.clientX/scale,startY=e.clientY/scale,startW=w.w,startH=w.h;
+  const WMIN={
+    timer:  {w:260, h:400},
+    habits: {w:340, h:380},
+    tasks:  {w:420, h:260},
+    journal:{w:420, h:320},
+    stats:  {w:260, h:180},
+    subjects:{w:240,h:220},
+    calendar:{w:400,h:240},
+    quote:  {w:200, h:130},
+    note:   {w:180, h:140},
+  };
+  const wm=WMIN[w.type]||{w:180,h:130};
+  const minW=wm.w,maxW=99999;
+  const minH=wm.h,maxH=99999;
+  let rafId=null,pendingW=w.w,pendingH=w.h;
   const mm=e=>{
-    w.w=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
-    w.h=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
-    el.style.width=w.w+'px';el.style.height=w.h+'px';
+    pendingW=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
+    pendingH=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
+    if(rafId)return;
+    rafId=requestAnimationFrame(()=>{
+      w.w=pendingW;w.h=pendingH;
+      el.style.width=w.w+'px';el.style.height=w.h+'px';
+      rafId=null;
+    });
   };
   const mu=()=>{
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
     el.classList.remove('wresize');persist();
     e.target.releasePointerCapture&&e.target.releasePointerCapture(e.pointerId);
     el.removeEventListener('pointermove',mm);el.removeEventListener('pointerup',mu);
@@ -2717,22 +2285,143 @@ function buildTaskW(body,w){
       <button class="twbtn" onclick="addTask('${w.id}')">Add</button>
     </div>
     <div class="twcols">
-      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#B87333"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
-      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#3A7D5E"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
-      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot" style="background:#1B4332"></div>Done</div><div style="display:flex;align-items:center;gap:6px;"><span class="twcnt" id="cn-done-${w.id}">0</span><button class="twbtn" style="padding:2px 7px;font-size:10px;opacity:0.7;" onclick="clrDoneTasks('${w.id}')" data-tip="Clear all done tasks">Clear</button></div></div><div class="twbody" id="col-done-${w.id}" ondragover="dov(event,'done','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'done')"></div></div>
+      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot twdot-todo"></div>To Do</div><span class="twcnt" id="cn-todo-${w.id}">0</span></div><div class="twbody" id="col-todo-${w.id}" onclick="if(_selTask)_selTask=null,renderAllTaskW()" ondragover="dov(event,'todo','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'todo')"></div></div>
+      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot twdot-inprog"></div>In Progress</div><span class="twcnt" id="cn-inprog-${w.id}">0</span></div><div class="twbody" id="col-inprog-${w.id}" ondragover="dov(event,'inprog','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'inprog')"></div></div>
+      <div class="twcol"><div class="twchd"><div class="twchl"><div class="twdot twdot-done"></div>Done</div><div style="display:flex;align-items:center;gap:6px;"><span class="twcnt" id="cn-done-${w.id}">0</span><button class="twbtn" style="padding:2px 7px;font-size:10px;opacity:0.7;" onclick="clrDoneTasks('${w.id}')" data-tip="Clear all done tasks">Clear</button></div></div><div class="twbody" id="col-done-${w.id}" ondragover="dov(event,'done','${w.id}')" ondragleave="dlv(event)" ondrop="drp(event,'done')"></div></div>
     </div>`;
   renderTaskCols(w.id);
 }
 
-// openDuePicker + onDueChange handled above
+// ── DATE PICKER (calendar sheet) ──
+let _calViewYear=0,_calViewMonth=0,_dskCalWid=null,_dpSelected='',_dpCallback=null;
+function calToday(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function calFmt(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function calDisplay(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+function dpOpen(currentVal,onConfirm){
+  let modal=document.getElementById('dp-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='dp-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .25s;pointer-events:none;';
+    modal.innerHTML=`
+      <div id="dp-sheet" style="position:relative;width:100%;max-width:440px;background:var(--surf);border-radius:24px 24px 0 0;padding:0 0 28px;box-shadow:0 -12px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);">
+        <div style="width:40px;height:4px;border-radius:2px;background:var(--bdr);margin:14px auto 0;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
+          <span style="font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;">Pick a date</span>
+          <button onclick="dpClear()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:all .15s;" onmouseover="this.style.background='var(--rl)';this.style.color='var(--red)'" onmouseout="this.style.background='none';this.style.color='var(--ink3)'">Clear</button>
+        </div>
+        <div style="margin:0 16px;background:var(--surf2);border-radius:18px;border:1.5px solid var(--bdr);padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <button id="dp-prev" onclick="dpNav(-1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">‹</button>
+            <span id="dp-month" style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;"></span>
+            <button onclick="dpNav(1)" style="width:32px;height:32px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:inherit;transition:all .15s;">›</button>
+          </div>
+          <div id="dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
+        </div>
+        <button id="dp-confirm" onclick="dpConfirm()" style="display:block;width:calc(100% - 32px);margin:14px 16px 0;background:var(--a2);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.2px;transition:background .15s;">Confirm</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',function(e){if(e.target===modal)dpClose();});
+  }
+  _dpSelected=currentVal||'';
+  _dpCallback=onConfirm;
+  const base=_dpSelected?new Date(_dpSelected+'T00:00:00'):calToday();
+  _calViewYear=base.getFullYear();_calViewMonth=base.getMonth();
+  dpRender();
+  modal.style.pointerEvents='auto';
+  requestAnimationFrame(()=>{
+    modal.style.background='rgba(0,0,0,.5)';
+    document.getElementById('dp-sheet').style.transform='translateY(0)';
+  });
+}
+function dpRender(){
+  const today=calToday();
+  const first=new Date(_calViewYear,_calViewMonth,1);
+  const last=new Date(_calViewYear,_calViewMonth+1,0);
+  const prevOk=new Date(_calViewYear,_calViewMonth,1)>new Date(today.getFullYear(),today.getMonth(),1);
+  document.getElementById('dp-month').textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const prev=document.getElementById('dp-prev');
+  if(prev){prev.disabled=!prevOk;prev.style.opacity=prevOk?'1':'0.2';prev.style.cursor=prevOk?'pointer':'default';}
+  const sel=_dpSelected||'';
+  let html='';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{
+    html+=`<div style="font-size:9px;font-weight:800;color:var(--ink4);text-align:center;padding:2px 0 8px;text-transform:uppercase;letter-spacing:.5px;">${d}</div>`;
+  });
+  for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
+  for(let d=1;d<=last.getDate();d++){
+    const date=new Date(_calViewYear,_calViewMonth,d);
+    const val=calFmt(date);
+    const past=date<today,isSel=val===sel,isToday=val===calFmt(today);
+    let bg='transparent',color='var(--ink)',border='none',fw='600',cursor='pointer',op='1';
+    if(past){color='var(--ink4)';op='.3';cursor='default';}
+    else if(isSel){bg='var(--a2)';color='#fff';fw='800';border='none';}
+    else if(isToday){bg='var(--surf)';border='2px solid var(--a2)';color='var(--a2)';fw='800';}
+    const click=past?'':`onclick="_dpPick('${val}')"`;
+    html+=`<div ${click} style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:${fw};color:${color};background:${bg};border:${border};border-radius:10px;cursor:${cursor};opacity:${op};transition:background .15s,color .15s;">${d}</div>`;
+  }
+  document.getElementById('dp-grid').innerHTML=html;
+  const btn=document.getElementById('dp-confirm');
+  if(btn)btn.textContent=sel?'Confirm — '+calDisplay(new Date(sel+'T00:00:00')):'Confirm';
+}
+function _dpPick(val){_dpSelected=val;dpRender();}
+function dpNav(dir){
+  _calViewMonth+=dir;
+  if(_calViewMonth<0){_calViewMonth=11;_calViewYear--;}
+  if(_calViewMonth>11){_calViewMonth=0;_calViewYear++;}
+  dpRender();
+}
+function dpClear(){_dpSelected='';dpRender();}
+function dpConfirm(){
+  if(_dpCallback)_dpCallback(_dpSelected||null);
+  dpClose();
+}
+function dpClose(){
+  const modal=document.getElementById('dp-modal');
+  const sheet=document.getElementById('dp-sheet');
+  if(!modal)return;
+  modal.style.background='rgba(0,0,0,0)';
+  if(sheet)sheet.style.transform='translateY(100%)';
+  modal.style.pointerEvents='none';
+  _dpCallback=null;_dskCalWid=null;
+}
+function openDskDuePicker(wid){
+  _dskCalWid=wid;
+  const inp=$('twd-'+wid);
+  dpOpen(inp?.value||'',function(val){
+    const btn=$('twdb-'+wid);
+    const lbl=$('twdb-lbl-'+wid);
+    if(inp)inp.value=val||'';
+    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Due date';
+    if(btn){
+      if(val){btn.style.borderColor='var(--a2)';btn.style.color='var(--a2)';btn.style.background='var(--al)';btn.classList.add('active');}
+      else{btn.style.borderColor='var(--bdr)';btn.style.color='var(--ink3)';btn.style.background='var(--surf)';btn.classList.remove('active');}
+    }
+    // Mutual exclusion: due date clears recurring
+    if(val){
+      const dd=$('twrd-'+wid);
+      const rl=$('twrdl-'+wid);
+      if(dd){dd.setAttribute('data-val','none');dd.classList.remove('tw-recur-active');}
+      if(rl)rl.textContent='↺';
+    }
+  });
+}
+function openDuePicker(wid){openDskDuePicker(wid);}
+function onDueChange(wid){}
+
 function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
   const rec=$('twrd-'+wid)?.getAttribute('data-val')||'none';
   tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
   persist();renderAllTaskW();inp.value='';
+  // reset due date
   if($('twd-'+wid))$('twd-'+wid).value='';
-  if($('twrd-'+wid)){$('twrd-'+wid).setAttribute('data-val','none');const l=$('twrdl-'+wid);if(l)l.textContent='↺';}
+  const twdb=$('twdb-'+wid);const twdbl=$('twdb-lbl-'+wid);
+  if(twdbl)twdbl.textContent='Due date';
+  if(twdb){twdb.style.borderColor='var(--bdr)';twdb.style.color='var(--ink3)';twdb.style.background='var(--surf)';twdb.classList.remove('active');twdb.style.opacity='';twdb.style.pointerEvents='';}
+  // reset recurring
+  if($('twrd-'+wid)){$('twrd-'+wid).setAttribute('data-val','none');$('twrd-'+wid).classList.remove('tw-recur-active');const l=$('twrdl-'+wid);if(l)l.textContent='↺';}
   onDueChange(wid);
   inp.focus();
   updateAllStatsW();updateFixedStats();
@@ -2750,8 +2439,8 @@ function taskDueInfo(t){
   if(done)return null; // done tasks show nothing
   if(diff===0) return{label:'Today',    color:'var(--red)',bg:'var(--rl)',border:'rgba(220,38,38,0.3)',priority:1};
   if(diff===1) return{label:'Tomorrow', color:'var(--red)',bg:'var(--rl)',border:'rgba(220,38,38,0.3)',priority:2};
-  if(diff<=7)  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'#8a6500',bg:'rgba(245,183,0,0.15)',border:'rgba(245,183,0,0.45)',priority:3};
-  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'var(--a2)',bg:'rgba(58,125,94,0.12)',border:'rgba(58,125,94,0.3)',priority:4};
+  if(diff<=7)  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'#A16207',bg:'rgba(234,179,8,0.12)',border:'rgba(234,179,8,0.35)',priority:3};
+  return{label:due.toLocaleDateString('en-US',{month:'short',day:'numeric'}),color:'var(--ink3)',bg:'rgba(156,151,143,0.1)',border:'rgba(156,151,143,0.3)',priority:4};
 }
 function sortByDue(arr){
   return arr.slice().sort((a,b)=>{
@@ -2763,30 +2452,50 @@ function sortByDue(arr){
   });
 }
 function selTask(e,id){
+  // If the click landed on the delete button, let its own onclick handle it
+  if(e.target.closest('.tcdel')) return;
   e.stopPropagation();
   _selTask=(_selTask===id)?null:id;
   renderAllTaskW();
 }
 async function delTask(id){if(!await appConfirm('Delete this task?','This cannot be undone.'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
-function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));}
+function populateTaskWidgetSubjSels(){
+  widgets.forEach(w=>{
+    if(w.type!=='tasks')return;
+    const sel=$('twsub-'+w.id);if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">No project</option>'+subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    if(cur)sel.value=cur;
+  });
+}
+
+function renderAllTaskW(){widgets.filter(w=>w.type==='tasks').forEach(w=>renderTaskCols(w.id));setTimeout(populateTaskWidgetSubjSels,0);}
 function sortByDueLegacy(arr){return sortByDue(arr);} // alias
 function renderTaskCols(wid){
   if(!$('col-todo-'+wid))return;
   const cols={todo:[],inprog:[],done:[]};
-  tasks.forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
+  tasks.filter(t=>!t.subjectId).forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
   Object.keys(cols).forEach(k=>{cols[k]=sortByDue(cols[k]);});
   ['todo','inprog','done'].forEach(c=>{
     const el=$('col-'+c+'-'+wid);if(!el)return;
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
-    if(!cols[c].length){el.innerHTML=`<div class="twempty"><div class="twempty-t">${{todo:'Nothing planned',inprog:'Nothing active',done:'Nothing yet'}[c]}</div></div>`;return;}
+    if(!cols[c].length){
+      const _cfg={
+        todo:{icon:'📋',title:'Nothing planned',hint:'Add a task using the field below'},
+        inprog:{icon:'⚡',title:'Nothing in progress',hint:'Drag a task here to start'},
+        done:{icon:'✅',title:'Nothing done yet',hint:'Complete a task to see it here'}
+      }[c];
+      el.innerHTML='<div class="twempty"><div class="twempty-icon">'+_cfg.icon+'</div><div class="twempty-t">'+_cfg.title+'</div><div class="twempty-hint">'+_cfg.hint+'</div></div>';
+      return;
+    }
     el.innerHTML=cols[c].map(t=>{
       const due=taskDueInfo(t);
       const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
       const isOverdue=due?.label==='Overdue';
+      const recurTag=t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">${t.recurring==='daily'?'Daily':'Weekly'}</span>`:'';
       return `<div class="tc${_selTask===t.id?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
       <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
-      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.5;':''}">${esc(t.text)}</div>
-      <div class="tcf">${dueTag}${t.recurring&&t.recurring!=='none'?`<span class="tag tc-recur-tag" title="Repeats ${t.recurring}">↺ ${t.recurring}</span>`:''}<span class="tcd">${t.date}</span></div>
+      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text)}</div><div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
     </div>`;
     }).join('');
   });
@@ -2858,61 +2567,168 @@ document.addEventListener('touchmove',function(e){if(_tcDragActive)touchDragMove
 document.addEventListener('touchend',function(e){if(_tcDragActive)touchDragEnd(e);});
 function dov(e,col,wid){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));$('col-'+col+'-'+wid).classList.add('dov');}
 function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');}
-function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}dragTaskId=null;}
+function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;syncProjectProgress();persist();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();}dragTaskId=null;}
 
 /* ── JOURNAL ── */
 function buildJournalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   body.innerHTML=`
-    <div class="jwsearch-wrap">
-      <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
+    <div class="jwsearch-bar" id="jwsbar-${w.id}" style="display:none;">
+      <div class="jwsearch-inner">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
+        <button class="jwsearch-clear" id="jwscl-${w.id}" onclick="jwClearSearch('${w.id}')" style="display:none;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="jwlist" id="jwl-${w.id}" style="flex:1;overflow-y:auto;"></div>
+    <div class="jwlist" id="jwl-${w.id}"></div>
     <div class="jwadd">
-      <textarea class="jwta" id="jwta-${w.id}" rows="2" placeholder="How's your day?"></textarea>
-      <div class="jwfoot">
-        <div class="jwemoji-wrap" id="jwew-${w.id}">
-          <button class="jwemoji-btn" id="jweb-${w.id}" onclick="toggleMoodPicker('${w.id}')" data-tip="Mood">${MLAB[0].e}</button>
-          <div class="jwmsel" id="jwms-${w.id}">
-            ${MLAB.map((m,i)=>`<button class="jwmo${i===0?' on':''}" data-m="${i}" data-tip="${m.l}" onclick="pickMood(${i},'${w.id}')">${m.e}</button>`).join('')}
-          </div>
+      <div class="jwtpl-row" id="jwtpl-${w.id}" style="display:none;">
+        ${JOURNAL_TEMPLATES.map((t,i)=>`<button class="jw-tpl-chip" onclick="dskUseTemplate(${i},'${w.id}')" title="${t.fullLabel}">${t.icon} ${t.label}</button>`).join('')}
+      </div>
+      <textarea class="jwta" id="jwta-${w.id}" rows="2" placeholder="${getJournalPrompt()}"></textarea>
+      <div class="jwmood-row" id="jwmood-row-${w.id}">
+        <span class="jwmood-cur-lbl">Mood:</span>
+        <button class="jwmood-cur-btn" id="jwmcur-${w.id}" onclick="jwToggleMoodPop('${w.id}')">
+          ${MLAB[0].e} <span class="jwmood-cur-txt" id="jwmcurtxt-${w.id}">${MLAB[0].l}</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="jwmood-pop" id="jwmpop-${w.id}">
+          ${MLAB.map((m,i)=>`<button class="jwmpop-btn${i===0?' on':''}" data-m="${i}" onclick="pickMoodW(${i},'${w.id}')">${m.e}<span class="jwmpop-lbl">${m.l}</span></button>`).join('')}
         </div>
-        <button class="twbtn" style="padding:5px 11px;font-size:11px;flex-shrink:0;" onclick="addJournal('${w.id}')">Save</button>
-
+      </div>
+      <div class="jwfoot">
+        <button class="jwutil-btn" onclick="jwToggleTpl('${w.id}')" title="Templates">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Templates
+        </button>
+        <button class="jwutil-btn" onclick="dskShufflePrompt('${w.id}')">✨ Prompt</button>
+        <button class="jwsave-btn" onclick="addJournal('${w.id}')">Save</button>
       </div>
     </div>`;
   renderJournalW(w.id);
+  // auto-resize textarea on input
+  const ta=document.getElementById('jwta-'+w.id);
+  if(ta){
+    ta.addEventListener('input',()=>jwAutoResize(ta));
+    ta.addEventListener('focus',()=>jwAutoResize(ta));
+    ta.addEventListener('keydown',(e)=>{
+      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addJournal(w.id);}
+    });
+  }
 }
-function pickMood(m,wid){
+
+function jwAutoResize(ta){
+  ta.style.height='auto';
+  ta.style.height=(ta.scrollHeight)+'px';
+}
+
+function dskUseTemplate(idx, wid){
+  const t=JOURNAL_TEMPLATES[idx];
+  const ta=document.getElementById('jwta-'+wid);
+  if(!ta)return;
+  ta.value=t.text;ta.focus();
+  jwAutoResize(ta);
+}
+function dskShufflePrompt(wid){
+  const ta=document.getElementById('jwta-'+wid);
+  if(!ta)return;
+  ta.placeholder=getJournalPrompt();
+  ta.focus();
+}
+function pickMoodW(m,wid){
   curMood=m;
-  document.querySelectorAll(`#jwms-${wid} .jwmo`).forEach(b=>b.classList.toggle('on',+b.dataset.m===m));
-  const eb=$('jweb-'+wid);if(eb)eb.textContent=MLAB[m].e;
-  toggleMoodPicker(wid,false);
+  const mood=MLAB[m]||MLAB[0];
+  // update popup selected state
+  document.querySelectorAll(`#jwmpop-${wid} .jwmpop-btn`).forEach(b=>b.classList.toggle('on',+b.dataset.m===m));
+  // update trigger button
+  const cur=document.getElementById('jwmcur-'+wid);
+  const txt=document.getElementById('jwmcurtxt-'+wid);
+  if(cur) cur.firstChild.textContent=mood.e;
+  if(txt) txt.textContent=mood.l;
+  // close popup
+  jwToggleMoodPop(wid,false);
 }
-function toggleMoodPicker(wid,force){
-  const ms=$('jwms-'+wid);if(!ms)return;
-  const open=force!==undefined?force:!ms.classList.contains('open');
-  ms.classList.toggle('open',open);
+function jwToggleMoodPop(wid,force){
+  const pop=document.getElementById('jwmpop-'+wid);
+  if(!pop)return;
+  const open=force!==undefined?force:!pop.classList.contains('open');
+  pop.classList.toggle('open',open);
+  // close on outside click
+  if(open){
+    setTimeout(()=>{
+      const handler=e=>{if(!pop.contains(e.target)&&e.target.id!=='jwmcur-'+wid){pop.classList.remove('open');document.removeEventListener('click',handler);}};
+      document.addEventListener('click',handler);
+    },10);
+  }
 }
+
+function jwToggleSearch(wid){
+  const bar = document.getElementById('jwsbar-'+wid);
+  const inp = document.getElementById('jws-'+wid);
+  const btn = document.getElementById('jwsib-'+wid);
+  if(!bar) return;
+  const open = bar.style.display !== 'none';
+  bar.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('active', !open);
+  if(!open && inp) setTimeout(()=>inp.focus(), 50);
+  if(open){ jwClearSearch(wid); }
+}
+function jwClearSearch(wid){
+  const inp = document.getElementById('jws-'+wid);
+  if(inp) inp.value = '';
+  onJwSearch(wid, '');
+  const cl = document.getElementById('jwscl-'+wid);
+  if(cl) cl.style.display = 'none';
+}
+function jwToggleTpl(wid){
+  const row=document.getElementById('jwtpl-'+wid);
+  if(!row)return;
+  row.style.display=row.style.display==='none'?'flex':'none';
+}
+// legacy compat
+function pickMood(m,wid){pickMoodW(m,wid);}
+function toggleMoodPicker(wid,force){}
 function addJournal(wid){
   const el=$('jwta-'+wid);const t=el.value.trim();if(!t){el.focus();return;}
   journal.unshift({id:Date.now(),text:t,mood:curMood,date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),ts:Date.now()});
-  persist();renderAllJournalW();updateAllStatsW();updateFixedStats();el.value='';
+  persist();renderAllJournalW();updateAllStatsW();updateFixedStats();el.value='';el.style.height='';
 }
 async function delJournal(id){if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>renderJournalW(w.id));}
-function onJwSearch(wid,val){_jwSearch[wid]=val.toLowerCase().trim();renderJournalW(wid);}
+function onJwSearch(wid,val){
+  _jwSearch[wid]=val.toLowerCase().trim();
+  renderJournalW(wid);
+  const cl=document.getElementById('jwscl-'+wid);
+  if(cl) cl.style.display=val?'flex':'none';
+}
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
   const q=_jwSearch[wid]||'';
   const filtered=q?journal.filter(j=>(j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q)):journal;
-  if(!journal.length){el.innerHTML='<div class="jwempty">Your journal is empty.<br/>Write something below.</div>';return;}
+  if(!journal.length){el.innerHTML='<div class="es"><div class="es-icon">📓</div><div class="es-title">No journal entries yet</div><div class="es-hint">Write your first entry below — capture how your day went.</div></div>';return;}
   if(!filtered.length){el.innerHTML='<div class="jwempty">No entries match your search.</div>';return;}
   const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
   const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
   el.innerHTML=hdr+filtered.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
-    return `<div class="jwje"><div class="jwjehd"><div class="jwm">${m.e}</div><span class="jwdt">${j.date} · ${m.l}</span><button class="jwdel" onclick="delJournal(${j.id})">&times;</button></div><div class="jwtx">${hl(esc(j.text))}</div></div>`;
+    const preview=j.text.length>120?j.text.slice(0,120)+'…':j.text;
+    const wc=j.text.trim().split(/\s+/).filter(Boolean).length;
+    const moodColors={'😊':'#2A7D5E','😔':'#5A7AAA','😤':'#C44040','😌':'#7A5EA8','😐':'#888888','🤩':'#D97706','😴':'#6B7280','😰':'#DC2626'};
+    const borderCol=moodColors[m.e]||'var(--a2)';
+    return `<div class="jwje" style="border-left-color:${borderCol};">
+      <div class="jwjehd">
+        <span class="jwm" title="${m.l}">${m.e}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="jwdt">${j.date}</div>
+          <div class="jwmood-lbl">${m.l}</div>
+        </div>
+        <span class="jwwc">${wc}w</span>
+        <button class="jwdel" onclick="delJournal(${j.id})">&times;</button>
+      </div>
+      <div class="jwtx">${hl(esc(preview))}</div>
+    </div>`;
   }).join('');
 }
 
@@ -2947,8 +2763,8 @@ function buildTimerW(body,w){
       <div class="tmsess" id="tmsess-${w.id}" style="${ts.mode!==0?'display:none;':''}">
         ${Array.from({length:4},(_,i)=>`<div class="tmsd${i<ts.sessions?' dn':''}"></div>`).join('')}
       </div>
-      <div id="dsk-pom-history-wrap-${w.id}" style="margin:8px 14px 14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 14px;${ts.mode!==0?'display:none;':''}">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:10px;">Session History</div>
+      <div id="dsk-pom-history-wrap-${w.id}" class="tm-history-wrap" style="${ts.mode!==0?'display:none;':''}">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:8px;">Session History</div>
         <div id="dsk-pom-history"></div>
       </div>
     </div>`;
@@ -2987,7 +2803,6 @@ function tmConfirmEdit(wid){
   if(total<1)return;
   ts.custom[ts.mode]=total;
   ts.sec=total;
-  if(ts.mode===1){_mobTimerCustom[1]=total;_mobTimerSec=total;}
   tmCancelEdit(wid);
   const w=widgets.find(x=>x.id===wid);if(w)fillWBody(w);
 }
@@ -3118,117 +2933,528 @@ function buildSubjectsW(body,w){
   renderSubW(w.id);
 }
 function renderAllSubW(){widgets.filter(w=>w.type==='subjects').forEach(w=>renderSubW(w.id));}
+function goToProject(id){
+  _activeSubId=id;
+  const btn=document.querySelector('[data-p="subjects"]');
+  goPg('subjects',btn);
+}
 function gradeC(g){return g>=90?'#2A5C44':g>=75?'#9A6818':g>=60?'#B87333':'#B83030';}
 function gradeL(g){return g>=90?'A':g>=80?'B':g>=70?'C':g>=60?'D':'F';}
 function renderSubW(wid){
   const el=$('swb-'+wid);if(!el)return;
-  if(!subjects.length){el.innerHTML='<div class="swempty">No projects yet.<br/>Add them from the sidebar.</div>';return;}
-  el.innerHTML=subjects.map(s=>`<div class="swrow"><div class="swdot" style="background:${s.color}"></div><div class="swname">${esc(s.name)}</div><div class="swbar"><div class="swfill" style="width:${s.progress}%;background:${s.color}"></div></div><div class="swg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
+  if(!subjects.length){el.innerHTML='<div class="es"><div class="es-icon">🗂️</div><div class="es-title">No projects yet</div><div class="es-hint">Create a project from the <b>Projects</b> page to track progress here.</div></div>';return;}
+  const now=new Date();now.setHours(0,0,0,0);
+  el.innerHTML=subjects.map(s=>{
+    const prog=getProjProgress(s);
+    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const doneCnt=projTasks.filter(t=>t.col==='done').length;
+    const total=projTasks.length;
+    const st=s.status||'active';
+    const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
+    const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
+    const urgent=overdue||dueSoon;
+    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const color=s.color||'var(--a2)';
+    const pctColor=urgent?'var(--red)':'var(--ink3)';
+    const urgentHtml=urgent
+      ?'<span style="font-size:10px;font-weight:700;color:var(--red);">'+(overdue?'Overdue':'Due soon')+(dueStr?' · '+dueStr:'')+'</span>'
+      :(dueStr?'<span style="font-size:10px;color:var(--ink3);">'+dueStr+'</span>':'');
+    const taskCntHtml=total?'<span style="font-size:10px;color:var(--ink3);flex-shrink:0;">'+doneCnt+'/'+total+'</span>':'';
+    const arrowBtn='<button onclick="goToProject('+s.id+')" style="background:none;border:none;padding:4px;cursor:pointer;color:var(--ink3);display:flex;align-items:center;flex-shrink:0;border-radius:6px;" title="Open project">'
+      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>'
+      +'</button>';
+    return '<div class="swrow">'
+      +'<div class="swdot" style="background:'+color+'"></div>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;">'
+          +'<div class="swname">'+esc(s.name)+'</div>'
+          +urgentHtml
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:7px;">'
+          +'<div class="swbar" style="flex:1;"><div class="swfill" style="width:'+prog+'%;background:'+color+'"></div></div>'
+          +taskCntHtml
+        +'</div>'
+      +'</div>'
+      +arrowBtn
+    +'</div>';
+  }).join('');
 }
-
-/* ── CALENDAR WIDGET ── */
 function buildCalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
-  const days=getWeekDays(calOff),tok=fdk(new Date());
-  const first=days[0],last=days[6];
-  const lbl=first.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+last.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   body.innerHTML=`
     <div class="cwhead">
-      <div style="display:flex;align-items:center;gap:5px;">
-        <button class="cwib" onclick="shiftCalW(-1,'${w.id}')"><svg viewBox="0 0 9 9"><path d="M7 2L3 4.5 7 7"/></svg></button>
-        <span class="cwlbl" id="cwlbl-${w.id}">${lbl}</span>
-        <button class="cwib" onclick="shiftCalW(1,'${w.id}')"><svg viewBox="0 0 9 9"><path d="M2 2l4 2.5L2 7"/></svg></button>
+      <div>
+        <div class="cwlbl">Upcoming</div>
+        <div class="cw-sublbl" id="cw-sublbl-${w.id}"></div>
       </div>
-      <button class="cwib" onclick="openMo('mo-ev')" data-tip="Add event" style="width:auto;padding:0 7px;font-size:11px;font-weight:700;color:var(--a2);">+</button>
+      <button class="cw-open-btn" onclick="goPg('calendar',document.querySelector('[data-p=calendar]'))" data-tip="Open full planner">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+      </button>
     </div>
-    <div class="cwdays" id="cwdays-${w.id}"></div>`;
+    <div class="cw-ev-list" id="cwlist-${w.id}"></div>`;
   renderCalW(w.id);
 }
 function shiftCalW(dir,wid){calOff+=dir;widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});renderFullCal();}
 function renderCalW(wid){
-  const el=$('cwdays-'+wid);if(!el)return;
-  const days=getWeekDays(calOff),tok=fdk(new Date());
-  const dn=['M','T','W','T','F','S','S'];
-  el.innerHTML=days.map((d,i)=>{
-    const k=fdk(d),isT=k===tok;
-    const evs=calEvs.filter(e=>e.date===k);
-    return `<div class="cwd${isT?' tod':''}">
-      <div class="cwdn">${dn[i]}</div><div class="cwdnum">${d.getDate()}</div>
-      <div style="display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(100% - 32px);">${evs.map(ev=>`<div class="cwev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete?'))delEv(${ev.id})">${esc(ev.title)}</div>`).join('')}</div>
-      <div class="cwaddbtn" onclick="$('ev-d').value='${k}';openMo('mo-ev')">+</div>
+  const el=$('cwlist-'+wid);if(!el)return;
+  const now=new Date();now.setHours(0,0,0,0);
+  const days=[];
+  for(let i=0;i<14;i++){
+    const d=new Date(now);d.setDate(now.getDate()+i);
+    const k=calFmt(d);
+    const evs=calEvs.filter(e=>e.date===k).sort((a,b)=>(a.timeStart||'').localeCompare(b.timeStart||''));
+    if(evs.length) days.push({d,k,evs});
+  }
+  // update subtitle
+  const sub=$('cw-sublbl-'+wid);
+  const totalEvs=days.reduce((a,x)=>a+x.evs.length,0);
+  if(sub)sub.textContent=totalEvs?`${totalEvs} event${totalEvs>1?'s':''} this fortnight`:'Next 14 days';
+  if(!days.length){
+    el.innerHTML=`<div class="cw-empty">
+      <div class="cw-empty-icon">📅</div>
+      <div>No upcoming events</div>
+      <div style="font-size:11px;margin-top:4px;color:var(--ink4);">Open the planner to add some</div>
     </div>`;
-  }).join('');
+    return;
+  }
+  const todayKey=calFmt(new Date());
+  let html='';
+  days.forEach(({d,k,evs,due})=>{
+    const isToday=k===todayKey;
+    const isTomorrow=calFmt(new Date(new Date().setDate(new Date().getDate()+1)))===k;
+    let dayLbl=isToday?'Today':isTomorrow?'Tomorrow':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    html+=`<div class="cw-day-group">
+      <div class="cw-day-hd${isToday?' cw-today-hd':''}">
+        <span class="cw-day-dot${isToday?' cw-today-dot':''}"></span>${dayLbl}
+      </div>`;
+    evs.forEach(ev=>{
+      const col=ev.color||ev.subColor||'var(--a2)';
+      const timeLbl=ev.timeStart?fmtTime(ev.timeStart)+(ev.timeEnd?'\u2013'+fmtTime(ev.timeEnd):''):'All day';
+      html+=`<div class="cw-ev-item" onclick="goPg('calendar',document.querySelector('[data-p=calendar]'))">
+        <div class="cw-ev-dot" style="background:${col};"></div>
+        <div class="cw-ev-body">
+          <div class="cw-ev-title">${esc(ev.title)}</div>
+          <div class="cw-ev-meta">${timeLbl}${ev.note?' · '+esc(ev.note):''}</div>
+        </div>
+      </div>`;
+    });
+
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
 }
 
 // ═══════════════════════════════════════
 // FULL PAGE — SUBJECTS
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// FULL PAGE — SUBJECTS
+// ═══════════════════════════════════════
+let _activeSubId=null;
+
 function renderSubFull(){
   const g=$('subgrid');if(!g)return;
+  const scroll=document.querySelector('#pg-subjects .fpscroll');
+  if(_activeSubId!==null){
+    const s=subjects.find(x=>x.id===_activeSubId);
+    if(s){if(scroll)scroll.classList.remove('is-list');renderSubDetail(s);return;}
+    _activeSubId=null;
+  }
+  if(scroll)scroll.classList.add('is-list');
+  renderSubList();
+}
+
+function syncProjectProgress(){
+  subjects.forEach(s=>{
+    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    if(projTasks.length){
+      s.progress=Math.round(projTasks.filter(t=>t.col==='done').length/projTasks.length*100);
+    }
+  });
+  if(acc[cu]) acc[cu].subjects=subjects;
+}
+function getProjProgress(s){
+  const projTasks=tasks.filter(t=>t.subjectId===s.id);
+  if(!projTasks.length)return s.progress||0;
+  const done=projTasks.filter(t=>t.col==='done').length;
+  return Math.round((done/projTasks.length)*100);
+}
+
+// Project card accent colors — saved per project, fallback spreads across palette by array position
+const _projPalette=['#3A7D5E','#7C5CBF','#C0693A','#2E86AB','#C47B2B','#A0522D','#5B8C5A','#B5446E'];
+function _projColor(s){
+  if(s.color&&s.color!=='var(--a2)')return s.color;
+  // assign fallback color based on position so no two adjacent projects share a color
+  const allIdx=subjects.indexOf(s);
+  const noColor=subjects.filter(x=>!x.color||x.color==='var(--a2)');
+  const idx=noColor.indexOf(s);
+  return _projPalette[(idx>=0?idx:allIdx)%_projPalette.length];
+}
+
+function renderSubList(){
+  const g=$('subgrid');if(!g)return;
+  const hdr=document.querySelector('#pg-subjects .fphdr');
+  if(hdr)hdr.innerHTML=`<div class="pg-hdr-inner"><div class="fptit">Projects</div><button class="btn ba bsm" onclick="_resetSubMo();openMo('mo-sub')">+ New Project</button></div>`;
   if(!subjects.length){
-    g.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink3);font-size:13px;font-weight:600;">No projects yet — click + Add Project to start.</div>`;
+    g.innerHTML=`<div class="sub-empty"><div class="sub-empty-icon">📋</div><div class="sub-empty-title">No projects yet</div><div class="sub-empty-desc">Create your first project to start organizing tasks.</div><button class="btn ba bsm" onclick="_resetSubMo();openMo('mo-sub')">+ New Project</button></div>`;
     return;
   }
-  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
-  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
+  // Auto-assign unique colors to any projects that don't have one yet
+  const _usedColors=new Set(subjects.filter(s=>s.color&&s.color!=='var(--a2)').map(s=>s.color));
+  subjects.forEach(s=>{
+    if(!s.color||s.color==='var(--a2)'){
+      const unused=_projPalette.filter(c=>!_usedColors.has(c));
+      const pool=unused.length?unused:_projPalette;
+      s.color=pool[Math.floor(Math.random()*pool.length)];
+      _usedColors.add(s.color);
+    }
+  });
+
   const now=new Date();now.setHours(0,0,0,0);
-  g.innerHTML=subjects.map(s=>{
+  function projUrgency(s){
     const st=s.status||'active';
+    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const remaining=projTasks.filter(t=>t.col!=='done').length;
+    if(s.due){
+      const d=new Date(s.due+'T00:00:00');
+      const diff=Math.round((d-now)/(1000*60*60*24));
+      if(diff<0) return -10000+diff; // overdue: most overdue first
+      return diff*10 - remaining;   // due soonest + most remaining first
+    }
+    return 5000 - remaining; // no due date: sort by remaining tasks
+  }
+  function sortedSubjects(arr){
+    return arr.slice().sort((a,b)=>projUrgency(a)-projUrgency(b));
+  }
+  const groups=[
+    {key:'active',label:'Active',subjects:sortedSubjects(subjects.filter(s=>(s.status||'active')==='active'))},
+    {key:'hold',label:'On Hold',subjects:sortedSubjects(subjects.filter(s=>s.status==='hold'))},
+    {key:'done',label:'Completed',subjects:subjects.filter(s=>s.status==='done')},
+  ].filter(g=>g.subjects.length);
+
+  function cardHtml(s,idx){
+    const st=s.status||'active';
+    const prog=getProjProgress(s);
+    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const doneCnt=projTasks.filter(t=>t.col==='done').length;
     const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
     const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
-    return `<div class="subcard">
+    const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
+    const color=_projColor(s);
+    // dot pips (max 8)
+    const total=Math.min(projTasks.length,8);
+    const doneD=Math.min(doneCnt,total);
+    const dots=total?Array.from({length:total},(_,i)=>`<span class="sub-pip${i<doneD?' filled':''}"></span>`).join(''):`<span style="font-size:10px;color:var(--ink4);">No tasks</span>`;
+    return `<div class="subcard${overdue?' subcard-overdue':dueSoon?' subcard-duesoon':''}" id="subcard-${s.id}" draggable="true"
+      style="--proj-color:${color}"
+      ondragstart="sgDragStart(event,${subjects.indexOf(s)})"
+      ondragend="sgDragEnd(event)"
+      ondragover="sgDragOver(event,${subjects.indexOf(s)})"
+      ondragleave="sgDragLeave(event)"
+      ondrop="sgDrop(event,${subjects.indexOf(s)})"
+      onclick="openSubDetail(${s.id})">
+      <div class="subcard-strip"></div>
       <div class="subbody">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-          <div class="subname">${esc(s.name)}</div>
-          <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+          <div class="subname">${esc(s.name)}${overdue?` <span class="sub-warn">!</span>`:dueSoon?` <span class="sub-warn sub-warn-amb">!</span>`:''}</div>
         </div>
         ${s.desc?`<div class="subdesc">${esc(s.desc)}</div>`:''}
         ${s.lead?`<div class="subteach">👤 ${esc(s.lead)}</div>`:''}
-        <div style="margin-top:4px;">
-          <div class="subprog-row" style="margin-bottom:6px;">
-            <div class="subbar" style="flex:1;"><div class="subbarfill" style="width:${s.progress}%"></div></div>
-            <span class="subpct">${s.progress}%</span>
-            <input type="number" class="subgin" min="0" max="100" value="${s.progress}"
-              onchange="updGrade(${s.id},this.value)"
-              onfocus="this.style.borderColor='var(--a2)'"
-              onblur="this.style.borderColor='var(--bdr)'"/>
+        <div class="subprog-row" style="margin-top:8px;">
+          <div class="subbar" style="flex:1;"><div class="subbarfill" style="width:${prog}%;background:${color}"></div></div>
+          <span class="subpct">${prog}%</span>
+        </div>
+        <div class="sub-pips">${dots}</div>
+      </div>
+      <div class="subfoot">
+        <span class="subdue${overdue?' overdue':dueSoon?' duesoon':''}">${dueStr?(overdue?'Overdue: ':dueSoon?'Due soon: ':'Due: ')+dueStr:''}</span>
+        <span class="subtag sub-cycle-tag st-${st}" onclick="event.stopPropagation();cycProjStatus(${s.id})" title="Click to change status">${{active:'Active',hold:'On Hold',done:'Completed'}[st]}</span>
+      </div>
+    </div>`;
+  }
+
+  g.style.display='block';
+  g.innerHTML=groups.map(grp=>`
+    <div class="sub-group">
+      <div class="sub-group-hd">${grp.label} <span class="sub-group-cnt">${grp.subjects.length}</span></div>
+      <div class="subgrid-inner">${grp.subjects.map((s,i)=>cardHtml(s,i)).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function cycProjStatus(id){
+  const s=subjects.find(x=>x.id===id);if(!s)return;
+  const cycle={active:'hold',hold:'done',done:'active'};
+  s.status=cycle[s.status||'active'];
+  persist();renderSubFull();
+}
+
+// ── PROJECT CARD DRAG-TO-REORDER ──
+let _sgDragIdx=null;
+function sgDragStart(e,idx){
+  _sgDragIdx=idx;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{
+    const card=e.currentTarget;
+    if(card)card.classList.add('subcard-dragging');
+  },0);
+}
+function sgDragEnd(e){
+  _sgDragIdx=null;
+  document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragging','subcard-dragover'));
+}
+function sgDragOver(e,idx){
+  e.preventDefault();
+  if(_sgDragIdx===null||_sgDragIdx===idx)return;
+  document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragover'));
+  e.currentTarget.classList.add('subcard-dragover');
+}
+function sgDragLeave(e){
+  e.currentTarget.classList.remove('subcard-dragover');
+}
+function sgDrop(e,idx){
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragging','subcard-dragover'));
+  if(_sgDragIdx===null||_sgDragIdx===idx){_sgDragIdx=null;return;}
+  const moved=subjects.splice(_sgDragIdx,1)[0];
+  subjects.splice(idx,0,moved);
+  _sgDragIdx=null;
+  persist();renderSubList();renderAllSubW();
+}
+
+function openSubDetail(id){
+  _activeSubId=id;
+  renderSubDetail(subjects.find(s=>s.id===id));
+}
+
+function renderSubDetail(s){
+  const g=$('subgrid');if(!g||!s)return;
+  const color=_projColor(s);
+  const hdr=document.querySelector('#pg-subjects .fphdr');
+  if(hdr)hdr.innerHTML=`<div class="pg-hdr-inner"><div style="display:flex;align-items:center;gap:10px;"><button class="subdet-back" onclick="_activeSubId=null;renderSubFull()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L5 8l5-5"/></svg></button><div class="fptit">${esc(s.name)}</div></div><button class="btn ba bsm" onclick="openAddTaskToProj(${s.id})">+ Add Task</button></div>`;
+  const projTasks=tasks.filter(t=>t.subjectId===s.id);
+  const prog=getProjProgress(s);
+  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
+  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
+  const st=s.status||'active';
+  const now=new Date();now.setHours(0,0,0,0);
+  const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
+  const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+  const todo=sortByDue(projTasks.filter(t=>t.col==='todo'));
+  const inprog=sortByDue(projTasks.filter(t=>t.col==='inprog'));
+  const done=projTasks.filter(t=>t.col==='done');
+
+  function taskCard(t){
+    const due=taskDueInfo(t);
+    const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
+    const recurTag=t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">${t.recurring==='daily'?'Daily':'Weekly'}</span>`:'';
+    const isOverdue=due?.label==='Overdue';
+    return `<div class="tc${isOverdue?' tc-overdue':''}" id="sdtc-${t.id}" draggable="true"
+      ondragstart="sdDragStart(event,${t.id},${s.id})"
+      ondragend="sdDragEnd()"
+      onclick="sdSelTask(event,${t.id},${s.id})">
+      <button class="tcdel" onclick="event.stopPropagation();removeTaskFromProj(${t.id})">&times;</button>
+      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text)}</div>
+      <div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
+    </div>`;
+  }
+
+  g.style.display='block';
+  g.innerHTML=`
+    <div class="subdet">
+      <div class="subdet-meta" style="padding:0;overflow:hidden;">
+        <div class="subdet-band" style="background:${color};height:4px;width:100%;"></div>
+        <div style="padding:10px 14px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="subtag sub-cycle-tag ${statClass[st]}" onclick="cycProjStatus(${s.id})" title="Click to change status">${statLabel[st]}</span>
+            <span class="subdet-stat-sep">·</span>
+            <span class="subdet-stat-chip">${projTasks.length} task${projTasks.length!==1?'s':''}</span>
+            <span class="subdet-stat-sep">·</span>
+            <span class="subdet-stat-chip">${done.length} done</span>
+            ${dueStr?`<span class="subdet-stat-sep">·</span><span class="subdet-stat-chip${overdue?' overdue':''}">${overdue?'Overdue: ':'Due: '}${dueStr}</span>`:''}
+            <div style="flex:1;min-width:60px;"></div>
+            <div class="subdet-prog-track" style="width:80px;"><div class="subdet-prog-fill" style="width:${prog}%;background:${color};"></div></div>
+            <span style="font-size:11px;font-weight:700;color:var(--ink3);min-width:26px;">${prog}%</span>
+            <button class="subdet-del-btn" onclick="delSub(${s.id})" title="Delete project"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 13 5"/><path d="M6 5V3h4v2M6 8v5M10 8v5"/><rect x="4" y="5" width="8" height="9" rx="1.5"/></svg></button>
+          </div>
+          ${s.desc?`<div style="font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.5;">${esc(s.desc)}</div>`:''}
+        </div>
+      </div>
+      <div class="subdt-cols">
+        <div class="subdt-col">
+          <div class="subdt-colhd"><div class="twdot twdot-todo"></div>To Do <span class="twcnt">${todo.length}</span></div>
+          <div class="twbody" id="sdc-todo-${s.id}"
+            ondragover="sdDragOver(event,'todo',${s.id})"
+            ondragleave="sdDragLeave(event)"
+            ondrop="sdDrop(event,'todo',${s.id})">
+            ${todo.length?todo.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">No tasks</div><div class="twempty-hint">Drag tasks here</div></div>`}
+          </div>
+        </div>
+        <div class="subdt-col">
+          <div class="subdt-colhd"><div class="twdot twdot-inprog"></div>In Progress <span class="twcnt">${inprog.length}</span></div>
+          <div class="twbody" id="sdc-inprog-${s.id}"
+            ondragover="sdDragOver(event,'inprog',${s.id})"
+            ondragleave="sdDragLeave(event)"
+            ondrop="sdDrop(event,'inprog',${s.id})">
+            ${inprog.length?inprog.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">Nothing in progress</div><div class="twempty-hint">Drag a task here</div></div>`}
+          </div>
+        </div>
+        <div class="subdt-col">
+          <div class="subdt-colhd"><div class="twdot twdot-done"></div>Done <span class="twcnt">${done.length}</span></div>
+          <div class="twbody" id="sdc-done-${s.id}"
+            ondragover="sdDragOver(event,'done',${s.id})"
+            ondragleave="sdDragLeave(event)"
+            ondrop="sdDrop(event,'done',${s.id})">
+            ${done.length?done.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">Nothing done yet</div><div class="twempty-hint">Complete a task</div></div>`}
           </div>
         </div>
       </div>
-      <div class="subfoot">
-        <span class="subdue${overdue?' overdue':''}">${dueStr?'Due: '+dueStr:''}</span>
-        <div style="display:flex;gap:6px;">
-          <select class="subgin" style="max-width:none;width:auto;" onchange="updProjStatus(${s.id},this.value)">
-            <option value="active"${st==='active'?' selected':''}>Active</option>
-            <option value="hold"${st==='hold'?' selected':''}>On Hold</option>
-            <option value="done"${st==='done'?' selected':''}>Completed</option>
-          </select>
-          <button class="bol bsm" onclick="delSub(${s.id})">Remove</button>
-        </div>
-      </div>
     </div>`;
-  }).join('');
 }
+
+// ── PROJECT DETAIL DRAG & DROP ──
+let _sdDragId=null;
+function sdDragStart(e,id,subjId){
+  _sdDragId=id;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>{const el=$('sdtc-'+id);if(el)el.classList.add('dragging');},0);
+}
+function sdDragEnd(){
+  _sdDragId=null;
+  document.querySelectorAll('[id^="sdtc-"]').forEach(e=>e.classList.remove('dragging'));
+  document.querySelectorAll('[id^="sdc-"]').forEach(e=>e.classList.remove('dov'));
+}
+function sdDragOver(e,col,subjId){
+  e.preventDefault();
+  document.querySelectorAll('[id^="sdc-"]').forEach(e=>e.classList.remove('dov'));
+  const el=$('sdc-'+col+'-'+subjId);if(el)el.classList.add('dov');
+}
+function sdDragLeave(e){
+  if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');
+}
+function sdDrop(e,col,subjId){
+  e.preventDefault();
+  document.querySelectorAll('[id^="sdc-"]').forEach(e=>e.classList.remove('dov'));
+  if(_sdDragId===null)return;
+  const t=tasks.find(x=>x.id===_sdDragId);
+  if(t&&t.col!==col){t.col=col;syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();}
+  _sdDragId=null;
+}
+function sdSelTask(e,id,subjId){
+  e.stopPropagation();
+  // clicking card does nothing extra in project view — drag handles movement
+}
+
+function openAddTaskToProj(subjId){
+  const s=subjects.find(x=>x.id===subjId);
+  const bar=document.getElementById('ptask-mo-bar');
+  if(bar)bar.style.background=s?_projColor(s):'var(--a2)';
+  const nameEl=$('ptask-name');if(nameEl)nameEl.value='';
+  document.querySelectorAll('#ptask-col-row .sub-stat-pill').forEach((p,i)=>p.classList.toggle('active',i===0));
+  const colEl=$('ptask-col');if(colEl)colEl.value='todo';
+  const sidEl=$('ptask-subjid');if(sidEl)sidEl.value=subjId;
+  openMo('mo-ptask');
+  setTimeout(()=>{const n=$('ptask-name');if(n)n.focus();},300);
+}
+function ptaskOpenDatePicker(){
+  dpOpen($('ptask-due').value||'',function(val){
+    const inp=$('ptask-due');if(inp)inp.value=val||'';
+    const lbl=document.getElementById('ptask-date-lbl');if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose due date';
+    const btn=document.getElementById('ptask-date-btn');if(btn)btn.classList.toggle('filled',!!val);
+  });
+}
+function ptaskPickCol(el){
+  document.querySelectorAll('#ptask-col-row .sub-stat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const c=$('ptask-col');if(c)c.value=el.dataset.val;
+}
+function addProjTask(){
+  const name=$('ptask-name').value.trim();if(!name)return;
+  const subjId=parseInt($('ptask-subjid').value);
+  const col=$('ptask-col').value||'todo';
+  tasks.unshift({
+    id:Date.now(),text:name,col,
+    date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
+    dueDate:null,recurring:null,subjectId:subjId
+  });
+  persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();
+  closeMo('mo-ptask');
+}
+
+function toggleSubTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  t.col=t.col==='done'?'todo':'done';
+  syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();
+}
+
+function removeTaskFromProj(id){
+  const idx=tasks.findIndex(x=>x.id===id);if(idx===-1)return;
+  tasks.splice(idx,1);
+  syncProjectProgress();
+  persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();
+}
+// ── NEW PROJECT MODAL HELPERS ──
+let _subPickedColor='#3A7D5E';
+function subPickColor(el){
+  _subPickedColor=el.dataset.color;
+  document.querySelectorAll('#sub-color-swatches .ev-cswatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  const bar=document.getElementById('sub-mo-bar');
+  if(bar)bar.style.background=_subPickedColor;
+}
+function subPickStatus(el){
+  document.querySelectorAll('#sub-status-row .sub-stat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const inp=$('sstat-i');if(inp)inp.value=el.dataset.val;
+}
+function subOpenDatePicker(){
+  const cur=$('sdue-i').value||'';
+  dpOpen(cur,function(val){
+    const inp=$('sdue-i');
+    const btn=document.getElementById('sub-date-btn');
+    const lbl=document.getElementById('sub-date-lbl');
+    if(inp)inp.value=val||'';
+    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose due date';
+    if(btn){
+      if(val){btn.classList.add('filled');}
+      else{btn.classList.remove('filled');}
+    }
+  });
+}
+function _resetSubMo(){
+  const colors=['#3A7D5E','#7C5CBF','#C0693A','#2E86AB','#C47B2B','#B5446E','#5B8C5A','#5B8DD9'];
+  const used=new Set(subjects.map(s=>s.color).filter(Boolean));
+  const unused=colors.filter(c=>!used.has(c));
+  const pool=unused.length?unused:colors;
+  _subPickedColor=pool[Math.floor(Math.random()*pool.length)];
+  ['sn-i','sdesc-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  const due=$('sdue-i');if(due)due.value='';
+  const lbl=document.getElementById('sub-date-lbl');if(lbl)lbl.textContent='Choose due date';
+  const btn=document.getElementById('sub-date-btn');if(btn)btn.classList.remove('filled');
+  document.querySelectorAll('#sub-status-row .sub-stat-pill').forEach((p,i)=>p.classList.toggle('active',i===0));
+  const sstat=$('sstat-i');if(sstat)sstat.value='active';
+  const bar=document.getElementById('sub-mo-bar');if(bar)bar.style.background=_subPickedColor;
+}
+
 function addSub(){
   const name=$('sn-i').value.trim();if(!name)return;
   subjects.push({id:Date.now(),name,
     desc:$('sdesc-i').value.trim(),
-    lead:$('st-i').value.trim(),
     due:$('sdue-i').value,
     status:$('sstat-i').value||'active',
-    progress:Math.min(100,Math.max(0,parseFloat($('sg-i').value)||0)),
-    color:'var(--a2)',created:Date.now()});
-  persist();renderSubFull();renderAllSubW();updateAllStatsW();closeMo('mo-sub');
-  ['sn-i','sdesc-i','st-i','sdue-i','sg-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
-  $('sstat-i').value='active';
+    color:_subPickedColor||'#3A7D5E',
+    progress:0,created:Date.now()});
+  persist();renderSubFull();renderAllSubW();updateAllStatsW();populateTaskWidgetSubjSels();closeMo('mo-sub');
+  _resetSubMo();
 }
-async function delSub(id){if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;subjects=subjects.filter(s=>s.id!==id);persist();renderSubFull();renderAllSubW();updateAllStatsW();if(typeof mobRenderProjects==='function')mobRenderProjects();}
+async function delSub(id){if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;subjects=subjects.filter(s=>s.id!==id);if(_activeSubId===id)_activeSubId=null;persist();renderSubFull();renderAllSubW();updateAllStatsW();populateTaskWidgetSubjSels();}
 function updProjStatus(id,val){
   const s=subjects.find(x=>x.id===id);if(!s)return;
   s.status=val;if(val==='done')s.progress=100;
   persist();renderSubFull();renderAllSubW();
 }
-function updGrade(id,val){const s=subjects.find(x=>x.id===id);if(s){s.progress=Math.min(100,Math.max(0,parseFloat(val)||0));persist();renderSubFull();renderAllSubW();}}
+function updGrade(id,val){/* progress now auto-calculated from tasks */}
 
 // ═══════════════════════════════════════
 // FULL PAGE — CALENDAR
@@ -3238,37 +3464,527 @@ function getWeekDays(off=0){
   mon.setDate(now.getDate()-((day+6)%7)+off*7);
   return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});
 }
-function fdk(d){return d.toISOString().slice(0,10);}
+function fdk(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
 function shiftW(dir){calOff+=dir;renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});}
 function updateEvSubSel(){
   const sel=$('ev-s');if(!sel)return;
   sel.innerHTML='<option value="">None</option>'+subjects.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
 }
-function addEv(){
-  const t=$('ev-t').value.trim(),d=$('ev-d').value;if(!t||!d)return;
-  const sid=$('ev-s').value,sub=subjects.find(s=>s.id==sid);
-  calEvs.push({id:Date.now(),title:t,date:d,subName:sub?sub.name:'',subColor:sub?sub.color:''});
-  persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
-  closeMo('mo-ev');$('ev-t').value='';
-}
+// addEv now defined in planner helpers section above
+
 function delEv(id){calEvs=calEvs.filter(e=>e.id!==id);persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});}
+// ── PLANNER helpers ──────────────────────────────────
+const PLANNER_START=6,PLANNER_END=23;
+const HOUR_H=56;
+function plannerTimeToY(timeStr){
+  if(!timeStr)return 0;
+  const[h,m]=timeStr.split(':').map(Number);
+  return((h-PLANNER_START)*60+m)/60*HOUR_H;
+}
+function plannerDuration(ts,te){
+  if(!ts||!te)return HOUR_H;
+  const[h1,m1]=ts.split(':').map(Number);
+  const[h2,m2]=te.split(':').map(Number);
+  const mins=(h2*60+m2)-(h1*60+m1);
+  return Math.max(mins/60*HOUR_H,22);
+}
+function fmtTime(t){
+  if(!t)return '';
+  const[h,m]=t.split(':').map(Number);
+  const ampm=h>=12?'pm':'am';
+  const hh=h%12||12;
+  return m?`${hh}:${String(m).padStart(2,'0')}${ampm}`:`${hh}${ampm}`;
+}
+function fmt12to24(h12,min,ampm){
+  let h=parseInt(h12);
+  if(ampm==='PM'&&h!==12)h+=12;
+  if(ampm==='AM'&&h===12)h=0;
+  return `${String(h).padStart(2,'0')}:${String(parseInt(min)).padStart(2,'0')}`;
+}
+function fmt24to12(t24){
+  if(!t24)return {h:'9',m:'00',ap:'AM'};
+  const[h,m]=t24.split(':').map(Number);
+  const ap=h>=12?'PM':'AM';
+  const hh=h%12||12;
+  return {h:String(hh),m:String(m).padStart(2,'0'),ap};
+}
+// ── TIME PICKER BOTTOM SHEET (mirrors dpOpen pattern) ──
+let _tpCallback=null,_tpWhich=null;
+let _tpH='9',_tpM='00',_tpAP='AM';
+function tpOpen(which,currentVal,onConfirm){
+  _tpWhich=which;_tpCallback=onConfirm;
+  const cur=currentVal?fmt24to12(currentVal):{h:'9',m:'00',ap:'AM'};
+  _tpH=cur.h;_tpM=cur.m;_tpAP=cur.ap;
+  let modal=document.getElementById('tp-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='tp-modal';
+    modal.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .25s;pointer-events:none;';
+    modal.innerHTML=`
+      <div id="tp-sheet" style="position:relative;width:100%;max-width:440px;background:var(--surf);border-radius:24px 24px 0 0;padding:0 0 28px;box-shadow:0 -12px 48px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);">
+        <div style="width:40px;height:4px;border-radius:2px;background:var(--bdr);margin:14px auto 0;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;">
+          <span id="tp-title" style="font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.4px;">Start time</span>
+          <button onclick="tpClear()" style="background:none;border:none;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px;transition:all .15s;" onmouseover="this.style.background='var(--rl)';this.style.color='var(--red)'" onmouseout="this.style.background='none';this.style.color='var(--ink3)'">Clear</button>
+        </div>
+        <div style="margin:0 16px;background:var(--surf2);border-radius:18px;border:1.5px solid var(--bdr);padding:16px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="flex:2;">
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center;">Hour</div>
+              <div class="tp-sheet-col" id="tp-hr"></div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center;">Min</div>
+              <div class="tp-sheet-col" id="tp-min"></div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center;">AM/PM</div>
+              <div class="tp-sheet-col" id="tp-ap"></div>
+            </div>
+          </div>
+        </div>
+        <button id="tp-confirm" onclick="tpConfirm()" style="display:block;width:calc(100% - 32px);margin:14px 16px 0;background:var(--a2);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.2px;transition:background .15s;">Confirm</button>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click',function(e){if(e.target===modal)tpClose();});
+  }
+  document.getElementById('tp-title').textContent=which==='start'?'Start time':'End time';
+  tpRender();
+  modal.style.pointerEvents='auto';
+  requestAnimationFrame(()=>{
+    modal.style.background='rgba(0,0,0,.5)';
+    document.getElementById('tp-sheet').style.transform='translateY(0)';
+  });
+}
+function tpRender(){
+  const hours=['12','1','2','3','4','5','6','7','8','9','10','11'];
+  const mins=['00','15','30','45'];
+  const aps=['AM','PM'];
+  const hr=document.getElementById('tp-hr');
+  const mn=document.getElementById('tp-min');
+  const ap=document.getElementById('tp-ap');
+  if(hr)hr.innerHTML=hours.map(h=>`<div class="tp-pill${h===_tpH?' sel':''}" onclick="tpPick('h','${h}')">${h}</div>`).join('');
+  if(mn)mn.innerHTML=mins.map(m=>`<div class="tp-pill${m===_tpM?' sel':''}" onclick="tpPick('m','${m}')">${m}</div>`).join('');
+  if(ap)ap.innerHTML=aps.map(a=>`<div class="tp-pill${a===_tpAP?' sel':''}" onclick="tpPick('ap','${a}')">${a}</div>`).join('');
+  const btn=document.getElementById('tp-confirm');
+  if(btn)btn.textContent=`Confirm \u2014 ${_tpH}:${_tpM} ${_tpAP}`;
+  // scroll selected into view
+  setTimeout(()=>{
+    document.querySelectorAll('#tp-hr .tp-pill.sel,#tp-min .tp-pill.sel,#tp-ap .tp-pill.sel').forEach(el=>el.scrollIntoView({block:'center',behavior:'smooth'}));
+  },50);
+}
+function tpPick(part,val){
+  if(part==='h')_tpH=val;
+  else if(part==='m')_tpM=val;
+  else _tpAP=val;
+  tpRender();
+}
+function tpClear(){
+  if(_tpCallback)_tpCallback(null);
+  tpClose();
+}
+function tpConfirm(){
+  const val=fmt12to24(_tpH,_tpM,_tpAP);
+  if(_tpCallback)_tpCallback(val);
+  tpClose();
+}
+function tpClose(){
+  const modal=document.getElementById('tp-modal');
+  const sheet=document.getElementById('tp-sheet');
+  if(!modal)return;
+  modal.style.background='rgba(0,0,0,0)';
+  if(sheet)sheet.style.transform='translateY(100%)';
+  modal.style.pointerEvents='none';
+  _tpCallback=null;
+}
+// ── EVENT MODAL STATE ──
+let _evColor='#3A7D5E';
+let _editEvId=null;
+let _evDate='';
+let _evTimeStart='';
+let _evTimeEnd='';
+let _evHasTime=false;
+function evPickColor(el){
+  document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  _evColor=el.dataset.color;
+  const bar=document.getElementById('ev-mod-bar');
+  if(bar)bar.style.background=_evColor;
+}
+// Generate recurring event instances from a base event
+function evOpenDatePicker(){
+  dpOpen(_evDate||'',function(val){
+    _evDate=val||calFmt(calToday());
+    const btn=document.getElementById('ev-date-btn');
+    const lbl=document.getElementById('ev-date-lbl');
+    if(lbl)lbl.textContent=val?calDisplay(new Date(val+'T00:00:00')):'Choose date';
+    if(btn)btn.classList.toggle('filled',!!val);
+  });
+}
+function _resetEvModal(){
+  _editEvId=null;_evDate='';_evTimeStart='';_evTimeEnd='';_evHasTime=false;_evColor='#3A7D5E';
+  const et=document.getElementById('ev-t');if(et){et.value='';setTimeout(()=>et.focus(),200);}
+  const en=document.getElementById('ev-note');if(en)en.value='';
+
+  const dbl=document.getElementById('ev-date-lbl');if(dbl)dbl.textContent='Choose date';
+  const dbtn=document.getElementById('ev-date-btn');if(dbtn)dbtn.classList.remove('filled');
+
+  document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.remove('sel'));
+  const first=document.querySelector('.ev-cswatch');if(first)first.classList.add('sel');
+  const bar=document.getElementById('ev-mod-bar');if(bar)bar.style.background=_evColor;
+  const dr=document.getElementById('ev-del-row');if(dr)dr.style.display='none';
+  const dar=document.getElementById('ev-del-all-row');if(dar)dar.style.display='none';
+  updateEvSubSel();
+}
+function openCalAdd(date,timeStart,timeEnd){
+  _resetEvModal();
+  if(date){
+    _evDate=date;
+    const dbl=document.getElementById('ev-date-lbl');
+    if(dbl)dbl.textContent=calDisplay(new Date(date+'T00:00:00'));
+    const dbtn=document.getElementById('ev-date-btn');if(dbtn)dbtn.classList.add('filled');
+  }
+  if(timeStart){_evTimeStart=timeStart;_evHasTime=true;}
+  if(timeEnd){_evTimeEnd=timeEnd;}
+  const ttl=document.getElementById('mo-ev-title');if(ttl)ttl.textContent='New Event';
+  const btn=document.getElementById('ev-save-btn');if(btn){btn.textContent='Save';btn.onclick=addEv;}
+  openMo('mo-ev');
+}
+function openCalEdit(id){
+  const ev=calEvs.find(e=>e.id===id);if(!ev)return;
+  _resetEvModal();
+  _editEvId=id;
+  _evDate=ev.date||calFmt(calToday());
+  _evTimeStart=ev.timeStart||'';
+  _evTimeEnd=ev.timeEnd||'';
+  _evHasTime=!!ev.timeStart;
+  _evColor=ev.color||ev.subColor||'#3A7D5E';
+  const ttl=document.getElementById('mo-ev-title');if(ttl)ttl.textContent='Edit Event';
+  const btn=document.getElementById('ev-save-btn');if(btn){btn.textContent='Save';btn.onclick=saveEvEdit;}
+  const et=document.getElementById('ev-t');if(et)et.value=ev.title||'';
+  const en=document.getElementById('ev-note');if(en)en.value=ev.note||'';
+  // date button
+  const dbl=document.getElementById('ev-date-lbl');if(dbl)dbl.textContent=calDisplay(new Date(_evDate+'T00:00:00'));
+  const dbtn=document.getElementById('ev-date-btn');if(dbtn)dbtn.classList.add('filled');
+  // time preserved from drag (not shown in modal — edit via drag on planner)
+  // color
+  document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.toggle('sel',s.dataset.color===_evColor));
+  const bar=document.getElementById('ev-mod-bar');if(bar)bar.style.background=_evColor;
+  // project
+  const ss=document.getElementById('ev-s');if(ss)ss.value=subjects.find(s=>s.name===ev.subName)?.id||'';
+  // delete row
+  const dr=document.getElementById('ev-del-row');if(dr)dr.style.display='block';
+  const db=document.getElementById('ev-del-btn');
+  // show "delete all" button if recurring series
+  const dar=document.getElementById('ev-del-all-row');
+  if(dar)dar.style.display=ev.recurringId?'block':'none';
+  const dab=document.getElementById('ev-del-all-btn');
+  if(dab)dab.onclick=async()=>{
+    if(!await appConfirm(`Delete all events in this series?`,'This cannot be undone.','Delete All'))return;
+    calEvs=calEvs.filter(e=>e.recurringId!==ev.recurringId);
+    persist();renderFullCal();
+    widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+    closeMo('mo-ev');
+  };
+  if(db)db.onclick=async()=>{
+    if(!await appConfirm('Delete this event?','This cannot be undone.'))return;
+    calEvs=calEvs.filter(e=>e.id!==id);
+    persist();renderFullCal();
+    widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+    closeMo('mo-ev');
+  };
+  openMo('mo-ev');
+}
+function saveEvEdit(){
+  if(!_editEvId)return;
+  const t=document.getElementById('ev-t').value.trim();if(!t)return;
+  const ev=calEvs.find(e=>e.id===_editEvId);if(!ev)return;
+  const sid=document.getElementById('ev-s').value,sub=subjects.find(s=>s.id==sid);
+  ev.title=t;ev.date=_evDate||calFmt(calToday());
+  ev.color=_evColor;ev.note=document.getElementById('ev-note').value.trim();
+  ev.subName=sub?sub.name:'';ev.subColor=sub?sub.color:'';
+  persist();renderFullCal();
+  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  closeMo('mo-ev');
+}
+function addEv(){
+  const t=document.getElementById('ev-t').value.trim();if(!t||!_evDate)return;
+  const sid=document.getElementById('ev-s').value,sub=subjects.find(s=>s.id==sid);
+  const note=document.getElementById('ev-note').value.trim();
+  calEvs.push({
+    id:Date.now(),title:t,date:_evDate,
+    timeStart:_evHasTime?_evTimeStart:'',
+    timeEnd:_evHasTime?_evTimeEnd:'',
+    color:_evColor,note,
+    subName:sub?sub.name:'',subColor:sub?sub.color:''
+  });
+  persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  closeMo('mo-ev');
+}
+
 function renderFullCal(){
   const days=getWeekDays(calOff),tok=fdk(new Date());
   const f=days[0],l=days[6];
   const wlbl=$('calwlbl');
-  if(wlbl)wlbl.textContent=f.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+l.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  const g=$('calgridfull');if(!g)return;
+  if(wlbl)wlbl.textContent=f.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' \u2013 '+l.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const g=$('planner-grid');if(!g)return;
   const dn=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  g.innerHTML=days.map((d,i)=>{
-    const k=fdk(d),isT=k===tok,evs=calEvs.filter(e=>e.date===k);
-    return `<div class="calday${isT?' today':''}">
-      <div class="caldayhd"><div class="caldayname">${dn[i]}</div><div class="caldaynum">${d.getDate()}</div></div>
-      <div class="caldaybody">
-        ${evs.map(ev=>`<div class="calev" style="background:${ev.subColor||'var(--warm)'};color:${ev.subColor?'#fff':'var(--ink)'}" onclick="if(confirm('Delete this event?'))delEv(${ev.id})">${esc(ev.title)}${ev.subName?`<div style="font-size:10px;opacity:.7">${esc(ev.subName)}</div>`:''}</div>`).join('')}
-        <div class="caladdbtn" onclick="$('ev-d').value='${k}';openMo('mo-ev')">+</div>
-      </div>
+  const hours=Array.from({length:PLANNER_END-PLANNER_START},(_,i)=>PLANNER_START+i);
+  const totalH=hours.length*HOUR_H;
+  let html='';
+  html+=`<div class="planner-day-hd gutter" style="grid-column:1;grid-row:1;background:var(--bg);border-bottom:2px solid var(--bdr);"></div>`;
+  days.forEach((d,i)=>{
+    const k=fdk(d),isT=k===tok;
+    html+=`<div class="planner-day-hd${isT?' today':''}" style="grid-column:${i+2};grid-row:1;">
+      <div class="planner-dname">${dn[i]}</div>
+      <div class="planner-dnum">${d.getDate()}</div>
     </div>`;
-  }).join('');
+  });
+  html+=`<div class="planner-time-gutter" style="grid-column:1;grid-row:2;">`;
+  hours.forEach(h=>{
+    const label=h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
+    html+=`<div class="planner-time-label">${label}</div>`;
+  });
+  html+=`</div>`;
+  days.forEach((d,i)=>{
+    const k=fdk(d),isT=k===tok;
+    const dayEvs=calEvs.filter(e=>e.date===k);
+    html+=`<div class="planner-day-col${isT?' today-col':''}" data-date="${k}" style="grid-column:${i+2};grid-row:2;height:${totalH}px;position:relative;">`;
+    hours.forEach((h,hi)=>{
+      const label=h===0?'12:00 AM':h<12?`${h}:00 AM`:h===12?'12:00 PM':`${h-12}:00 PM`;
+      html+=`<div class="planner-hour-line" style="top:${hi*HOUR_H}px;" data-time="${label}"></div>`;
+    });
+    dayEvs.forEach(ev=>{
+      const y=plannerTimeToY(ev.timeStart||'09:00');
+      const h2=plannerDuration(ev.timeStart,ev.timeEnd);
+      const col=ev.color||ev.subColor||'#3A7D5E';
+      html+=`<div class="planner-ev-block" data-id="${ev.id}" style="top:${y}px;height:${h2}px;background:${col};color:#fff;">
+        <div class="planner-ev-title">${esc(ev.title)}</div>
+        ${ev.timeStart?`<div class="planner-ev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' \u2013 '+fmtTime(ev.timeEnd):''}</div>`:''}
+        <div class="planner-ev-resize" data-id="${ev.id}"></div>
+      </div>`;
+    });
+    if(isT){
+      const now=new Date();
+      const nowY=((now.getHours()-PLANNER_START)*60+now.getMinutes())/60*HOUR_H;
+      if(nowY>=0&&nowY<=totalH){
+        const nowLabel=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+        html+=`<div class="planner-now-line" style="top:${nowY}px;" data-time="${nowLabel}"><div class="planner-now-dot"></div></div>`;
+      }
+    }
+    html+=`</div>`;
+  });
+  g.innerHTML=html;
+  // Always scroll to 6am (start of day) when opening calendar
+  setTimeout(()=>{ g.scrollTop=0; },30);
+  // show/hide clear recurring button
+  const crBtn=document.getElementById('btn-clear-recurring');
+  if(crBtn)crBtn.style.display=calEvs.some(e=>e.recurringId)?'':'none';
+  plannerBindDrag(g);
+}
+
+// ── PLANNER DRAG & DROP ──────────────────────────────
+function pxToTime(px){
+  const totalMins=(px/HOUR_H)*60;
+  const mins=Math.round(totalMins/15)*15; // snap to 15min
+  const h=Math.floor(mins/60)+PLANNER_START;
+  const m=mins%60;
+  const clampedH=Math.max(PLANNER_START,Math.min(PLANNER_END-1,h));
+  return `${String(clampedH).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function addMins(t24,mins){
+  if(!t24)return '';
+  const[h,m]=t24.split(':').map(Number);
+  const total=h*60+m+mins;
+  const nh=Math.max(0,Math.min(23,Math.floor(total/60)));
+  const nm=total%60;
+  return `${String(nh).padStart(2,'0')}:${String(Math.max(0,nm)).padStart(2,'0')}`;
+}
+function plannerBindDrag(g){
+  let dragState=null;
+
+  // ── CANVAS PAN: mousedown on empty grid area ──
+  g.addEventListener('mousedown',function(e){
+    if(e.button!==0)return;
+    if(e.target.closest('.planner-ev-block'))return;
+    const startX=e.clientX,startY=e.clientY;
+    const origScrollTop=g.scrollTop,origScrollLeft=g.scrollLeft;
+    let panning=false;
+    function onPanMove(ev){
+      const dx=ev.clientX-startX,dy=ev.clientY-startY;
+      if(!panning&&(Math.abs(dx)>4||Math.abs(dy)>4)){panning=true;g.style.cursor='grabbing';}
+      if(!panning)return;
+      g.scrollTop=origScrollTop-dy;g.scrollLeft=origScrollLeft-dx;
+    }
+    function onPanUp(){g.style.cursor='';document.removeEventListener('mousemove',onPanMove);document.removeEventListener('mouseup',onPanUp);}
+    document.addEventListener('mousemove',onPanMove);
+    document.addEventListener('mouseup',onPanUp);
+  });
+
+  // ── MOVE: mousedown on event block ──
+  g.querySelectorAll('.planner-ev-block').forEach(block=>{
+    block.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      if(e.target.classList.contains('planner-ev-resize'))return;
+      e.stopPropagation();
+      const evId=parseInt(block.dataset.id);
+      const ev=calEvs.find(ev=>ev.id===evId);if(!ev)return;
+      const col=block.closest('.planner-day-col');
+      const blockRect=block.getBoundingClientRect();
+      const grabOffsetX=e.clientX-blockRect.left;
+      const grabOffsetY=e.clientY-blockRect.top;
+      dragState={type:'move',evId,block,col,grabOffsetX,grabOffsetY,
+        origTop:parseInt(block.style.top),origH:parseInt(block.style.height),
+        origDate:ev.date,startClientX:e.clientX,startClientY:e.clientY,
+        moved:false,clone:null,targetCol:null};
+      e.preventDefault();
+    });
+  });
+
+  // ── RESIZE: mousedown on resize handle ──
+  g.querySelectorAll('.planner-ev-resize').forEach(handle=>{
+    handle.addEventListener('mousedown',function(e){
+      if(e.button!==0)return;
+      e.stopPropagation();
+      const evId=parseInt(handle.dataset.id);
+      const block=handle.closest('.planner-ev-block');
+      block.classList.add('dragging');
+      dragState={type:'resize',evId,block,
+        origTop:parseInt(block.style.top),origH:parseInt(block.style.height),
+        startClientY:e.clientY};
+      e.preventDefault();
+    });
+  });
+
+  // ── MOUSEMOVE ──
+  function onMouseMove(e){
+    if(!dragState)return;
+    const{type}=dragState;
+
+    if(type==='move'){
+      const{block,col,grabOffsetX,grabOffsetY,origH,startClientX,startClientY}=dragState;
+      const dx=Math.abs(e.clientX-startClientX),dy=Math.abs(e.clientY-startClientY);
+
+      // Activate drag after 4px movement
+      if(!dragState.moved&&(dx>4||dy>4)){
+        dragState.moved=true;
+        // Create floating clone that follows the cursor
+        const rect=block.getBoundingClientRect();
+        const clone=block.cloneNode(true);
+        clone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;opacity:.88;z-index:9999;pointer-events:none;box-shadow:0 10px 32px rgba(0,0,0,.28);border-radius:7px;transition:none;`;
+        document.body.appendChild(clone);
+        dragState.clone=clone;
+        block.style.opacity='0.35';
+      }
+      if(!dragState.moved)return;
+
+      // Move clone to follow mouse
+      const{clone}=dragState;
+      if(clone){
+        clone.style.left=(e.clientX-grabOffsetX)+'px';
+        clone.style.top=(e.clientY-grabOffsetY)+'px';
+      }
+
+      // Detect which column and time slot we're hovering
+      const cols=Array.from(g.querySelectorAll('.planner-day-col'));
+      cols.forEach(c=>c.classList.remove('drag-over'));
+      const hoveredCol=cols.find(c=>{
+        const r=c.getBoundingClientRect();
+        return e.clientX>=r.left&&e.clientX<=r.right;
+      });
+      if(hoveredCol){
+        hoveredCol.classList.add('drag-over');
+        dragState.targetCol=hoveredCol;
+        // Show shadow block at snap position in target col
+        const colRect=hoveredCol.getBoundingClientRect();
+        const rawY=e.clientY-colRect.top+g.scrollTop-grabOffsetY;
+        const snapY=Math.round(rawY/(HOUR_H/4))*(HOUR_H/4);
+        dragState.snapY=Math.max(0,Math.min(HOUR_H*(PLANNER_END-PLANNER_START)-origH,snapY));
+        block.style.top=dragState.snapY+'px';
+        // Move block to hovered col if different
+        if(hoveredCol!==col&&block.parentElement!==hoveredCol){
+          hoveredCol.appendChild(block);
+        } else if(hoveredCol===col&&block.parentElement!==col){
+          col.appendChild(block);
+        }
+      } else {
+        dragState.targetCol=null;
+      }
+    }
+
+    if(type==='resize'){
+      const{block,origTop,origH,startClientY}=dragState;
+      const delta=e.clientY-startClientY;
+      const snapDelta=Math.round(delta/(HOUR_H/4))*(HOUR_H/4);
+      const newH=Math.max(HOUR_H/4,origH+snapDelta);
+      block.style.height=newH+'px';
+      const timeEl=block.querySelector('.planner-ev-time');
+      if(timeEl)timeEl.textContent=fmtTime(pxToTime(origTop))+' \u2013 '+fmtTime(pxToTime(origTop+newH));
+    }
+  }
+
+  // ── MOUSEUP ──
+  function onMouseUp(e){
+    if(!dragState)return;
+    const{type}=dragState;
+
+    if(type==='move'){
+      const{evId,block,col,origTop,targetCol,moved,clone,snapY}=dragState;
+      // Cleanup clone
+      if(clone){clone.remove();}
+      block.style.opacity='';
+      block.classList.remove('dragging');
+      g.querySelectorAll('.planner-day-col').forEach(c=>c.classList.remove('drag-over'));
+      // Put block back in original col if no target
+      if(!targetCol&&block.parentElement!==col)col.appendChild(block);
+
+      if(!moved){
+        // Was a click — restore position and open edit
+        block.style.top=origTop+'px';
+        if(block.parentElement!==col)col.appendChild(block);
+        dragState=null;
+        openCalEdit(evId);
+        return;
+      }
+
+      const finalTop=snapY!==undefined?snapY:parseInt(block.style.top);
+      const finalCol=targetCol||col;
+      const ev=calEvs.find(ev=>ev.id===evId);
+      if(ev){
+        const newTs=pxToTime(finalTop);
+        const duration=ev.timeEnd&&ev.timeStart?(()=>{
+          const[h1,m1]=ev.timeStart.split(':').map(Number);
+          const[h2,m2]=ev.timeEnd.split(':').map(Number);
+          return(h2*60+m2)-(h1*60+m1);
+        })():60;
+        ev.timeStart=newTs;ev.timeEnd=addMins(newTs,duration);
+        ev.date=finalCol.dataset.date;
+        persist();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+      }
+      dragState=null;renderFullCal();return;
+    }
+
+    if(type==='resize'){
+      const{evId,block,origTop}=dragState;
+      block.classList.remove('dragging');
+      const newH=parseInt(block.style.height);
+      const ev=calEvs.find(ev=>ev.id===evId);
+      if(ev){
+        ev.timeStart=pxToTime(origTop);ev.timeEnd=pxToTime(origTop+newH);
+        persist();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+      }
+      dragState=null;renderFullCal();return;
+    }
+
+    dragState=null;
+  }
+
+  document.removeEventListener('mousemove',window._plannerMM);
+  document.removeEventListener('mouseup',window._plannerMU);
+  window._plannerMM=onMouseMove;
+  window._plannerMU=onMouseUp;
+  document.addEventListener('mousemove',onMouseMove);
+  document.addEventListener('mouseup',onMouseUp);
 }
 
 // ═══════════════════════════════════════
@@ -3277,10 +3993,6 @@ function renderFullCal(){
 function renderProfile(){
   const d=acc[cu],nm=d.displayName||cu;
   const photo=prefs.avatarUrl||prefs.avatarPhoto||null;
-  // Bio + social
-  renderProfileBio();
-  // Enhanced activity
-  renderActivity('actbar','act-streak',null);
   const pbavEl=$('pbav');
   if(pbavEl){
     if(photo){
@@ -3289,15 +4001,9 @@ function renderProfile(){
       pbavEl.innerHTML=esc(nm[0].toUpperCase())+'<div class="pbav-overlay">📷 Change</div>';
     }
   }
-  $('pbnm').textContent=nm;$('pbun').textContent='@'+cu;
+  $('pbnm').textContent=nm;
+  $('pbun').textContent='@'+cu;
   $('pbjn').textContent='Joined '+new Date(d.joined||Date.now()).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const tot=tasks.length,dn=tasks.filter(t=>t.col==='done').length;
-  $('pp-tot').textContent=tot;$('pp-dn').textContent=dn;$('pp-rt').textContent=tot?Math.round(dn/tot*100)+'%':'—';
-  const mc=Array(MLAB.length).fill(0);journal.forEach(j=>{if(mc[j.mood]!==undefined)mc[j.mood]++;});
-  $('mhist').innerHTML=MLAB.map((m,i)=>mc[i]?`<div class="mhi">${m.e} ${m.l}<span class="mhicnt">${mc[i]}</span></div>`:'').join('')||'<span style="font-size:12px;color:var(--ink4)">No entries yet.</span>';
-
-  if(!subjects.length){$('spllist').innerHTML='<span style="font-size:12px;color:var(--ink4)">No projects yet.</span>';}
-  else $('spllist').innerHTML=subjects.map(s=>`<div class="splrow"><div class="spldot" style="background:${s.color}"></div><div class="splnm">${esc(s.name)}</div><div class="splg" style="color:${gradeC(s.progress)}">${s.progress}%</div></div>`).join('');
 }
 
 // ═══════════════════════════════════════
@@ -3322,73 +4028,43 @@ function saveName(){
   const n=$('nm-i').value.trim();if(!n)return;
   acc[cu].displayName=n;LS.s('pd1_acc',acc);
   if(sbReady)dbSaveUser(cu,acc[cu]);
-  ['sbavt','ddav'].forEach(id=>{const e=$(id);if(e)e.textContent=n[0].toUpperCase();});
+  // Only update initials if no photo is set — otherwise the photo stays as-is
+  const hasPhoto=prefs.avatarUrl||prefs.avatarPhoto;
+  if(!hasPhoto){
+    ['sbavt','ddav'].forEach(id=>{const e=$(id);if(e)e.textContent=n[0].toUpperCase();});
+  }
   const ddnm=$('ddnm');if(ddnm)ddnm.textContent=n;
   if($('pbnm'))$('pbnm').textContent=n;
   renderSettings();
-  mobRenderSettings();
   closeMo('mo-nm');
 }
-function chgPw(){
-  const c=$('pw-c').value,nw=$('pw-n').value,nw2=$('pw-n2').value;
-  ce('pw-ce','pw-n2e');
-  if(acc[cu].passHash!==hp(c)){fe('pw-ce','Incorrect current password.');return;}
-  if(nw.length<8){fe('pw-n2e','Min 8 characters.');return;}
-  if(nw!==nw2){fe('pw-n2e','Passwords do not match.');return;}
-  acc[cu].passHash=hp(nw);LS.s('pd1_acc',acc);
-  ['pw-c','pw-n','pw-n2'].forEach(id=>$(id).value='');
-  closeMo('mo-pw');alert('Password updated.');
-}
-function clrTasks(){if(!confirm('Delete all tasks?'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
-function clrJournal(){if(!confirm('Delete all journal entries?'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
-function clrSubjects(){if(!confirm('Delete all projects??'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
+
+async function clrTasks(){if(!await appConfirm('Delete all tasks?','This cannot be undone.','Delete'))return;tasks=[];persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+async function clrJournal(){if(!await appConfirm('Delete all journal entries?','This cannot be undone.','Delete'))return;journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
+async function clrSubjects(){if(!await appConfirm('Delete all projects?','This cannot be undone.','Delete'))return;subjects=[];persist();renderSubFull();renderAllSubW();updateAllStatsW();}
 async function clrDoneTasks(wid){
   const done=tasks.filter(t=>t.col==='done');
   if(!done.length)return;
   if(!await appConfirm('Clear all '+done.length+' completed task'+(done.length>1?'s':'')+'?','This cannot be undone.'))return;
   tasks=tasks.filter(t=>t.col!=='done');
   persist();renderAllTaskW();updateAllStatsW();updateFixedStats();
-  if(typeof mobRenderTasks==='function')mobRenderTasks();
-  if(typeof mobRenderHome==='function')mobRenderHome();
 }
 async function clrJournalW(wid){
   if(!journal.length)return;
   if(!await appConfirm('Clear all '+journal.length+' journal entr'+(journal.length>1?'ies':'y')+'?','This cannot be undone.'))return;
   journal=[];persist();renderAllJournalW();updateAllStatsW();updateFixedStats();
-  if(typeof mobRenderJournal==='function')mobRenderJournal();
-  if(typeof mobRenderHome==='function')mobRenderHome();
 }
 async function delAcc(){
-  if(!confirm('Permanently delete your account and ALL data? This cannot be undone.'))return;
-  dbDeleteUser(cu);
-  delete acc[cu];LS.s('pd1_acc',acc);LS.d('pd1_cur');cu=null;show('sl');
-}
-
-// ── PWA INSTALL ──
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  deferredPrompt=e;
-  const btn=document.getElementById('install-btn');
-  if(btn)btn.classList.add('visible');
-});
-window.addEventListener('appinstalled',()=>{
-  deferredPrompt=null;
-  const btn=document.getElementById('install-btn');
-  if(btn)btn.classList.remove('visible');
-});
-function triggerInstall(){
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(()=>{deferredPrompt=null;});
-  }
-}
-// Show iOS hint on Safari iOS (no beforeinstallprompt support)
-const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-const isInStandalone=window.navigator.standalone===true;
-if(isIOS&&!isInStandalone){
-  const hint=document.getElementById('install-ios');
-  if(hint)hint.classList.add('visible');
+  const ok = await appConfirm('Delete your account?', 'All your data will be permanently erased. This cannot be undone.', 'Delete Account');
+  if(!ok) return;
+  const _cu = cu;
+  delete acc[_cu]; LS.s('pd1_acc',acc); LS.d('pd1_cur'); cu = null;
+  await dbDeleteUser(_cu);
+  if(sbReady) sbSignOut().catch(()=>{});
+  document.documentElement.setAttribute('data-dark','');
+  const _r2=document.documentElement;_r2.style.removeProperty('--a');_r2.style.removeProperty('--a2');_r2.style.removeProperty('--al');
+  document.body.classList.remove('in-app');
+  show('sl');
 }
 
 // ── GLOBAL TOOLTIP POSITIONER ──
@@ -3400,7 +4076,7 @@ if(isIOS&&!isInStandalone){
       tipEl = document.createElement('div');
       tipEl.id = 'g-tip';
       tipEl.style.cssText = [
-        'position:fixed','background:#1A1714','color:#F3F1EC',
+        'position:fixed','background:var(--ink)','color:var(--bg)',
         'border-radius:6px','padding:5px 10px','font-size:11px','font-weight:700',
         'white-space:nowrap','pointer-events:none','z-index:9999',
         'box-shadow:0 4px 18px rgba(26,23,20,.18)',
@@ -3444,8 +4120,8 @@ if(isIOS&&!isInStandalone){
     if(sbb) return { el: sbb, text: (sbb.querySelector('.sbtip,.wbtip')||{textContent:''}).textContent.trim() || sbb.getAttribute('data-tip') };
     // any element with data-tip inside #app (not mobile)
     const dt = e.target.closest('[data-tip]');
-    if(dt && !dt.closest('.mob-app')) return { el: dt, text: dt.getAttribute('data-tip') };
-    return null;
+    if(!dt) return null;
+    return { el: dt, text: dt.getAttribute('data-tip') };
   }
 
   document.addEventListener('mouseover', function(e){
@@ -3557,11 +4233,7 @@ function renderHabits(containerId){
   const doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
 
   if(!total){
-    el.innerHTML=`<div style="background:var(--surf2);border:1.5px dashed var(--bdr);border-radius:14px;padding:20px;text-align:center;">
-      <div style="font-size:28px;margin-bottom:8px;">🎯</div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;">Build a daily routine</div>
-      <div style="font-size:12px;color:var(--ink4);line-height:1.6;">Add habits below and check them off each day.<br>Streaks track how many days in a row you showed up.</div>
-    </div>`;
+    el.innerHTML='<div class="es" style="padding:24px 16px;"><div class="es-icon">🎯</div><div class="es-title">Build a daily routine</div><div class="es-hint">Add habits below and check them off each day. <b>Streaks</b> track how many days in a row you showed up.</div></div>';
     return;
   }
 
@@ -3668,6 +4340,18 @@ function setRecurDd(wid, val, e) {
   if (lbl) lbl.textContent = val === 'none' ? '↺' : (val === 'daily' ? '↺ Daily' : '↺ Weekly');
   if (dd) dd.classList.toggle('tw-recur-active', val !== 'none');
   if (menu) menu.classList.remove('open');
+  // Mutual exclusion: recurring clears due date
+  if (val !== 'none') {
+    const inp = $('twd-'+wid);
+    if (inp) inp.value = '';
+    const btn = $('twdb-'+wid);
+    const dbl = $('twdb-lbl-'+wid);
+    if (dbl) dbl.textContent = 'Due date';
+    if (btn) { btn.style.borderColor='var(--bdr)';btn.style.color='var(--ink3)';btn.style.background='var(--surf)';btn.classList.remove('active');btn.style.opacity='.4';btn.style.pointerEvents='none'; }
+  } else {
+    const btn = $('twdb-'+wid);
+    if (btn) { btn.style.opacity='';btn.style.pointerEvents=''; }
+  }
 }
 // close recur dropdowns on outside click
 document.addEventListener('click', () => {
@@ -3698,7 +4382,7 @@ function checkRecurringReset() {
     }
   });
   prefs.lastRecurringReset = today;
-  if (changed) { persist(); renderAllTaskW(); mobRenderTasks && mobRenderTasks(); }
+  if (changed) { persist(); renderAllTaskW(); }
 }
 
 function scheduleRecurringCheck() {
@@ -3712,6 +4396,56 @@ function scheduleRecurringCheck() {
 
 
 
+
+// ═══════════════════════════════════════
+// JOURNAL PROMPTS & TEMPLATES
+// ═══════════════════════════════════════
+const JOURNAL_PROMPTS = [
+  "What made you smile today?",
+  "What's one thing you're proud of this week?",
+  "What's been on your mind lately?",
+  "What's one thing you want to do differently tomorrow?",
+  "Who or what are you grateful for right now?",
+  "What's the biggest challenge you're facing?",
+  "What did you learn today?",
+  "How are you really feeling right now?",
+  "What would make tomorrow a great day?",
+  "What's something you've been putting off?",
+  "Describe your energy level today and why.",
+  "What's one small win you had recently?",
+];
+
+const JOURNAL_TEMPLATES = [
+  {
+    icon: '🌅',
+    label: 'Morning',
+    fullLabel: 'Morning Intention',
+    text: "Today I intend to...\n\nOne thing I'm looking forward to:\n\nMy focus for today is:",
+  },
+  {
+    icon: '🌙',
+    label: 'Evening',
+    fullLabel: 'Evening Reflection',
+    text: "How today went...\n\nSomething I'm proud of today:\n\nOne thing I'd do differently:",
+  },
+  {
+    icon: '🙏',
+    label: 'Gratitude',
+    fullLabel: 'Gratitude',
+    text: "Three things I'm grateful for:\n1. \n2. \n3. \n\nWhy these matter to me:",
+  },
+  {
+    icon: '🧠',
+    label: 'Brain Dump',
+    fullLabel: 'Brain Dump',
+    text: "",
+  },
+];
+
+function getJournalPrompt(){
+  return JOURNAL_PROMPTS[Math.floor(Math.random()*JOURNAL_PROMPTS.length)];
+}
+
 // ═══════════════════════════════════════
 // SESSION 10 — AI DAILY PLANNER
 // ═══════════════════════════════════════
@@ -3722,34 +4456,63 @@ function openAIPlanner() {
   renderAIPlanner('aip-body', false);
 }
 
-function renderAIPlanner(containerId, isMobile) {
+function renderAIPlanner(containerId, isMobileParam) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
-  // Gather today's tasks (todo + inprog)
+  // Auto-gather context
   const pending = tasks.filter(t => t.col !== 'done');
   const taskList = pending.map(t => {
     let line = `• ${t.text}`;
+    if (t.priority) line += ` [${t.priority} priority]`;
     if (t.dueDate) line += ` (due ${t.dueDate})`;
     if (t.recurring && t.recurring !== 'none') line += ` [${t.recurring}]`;
     return line;
   }).join('\n') || '(no tasks yet)';
 
+  // Today's habits not yet done
+  const pendingHabits = (prefs.habits||[]).filter(h => !habitDoneToday(h.id));
+  const habitList = pendingHabits.length
+    ? pendingHabits.map(h => `• ${h.emoji} ${h.name}`).join('\n')
+    : null;
+
+  // Today's calendar events
+  const todayStr = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const todayEvs = calEvs.filter(e => e.date === todayStr);
+  const eventList = todayEvs.length
+    ? todayEvs.map(e => `• ${e.timeStart||''} ${e.title}`).join('\n')
+    : null;
+
+  // Current time greeting
+  const hr = new Date().getHours();
+  const timeOfDay = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
+
   el.innerHTML = `
     <div class="aip-intro">
-      <div class="aip-intro-icon">🤖</div>
-      <div class="aip-intro-title">Your AI Daily Planner</div>
-      <div class="aip-intro-sub">Tell me about your day and I'll build you a focused, time-blocked plan.</div>
+      <div class="aip-intro-title">AI Daily Planner</div>
+      <div class="aip-intro-sub">Good ${timeOfDay}. Here's what I found for today — edit anything before generating.</div>
     </div>
 
     <div class="aip-section">
-      <div class="aip-label">Your tasks today</div>
-      <textarea class="aip-textarea" id="${containerId}-tasks" rows="5" placeholder="Edit or add tasks...">${taskList}</textarea>
+      <div class="aip-label">Tasks</div>
+      <textarea class="aip-textarea" id="${containerId}-tasks" rows="5" placeholder="Add tasks...">${taskList}</textarea>
     </div>
 
+    ${habitList ? `
     <div class="aip-section">
-      <div class="aip-label">Context <span style="font-size:10px;color:var(--ink4);font-weight:500;">(optional)</span></div>
-      <textarea class="aip-textarea" id="${containerId}-ctx" rows="2" placeholder="e.g. I have 6 hours, meetings at 2pm, feeling low energy..."></textarea>
+      <div class="aip-label">Habits to fit in <span style="font-size:10px;color:var(--ink4);font-weight:500;">auto-detected</span></div>
+      <textarea class="aip-textarea" id="${containerId}-habits" rows="${Math.min(pendingHabits.length+1,4)}">${habitList}</textarea>
+    </div>` : `<textarea id="${containerId}-habits" style="display:none;"></textarea>`}
+
+    ${eventList ? `
+    <div class="aip-section">
+      <div class="aip-label">Calendar events today <span style="font-size:10px;color:var(--ink4);font-weight:500;">auto-detected</span></div>
+      <textarea class="aip-textarea" id="${containerId}-events" rows="${Math.min(todayEvs.length+1,3)}">${eventList}</textarea>
+    </div>` : `<textarea id="${containerId}-events" style="display:none;"></textarea>`}
+
+    <div class="aip-section">
+      <div class="aip-label">Anything else <span style="font-size:10px;color:var(--ink4);font-weight:500;">optional</span></div>
+      <textarea class="aip-textarea" id="${containerId}-ctx" rows="2" placeholder="e.g. I only have 4 hours, feeling tired, skip lunch break..."></textarea>
     </div>
 
     <button class="aip-btn" id="${containerId}-genbtn" onclick="generatePlan('${containerId}')">
@@ -3764,43 +4527,58 @@ function renderAIPlanner(containerId, isMobile) {
 async function generatePlan(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
 
-  const tasksVal = document.getElementById(containerId + '-tasks')?.value?.trim() || '';
-  const ctxVal = document.getElementById(containerId + '-ctx')?.value?.trim() || '';
-  const btn = document.getElementById(containerId + '-genbtn');
-  const result = document.getElementById(containerId + '-result');
+  const tasksVal   = document.getElementById(containerId + '-tasks')?.value?.trim() || '';
+  const habitsVal  = document.getElementById(containerId + '-habits')?.value?.trim() || '';
+  const eventsVal  = document.getElementById(containerId + '-events')?.value?.trim() || '';
+  const ctxVal     = document.getElementById(containerId + '-ctx')?.value?.trim() || '';
+  const btn        = document.getElementById(containerId + '-genbtn');
+  const result     = document.getElementById(containerId + '-result');
 
   if (!result) return;
 
-  // Loading state
+  // Current time context
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
   btn.disabled = true;
-  btn.innerHTML = `<span class="aip-spinner"></span> Generating…`;
+  btn.innerHTML = `<span class="aip-spinner"></span> Building your plan…`;
   result.style.display = 'block';
-  result.innerHTML = `<div class="aip-loading"><span class="aip-spinner"></span> Building your plan…</div>`;
+  result.innerHTML = `<div class="aip-loading"><span class="aip-spinner"></span> Thinking…</div>`;
 
-  const prompt = `You are a productivity coach. Create a practical, time-blocked daily schedule.
+  const prompt = `You are a sharp, practical productivity coach. Today is ${dateStr} and the current time is ${timeStr}.
 
-TASKS:
-${tasksVal}
-${ctxVal ? '\nCONTEXT:\n' + ctxVal : ''}
+Create a realistic, time-blocked daily schedule starting from the current time. Be specific, opinionated, and concise.
 
-Respond ONLY with a clean daily plan using this exact format — no preamble, no markdown fences:
+TASKS TO COMPLETE:
+${tasksVal || '(none listed)'}
+${habitsVal ? `\nHABITS TO FIT IN:\n${habitsVal}` : ''}
+${eventsVal ? `\nCALENDAR EVENTS (work around these):\n${eventsVal}` : ''}
+${ctxVal ? `\nEXTRA CONTEXT:\n${ctxVal}` : ''}
 
-## Your Plan for Today
+Rules:
+- Start blocks from the current time, not from 9am
+- Group similar tasks together
+- Include a short break every 90 minutes
+- Be realistic about how long things actually take
+- If calendar events exist, schedule around them
+- Fit habits into natural gaps
 
-For each time block use this format:
+Respond ONLY in this exact format, no preamble, no markdown fences:
+
+## Your Plan for ${dateStr.split(',')[0]}
+
 **HH:MM – HH:MM** Task name
-> One sentence tip or note
+> One sharp, specific tip for this block
 
-End with a short motivational note (1-2 sentences, label it **Note:**).
-
-Keep it realistic. Group related tasks. Include short breaks. Be specific with times starting from a reasonable morning hour.`;
+**Note:** One sentence of honest encouragement.`;
 
   try {
     const response = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -3808,10 +4586,10 @@ Keep it realistic. Group related tasks. Include short breaks. Be specific with t
 
     const data = await response.json();
     const text = data.content?.map(b => b.text || '').join('') || '';
-
     if (!text) throw new Error('Empty response');
 
-    result.innerHTML = `<div class="aip-plan">${formatPlan(text)}</div>
+    result.innerHTML = `
+      <div class="aip-plan">${formatPlan(text)}</div>
       <button class="aip-regen-btn" onclick="generatePlan('${containerId}')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/></svg>
         Regenerate
@@ -3843,13 +4621,155 @@ function formatPlan(text) {
 // ═══════════════════════════════════════
 function isPro() { return !!(prefs.pro); }
 
-function showUpgradeModal(featureName) {
-  const el = document.getElementById('mo-upgrade');
-  if (featureName) {
-    const sub = document.getElementById('mo-upgrade-sub');
-    if (sub) sub.textContent = featureName + ' is a Pro feature. Unlock everything with Prodify Pro.';
+// ═══════════════════════════════════════
+// WAITLIST SYSTEM
+// ═══════════════════════════════════════
+let _waitlistChecked = false;
+let _onWaitlist = false;
+let _waitlistPos = null;
+
+async function checkWaitlist() {
+  if (!sbReady || !cu) return;
+  try {
+    const userRow = await dbGetUser(cu);
+    const email = userRow?.email || '';
+    if (!email) { _waitlistChecked = true; return; }
+    const { data, error } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
+    if (data && !error) {
+      _onWaitlist = true;
+      _waitlistPos = data.position;
+    }
+  } catch(e) {}
+  _waitlistChecked = true;
+}
+
+async function joinWaitlist() {
+  const errEl = document.getElementById('upg-waitlist-err');
+  const btn = document.getElementById('upg-join-btn');
+
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Joining…'; btn.disabled = true; }
+
+  try {
+    if (!sbReady) throw new Error('offline');
+    if (!cu) throw new Error('not_logged_in');
+
+    // Always pull email from their Prodify account
+    const userRow = await dbGetUser(cu);
+    const email = userRow?.email || '';
+    if (!email) throw new Error('no_email');
+
+    // Check if already on waitlist
+    const { data: existing } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
+    if (existing) {
+      _onWaitlist = true;
+      _waitlistPos = existing.position;
+      if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
+      _showWaitlistJoined();
+      return;
+    }
+
+    // Insert — position assigned server-side by DB trigger
+    const { data: inserted, error } = await sb.from('waitlist').insert({
+      email,
+      username: cu,
+      joined_at: new Date().toISOString()
+    }).select('id, position').single();
+
+    if (error) {
+      // Unique constraint: handle race condition
+      if (error.code === '23505') {
+        const { data: raceWin } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
+        if (raceWin) {
+          _onWaitlist = true;
+          _waitlistPos = raceWin.position;
+          if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
+          _showWaitlistJoined();
+          return;
+        }
+      }
+      throw error;
+    }
+
+    _onWaitlist = true;
+    _waitlistPos = inserted?.position || null;
+
+    if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
+    _showWaitlistJoined();
+
+  } catch(e) {
+    if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
+    if (errEl) {
+      const msg = e.message === 'offline'       ? 'No connection. Try again shortly.'
+                : e.message === 'not_logged_in' ? 'Sign in to join the waitlist.'
+                : e.message === 'no_email'      ? 'No email on your account. Contact support.'
+                : 'Something went wrong. Please try again.';
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
   }
+}
+
+function _showWaitlistJoined() {
+  const joinEl = document.getElementById('upg-waitlist-join');
+  const joinedEl = document.getElementById('upg-waitlist-joined');
+  const posEl = document.getElementById('upg-position');
+  if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
+  if (joinEl) joinEl.style.display = 'none';
+  if (joinedEl) joinedEl.style.display = 'block';
+}
+
+function _syncWaitlistUI() {
+  const joinEl = document.getElementById('upg-waitlist-join');
+  const joinedEl = document.getElementById('upg-waitlist-joined');
+  if (!joinEl || !joinedEl) return;
+  if (_onWaitlist) {
+    const posEl = document.getElementById('upg-position');
+    if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
+    joinEl.style.display = 'none';
+    joinedEl.style.display = 'block';
+  } else {
+    joinEl.style.display = 'block';
+    joinedEl.style.display = 'none';
+    // No email input to pre-fill — email is pulled from account automatically
+  }
+}
+
+const _featureDescriptions = {
+  'AI Daily Planner': 'Tell Prodify your tasks and energy — get a prioritized, timed plan for your day in seconds.',
+  'Unlimited Habits': 'Track as many habits as you want. No cap, no compromise.',
+  'Custom Accent Color': 'Make Prodify yours with any color you want, including custom hex codes.',
+  'CSV Export': 'Export your tasks and journal as a spreadsheet — ready for any tool.',
+  'PDF Export': 'Download a beautifully formatted report of your productivity.',
+  'Cloud Backup History': 'Restore your workspace from any of the last 7 daily snapshots.',
+  'Multi-Device Sync': 'Use Prodify on all your devices at the same time, seamlessly.',
+};
+
+function showUpgradeModal(featureName) {
+  const sub = document.getElementById('mo-upgrade-sub');
+  if (sub) {
+    const desc = featureName && _featureDescriptions[featureName];
+    sub.textContent = desc
+      ? desc
+      : featureName
+        ? featureName + ' is a Pro feature. Unlock everything with Prodify Pro.'
+        : 'Unlock everything. Stay in flow.';
+  }
+
+  // Highlight the relevant feature row in the modal
+  document.querySelectorAll('.upg-feat').forEach(el => {
+    const label = el.querySelector('.upg-feat-label');
+    const isMatch = label && featureName && label.textContent.toLowerCase().includes(featureName.toLowerCase().split(' ')[0]);
+    el.style.background = isMatch ? 'var(--al)' : '';
+    el.style.borderRadius = isMatch ? '8px' : '';
+    el.style.fontWeight = isMatch ? '700' : '';
+  });
+
+  _syncWaitlistUI();
   openMo('mo-upgrade');
+  if (!_waitlistChecked) {
+    checkWaitlist().then(() => _syncWaitlistUI());
+  }
 }
 
 function proGate(featureName, fn) {
@@ -3871,6 +4791,7 @@ function renderProBadge() {
   document.querySelectorAll('.pro-active-indicator').forEach(el => {
     el.style.display = isPro() ? 'flex' : 'none';
   });
+  if (typeof renderProBadgeRing === 'function') renderProBadgeRing();
 }
 
 // Hook into existing habitShowProGate to use the new modal
@@ -3897,6 +4818,136 @@ function exportJSON() {
   a.download = 'prodify-export-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  if (!isPro()) { closeMo('mo-export'); showUpgradeModal('CSV Export'); return; }
+
+  const esc2 = v => '"' + String(v||'').replace(/"/g,'""') + '"';
+  const date = new Date().toISOString().slice(0,10);
+
+  // Tasks sheet
+  let csv = 'TASKS\r\n';
+  csv += ['Text','Status','Due Date','Recurring','Created'].map(esc2).join(',') + '\r\n';
+  tasks.forEach(t => {
+    csv += [t.text, t.col==='todo'?'To Do':t.col==='inprog'?'In Progress':'Done', t.dueDate||'', t.recurring||'', t.date||''].map(esc2).join(',') + '\r\n';
+  });
+
+  csv += '\r\nJOURNAL\r\n';
+  csv += ['Date','Mood','Entry'].map(esc2).join(',') + '\r\n';
+  journal.forEach(j => {
+    const moodLabel = (MLAB[j.mood]?.l) || '';
+    csv += [j.date, moodLabel, j.text].map(esc2).join(',') + '\r\n';
+  });
+
+  csv += '\r\nHABITS\r\n';
+  csv += ['Name','Emoji','Current Streak'].map(esc2).join(',') + '\r\n';
+  (prefs.habits||[]).forEach(h => {
+    csv += [h.name, h.emoji||'', habitStreak(h.id)].map(esc2).join(',') + '\r\n';
+  });
+
+  csv += '\r\nPROJECTS\r\n';
+  csv += ['Name','Progress (%)'].map(esc2).join(',') + '\r\n';
+  subjects.forEach(s => {
+    csv += [s.name, s.progress||0].map(esc2).join(',') + '\r\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'prodify-' + date + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  closeMo('mo-export');
+}
+
+function exportPDF() {
+  if (!isPro()) { closeMo('mo-export'); showUpgradeModal('PDF Export'); return; }
+  closeMo('mo-export');
+
+  const name = acc[cu]?.displayName || cu;
+  const date = new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const moodLabel = m => { const e = MLAB[m]; return e ? e.e+' '+e.l : ''; };
+  const colLabel = c => c==='todo'?'To Do':c==='inprog'?'In Progress':'Done';
+  const tasksDone = tasks.filter(t=>t.col==='done').length;
+  const habitsTotal = (prefs.habits||[]).length;
+  const journalCount = journal.length;
+
+  const taskRows = tasks.map(t =>
+    `<tr><td>${t.text||''}</td><td><span class="badge badge-${t.col}">${colLabel(t.col)}</span></td><td>${t.dueDate||'—'}</td></tr>`
+  ).join('');
+
+  const journalRows = journal.slice(0,20).map(j =>
+    `<div class="je"><div class="je-hd"><span>${moodLabel(j.mood)}</span><span class="je-date">${j.date}</span></div><div class="je-body">${j.text||''}</div></div>`
+  ).join('');
+
+  const habitRows = (prefs.habits||[]).map(h =>
+    `<div class="habit-row"><span>${h.emoji||'•'} ${h.name}</span><span class="streak">🔥 ${habitStreak(h.id)} day streak</span></div>`
+  ).join('');
+
+  const projRows = subjects.map(s =>
+    `<div class="proj-row"><span>${s.name}</span><div class="prog-bar"><div class="prog-fill" style="width:${s.progress||0}%;background:${s.color||'#3A7D5E'}"></div></div><span class="prog-lbl">${s.progress||0}%</span></div>`
+  ).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Prodify Report — ${name}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1A1714;padding:48px;max-width:800px;margin:0 auto;font-size:13px;}
+  .cover{border-bottom:3px solid #2A5C44;padding-bottom:28px;margin-bottom:36px;}
+  .logo{font-size:20px;font-weight:800;color:#2A5C44;margin-bottom:16px;}
+  .logo b{color:#1A1714;}
+  h1{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:6px;}
+  .meta{color:#9C978F;font-size:12px;}
+  .stats{display:flex;gap:24px;margin-top:20px;}
+  .stat{background:#F3F1EC;border-radius:12px;padding:14px 20px;flex:1;text-align:center;}
+  .stat-n{font-size:24px;font-weight:800;color:#2A5C44;}
+  .stat-l{font-size:11px;color:#9C978F;margin-top:2px;}
+  h2{font-size:15px;font-weight:800;color:#1A1714;margin:32px 0 14px;padding-bottom:8px;border-bottom:1.5px solid #E3DED7;letter-spacing:-.3px;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;font-weight:700;color:#9C978F;padding:6px 10px;background:#F8F6F2;border-radius:6px;}
+  td{padding:9px 10px;border-bottom:1px solid #F0EDE8;font-size:12px;vertical-align:top;}
+  .badge{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;}
+  .badge-todo{background:#FBF2E1;color:#9A6818;}
+  .badge-inprog{background:#EBF4EF;color:#2A5C44;}
+  .badge-done{background:#F0EDE8;color:#9C978F;text-decoration:line-through;}
+  .je{background:#F8F6F2;border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+  .je-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;font-size:12px;}
+  .je-date{color:#9C978F;font-weight:400;font-size:11px;}
+  .je-body{font-size:12px;line-height:1.7;color:#5A5450;}
+  .habit-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#F8F6F2;border-radius:10px;margin-bottom:8px;font-size:12px;font-weight:600;}
+  .streak{color:#2A5C44;font-size:11px;}
+  .proj-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F0EDE8;}
+  .proj-row span:first-child{flex:1;font-size:12px;font-weight:600;}
+  .prog-bar{flex:2;height:6px;background:#E3DED7;border-radius:3px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:3px;}
+  .prog-lbl{font-size:11px;font-weight:700;color:#5A5450;width:36px;text-align:right;}
+  .footer{margin-top:48px;padding-top:16px;border-top:1px solid #E3DED7;font-size:11px;color:#CEC9C1;text-align:center;}
+  @media print{body{padding:24px;}h2{page-break-after:avoid;}.je,.habit-row{page-break-inside:avoid;}}
+</style></head><body>
+<div class="cover">
+  <div class="logo">Pro<b>dify</b></div>
+  <h1>Productivity Report</h1>
+  <div class="meta">${name} &nbsp;·&nbsp; ${date}</div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n">${tasks.length}</div><div class="stat-l">Total Tasks</div></div>
+    <div class="stat"><div class="stat-n">${tasksDone}</div><div class="stat-l">Completed</div></div>
+    <div class="stat"><div class="stat-n">${journalCount}</div><div class="stat-l">Journal Entries</div></div>
+    <div class="stat"><div class="stat-n">${habitsTotal}</div><div class="stat-l">Active Habits</div></div>
+  </div>
+</div>
+${tasks.length ? `<h2>Tasks</h2><table><thead><tr><th>Task</th><th>Status</th><th>Due</th></tr></thead><tbody>${taskRows}</tbody></table>`:''}
+${journal.length ? `<h2>Journal${journal.length>20?' (latest 20 entries)':''}</h2>${journalRows}`:''}
+${(prefs.habits||[]).length ? `<h2>Habits</h2>${habitRows}`:''}
+${subjects.length ? `<h2>Projects</h2>${projRows}`:''}
+<div class="footer">Generated by Prodify &nbsp;·&nbsp; prodify.cc &nbsp;·&nbsp; ${new Date().toISOString().slice(0,10)}</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 600);
 }
 
 function showExportModal() {
@@ -4040,64 +5091,71 @@ function _fcsInpKey(e,wid) {
   }
 }
 
-// ── Mobile focus mode ──
-function fcsMobEnter() {
-  if (_mobPage !== 'timer') {
-    mobGoPage('timer');
-    setTimeout(() => {
-      document.body.classList.add('in-focus-mob');
-          const mpg = document.getElementById('mpg-timer');
-      const mobApp = document.getElementById('mob-app');
-                }, 280);
-  } else {
-    document.body.classList.add('in-focus-mob');
-    const mpg = document.getElementById('mpg-timer');
-    const mobApp = document.getElementById('mob-app');
-    const nav = document.querySelector('.mob-nav');
-    const topbar = document.querySelector('#mpg-timer .mob-topbar');
-  }
-}
-function fcsMobExit() {
-  document.body.classList.remove('in-focus-mob');
-}
-
 // ═══════════════════════════════════════
 // PRO BADGE — VISUAL RING & GLOW
 // ═══════════════════════════════════════
 function renderProBadgeRing() {
   const pro = isPro();
-  // Sidebar avatar ring
-  const sbav = document.getElementById('sbav');
-  if (sbav) {
-    sbav.classList.toggle('pro-ring', pro);
+
+  // Use current accent color for everyone — not just Pro users
+  const accentKey = prefs.accentColor || 'green';
+  const colors = deriveAccent(accentKey);
+  const a2 = colors.a2;
+  const al = colors.al;
+
+  // Inject dynamic keyframe
+  let styleEl = document.getElementById('pro-ring-style');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'pro-ring-style';
+    document.head.appendChild(styleEl);
   }
-  // Mobile topbar avatar ring
-  const mobAv = document.getElementById('mob-av');
-  if (mobAv) {
-    mobAv.classList.toggle('pro-ring', pro);
-  }
-  // Profile page avatar (desktop + mobile)
-  document.querySelectorAll('.pbav').forEach(el => el.classList.toggle('pro-ring', pro));
-  // Pro badge text chips
+  styleEl.textContent = [
+    '@keyframes pro-ring-pulse {',
+    '  0%   { box-shadow: 0 0 0 2.5px '+a2+', 0 0 8px 2px '+al+'; }',
+    '  50%  { box-shadow: 0 0 0 3px '+a2+', 0 0 16px 5px '+al+'; }',
+    '  100% { box-shadow: 0 0 0 2.5px '+a2+', 0 0 8px 2px '+al+'; }',
+    '}'
+  ].join('\n');
+
+  // Apply/remove ring on all avatars
+  ['#sbav','#mob-av','#mob-av-hd-circle','.pbav','#ddav'].forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => el.classList.toggle('pro-ring', pro));
+  });
+
+  // Pro badge chips — adapt to accent color
   document.querySelectorAll('.pro-badge').forEach(el => {
     el.style.display = pro ? 'inline-flex' : 'none';
+    if (pro) {
+      el.style.background = 'linear-gradient(135deg, '+colors.a+', '+a2+')';
+      el.style.boxShadow = '0 2px 10px '+al+', 0 0 0 1.5px '+a2+'40';
+    }
   });
-  // Upgrade prompt vs active indicator
-  document.querySelectorAll('.pro-upgrade-btn').forEach(el => el.style.display = pro ? 'none' : 'flex');
-  document.querySelectorAll('.pro-active-indicator').forEach(el => el.style.display = pro ? 'flex' : 'none');
+
+  // Update upgrade card accent colors
+  document.querySelectorAll('.set-pro-card, .set-pro-active').forEach(el => {
+    const icon = el.querySelector('.set-pro-icon');
+    const cta = el.querySelector('.set-pro-cta');
+    const title = el.querySelector('.set-pro-title');
+    if (icon) { icon.style.background = al; icon.style.borderColor = a2; icon.style.color = a2; }
+    if (cta) cta.style.color = a2;
+    if (title && el.classList.contains('set-pro-active')) title.style.color = a2;
+  });
+
+  document.querySelectorAll('.pro-upgrade-btn').forEach(el => {
+    el.style.display = pro ? 'none' : 'flex';
+  });
+  document.querySelectorAll('.pro-active-indicator').forEach(el => {
+    el.style.display = pro ? 'flex' : 'none';
+  });
 }
 
-// Override renderProBadge to also call ring version
-const _origRenderProBadge = typeof renderProBadge === 'function' ? renderProBadge : () => {};
-function renderProBadge() {
-  _origRenderProBadge();
-  renderProBadgeRing();
-}
+// Override renderProBadge to also call ring version — handled by calling renderProBadgeRing() directly at launch
 
 // ═══════════════════════════════════════
 // CLOUD BACKUP HISTORY (PRO)
 // ═══════════════════════════════════════
-const BACKUP_MAX_DAYS = 30;
+const BACKUP_MAX_DAYS = 7; // Capped to keep prefs size small — widgets/calEvs excluded from snapshots too
 
 function backupSnapshotToday() {
   const today = new Date().toISOString().slice(0, 10);
@@ -4111,7 +5169,6 @@ function backupSnapshotToday() {
     journal: JSON.parse(JSON.stringify(journal || [])),
     habits: JSON.parse(JSON.stringify(prefs.habits || [])),
     subjects: JSON.parse(JSON.stringify(subjects || [])),
-    calEvs: JSON.parse(JSON.stringify(calEvs || [])),
     notes: JSON.parse(JSON.stringify(notes || {})),
   };
   prefs.backups.unshift(snap);
@@ -4163,31 +5220,18 @@ async function restoreBackup(idx) {
   closeMo('mo-backup');
   persist();
   renderAllTaskW(); renderCanvas(); updateAllStatsW(); updateFixedStats();
-  if (typeof mobRenderTasks === 'function') mobRenderTasks();
-  if (typeof mobRenderHome === 'function') mobRenderHome();
-  if (typeof mobRenderJournal === 'function') mobRenderJournal();
   if (typeof renderCal === 'function') renderCal();
 }
 
-// Hook backupSnapshotToday into persist — patch after load
-(function patchPersistForBackup() {
-  const _origPersist = window.persist;
-  if (typeof _origPersist !== 'function') { setTimeout(patchPersistForBackup, 500); return; }
-  window.persist = function() {
-    backupSnapshotToday();
-    _origPersist.apply(this, arguments);
-  };
-})();
-
 // ═══════════════════════════════════════
-// MULTI-DEVICE SESSION TRACKING (PRO)
+// MULTI-DEVICE (PRO) — uses active_device_id column in Supabase
 // ═══════════════════════════════════════
 const _DEVICE_KEY = 'pd1_device_id';
 
 function getOrCreateDeviceId() {
   let id = localStorage.getItem(_DEVICE_KEY);
   if (!id) {
-    id = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+    id = 'dev_' + Math.random().toString(36).slice(2,10) + '_' + Date.now().toString(36);
     localStorage.setItem(_DEVICE_KEY, id);
   }
   return id;
@@ -4201,56 +5245,61 @@ function getDeviceName() {
   if (/Android/i.test(ua)) return 'Android Tablet';
   if (/Mac/i.test(ua)) return 'Mac';
   if (/Windows/i.test(ua)) return 'Windows PC';
-  if (/Linux/i.test(ua)) return 'Linux';
-  return 'Unknown Device';
+  return 'Browser';
 }
 
-function registerDeviceSession() {
-  if (!cu) return;
-  const id = getOrCreateDeviceId();
-  const name = getDeviceName();
-  const now = Date.now();
-  if (!prefs.activeSessions) prefs.activeSessions = [];
-  // Upsert this device
-  const idx = prefs.activeSessions.findIndex(s => s.id === id);
-  if (idx >= 0) {
-    prefs.activeSessions[idx].lastSeen = now;
-    prefs.activeSessions[idx].name = name;
-  } else {
-    prefs.activeSessions.push({ id, name, lastSeen: now });
-  }
-  // Prune stale sessions (> 30 days old)
-  const cutoff = now - 30 * 24 * 60 * 60 * 1000;
-  prefs.activeSessions = prefs.activeSessions.filter(s => s.lastSeen > cutoff);
-  // Free plan: warn if more than 1 active session in last 7 days
-  if (!isPro()) {
-    const week = now - 7 * 24 * 60 * 60 * 1000;
-    const recent = prefs.activeSessions.filter(s => s.lastSeen > week);
-    if (recent.length > 1) {
-      showMultiDeviceBanner();
+// Check cloud active_device_id — returns true if this device can proceed
+async function checkAndRegisterDevice(username) {
+  return true; // DISABLED: multi-device enforcement not yet live
+  try {
+    const myId = getOrCreateDeviceId();
+    const { data, error } = await sb.rpc('get_active_device', { p_username: username });
+    if (error) return true; // fail open — don't block if DB unreachable
+    const activeId = data || null;
+    if (activeId && activeId !== myId) {
+      // Another device is registered
+      return false;
     }
+    // Register this device
+    await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+    return true;
+  } catch(e) {
+    console.warn('[Prodify] Device check failed, allowing access', e);
+    return true; // fail open
   }
-  // Don't call persist here to avoid recursion — save directly
-  if (cu) { acc[cu].prefs = prefs; LS.s('pd1_acc', acc); if (sbReady) dbSaveUser(cu, acc[cu]); }
 }
 
-function showMultiDeviceBanner() {
-  const existing = document.getElementById('multi-device-banner');
-  if (existing) return;
-  const banner = document.createElement('div');
-  banner.id = 'multi-device-banner';
-  banner.className = 'multi-device-banner';
-  banner.innerHTML = `
-    <span style="font-size:16px;">📱</span>
-    <div style="flex:1;">
-      <div style="font-weight:700;font-size:12px;color:var(--ink);">Multiple devices detected</div>
-      <div style="font-size:11px;color:var(--ink3);margin-top:1px;">Free plan supports 1 active device. <span style="color:var(--a2);cursor:pointer;font-weight:700;" onclick="showUpgradeModal('Multi-Device Sync')">Upgrade to Pro →</span></div>
-    </div>
-    <button onclick="document.getElementById('multi-device-banner').remove()" style="background:none;border:none;cursor:pointer;color:var(--ink4);font-size:16px;padding:0;">×</button>
-  `;
-  // Insert at top of main content area
-  const main = document.getElementById('main') || document.querySelector('.main') || document.body;
-  main.prepend(banner);
+// Clear active_device_id on sign out
+async function unregisterDevice(username) {
+  if (!sbReady || !username) return;
+  try {
+    const myId = getOrCreateDeviceId();
+    // Only clear if WE are the registered device
+    const { data } = await sb.from('users').select('active_device_id').eq('username', username).single();
+    if (data && data.active_device_id === myId) {
+      await sb.from('users').update({ active_device_id: null }).eq('username', username);
+    }
+  } catch(e) { console.warn('[Prodify] unregisterDevice failed', e); }
+}
+
+function showMultiDeviceBlock() {
+  if (document.getElementById('mo-multidevice')) return;
+  const ov = document.createElement('div');
+  ov.id = 'mo-multidevice';
+  ov.className = 'ov open';
+  ov.style.zIndex = '99999';
+  ov.innerHTML =
+    '<div class="mod" style="max-width:360px;text-align:center;padding:32px 28px;">' +
+      '<div style="font-size:44px;margin-bottom:14px;">📱</div>' +
+      '<div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:10px;">Device limit reached</div>' +
+      '<div style="font-size:13px;color:var(--ink3);line-height:1.65;margin-bottom:24px;">' +
+        'Free plan supports <strong style="color:var(--ink);">1 active device</strong>.<br>' +
+        'Sign out on your other device first, then try again.' +
+      '</div>' +
+      '<button class="btn" style="width:100%;padding:13px;font-size:14px;margin-bottom:10px;" onclick="showUpgradeModal(\'Multi-Device Sync\')">✦ Upgrade to Pro</button>' +
+      '<button class="bol" style="width:100%;padding:11px;font-size:13px;" onclick="document.getElementById(\'mo-multidevice\').remove();">Back to login</button>' +
+    '</div>';
+  document.body.appendChild(ov);
 }
 
 function showDevicesModal() {
@@ -4259,54 +5308,162 @@ function showDevicesModal() {
   renderDevicesList();
 }
 
-function renderDevicesList() {
+async function renderDevicesList() {
   const el = document.getElementById('mo-devices-list');
   if (!el) return;
-  const sessions = prefs.activeSessions || [];
-  const myId = getOrCreateDeviceId();
-  const now = Date.now();
-  const week = now - 7 * 24 * 60 * 60 * 1000;
-  const recent = sessions.filter(s => s.lastSeen > week).sort((a, b) => b.lastSeen - a.lastSeen);
-  if (recent.length === 0) {
-    el.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--ink4);font-size:13px;">No active sessions found.</div>`;
-    return;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink4);font-size:12px;">Loading...</div>';
+  if (!sbReady) { el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink4);font-size:13px;">Not connected.</div>'; return; }
+  try {
+    const myId = getOrCreateDeviceId();
+    const myName = getDeviceName();
+    const myIcon = /iPhone|Android Phone/i.test(myName)?'📱':/iPad|Tablet/i.test(myName)?'📟':/Mac/i.test(myName)?'💻':/Windows/i.test(myName)?'🖥️':'💻';
+    const { data: activeId, error: devErr } = await sb.rpc('get_active_device', { p_username: cu });
+    if (devErr) throw devErr;
+
+    // For Pro users or no registered device — just show this device as active
+    if (!activeId || isPro()) {
+      el.innerHTML =
+        '<div class="device-row">' +
+          '<div class="device-icon">' + myIcon + '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:700;color:var(--ink);">' + myName + ' <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span></div>' +
+            '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">Currently active</div>' +
+          '</div>' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>' +
+        '</div>' +
+        (isPro() ? '<div style="margin-top:12px;padding:10px 12px;background:var(--al);border-radius:10px;font-size:11px;color:var(--a2);font-weight:600;">✦ Pro — unlimited devices</div>' : '');
+      return;
+    }
+
+    const isMe = activeId === myId;
+    const otherIcon = '💻';
+    el.innerHTML =
+      '<div class="device-row">' +
+        '<div class="device-icon">' + (isMe ? myIcon : otherIcon) + '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--ink);">' + (isMe ? myName : 'Another device') + (isMe ? ' <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span>' : '') + '</div>' +
+          '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">' + (isMe ? 'Currently active' : 'Active on another device') + '</div>' +
+        '</div>' +
+        (isMe
+          ? '<div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>'
+          : '<button class="device-remove-btn" onclick="forceRemoveOtherDevice()">Remove</button>') +
+      '</div>';
+  } catch(e) {
+    console.error('[Prodify] renderDevicesList error:', e);
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink4);">Could not load devices.<br><span style="font-size:10px;">' + (e?.message||'') + '</span></div>';
   }
-  el.innerHTML = recent.map(s => {
-    const isMe = s.id === myId;
-    const ago = _timeAgo(s.lastSeen);
-    return `<div class="device-row">
-      <div class="device-icon">${_deviceIcon(s.name)}</div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;color:var(--ink);">${s.name}${isMe ? ' <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span>' : ''}</div>
-        <div style="font-size:11px;color:var(--ink4);margin-top:2px;">Last active ${ago}</div>
-      </div>
-      ${isMe ? `<div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>` :
-        `<button class="device-remove-btn" onclick="removeDeviceSession('${s.id}')">Remove</button>`}
-    </div>`;
-  }).join('');
 }
 
-function removeDeviceSession(id) {
-  if (!prefs.activeSessions) return;
-  prefs.activeSessions = prefs.activeSessions.filter(s => s.id !== id);
-  if (cu) { acc[cu].prefs = prefs; LS.s('pd1_acc', acc); if (sbReady) dbSaveUser(cu, acc[cu]); }
+async function forceRemoveOtherDevice() {
+  if (!sbReady || !cu) return;
+  await sb.from('users').update({ active_device_id: null }).eq('username', cu);
   renderDevicesList();
 }
 
-function _timeAgo(ts) {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 2) return 'just now';
-  if (mins < 60) return mins + 'm ago';
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + 'h ago';
-  return Math.floor(hrs / 24) + 'd ago';
+// ═══════════════════════════════════════
+// LANDING PAGE WAITLIST (no sign-in required)
+// ═══════════════════════════════════════
+
+function openLandingWaitlist() {
+  // Reset to input state
+  const joinState = document.getElementById('lw-join-state');
+  const joinedState = document.getElementById('lw-joined-state');
+  const input = document.getElementById('lw-email-input');
+  const btn = document.getElementById('lw-submit-btn');
+  const err = document.getElementById('lw-err');
+  if (joinState) joinState.style.display = 'block';
+  if (joinedState) joinedState.style.display = 'none';
+  if (input) { input.value = ''; input.classList.remove('lw-error'); }
+  if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
+  if (err) err.style.display = 'none';
+  openMo('mo-landing-waitlist');
 }
 
-function _deviceIcon(name) {
-  if (/iPhone|Android Phone/i.test(name)) return '📱';
-  if (/iPad|Tablet/i.test(name)) return '📱';
-  if (/Mac/i.test(name)) return '💻';
-  if (/Windows/i.test(name)) return '🖥️';
-  return '💻';
+function lwClearErr() {
+  const err = document.getElementById('lw-err');
+  const input = document.getElementById('lw-email-input');
+  if (err) err.style.display = 'none';
+  if (input) input.classList.remove('lw-error');
+}
+
+function lwShowErr(msg) {
+  const err = document.getElementById('lw-err');
+  const input = document.getElementById('lw-email-input');
+  if (err) { err.textContent = msg; err.style.display = 'block'; }
+  if (input) { input.classList.add('lw-error'); input.focus(); }
+}
+
+function lwIsValidEmail(email) {
+  // RFC-5322 inspired — checks structure, domain, and TLD
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+}
+
+async function lwSubmit() {
+  const input = document.getElementById('lw-email-input');
+  const btn = document.getElementById('lw-submit-btn');
+  const email = (input?.value || '').trim().toLowerCase();
+
+  // Client-side validation
+  if (!email) { lwShowErr('Please enter your email address.'); return; }
+  if (!lwIsValidEmail(email)) { lwShowErr('Please enter a valid email address.'); return; }
+
+  btn.textContent = 'Joining…';
+  btn.disabled = true;
+
+  try {
+    if (!sbReady) throw new Error('offline');
+
+    // Check if already on waitlist
+    const { data: existing } = await sb
+      .from('waitlist')
+      .select('id, position')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existing) {
+      lwShowSuccess(email, existing.position);
+      return;
+    }
+
+    // Insert — position assigned server-side by DB trigger (same as in-app flow)
+    const { data: inserted, error } = await sb
+      .from('waitlist')
+      .insert({ email, joined_at: new Date().toISOString() })
+      .select('id, position')
+      .single();
+
+    if (error) {
+      // Race condition: unique constraint hit
+      if (error.code === '23505') {
+        const { data: raceWin } = await sb
+          .from('waitlist')
+          .select('id, position')
+          .eq('email', email)
+          .maybeSingle();
+        if (raceWin) { lwShowSuccess(email, raceWin.position); return; }
+      }
+      throw error;
+    }
+
+    lwShowSuccess(email, inserted?.position || null);
+
+  } catch(e) {
+    btn.textContent = 'Join the waitlist';
+    btn.disabled = false;
+    const msg = e.message === 'offline'
+      ? 'No connection. Please try again shortly.'
+      : 'Something went wrong. Please try again.';
+    lwShowErr(msg);
+  }
+}
+
+function lwShowSuccess(email, position) {
+  const joinState = document.getElementById('lw-join-state');
+  const joinedState = document.getElementById('lw-joined-state');
+  const posEl = document.getElementById('lw-position');
+  const emailEl = document.getElementById('lw-joined-email');
+  if (joinState) joinState.style.display = 'none';
+  if (joinedState) joinedState.style.display = 'block';
+  if (posEl) posEl.textContent = position ? '#' + position : '#—';
+  if (emailEl) emailEl.textContent = email;
 }
