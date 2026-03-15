@@ -1,1302 +1,1795 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Prodify — Your Productivity Space</title>
-<meta name="theme-color" content="#3A7D5E"/>
-<meta name="description" content="Your personal productivity space — tasks, journal, focus timer and more."/>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Prodify — Your Productivity Space</title>
+  <meta name="theme-color" content="#3A7D5E" />
+  <meta name="description" content="Your personal productivity space — tasks, journal, focus timer and more." />
 
-<!-- Open Graph -->
-<meta property="og:type" content="website"/>
-<meta property="og:url" content="https://prodify.cc"/>
-<meta property="og:title" content="Prodify — Tasks, Journal, Habits & Focus Timer"/>
-<meta property="og:description" content="One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter. Just you, working."/>
-<meta property="og:image" content="https://prodify.cc/og-preview.png"/>
-<meta property="og:image:width" content="1200"/>
-<meta property="og:image:height" content="630"/>
-<meta property="og:site_name" content="Prodify"/>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://prodify.cc" />
+  <meta property="og:title" content="Prodify — Tasks, Journal, Habits & Focus Timer" />
+  <meta property="og:description"
+    content="One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter. Just you, working." />
+  <meta property="og:image" content="https://prodify.cc/og-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Prodify" />
 
-<!-- Twitter / X -->
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:url" content="https://prodify.cc"/>
-<meta name="twitter:title" content="Prodify — Tasks, Journal, Habits & Focus Timer"/>
-<meta name="twitter:description" content="One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter. Just you, working."/>
-<meta name="twitter:image" content="https://prodify.cc/og-preview.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css"/>
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://prodify.cc" />
+  <meta name="twitter:title" content="Prodify — Tasks, Journal, Habits & Focus Timer" />
+  <meta name="twitter:description"
+    content="One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter. Just you, working." />
+  <meta name="twitter:image" content="https://prodify.cc/og-preview.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 
 </head>
+
 <body>
 
-<script>
-// Hide landing screen instantly if user is logged in — prevents flash on refresh
-(function(){
-  try {
-    var cu = localStorage.getItem('pd1_cur');
-    if (cu) document.documentElement.classList.add('has-user');
-  } catch(e) {}
-})();
-</script>
+  <script>
+    // Hide landing screen instantly if user is logged in — prevents flash on refresh
+    (function () {
+      try {
+        var cu = localStorage.getItem('pd1_cur');
+        if (cu) document.documentElement.classList.add('has-user');
+      } catch (e) { }
+    })();
+  </script>
 
-<div id="g-tip"></div>
+  <div id="g-tip"></div>
 
-<!-- LANDING -->
-<div class="screen" id="sl">
+  <!-- LANDING -->
+  <div class="screen" id="sl">
 
-  <!-- Full-page background — continuous across all sections -->
-  <div class="sl-bg-layer">
-    <div class="sl-bg-o1"></div>
-    <div class="sl-bg-o2"></div>
-    <div class="sl-bg-o3"></div>
-    <div class="sl-bg-o4"></div>
-    <div class="sl-bg-o5"></div>
+    <!-- Full-page background — continuous across all sections -->
+    <div class="sl-bg-layer">
+      <div class="sl-bg-o1"></div>
+      <div class="sl-bg-o2"></div>
+      <div class="sl-bg-o3"></div>
+      <div class="sl-bg-o4"></div>
+      <div class="sl-bg-o5"></div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="lnav">
+      <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn bgw" onclick="showAuth()">Sign in</button>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="lhero-wrap">
+      <div class="lhero-tag">Free productivity workspace</div>
+      <h1 class="lh1">The workspace that<br />works <em>around you</em></h1>
+      <p class="lsub">One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter.
+        Just you, working.</p>
+
+      <!-- App preview screenshot -->
+      <div class="lhero-preview"
+        style="width:min(900px,92vw);margin:16px auto 0;position:relative;z-index:1;animation:fadeUp .7s cubic-bezier(.16,1,.3,1) .5s both;">
+        <!-- Browser chrome -->
+        <div
+          style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px 14px 0 0;padding:10px 16px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(8px);">
+          <span
+            style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
+          <span
+            style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
+          <span
+            style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
+          <span
+            style="flex:1;background:rgba(255,255,255,.08);border-radius:6px;padding:4px 12px;font-size:11px;color:rgba(255,255,255,.35);font-weight:600;text-align:center;max-width:240px;margin:0 auto;">prodify.cc</span>
+        </div>
+        <!-- Screenshot -->
+        <div
+          style="border-radius:0 0 14px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-top:none;box-shadow:0 32px 80px rgba(0,0,0,.5);">
+          <img src="/screenshot.png" alt="Prodify workspace preview" style="width:100%;display:block;" />
+        </div>
+      </div>
+
+
+    </section>
+
+    <!-- FEATURES -->
+    <section class="sl-features">
+      <div class="sl-feat-header">
+        <div class="sl-feat-eyebrow">What's inside</div>
+        <h2 class="sl-feat-h2">One space.<br />Every tool you need.</h2>
+        <p class="sl-feat-sub">Stop switching between apps. Prodify brings everything into one flexible workspace — your
+          way.</p>
+      </div>
+      <div class="sl-feat-grid">
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <path d="M3 5h14M3 10h8M3 15h10" />
+              <path d="M13 12l2 2 4-4" />
+            </svg></div>
+          <div class="sl-feat-name">Task Board</div>
+          <div class="sl-feat-desc">Three columns — To Do, In Progress, Done. Drag tasks, set priorities, filter by
+            project. See exactly what needs your attention today.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <circle cx="10" cy="11" r="7" />
+              <path d="M10 7v4l2.5 2M7 1.5h6" />
+            </svg></div>
+          <div class="sl-feat-name">Focus Timer</div>
+          <div class="sl-feat-desc">Set a timer, block out distractions, and track how many sessions you complete each
+            day. Simple but surprisingly effective.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <rect x="3" y="5" width="6" height="13" rx="1.5" />
+              <rect x="11" y="2" width="6" height="16" rx="1.5" />
+            </svg></div>
+          <div class="sl-feat-name">Project Tracker</div>
+          <div class="sl-feat-desc">Track every project with progress bars, task lists, and a grade score. Know at a
+            glance what needs attention and what's nearly done.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <rect x="3" y="2" width="14" height="16" rx="2" />
+              <path d="M7 7h6M7 11h6M7 15h4" />
+            </svg></div>
+          <div class="sl-feat-name">Daily Journal</div>
+          <div class="sl-feat-desc">Write freely, pick a mood, and build a daily reflection habit. Your entries are
+            private, searchable, and always yours.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <rect x="2" y="4" width="16" height="14" rx="2" />
+              <path d="M2 9h16M7 2v4M13 2v4" />
+            </svg></div>
+          <div class="sl-feat-name">Calendar</div>
+          <div class="sl-feat-desc">A clean weekly view with your events and project deadlines in one place. Plan your
+            week without hopping between apps.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <rect x="2" y="2" width="7" height="7" rx="1.5" />
+              <rect x="11" y="2" width="7" height="7" rx="1.5" />
+              <rect x="2" y="11" width="7" height="7" rx="1.5" />
+              <rect x="11" y="11" width="7" height="7" rx="1.5" />
+            </svg></div>
+          <div class="sl-feat-name">Widget Canvas</div>
+          <div class="sl-feat-desc">Place any tool anywhere on the canvas. Resize it, move it, stack it. Your layout is
+            saved automatically — every time.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="lhow">
+      <div class="sl-feat-header">
+        <div class="sl-feat-eyebrow">How it works</div>
+        <h2 class="sl-feat-h2">Built for how you<br />actually work.</h2>
+      </div>
+      <div class="lhow-steps">
+        <div class="lhow-step">
+          <div class="lhow-num">01</div>
+          <div class="lhow-body">
+            <div class="lhow-title">Sign up in seconds</div>
+            <div class="lhow-desc">No credit card. No setup. Just sign in with Google and you're in — your workspace is
+              ready immediately.</div>
+          </div>
+        </div>
+        <div class="lhow-line"></div>
+        <div class="lhow-step">
+          <div class="lhow-num">02</div>
+          <div class="lhow-body">
+            <div class="lhow-title">Build your canvas</div>
+            <div class="lhow-desc">Add the widgets you need — tasks, timer, journal, habits. Arrange them exactly how
+              you like. Your layout saves automatically.</div>
+          </div>
+        </div>
+        <div class="lhow-line"></div>
+        <div class="lhow-step">
+          <div class="lhow-num">03</div>
+          <div class="lhow-body">
+            <div class="lhow-title">Work smarter every day</div>
+            <div class="lhow-desc">Open Prodify when you start your day. Check your tasks, set a focus timer, log your
+              thoughts. Build a routine that actually sticks.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FREE VS PRO -->
+    <!-- AI PLANNER TEASER -->
+    <section class="laip">
+      <div class="sl-feat-header">
+        <div class="laip-eyebrow"><span class="laip-dot"></span> Coming with Pro</div>
+        <h2 class="sl-feat-h2">Plan your day in seconds<br />with AI.</h2>
+        <p class="sl-feat-sub">No more staring at a task list wondering where to start. Tell Prodify what's on your
+          plate — it figures out the rest.</p>
+      </div>
+      <div class="laip-steps">
+        <div class="laip-step">
+          <div class="laip-step-num">01</div>
+          <div class="laip-step-body">
+            <div class="laip-step-title">Tell it what you're working with</div>
+            <div class="laip-step-desc">Share your tasks, energy level, and how much time you have. A few sentences is
+              all it needs.</div>
+          </div>
+        </div>
+        <div class="laip-step-line"></div>
+        <div class="laip-step">
+          <div class="laip-step-num">02</div>
+          <div class="laip-step-body">
+            <div class="laip-step-title">Get a prioritized, timed plan</div>
+            <div class="laip-step-desc">Prodify builds a realistic schedule around your actual workload — focus blocks,
+              breaks, and deadlines in the right order.</div>
+          </div>
+        </div>
+        <div class="laip-step-line"></div>
+        <div class="laip-step">
+          <div class="laip-step-num">03</div>
+          <div class="laip-step-body">
+            <div class="laip-step-title">Start working — everything's ready</div>
+            <div class="laip-step-desc">Your plan syncs with your task board and focus timer. Open Prodify, follow the
+              plan, get things done.</div>
+          </div>
+        </div>
+      </div>
+      <div class="laip-benefits">
+        <div class="laip-benefit">
+          <div class="laip-benefit-icon">🧠</div>
+          <div class="laip-benefit-title">No decision fatigue</div>
+          <div class="laip-benefit-desc">Stop spending energy figuring out what to do next.</div>
+        </div>
+        <div class="laip-benefit">
+          <div class="laip-benefit-icon">⏱</div>
+          <div class="laip-benefit-title">Built around real time</div>
+          <div class="laip-benefit-desc">Accounts for meetings, breaks, and your energy levels.</div>
+        </div>
+        <div class="laip-benefit">
+          <div class="laip-benefit-icon">🔗</div>
+          <div class="laip-benefit-title">Syncs with your workspace</div>
+          <div class="laip-benefit-desc">Pulls from your tasks and projects — no double entry.</div>
+        </div>
+      </div>
+      <div class="laip-cta">
+        <button class="btn ba lbtn-cta" onclick="openLandingWaitlist()">Join the waitlist ✦</button>
+        <div class="laip-cta-note">No payment now · Founding member rate locked in at $3/mo</div>
+      </div>
+    </section>
+
+    <section class="lfvp">
+      <div class="sl-feat-header">
+        <div class="sl-feat-eyebrow">Pricing</div>
+        <h2 class="sl-feat-h2">Free vs Pro</h2>
+        <p class="sl-feat-sub">Everything you need is free. Pro unlocks the extras.</p>
+      </div>
+      <div class="lfvp-grid">
+        <div class="lfvp-card">
+          <div class="lfvp-label">Free</div>
+          <div class="lfvp-price">$0<span>/mo</span></div>
+          <div class="lfvp-desc">Everything you need to get started.</div>
+          <div class="lfvp-divider"></div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>Unlimited tasks
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>Daily journal
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>Focus timer
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>Calendar &amp; projects
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>3 habits
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>3 accent colors
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>JSON export
+          </div>
+        </div>
+        <div class="lfvp-card lfvp-pro">
+          <div class="lfvp-label">Pro — Coming soon</div>
+          <div class="lfvp-price">$3<span>/mo</span></div>
+          <div class="lfvp-desc">From $3/mo yearly · $4/mo monthly · Founding member rate locked in as long as you're
+            subscribed.</div>
+          <div class="lfvp-divider"></div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>Everything in Free
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>Unlimited habits
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>All colors + custom hex
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>AI Daily Planner
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>CSV &amp; PDF export
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>7-day cloud backups
+          </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check lfvp-star">✦</div>Priority support
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM CTA -->
+    <section class="lbcta">
+      <div class="lbcta-tag">Free forever · No credit card</div>
+      <h2 class="lbcta-h2">Your most productive day<br />starts here.</h2>
+      <p class="lbcta-p">Sign in with Google and your workspace is ready in seconds.</p>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:0;">
+        <button class="btn ba lbtn-cta" onclick="showAuth()">Get started free →</button>
+
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="lfooter">
+      <div class="logo" style="color:#fff;font-size:16px;">Pro<b>dify</b></div>
+      <p style="font-size:11px;color:rgba(255,255,255,.18);">© 2026 Designed &amp; built by <span
+          style="color:rgba(255,255,255,.3);font-weight:600;">David N.</span></p>
+    </footer>
+
   </div>
 
-  <!-- NAV -->
-  <nav class="lnav">
-    <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <button class="btn bgw" onclick="showAuth()">Sign in</button>
-    </div>
-  </nav>
 
-  <!-- HERO -->
-  <section class="lhero-wrap">
-    <div class="lhero-tag">Free productivity workspace</div>
-    <h1 class="lh1">The workspace that<br/>works <em>around you</em></h1>
-    <p class="lsub">One place for your tasks, journal, focus timer, habits, and calendar. No switching. No clutter. Just you, working.</p>
-
-    <!-- App preview screenshot -->
-    <div class="lhero-preview" style="width:min(900px,92vw);margin:16px auto 0;position:relative;z-index:1;animation:fadeUp .7s cubic-bezier(.16,1,.3,1) .5s both;">
-      <!-- Browser chrome -->
-      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px 14px 0 0;padding:10px 16px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(8px);">
-        <span style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
-        <span style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
-        <span style="width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;"></span>
-        <span style="flex:1;background:rgba(255,255,255,.08);border-radius:6px;padding:4px 12px;font-size:11px;color:rgba(255,255,255,.35);font-weight:600;text-align:center;max-width:240px;margin:0 auto;">prodify.cc</span>
-      </div>
-      <!-- Screenshot -->
-      <div style="border-radius:0 0 14px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-top:none;box-shadow:0 32px 80px rgba(0,0,0,.5);">
-        <img src="/screenshot.png" alt="Prodify workspace preview" style="width:100%;display:block;"/>
+  <!-- GOOGLE USERNAME PICKER -->
+  <div class="screen off" id="sg">
+    <div class="al sl-dk">
+      <div class="alorb"></div>
+      <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
+      <div class="alc">
+        <div class="alq" style="font-size:22px;font-weight:800;color:#fff;line-height:1.3;">Almost there.</div>
+        <div class="alct" style="font-size:14px;color:rgba(255,255,255,.5);margin-top:8px;">Pick a username for your
+          Prodify workspace.</div>
       </div>
     </div>
-
-
-  </section>
-
-  <!-- FEATURES -->
-  <section class="sl-features">
-    <div class="sl-feat-header">
-      <div class="sl-feat-eyebrow">What's inside</div>
-      <h2 class="sl-feat-h2">One space.<br/>Every tool you need.</h2>
-      <p class="sl-feat-sub">Stop switching between apps. Prodify brings everything into one flexible workspace — your way.</p>
-    </div>
-    <div class="sl-feat-grid">
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h14M3 10h8M3 15h10"/><path d="M13 12l2 2 4-4"/></svg></div>
-        <div class="sl-feat-name">Task Board</div>
-        <div class="sl-feat-desc">Three columns — To Do, In Progress, Done. Drag tasks, set priorities, filter by project. See exactly what needs your attention today.</div>
+    <div class="ar sl-dk">
+      <div class="auh">One last thing</div>
+      <div class="aus">Choose a username for your account. You can't change this later.</div>
+      <div class="fd">
+        <label class="fl">Username</label>
+        <input class="fi" id="gu-u" type="text" placeholder="e.g. alex_work" autocomplete="off"
+          onkeydown="if(event.key==='Enter')doGoogleUsername()" oninput="guValidate(this)" />
+        <div class="ferr" id="gue"></div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:5px;">Letters, numbers, and underscores only · Min 3
+          characters</div>
       </div>
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="11" r="7"/><path d="M10 7v4l2.5 2M7 1.5h6"/></svg></div>
-        <div class="sl-feat-name">Focus Timer</div>
-        <div class="sl-feat-desc">Set a timer, block out distractions, and track how many sessions you complete each day. Simple but surprisingly effective.</div>
-      </div>
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="5" width="6" height="13" rx="1.5"/><rect x="11" y="2" width="6" height="16" rx="1.5"/></svg></div>
-        <div class="sl-feat-name">Project Tracker</div>
-        <div class="sl-feat-desc">Track every project with progress bars, task lists, and a grade score. Know at a glance what needs attention and what's nearly done.</div>
-      </div>
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 7h6M7 11h6M7 15h4"/></svg></div>
-        <div class="sl-feat-name">Daily Journal</div>
-        <div class="sl-feat-desc">Write freely, pick a mood, and build a daily reflection habit. Your entries are private, searchable, and always yours.</div>
-      </div>
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M2 9h16M7 2v4M13 2v4"/></svg></div>
-        <div class="sl-feat-name">Calendar</div>
-        <div class="sl-feat-desc">A clean weekly view with your events and project deadlines in one place. Plan your week without hopping between apps.</div>
-      </div>
-      <div class="sl-feat-card">
-        <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg></div>
-        <div class="sl-feat-name">Widget Canvas</div>
-        <div class="sl-feat-desc">Place any tool anywhere on the canvas. Resize it, move it, stack it. Your layout is saved automatically — every time.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section class="lhow">
-    <div class="sl-feat-header">
-      <div class="sl-feat-eyebrow">How it works</div>
-      <h2 class="sl-feat-h2">Built for how you<br/>actually work.</h2>
-    </div>
-    <div class="lhow-steps">
-      <div class="lhow-step">
-        <div class="lhow-num">01</div>
-        <div class="lhow-body">
-          <div class="lhow-title">Sign up in seconds</div>
-          <div class="lhow-desc">No credit card. No setup. Just sign in with Google and you're in — your workspace is ready immediately.</div>
-        </div>
-      </div>
-      <div class="lhow-line"></div>
-      <div class="lhow-step">
-        <div class="lhow-num">02</div>
-        <div class="lhow-body">
-          <div class="lhow-title">Build your canvas</div>
-          <div class="lhow-desc">Add the widgets you need — tasks, timer, journal, habits. Arrange them exactly how you like. Your layout saves automatically.</div>
-        </div>
-      </div>
-      <div class="lhow-line"></div>
-      <div class="lhow-step">
-        <div class="lhow-num">03</div>
-        <div class="lhow-body">
-          <div class="lhow-title">Work smarter every day</div>
-          <div class="lhow-desc">Open Prodify when you start your day. Check your tasks, set a focus timer, log your thoughts. Build a routine that actually sticks.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FREE VS PRO -->
-  <!-- AI PLANNER TEASER -->
-  <section class="laip">
-    <div class="sl-feat-header">
-      <div class="laip-eyebrow"><span class="laip-dot"></span> Coming with Pro</div>
-      <h2 class="sl-feat-h2">Plan your day in seconds<br/>with AI.</h2>
-      <p class="sl-feat-sub">No more staring at a task list wondering where to start. Tell Prodify what's on your plate — it figures out the rest.</p>
-    </div>
-    <div class="laip-steps">
-      <div class="laip-step">
-        <div class="laip-step-num">01</div>
-        <div class="laip-step-body">
-          <div class="laip-step-title">Tell it what you're working with</div>
-          <div class="laip-step-desc">Share your tasks, energy level, and how much time you have. A few sentences is all it needs.</div>
-        </div>
-      </div>
-      <div class="laip-step-line"></div>
-      <div class="laip-step">
-        <div class="laip-step-num">02</div>
-        <div class="laip-step-body">
-          <div class="laip-step-title">Get a prioritized, timed plan</div>
-          <div class="laip-step-desc">Prodify builds a realistic schedule around your actual workload — focus blocks, breaks, and deadlines in the right order.</div>
-        </div>
-      </div>
-      <div class="laip-step-line"></div>
-      <div class="laip-step">
-        <div class="laip-step-num">03</div>
-        <div class="laip-step-body">
-          <div class="laip-step-title">Start working — everything's ready</div>
-          <div class="laip-step-desc">Your plan syncs with your task board and focus timer. Open Prodify, follow the plan, get things done.</div>
-        </div>
-      </div>
-    </div>
-    <div class="laip-benefits">
-      <div class="laip-benefit">
-        <div class="laip-benefit-icon">🧠</div>
-        <div class="laip-benefit-title">No decision fatigue</div>
-        <div class="laip-benefit-desc">Stop spending energy figuring out what to do next.</div>
-      </div>
-      <div class="laip-benefit">
-        <div class="laip-benefit-icon">⏱</div>
-        <div class="laip-benefit-title">Built around real time</div>
-        <div class="laip-benefit-desc">Accounts for meetings, breaks, and your energy levels.</div>
-      </div>
-      <div class="laip-benefit">
-        <div class="laip-benefit-icon">🔗</div>
-        <div class="laip-benefit-title">Syncs with your workspace</div>
-        <div class="laip-benefit-desc">Pulls from your tasks and projects — no double entry.</div>
-      </div>
-    </div>
-    <div class="laip-cta">
-      <button class="btn ba lbtn-cta" onclick="openLandingWaitlist()">Join the waitlist ✦</button>
-      <div class="laip-cta-note">No payment now · Founding member rate locked in at $3/mo</div>
-    </div>
-  </section>
-
-  <section class="lfvp">
-    <div class="sl-feat-header">
-      <div class="sl-feat-eyebrow">Pricing</div>
-      <h2 class="sl-feat-h2">Free vs Pro</h2>
-      <p class="sl-feat-sub">Everything you need is free. Pro unlocks the extras.</p>
-    </div>
-    <div class="lfvp-grid">
-      <div class="lfvp-card">
-        <div class="lfvp-label">Free</div>
-        <div class="lfvp-price">$0<span>/mo</span></div>
-        <div class="lfvp-desc">Everything you need to get started.</div>
-        <div class="lfvp-divider"></div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>Unlimited tasks</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>Daily journal</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>Focus timer</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>Calendar &amp; projects</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>3 habits</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>3 accent colors</div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>JSON export</div>
-      </div>
-      <div class="lfvp-card lfvp-pro">
-        <div class="lfvp-label">Pro — Coming soon</div>
-        <div class="lfvp-price">$3<span>/mo</span></div>
-        <div class="lfvp-desc">From $3/mo yearly · $4/mo monthly · Founding member rate locked in as long as you're subscribed.</div>
-        <div class="lfvp-divider"></div>
-        <div class="lfvp-item"><div class="lfvp-check">✓</div>Everything in Free</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>Unlimited habits</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>All colors + custom hex</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>AI Daily Planner</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>CSV &amp; PDF export</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>7-day cloud backups</div>
-        <div class="lfvp-item"><div class="lfvp-check lfvp-star">✦</div>Priority support</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BOTTOM CTA -->
-  <section class="lbcta">
-    <div class="lbcta-tag">Free forever · No credit card</div>
-    <h2 class="lbcta-h2">Your most productive day<br/>starts here.</h2>
-    <p class="lbcta-p">Sign in with Google and your workspace is ready in seconds.</p>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:0;">
-      <button class="btn ba lbtn-cta" onclick="showAuth()">Get started free →</button>
-
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="lfooter">
-    <div class="logo" style="color:#fff;font-size:16px;">Pro<b>dify</b></div>
-    <p style="font-size:11px;color:rgba(255,255,255,.18);">© 2026 Designed &amp; built by <span style="color:rgba(255,255,255,.3);font-weight:600;">David Nueva</span></p>
-  </footer>
-
-</div>
-
-
-<!-- GOOGLE USERNAME PICKER -->
-<div class="screen off" id="sg">
-  <div class="al sl-dk"><div class="alorb"></div>
-    <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
-    <div class="alc">
-      <div class="alq" style="font-size:22px;font-weight:800;color:#fff;line-height:1.3;">Almost there.</div>
-      <div class="alct" style="font-size:14px;color:rgba(255,255,255,.5);margin-top:8px;">Pick a username for your Prodify workspace.</div>
-    </div>
-  </div>
-  <div class="ar sl-dk">
-    <div class="auh">One last thing</div>
-    <div class="aus">Choose a username for your account. You can't change this later.</div>
-    <div class="fd">
-      <label class="fl">Username</label>
-      <input class="fi" id="gu-u" type="text" placeholder="e.g. alex_work" autocomplete="off"
-        onkeydown="if(event.key==='Enter')doGoogleUsername()"
-        oninput="guValidate(this)"/>
-      <div class="ferr" id="gue"></div>
-      <div style="font-size:11px;color:var(--ink4);margin-top:5px;">Letters, numbers, and underscores only · Min 3 characters</div>
-    </div>
-    <button class="btn bdk bfull" id="gu-btn" onclick="doGoogleUsername()" style="margin-top:4px;">Create my workspace</button>
-  </div>
-</div>
-
-<!-- AUTH -->
-<div class="screen off" id="sa">
-  <div class="al sl-dk"><div class="alorb"></div>
-    <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
-    <div class="alc">
-      <div class="alq" style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;">Your productivity,<br/>one workspace.</div>
-      <div class="alct" style="font-size:14px;color:rgba(255,255,255,.45);margin-top:10px;line-height:1.65;">Tasks, journal, focus timer,<br/>habits &amp; calendar — all in one place.</div>
-    </div>
-  </div>
-  <div class="ar sl-dk">
-    <button class="abk" onclick="show('sl')"><svg viewBox="0 0 12 12"><path d="M8 2L3 6l5 4"/></svg>Back</button>
-    <div class="auh">Welcome to Prodify</div>
-    <div class="aus">Sign in or create your free workspace.</div>
-    <div class="ferr" id="sa-err" style="margin-bottom:12px;display:none;text-align:center;"></div>
-    <button class="btn-google btn-google-lg" id="sa-google-btn" onclick="doGoogleAuth()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
-      Continue with Google
-    </button>
-    <p class="auth-note">Free to start · No credit card needed</p>
-    <div class="auth-providers-note">More sign-in options coming soon</div>
-  </div>
-</div>
-
-<!-- NAME -->
-<div class="screen off" id="sn">
-  <!-- Force light mode on onboarding screen -->
-  <div class="ob-bg">
-    <!-- Left decorative panel -->
-    <div class="ob-left">
-      <div class="ob-left-inner">
-        <div class="ob-brand">Pro<b>dify</b></div>
-        <div class="ob-tagline">Your personal<br/>productivity hub.</div>
-        <div class="ob-left-feats">
-          <div class="ob-lf"><span class="ob-lf-icon">📋</span><span>Tasks & projects</span></div>
-          <div class="ob-lf"><span class="ob-lf-icon">📓</span><span>Daily journal</span></div>
-          <div class="ob-lf"><span class="ob-lf-icon">⏱️</span><span>Pomodoro timer</span></div>
-          <div class="ob-lf"><span class="ob-lf-icon">💪</span><span>Habit tracker</span></div>
-          <div class="ob-lf"><span class="ob-lf-icon">📅</span><span>Calendar</span></div>
-          <div class="ob-lf"><span class="ob-lf-icon">🗂️</span><span>Canvas dashboard</span></div>
-        </div>
-        <div class="ob-left-badge">Free to start · Pro unlocks everything</div>
-      </div>
-    </div>
-
-    <!-- Right form panel -->
-    <div class="ob-right ob-right-light">
-      <div class="ob-wrap">
-        <!-- Progress bar -->
-        <div class="ob-progress-wrap" id="ob-steps">
-          <div class="ob-progress-track">
-            <div class="ob-progress-fill" id="ob-progress-fill" style="width:20%"></div>
-          </div>
-          <div class="ob-progress-label" id="ob-progress-label">Step 1 of 5</div>
-        </div>
-
-        <!-- STEP 0: Name -->
-        <div class="ob-panel active" id="ob-0">
-          <div class="ob-panel-icon">👋</div>
-          <h2 class="ob-title">What should<br/>we call you?</h2>
-          <p class="ob-sub">This is how Prodify greets you each day. You can change it anytime in Settings.</p>
-          <div class="ob-field">
-            <input class="ob-input" id="nin" type="text" placeholder="Your name or nickname..." maxlength="28" autocapitalize="words" autocomplete="off" onkeydown="if(event.key==='Enter')obNext(0)"/>
-          </div>
-          <button class="ob-btn" onclick="obNext(0)">
-            <span>Continue</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-        </div>
-
-        <!-- STEP 1: Use case -->
-        <div class="ob-panel" id="ob-1">
-          <div class="ob-panel-icon">🎯</div>
-          <h2 class="ob-title">How will you<br/>use Prodify?</h2>
-          <p class="ob-sub">We'll tailor your experience based on how you work.</p>
-          <div class="ob-uc-grid">
-            <button class="ob-uc-card" data-uc="student" onclick="obPickUC(this,'student')">
-              <span class="ob-uc-icon">🎓</span>
-              <span class="ob-uc-label">Student</span>
-              <span class="ob-uc-desc">Assignments, study sessions &amp; deadlines</span>
-            </button>
-            <button class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
-              <span class="ob-uc-icon">💼</span>
-              <span class="ob-uc-label">Work</span>
-              <span class="ob-uc-desc">Projects, meetings &amp; team goals</span>
-            </button>
-            <button class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
-              <span class="ob-uc-icon">🌱</span>
-              <span class="ob-uc-label">Personal</span>
-              <span class="ob-uc-desc">Habits, journaling &amp; life goals</span>
-            </button>
-          </div>
-          <button class="ob-btn" onclick="obNext(1)">
-            <span>Continue</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-        </div>
-
-        <!-- STEP 2: Accent color — 3 free, 3 shown as locked -->
-        <div class="ob-panel" id="ob-2">
-          <div class="ob-panel-icon">🎨</div>
-          <h2 class="ob-title">Pick your<br/>accent color</h2>
-          <p class="ob-sub">Forest, Ocean and Violet are free. Custom hex codes and more colors are available with Pro.</p>
-          <div class="ob-colors" id="ob-colors">
-            <button class="ob-color-btn active" data-key="green" onclick="obPickColor(this,'green')">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#2A5C44,#4A9D74)"></span>
-              <span class="ob-color-check">✓</span>
-              <span class="ob-color-name">Forest</span>
-            </button>
-            <button class="ob-color-btn" data-key="blue" onclick="obPickColor(this,'blue')">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#1E4A7C,#2563EB)"></span>
-              <span class="ob-color-check">✓</span>
-              <span class="ob-color-name">Ocean</span>
-            </button>
-            <button class="ob-color-btn" data-key="purple" onclick="obPickColor(this,'purple')">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#4A2C6E,#7C3AED)"></span>
-              <span class="ob-color-check">✓</span>
-              <span class="ob-color-name">Violet</span>
-            </button>
-            <div class="ob-color-locked">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#7C1D2C,#E11D48)"></span>
-              <span class="ob-color-lock-badge">✦ Pro</span>
-              <span class="ob-color-name">Rose</span>
-            </div>
-            <div class="ob-color-locked">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#7A4A00,#D97706)"></span>
-              <span class="ob-color-lock-badge">✦ Pro</span>
-              <span class="ob-color-name">Amber</span>
-            </div>
-            <div class="ob-color-locked">
-              <span class="ob-color-inner" style="background:linear-gradient(135deg,#0F4C4C,#0D9488)"></span>
-              <span class="ob-color-lock-badge">✦ Pro</span>
-              <span class="ob-color-name">Teal</span>
-            </div>
-          </div>
-          <p class="ob-color-pro-note">✦ Pro unlocks all colors + custom hex codes</p>
-          <button class="ob-btn" onclick="obNext(2)">
-            <span>Looks good</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-        </div>
-
-        <!-- STEP 3: Dark mode -->
-        <div class="ob-panel" id="ob-3">
-          <div class="ob-panel-icon">✨</div>
-          <h2 class="ob-title">Choose your<br/>vibe</h2>
-          <p class="ob-sub">Pick a theme. You can switch anytime in Settings.</p>
-          <div class="ob-theme-grid">
-            <button class="ob-theme-card active" id="ob-theme-light" onclick="obPickTheme(this,'light')">
-              <div class="ob-theme-preview ob-theme-preview-light">
-                <div class="ob-tp-bar"></div>
-                <div class="ob-tp-card"></div>
-                <div class="ob-tp-card ob-tp-card-sm"></div>
-              </div>
-              <span class="ob-theme-check">✓</span>
-              <span class="ob-theme-label">Light</span>
-            </button>
-            <button class="ob-theme-card" id="ob-theme-dark" onclick="obPickTheme(this,'dark')">
-              <div class="ob-theme-preview ob-theme-preview-dark">
-                <div class="ob-tp-bar"></div>
-                <div class="ob-tp-card"></div>
-                <div class="ob-tp-card ob-tp-card-sm"></div>
-              </div>
-              <span class="ob-theme-check">✓</span>
-              <span class="ob-theme-label">Dark</span>
-            </button>
-          </div>
-          <button class="ob-btn" onclick="obNext(3)">
-            <span>Continue</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-        </div>
-
-        <!-- STEP 4: Pro teaser -->
-        <div class="ob-panel" id="ob-4">
-          <div class="ob-panel-icon">✦</div>
-          <h2 class="ob-title">One more thing</h2>
-          <p class="ob-sub">Everything you need is free. When you're ready, Pro unlocks the extras.</p>
-
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
-            <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
-              <span style="font-size:18px;">🤖</span>
-              <div><div style="font-size:13px;font-weight:700;color:var(--ink,#111);">AI Daily Planner</div><div style="font-size:12px;color:var(--ink3,#888);">Plan your day with AI in seconds</div></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
-              <span style="font-size:18px;">♾️</span>
-              <div><div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Unlimited habits</div><div style="font-size:12px;color:var(--ink3,#888);">Track as many habits as you want</div></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
-              <span style="font-size:18px;">🎨</span>
-              <div><div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Custom colors + CSV &amp; PDF export</div><div style="font-size:12px;color:var(--ink3,#888);">Make it yours, take your data anywhere</div></div>
-            </div>
-          </div>
-
-          <button class="ob-btn ob-btn-launch" onclick="obNext(4)">
-            <span>Continue with Free</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-          <p class="ob-plan-footnote" style="margin-top:10px;">From $3/mo · No credit card now</p>
-        </div>
-
-        <!-- STEP 5: All set -->
-        <div class="ob-panel" id="ob-5">
-          <div class="ob-allset-wrap">
-            <div class="ob-allset-icon">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M6 17l7 7L26 9" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <h2 class="ob-title" id="ob-done-title">You're all set!</h2>
-            <p class="ob-sub" id="ob-done-sub">Your workspace is ready. Time to get things done.</p>
-          </div>
-          <div class="ob-allset-feats">
-            <div class="ob-af"><span class="ob-af-icon">📋</span><span class="ob-af-text"><b>Tasks &amp; projects</b> — stay on top of everything</span></div>
-            <div class="ob-af"><span class="ob-af-icon">📓</span><span class="ob-af-text"><b>Daily journal</b> — reflect and grow</span></div>
-            <div class="ob-af"><span class="ob-af-icon">⏱️</span><span class="ob-af-text"><b>Focus timer</b> — deep work made easy</span></div>
-            <div class="ob-af"><span class="ob-af-icon">🗂️</span><span class="ob-af-text"><b>Widget canvas</b> — your layout, your way</span></div>
-          </div>
-          <button class="ob-btn ob-btn-launch ob-btn-allset" onclick="obNext(5)">
-            <span>Open my workspace</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- APP -->
-<div class="screen off" id="app">
-  <!-- FLOATING BOTTOM TOOLBAR -->
-  <div class="fltbar" id="sb">
-    <button class="sbb act" data-p="canvas" onclick="goPg('canvas',this)">
-      <svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg>
-      <span class="fltlbl">Dashboard</span>
-    </button>
-    <button class="sbb" data-p="subjects" onclick="goPg('subjects',this)">
-      <svg viewBox="0 0 16 16"><path d="M3 5h10M3 8.5h7M3 12h8"/></svg>
-      <span class="fltlbl">Projects</span>
-    </button>
-    <button class="sbb" data-p="calendar" onclick="goPg('calendar',this)">
-      <svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 2v2M10 2v2"/></svg>
-      <span class="fltlbl">Calendar</span>
-    </button>
-    <button class="sbb" data-p="aiplanner" onclick="openAIPlanner()" style="position:relative;">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/><path d="M5 2.5C3.5 3.5 2.5 5.6 2.5 8"/></svg>
-      <span class="fltlbl">AI Planner</span>
-      <span style="position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;">PRO</span>
-    </button>
-    <div class="flt-div" id="wkp-sep"></div>
-    <!-- Widget picker -->
-    <div class="wkpicker" id="wkpicker">
-      <div class="wkp-grid">
-        <button class="wkp-btn" onclick="addW('tasks');closeWkPicker()"><svg viewBox="0 0 14 14"><path d="M2 4h10M2 7h6M2 10h8"/><path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6"/></svg><span>Tasks</span></button>
-        <button class="wkp-btn" onclick="addW('journal');closeWkPicker()"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="12" rx="1.5"/><path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3"/></svg><span>Journal</span></button>
-        <button class="wkp-btn" onclick="addW('timer');closeWkPicker()"><svg viewBox="0 0 14 14"><circle cx="7" cy="8" r="5"/><path d="M7 5.5V8l2 1.5M5 1h4"/></svg><span>Timer</span></button>
-        <button class="wkp-btn" onclick="addW('note');closeWkPicker()"><svg viewBox="0 0 14 14"><path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M12 11H9v2"/></svg><span>Note</span></button>
-        <button class="wkp-btn" onclick="addW('subjects');closeWkPicker()"><svg viewBox="0 0 14 14"><path d="M2 4h10M2 7h7M2 10h8"/></svg><span>Projects</span></button>
-        <button class="wkp-btn" onclick="addW('calendar');closeWkPicker()"><svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="11" rx="1.5"/><path d="M1 6h12M5 1v2M9 1v2"/></svg><span>Calendar</span></button>
-        <button class="wkp-btn" onclick="addW('habits');closeWkPicker()"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5"/><path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6"/></svg><span>Habits</span></button>
-        <button class="wkp-btn wkp-clr" onclick="clearCanvas();closeWkPicker()"><svg viewBox="0 0 14 14"><path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4"/></svg><span>Clear</span></button>
-      </div>
-    </div>
-    <button class="sbb wkp-toggle" id="wkp-toggle" onclick="toggleWkPicker()" title="Add widget">
-      <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>
-      <span class="fltlbl">Add widget</span>
-    </button>
-    <div class="flt-div"></div>
-    <div class="sbav" id="sbav" onclick="toggleDD()">
-      <span id="sbavt">S</span>
-      <div class="sbdd" id="sbdd">
-        <div class="ddhd">
-          <div class="ddav" id="ddav">S</div>
-          <div class="ddnm" id="ddnm">User</div>
-          <div class="ddun" id="ddun">@user</div>
-        </div>
-        <div class="ddbd">
-          <button class="ddi" onclick="goPg('profile',null);closeDD()"><span class="ddic"><svg viewBox="0 0 12 12"><circle cx="6" cy="4" r="2.5"/><path d="M1 11c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg></span>View Profile</button>
-          <button class="ddi" onclick="goPg('settings',null);closeDD()"><span class="ddic"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="1.5"/><path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.6 2.6l1 1M8.4 8.4l1 1M9.4 2.6l-1 1M3.6 8.4l-1 1"/></svg></span>Settings</button>
-          <div class="dddiv"></div>
-          <div class="ddi ddi-soon"><span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="4.5" cy="4" r="1.8"/><path d="M1 10c0-1.8 1.6-3 3.5-3"/><circle cx="8.5" cy="4" r="1.8"/><path d="M12 10c0-1.8-1.6-3-3.5-3s-3.5 1.2-3.5 3"/></svg></span>Team Workspace <span class="ddi-soon-badge">Soon</span></div>
-          <div class="dddiv"></div>
-          <button class="ddi dng" onclick="doSO()"><span class="ddic"><svg viewBox="0 0 12 12"><path d="M8 2h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H8M5 8.5L8 6 5 3.5M8 6H1"/></svg></span>Sign out</button>
-        </div>
-      </div>
+      <button class="btn bdk bfull" id="gu-btn" onclick="doGoogleUsername()" style="margin-top:4px;">Create my
+        workspace</button>
     </div>
   </div>
 
-  <!-- MAIN -->
-  <div class="main">
-    <div class="pages" id="pages">
+  <!-- AUTH -->
+  <div class="screen off" id="sa">
+    <div class="al sl-dk">
+      <div class="alorb"></div>
+      <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
+      <div class="alc">
+        <div class="alq" style="font-size:26px;font-weight:800;color:#fff;line-height:1.3;">Your productivity,<br />one
+          workspace.</div>
+        <div class="alct" style="font-size:14px;color:rgba(255,255,255,.45);margin-top:10px;line-height:1.65;">Tasks,
+          journal, focus timer,<br />habits &amp; calendar — all in one place.</div>
+      </div>
+    </div>
+    <div class="ar sl-dk">
+      <button class="abk" onclick="show('sl')"><svg viewBox="0 0 12 12">
+          <path d="M8 2L3 6l5 4" />
+        </svg>Back</button>
+      <div class="auh">Welcome to Prodify</div>
+      <div class="aus">Sign in or create your free workspace.</div>
+      <div class="ferr" id="sa-err" style="margin-bottom:12px;display:none;text-align:center;"></div>
+      <button class="btn-google btn-google-lg" id="sa-google-btn" onclick="doGoogleAuth()">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335"
+            d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+          <path fill="#4285F4"
+            d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+          <path fill="#FBBC05"
+            d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+          <path fill="#34A853"
+            d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z" />
+          <path fill="none" d="M0 0h48v48H0z" />
+        </svg>
+        Continue with Google
+      </button>
+      <p class="auth-note">Free to start · No credit card needed</p>
+      <div class="auth-providers-note">More sign-in options coming soon</div>
+    </div>
+  </div>
 
-      <!-- CANVAS / DASHBOARD -->
-      <div class="pg" id="pg-canvas">
-        <!-- vertical widget tray -->
-        <div class="wtray" id="wtray">
-
-          <div class="wtdiv"></div>
-          <button class="wb" onclick="addW('tasks')" data-tip="Tasks"><svg viewBox="0 0 14 14"><path d="M2 4h10M2 7h6M2 10h8"/><path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6"/></svg><span class="wbtip">Task Board</span></button>
-          <button class="wb" onclick="addW('journal')" data-tip="Journal"><svg viewBox="0 0 14 14"><rect x="2" y="1" width="10" height="12" rx="1.5"/><path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3"/></svg><span class="wbtip">Journal</span></button>
-          <button class="wb" onclick="addW('timer')" data-tip="Timer"><svg viewBox="0 0 14 14"><circle cx="7" cy="8" r="5"/><path d="M7 5.5V8l2 1.5M5 1h4"/></svg><span class="wbtip">Focus Timer</span></button>
-          <button class="wb" onclick="addW('note')" data-tip="Note"><svg viewBox="0 0 14 14"><path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M12 11H9v2"/></svg><span class="wbtip">Note</span></button>
-          <button class="wb" onclick="addW('subjects')" data-tip="Projects"><svg viewBox="0 0 14 14"><path d="M2 4h10M2 7h7M2 10h8"/></svg><span class="wbtip">Projects</span></button>
-          <button class="wb" onclick="addW('calendar')" data-tip="Calendar"><svg viewBox="0 0 14 14"><rect x="1" y="2" width="12" height="11" rx="1.5"/><path d="M1 6h12M5 1v2M9 1v2"/></svg><span class="wbtip">Calendar</span></button>
-          <button class="wb" onclick="addW('habits')" data-tip="Habits"><svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5"/><path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6"/></svg><span class="wbtip">Habits</span></button>
-          <div class="wtdiv"></div>
-          <button class="wb wt-clr" onclick="clearCanvas()" data-tip="Clear all"><svg viewBox="0 0 14 14"><path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4"/></svg><span class="wbtip">Clear canvas</span></button>
-        </div>
-        <!-- scrollable canvas -->
-        <div class="canvas-wrap">
-          <div class="canvas-scroll" id="canvas-scroll">
-          <div style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">Built by <span style="color:var(--ink3);">David Nueva</span></div>
-          <!-- Greeting — sits behind all widgets, only visible on empty/sparse canvas -->
-          <div id="canvas-greeting" style="position:absolute;top:28px;left:36px;z-index:0;pointer-events:none;user-select:none;">
-            <div id="canvas-greeting-text" style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink2);opacity:.45;"></div>
+  <!-- NAME -->
+  <div class="screen off" id="sn">
+    <!-- Force light mode on onboarding screen -->
+    <div class="ob-bg">
+      <!-- Left decorative panel -->
+      <div class="ob-left">
+        <div class="ob-left-inner">
+          <div class="ob-brand">Pro<b>dify</b></div>
+          <div class="ob-tagline">Your personal<br />productivity hub.</div>
+          <div class="ob-left-feats">
+            <div class="ob-lf"><span class="ob-lf-icon">📋</span><span>Tasks & projects</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">📓</span><span>Daily journal</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">⏱️</span><span>Pomodoro timer</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">💪</span><span>Habit tracker</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">📅</span><span>Calendar</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">🗂️</span><span>Canvas dashboard</span></div>
           </div>
-          <div class="canvas" id="canvas"></div>
-        </div><!-- /canvas-scroll --></div>
+          <div class="ob-left-badge">Free to start · Pro unlocks everything</div>
+        </div>
       </div>
 
-      <!-- SUBJECTS PAGE -->
-      <div class="pg off fullpg" id="pg-subjects">
-        <div class="fphdr pg-hdr-full"><div class="pg-hdr-inner"><div class="fptit">Projects</div><button class="btn ba bsm" data-tip="Add a new project" onclick="_resetSubMo();openMo('mo-sub')">+ Add Project</button></div></div>
-        <div class="fpscroll"><div class="sub-wrap"><div class="subgrid" id="subgrid"></div></div></div>
-      </div>
-
-      <!-- CALENDAR PAGE -->
-      <div class="pg off fullpg" id="pg-calendar">
-        <div class="fphdr pg-hdr-full">
-          <div class="pg-hdr-inner">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="fptit">Calendar</div>
-            <div style="display:flex;align-items:center;gap:3px;">
-              <button class="cwib" data-tip="Previous week" onclick="shiftW(-1)"><svg viewBox="0 0 10 10"><path d="M7 2L3 5l4 3"/></svg></button>
-              <span id="calwlbl" style="font-size:12px;font-weight:600;color:var(--ink2);min-width:148px;text-align:center;"></span>
-              <button class="cwib" data-tip="Next week" onclick="shiftW(1)"><svg viewBox="0 0 10 10"><path d="M3 2l4 3-4 3"/></svg></button>
+      <!-- Right form panel -->
+      <div class="ob-right ob-right-light">
+        <div class="ob-wrap">
+          <!-- Progress bar -->
+          <div class="ob-progress-wrap" id="ob-steps">
+            <div class="ob-progress-track">
+              <div class="ob-progress-fill" id="ob-progress-fill" style="width:20%"></div>
             </div>
+            <div class="ob-progress-label" id="ob-progress-label">Step 1 of 5</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="bol bsm" data-tip="Jump to current week" onclick="calOff=0;renderFullCal()">Today</button>
-            <button class="btn ba bsm" data-tip="Add a new event" onclick="openCalAdd()">+ Add Event</button>
-            <button class="bol bsm" id="btn-clear-recurring" data-tip="Delete all recurring event instances" onclick="deleteAllRecurring()" style="display:none;color:var(--red);border-color:var(--red);">🗑 Clear recurring</button>
-          </div>
-          </div>
-        </div>
-        <div class="planner-wrap">
-          <div class="planner-grid" id="planner-grid"></div>
-        </div>
-      </div>
 
-
-
-      <!-- PROFILE PAGE -->
-      <div class="pg off fullpg" id="pg-profile">
-        <div class="fphdr"><div class="fptit">Profile</div></div>
-        <div class="fpscroll" style="padding:22px;">
-          <div style="width:min(640px,100%);margin:0 auto;">
-          <div class="profbanner"><div class="pborb"></div>
-            <label style="cursor:pointer;" title="Change photo">
-              <div class="pbav" id="pbav">S
-                <div class="pbav-overlay">📷 Change</div>
-              </div>
-              <input type="file" id="prof-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
-            </label>
-            <div class="pbinfo">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <div class="pbname" id="pbnm"></div>
-                <span class="pro-badge" style="display:none;">✦ Pro</span>
-              </div>
-              <div class="pbuser" id="pbun"></div>
-              <div class="pbjoin" id="pbjn"></div>
+          <!-- STEP 0: Name -->
+          <div class="ob-panel active" id="ob-0">
+            <div class="ob-panel-icon">👋</div>
+            <h2 class="ob-title">What should<br />we call you?</h2>
+            <p class="ob-sub">This is how Prodify greets you each day. You can change it anytime in Settings.</p>
+            <div class="ob-field">
+              <input class="ob-input" id="nin" type="text" placeholder="Your name or nickname..." maxlength="28"
+                autocapitalize="words" autocomplete="off" onkeydown="if(event.key==='Enter')obNext(0)" />
             </div>
+            <button class="ob-btn" onclick="obNext(0)">
+              <span>Continue</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
           </div>
-          </div>
-        </div>
-      </div>
 
+          <!-- STEP 1: Use case -->
+          <div class="ob-panel" id="ob-1">
+            <div class="ob-panel-icon">🎯</div>
+            <h2 class="ob-title">How will you<br />use Prodify?</h2>
+            <p class="ob-sub">We'll tailor your experience based on how you work.</p>
+            <div class="ob-uc-grid">
+              <button class="ob-uc-card" data-uc="student" onclick="obPickUC(this,'student')">
+                <span class="ob-uc-icon">🎓</span>
+                <span class="ob-uc-label">Student</span>
+                <span class="ob-uc-desc">Assignments, study sessions &amp; deadlines</span>
+              </button>
+              <button class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
+                <span class="ob-uc-icon">💼</span>
+                <span class="ob-uc-label">Work</span>
+                <span class="ob-uc-desc">Projects, meetings &amp; team goals</span>
+              </button>
+              <button class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
+                <span class="ob-uc-icon">🌱</span>
+                <span class="ob-uc-label">Personal</span>
+                <span class="ob-uc-desc">Habits, journaling &amp; life goals</span>
+              </button>
+            </div>
+            <button class="ob-btn" onclick="obNext(1)">
+              <span>Continue</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+          </div>
 
-      <!-- AI PLANNER PAGE -->
-      <div class="pg off fullpg" id="pg-aiplanner" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div class="fphdr"><div class="fptit">AI Daily Planner <span style="font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:3px 10px;border-radius:100px;vertical-align:middle;margin-left:8px;">Pro</span></div></div>
-        <div class="fpscroll" style="max-width:720px;margin:0 auto;padding:24px;">
-          <div id="aip-body"></div>
-        </div>
-      </div>
-      <!-- SETTINGS PAGE -->
-      <div class="pg off fullpg" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div class="fphdr"><div class="fptit">Settings</div></div>
-        <div class="fpscroll" style="padding:22px;">
-        <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
-          <div class="setsec" id="pro-upgrade-setsec"><div class="setsect">Plan</div>
-            <div onclick="showUpgradeModal()" style="margin:0 0 2px;cursor:pointer;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--a2));padding:14px 16px;position:relative;overflow:hidden;width:100%;box-sizing:border-box;text-align:left;display:block;">
-              <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-60px;right:-60px;pointer-events:none;"></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;">✦ Upgrade to Pro</span>
-                <span style="font-size:10px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:3px 9px;border-radius:100px;white-space:nowrap;">from $3/mo</span>
+          <!-- STEP 2: Accent color — 3 free, 3 shown as locked -->
+          <div class="ob-panel" id="ob-2">
+            <div class="ob-panel-icon">🎨</div>
+            <h2 class="ob-title">Pick your<br />accent color</h2>
+            <p class="ob-sub">Forest, Ocean and Violet are free. Custom hex codes and more colors are available with
+              Pro.</p>
+            <div class="ob-colors" id="ob-colors">
+              <button class="ob-color-btn active" data-key="green" onclick="obPickColor(this,'green')">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#2A5C44,#4A9D74)"></span>
+                <span class="ob-color-check">✓</span>
+                <span class="ob-color-name">Forest</span>
+              </button>
+              <button class="ob-color-btn" data-key="blue" onclick="obPickColor(this,'blue')">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#1E4A7C,#2563EB)"></span>
+                <span class="ob-color-check">✓</span>
+                <span class="ob-color-name">Ocean</span>
+              </button>
+              <button class="ob-color-btn" data-key="purple" onclick="obPickColor(this,'purple')">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#4A2C6E,#7C3AED)"></span>
+                <span class="ob-color-check">✓</span>
+                <span class="ob-color-name">Violet</span>
+              </button>
+              <div class="ob-color-locked">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#7C1D2C,#E11D48)"></span>
+                <span class="ob-color-lock-badge">✦ Pro</span>
+                <span class="ob-color-name">Rose</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;"><span>🤖</span>AI Daily Planner</div>
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;"><span>♾️</span>Unlimited habits</div>
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;"><span>🎨</span>Custom colors</div>
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;"><span>☁️</span>7-day backups</div>
+              <div class="ob-color-locked">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#7A4A00,#D97706)"></span>
+                <span class="ob-color-lock-badge">✦ Pro</span>
+                <span class="ob-color-name">Amber</span>
               </div>
-              <div style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:700;color:#fff;">See plans →</div>
+              <div class="ob-color-locked">
+                <span class="ob-color-inner" style="background:linear-gradient(135deg,#0F4C4C,#0D9488)"></span>
+                <span class="ob-color-lock-badge">✦ Pro</span>
+                <span class="ob-color-name">Teal</span>
+              </div>
             </div>
-            <div class="pro-active-indicator set-pro-active" style="display:none;">
-              <span class="set-pro-icon">✦</span>
-              <div class="set-pro-body">
-                <div class="set-pro-title">Prodify Pro — Active</div>
-                <div class="set-pro-sub">You have access to all Pro features</div>
-              </div>
-            </div>
+            <p class="ob-color-pro-note">✦ Pro unlocks all colors + custom hex codes</p>
+            <button class="ob-btn" onclick="obNext(2)">
+              <span>Looks good</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
           </div>
-          <div class="setsec"><div class="setsect">Account</div>
-            <div class="setrow"><div><div class="setlbl">Display Name</div><div class="setdsc" id="set-dn">—</div></div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button></div>
-            <div class="setrow"><div><div class="setlbl">Username</div><div class="setdsc" id="set-un">—</div></div></div>
-          </div>
-          <div class="setsec"><div class="setsect">Appearance</div>
-            <div class="setrow"><div><div class="setlbl">Dark Mode</div><div class="setdsc">Switch to a dark color scheme</div></div><button class="tog" id="tog-dk" onclick="togDark(this)"></button></div>
-            <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:14px;">
-              <div>
-                <div class="setlbl">Accent Color</div>
-                <div class="setdsc">Forest, Ocean &amp; Violet are free. More colors with Pro.</div>
-              </div>
-              <div class="accent-picker">
-                <div class="accent-presets">
-                  <button class="accent-swatch selected" data-key="green" style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);" onclick="setAccentColor('green')" title="Forest"></button>
-                  <button class="accent-swatch" data-key="blue" style="background:linear-gradient(135deg,#1E4A7C,#2563EB);" onclick="setAccentColor('blue')" title="Ocean"></button>
-                  <button class="accent-swatch" data-key="purple" style="background:linear-gradient(135deg,#4A2C6E,#7C3AED);" onclick="setAccentColor('purple')" title="Violet"></button>
-                  <button class="accent-swatch accent-swatch-pro" data-key="rose" style="background:linear-gradient(135deg,#7C1D2C,#E11D48);" onclick="setAccentColor('rose')" title="Rose ✦ Pro"></button>
-                  <button class="accent-swatch accent-swatch-pro" data-key="amber" style="background:linear-gradient(135deg,#7A4A00,#D97706);" onclick="setAccentColor('amber')" title="Amber ✦ Pro"></button>
-                  <button class="accent-swatch accent-swatch-pro" data-key="teal" style="background:linear-gradient(135deg,#0F4C4C,#0D9488);" onclick="setAccentColor('teal')" title="Teal ✦ Pro"></button>
-                  <button class="accent-swatch accent-swatch-pro" data-key="slate" style="background:linear-gradient(135deg,#1E293B,#475569);" onclick="setAccentColor('slate')" title="Slate ✦ Pro"></button>
+
+          <!-- STEP 3: Dark mode -->
+          <div class="ob-panel" id="ob-3">
+            <div class="ob-panel-icon">✨</div>
+            <h2 class="ob-title">Choose your<br />vibe</h2>
+            <p class="ob-sub">Pick a theme. You can switch anytime in Settings.</p>
+            <div class="ob-theme-grid">
+              <button class="ob-theme-card active" id="ob-theme-light" onclick="obPickTheme(this,'light')">
+                <div class="ob-theme-preview ob-theme-preview-light">
+                  <div class="ob-tp-bar"></div>
+                  <div class="ob-tp-card"></div>
+                  <div class="ob-tp-card ob-tp-card-sm"></div>
                 </div>
-                <div class="accent-custom-row">
-                  <div class="accent-hex-wrap">
-                    <div class="accent-hex-preview" id="accent-hex-preview"></div>
-                    <span class="accent-hex-hash">#</span>
-                    <input class="accent-hex-input" id="accent-hex-input" type="text" maxlength="6" placeholder="3A7D5E" oninput="accentHexInput(this)" onkeydown="if(event.key==='Enter')accentHexConfirm()"/>
+                <span class="ob-theme-check">✓</span>
+                <span class="ob-theme-label">Light</span>
+              </button>
+              <button class="ob-theme-card" id="ob-theme-dark" onclick="obPickTheme(this,'dark')">
+                <div class="ob-theme-preview ob-theme-preview-dark">
+                  <div class="ob-tp-bar"></div>
+                  <div class="ob-tp-card"></div>
+                  <div class="ob-tp-card ob-tp-card-sm"></div>
+                </div>
+                <span class="ob-theme-check">✓</span>
+                <span class="ob-theme-label">Dark</span>
+              </button>
+            </div>
+            <button class="ob-btn" onclick="obNext(3)">
+              <span>Continue</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- STEP 4: Pro teaser -->
+          <div class="ob-panel" id="ob-4">
+            <div class="ob-panel-icon">✦</div>
+            <h2 class="ob-title">One more thing</h2>
+            <p class="ob-sub">Everything you need is free. When you're ready, Pro unlocks the extras.</p>
+
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">🤖</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">AI Daily Planner</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Plan your day with AI in seconds</div>
+                </div>
+              </div>
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">♾️</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Unlimited habits</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Track as many habits as you want</div>
+                </div>
+              </div>
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">🎨</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Custom colors + CSV &amp; PDF
+                    export</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Make it yours, take your data anywhere</div>
+                </div>
+              </div>
+            </div>
+
+            <button class="ob-btn ob-btn-launch" onclick="obNext(4)">
+              <span>Continue with Free</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+            <p class="ob-plan-footnote" style="margin-top:10px;">From $3/mo · No credit card now</p>
+          </div>
+
+          <!-- STEP 5: All set -->
+          <div class="ob-panel" id="ob-5">
+            <div class="ob-allset-wrap">
+              <div class="ob-allset-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                  <path d="M6 17l7 7L26 9" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
+              <h2 class="ob-title" id="ob-done-title">You're all set!</h2>
+              <p class="ob-sub" id="ob-done-sub">Your workspace is ready. Time to get things done.</p>
+            </div>
+            <div class="ob-allset-feats">
+              <div class="ob-af"><span class="ob-af-icon">📋</span><span class="ob-af-text"><b>Tasks &amp; projects</b>
+                  — stay on top of everything</span></div>
+              <div class="ob-af"><span class="ob-af-icon">📓</span><span class="ob-af-text"><b>Daily journal</b> —
+                  reflect and grow</span></div>
+              <div class="ob-af"><span class="ob-af-icon">⏱️</span><span class="ob-af-text"><b>Focus timer</b> — deep
+                  work made easy</span></div>
+              <div class="ob-af"><span class="ob-af-icon">🗂️</span><span class="ob-af-text"><b>Widget canvas</b> — your
+                  layout, your way</span></div>
+            </div>
+            <button class="ob-btn ob-btn-launch ob-btn-allset" onclick="obNext(5)">
+              <span>Open my workspace</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8h10M9 4l4 4-4 4" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div class="screen off" id="app">
+    <!-- FLOATING BOTTOM TOOLBAR -->
+    <div class="fltbar" id="sb">
+      <button class="sbb act" data-p="canvas" onclick="goPg('canvas',this)">
+        <svg viewBox="0 0 16 16">
+          <rect x="2" y="2" width="5" height="5" rx="1.2" />
+          <rect x="9" y="2" width="5" height="5" rx="1.2" />
+          <rect x="2" y="9" width="5" height="5" rx="1.2" />
+          <rect x="9" y="9" width="5" height="5" rx="1.2" />
+        </svg>
+        <span class="fltlbl">Dashboard</span>
+      </button>
+      <button class="sbb" data-p="subjects" onclick="goPg('subjects',this)">
+        <svg viewBox="0 0 16 16">
+          <path d="M3 5h10M3 8.5h7M3 12h8" />
+        </svg>
+        <span class="fltlbl">Projects</span>
+      </button>
+      <button class="sbb" data-p="calendar" onclick="goPg('calendar',this)">
+        <svg viewBox="0 0 16 16">
+          <rect x="2" y="3" width="12" height="11" rx="2" />
+          <path d="M2 7h12M6 2v2M10 2v2" />
+        </svg>
+        <span class="fltlbl">Calendar</span>
+      </button>
+      <button class="sbb" data-p="aiplanner" onclick="openAIPlanner()" style="position:relative;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="8" cy="8" r="6" />
+          <path d="M8 5v3l2 2" />
+          <path d="M5 2.5C3.5 3.5 2.5 5.6 2.5 8" />
+        </svg>
+        <span class="fltlbl">AI Planner</span>
+        <span
+          style="position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;">PRO</span>
+      </button>
+      <div class="flt-div" id="wkp-sep"></div>
+      <!-- Widget picker -->
+      <div class="wkpicker" id="wkpicker">
+        <div class="wkp-grid">
+          <button class="wkp-btn" onclick="addW('tasks');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <path d="M2 4h10M2 7h6M2 10h8" />
+              <path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6" />
+            </svg><span>Tasks</span></button>
+          <button class="wkp-btn" onclick="addW('journal');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <rect x="2" y="1" width="10" height="12" rx="1.5" />
+              <path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3" />
+            </svg><span>Journal</span></button>
+          <button class="wkp-btn" onclick="addW('timer');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <circle cx="7" cy="8" r="5" />
+              <path d="M7 5.5V8l2 1.5M5 1h4" />
+            </svg><span>Timer</span></button>
+          <button class="wkp-btn" onclick="addW('note');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+              <path d="M12 11H9v2" />
+            </svg><span>Note</span></button>
+          <button class="wkp-btn" onclick="addW('subjects');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <path d="M2 4h10M2 7h7M2 10h8" />
+            </svg><span>Projects</span></button>
+          <button class="wkp-btn" onclick="addW('calendar');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <rect x="1" y="2" width="12" height="11" rx="1.5" />
+              <path d="M1 6h12M5 1v2M9 1v2" />
+            </svg><span>Calendar</span></button>
+          <button class="wkp-btn" onclick="addW('habits');closeWkPicker()"><svg viewBox="0 0 14 14">
+              <circle cx="7" cy="7" r="5.5" />
+              <path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6" />
+            </svg><span>Habits</span></button>
+          <button class="wkp-btn wkp-clr" onclick="clearCanvas();closeWkPicker()"><svg viewBox="0 0 14 14">
+              <path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4" />
+            </svg><span>Clear</span></button>
+        </div>
+      </div>
+      <button class="sbb wkp-toggle" id="wkp-toggle" onclick="toggleWkPicker()" title="Add widget">
+        <svg viewBox="0 0 16 16">
+          <path d="M8 3v10M3 8h10" />
+        </svg>
+        <span class="fltlbl">Add widget</span>
+      </button>
+      <div class="flt-div"></div>
+      <div class="sbav" id="sbav" onclick="toggleDD()">
+        <span id="sbavt">S</span>
+        <div class="sbdd" id="sbdd">
+          <div class="ddhd">
+            <div class="ddav" id="ddav">S</div>
+            <div class="ddnm" id="ddnm">User</div>
+            <div class="ddun" id="ddun">@user</div>
+          </div>
+          <div class="ddbd">
+            <button class="ddi" onclick="goPg('profile',null);closeDD()"><span class="ddic"><svg viewBox="0 0 12 12">
+                  <circle cx="6" cy="4" r="2.5" />
+                  <path d="M1 11c0-2.5 2.2-4 5-4s5 1.5 5 4" />
+                </svg></span>View Profile</button>
+            <button class="ddi" onclick="goPg('settings',null);closeDD()"><span class="ddic"><svg viewBox="0 0 12 12">
+                  <circle cx="6" cy="6" r="1.5" />
+                  <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.6 2.6l1 1M8.4 8.4l1 1M9.4 2.6l-1 1M3.6 8.4l-1 1" />
+                </svg></span>Settings</button>
+            <div class="dddiv"></div>
+            <div class="ddi ddi-soon"><span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                  stroke-width="1.3" stroke-linecap="round">
+                  <circle cx="4.5" cy="4" r="1.8" />
+                  <path d="M1 10c0-1.8 1.6-3 3.5-3" />
+                  <circle cx="8.5" cy="4" r="1.8" />
+                  <path d="M12 10c0-1.8-1.6-3-3.5-3s-3.5 1.2-3.5 3" />
+                </svg></span>Team Workspace <span class="ddi-soon-badge">Soon</span></div>
+            <div class="dddiv"></div>
+            <button class="ddi dng" onclick="doSO()"><span class="ddic"><svg viewBox="0 0 12 12">
+                  <path d="M8 2h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H8M5 8.5L8 6 5 3.5M8 6H1" />
+                </svg></span>Sign out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="pages" id="pages">
+
+        <!-- CANVAS / DASHBOARD -->
+        <div class="pg" id="pg-canvas">
+          <!-- vertical widget tray -->
+          <div class="wtray" id="wtray">
+
+            <div class="wtdiv"></div>
+            <button class="wb" onclick="addW('tasks')" data-tip="Tasks"><svg viewBox="0 0 14 14">
+                <path d="M2 4h10M2 7h6M2 10h8" />
+                <path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6" />
+              </svg><span class="wbtip">Task Board</span></button>
+            <button class="wb" onclick="addW('journal')" data-tip="Journal"><svg viewBox="0 0 14 14">
+                <rect x="2" y="1" width="10" height="12" rx="1.5" />
+                <path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3" />
+              </svg><span class="wbtip">Journal</span></button>
+            <button class="wb" onclick="addW('timer')" data-tip="Timer"><svg viewBox="0 0 14 14">
+                <circle cx="7" cy="8" r="5" />
+                <path d="M7 5.5V8l2 1.5M5 1h4" />
+              </svg><span class="wbtip">Focus Timer</span></button>
+            <button class="wb" onclick="addW('note')" data-tip="Note"><svg viewBox="0 0 14 14">
+                <path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+                <path d="M12 11H9v2" />
+              </svg><span class="wbtip">Note</span></button>
+            <button class="wb" onclick="addW('subjects')" data-tip="Projects"><svg viewBox="0 0 14 14">
+                <path d="M2 4h10M2 7h7M2 10h8" />
+              </svg><span class="wbtip">Projects</span></button>
+            <button class="wb" onclick="addW('calendar')" data-tip="Calendar"><svg viewBox="0 0 14 14">
+                <rect x="1" y="2" width="12" height="11" rx="1.5" />
+                <path d="M1 6h12M5 1v2M9 1v2" />
+              </svg><span class="wbtip">Calendar</span></button>
+            <button class="wb" onclick="addW('habits')" data-tip="Habits"><svg viewBox="0 0 14 14">
+                <circle cx="7" cy="7" r="5.5" />
+                <path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6" />
+              </svg><span class="wbtip">Habits</span></button>
+            <div class="wtdiv"></div>
+            <button class="wb wt-clr" onclick="clearCanvas()" data-tip="Clear all"><svg viewBox="0 0 14 14">
+                <path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4" />
+              </svg><span class="wbtip">Clear canvas</span></button>
+          </div>
+          <!-- scrollable canvas -->
+          <div class="canvas-wrap">
+            <div class="canvas-scroll" id="canvas-scroll">
+              <div
+                style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">
+                Built by <span style="color:var(--ink3);">David N.</span></div>
+              <!-- Greeting — sits behind all widgets, only visible on empty/sparse canvas -->
+              <div id="canvas-greeting"
+                style="position:absolute;top:28px;left:36px;z-index:0;pointer-events:none;user-select:none;">
+                <div id="canvas-greeting-text"
+                  style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink2);opacity:.45;"></div>
+              </div>
+              <div class="canvas" id="canvas"></div>
+            </div><!-- /canvas-scroll -->
+          </div>
+        </div>
+
+        <!-- SUBJECTS PAGE -->
+        <div class="pg off fullpg" id="pg-subjects">
+          <div class="fphdr pg-hdr-full">
+            <div class="pg-hdr-inner">
+              <div class="fptit">Projects</div><button class="btn ba bsm" data-tip="Add a new project"
+                onclick="_resetSubMo();openMo('mo-sub')">+ Add Project</button>
+            </div>
+          </div>
+          <div class="fpscroll">
+            <div class="sub-wrap">
+              <div class="subgrid" id="subgrid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALENDAR PAGE -->
+        <div class="pg off fullpg" id="pg-calendar">
+          <div class="fphdr pg-hdr-full">
+            <div class="pg-hdr-inner">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="fptit">Calendar</div>
+                <div style="display:flex;align-items:center;gap:3px;">
+                  <button class="cwib" data-tip="Previous week" onclick="shiftW(-1)"><svg viewBox="0 0 10 10">
+                      <path d="M7 2L3 5l4 3" />
+                    </svg></button>
+                  <span id="calwlbl"
+                    style="font-size:12px;font-weight:600;color:var(--ink2);min-width:148px;text-align:center;"></span>
+                  <button class="cwib" data-tip="Next week" onclick="shiftW(1)"><svg viewBox="0 0 10 10">
+                      <path d="M3 2l4 3-4 3" />
+                    </svg></button>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button class="bol bsm" data-tip="Jump to current week"
+                  onclick="calOff=0;renderFullCal()">Today</button>
+                <button class="btn ba bsm" data-tip="Add a new event" onclick="openCalAdd()">+ Add Event</button>
+                <button class="bol bsm" id="btn-clear-recurring" data-tip="Delete all recurring event instances"
+                  onclick="deleteAllRecurring()" style="display:none;color:var(--red);border-color:var(--red);">🗑 Clear
+                  recurring</button>
+              </div>
+            </div>
+          </div>
+          <div class="planner-wrap">
+            <div class="planner-grid" id="planner-grid"></div>
+          </div>
+        </div>
+
+
+
+        <!-- PROFILE PAGE -->
+        <div class="pg off fullpg" id="pg-profile">
+          <div class="fphdr">
+            <div class="fptit">Profile</div>
+          </div>
+          <div class="fpscroll" style="padding:22px;">
+            <div style="width:min(640px,100%);margin:0 auto;">
+              <div class="profbanner">
+                <div class="pborb"></div>
+                <label style="cursor:pointer;" title="Change photo">
+                  <div class="pbav" id="pbav">S
+                    <div class="pbav-overlay">📷 Change</div>
                   </div>
-                  <button class="accent-hex-btn" onclick="accentHexConfirm()">Apply <span class="accent-pro-tag">Pro</span></button>
+                  <input type="file" id="prof-photo-input" accept="image/*" style="display:none"
+                    onchange="handlePhotoUpload(event)" />
+                </label>
+                <div class="pbinfo">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <div class="pbname" id="pbnm"></div>
+                    <span class="pro-badge" style="display:none;">✦ Pro</span>
+                  </div>
+                  <div class="pbuser" id="pbun"></div>
+                  <div class="pbjoin" id="pbjn"></div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="setsec"><div class="setsect">Data</div>
-            <div class="setrow"><div><div class="setlbl">Pomodoro History</div><div class="setdsc">Clear all session history</div></div><button class="bol bsm" onclick="clearPomHistory()">Clear</button></div>
-            <div class="setrow"><div><div class="setlbl">Cloud Backup History <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Restore from up to 7 daily snapshots</div></div><button class="bol bsm" onclick="showBackupModal()">View</button></div>
-            <div class="setrow"><div><div class="setlbl">Active Devices <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div><div class="setdsc">Manage sessions across your devices</div></div><button class="bol bsm" onclick="showDevicesModal()">Manage</button></div>
-            <div class="setrow"><div><div class="setlbl">Delete account</div><div class="setdsc">Permanently delete your account and all data</div></div><button class="dbtn full" onclick="delAcc()">Delete account</button></div>
-          </div>
-          <div class="setsec"><div class="setsect">Export</div>
-            <div class="setrow">
-              <div>
-                <div class="setlbl">Export Data</div>
-                <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
-              </div>
-              <button class="bol bsm" onclick="showExportModal()">Export</button>
+        </div>
+
+
+        <!-- AI PLANNER PAGE -->
+        <div class="pg off fullpg" id="pg-aiplanner" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
+          <div class="fphdr">
+            <div class="fptit">AI Daily Planner <span
+                style="font-size:12px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:3px 10px;border-radius:100px;vertical-align:middle;margin-left:8px;">Pro</span>
             </div>
           </div>
-          <div class="setsec"><div class="setsect">More</div>
-            <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-about')"><div><div class="setlbl">About Prodify</div><div class="setdsc">Meet the creator &amp; tech stack</div></div><span style="color:var(--ink4);font-size:18px;">›</span></div>
-            <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-feedback')"><div><div class="setlbl">Send Feedback</div><div class="setdsc">Rate, report bugs, or suggest ideas</div></div><span style="color:var(--ink4);font-size:18px;">›</span></div>
+          <div class="fpscroll" style="max-width:720px;margin:0 auto;padding:24px;">
+            <div id="aip-body"></div>
           </div>
-          <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
-            Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David Nueva</span>
+        </div>
+        <!-- SETTINGS PAGE -->
+        <div class="pg off fullpg" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
+          <div class="fphdr">
+            <div class="fptit">Settings</div>
           </div>
-        </div></div>
+          <div class="fpscroll" style="padding:22px;">
+            <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
+              <div class="setsec" id="pro-upgrade-setsec">
+                <div class="setsect">Plan</div>
+                <div onclick="showUpgradeModal()"
+                  style="margin:0 0 2px;cursor:pointer;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--a2));padding:14px 16px;position:relative;overflow:hidden;width:100%;box-sizing:border-box;text-align:left;display:block;">
+                  <div
+                    style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-60px;right:-60px;pointer-events:none;">
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;">✦ Upgrade to
+                      Pro</span>
+                    <span
+                      style="font-size:10px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:3px 9px;border-radius:100px;white-space:nowrap;">from
+                      $3/mo</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                    <div
+                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                      <span>🤖</span>AI Daily Planner</div>
+                    <div
+                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                      <span>♾️</span>Unlimited habits</div>
+                    <div
+                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                      <span>🎨</span>Custom colors</div>
+                    <div
+                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                      <span>☁️</span>7-day backups</div>
+                  </div>
+                  <div
+                    style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:700;color:#fff;">
+                    See plans →</div>
+                </div>
+                <div class="pro-active-indicator set-pro-active" style="display:none;">
+                  <span class="set-pro-icon">✦</span>
+                  <div class="set-pro-body">
+                    <div class="set-pro-title">Prodify Pro — Active</div>
+                    <div class="set-pro-sub">You have access to all Pro features</div>
+                  </div>
+                </div>
+              </div>
+              <div class="setsec">
+                <div class="setsect">Account</div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Display Name</div>
+                    <div class="setdsc" id="set-dn">—</div>
+                  </div><button class="bol bsm" onclick="openMo('mo-nm')">Edit</button>
+                </div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Username</div>
+                    <div class="setdsc" id="set-un">—</div>
+                  </div>
+                </div>
+              </div>
+              <div class="setsec">
+                <div class="setsect">Appearance</div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Dark Mode</div>
+                    <div class="setdsc">Switch to a dark color scheme</div>
+                  </div><button class="tog" id="tog-dk" onclick="togDark(this)"></button>
+                </div>
+                <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:14px;">
+                  <div>
+                    <div class="setlbl">Accent Color</div>
+                    <div class="setdsc">Forest, Ocean &amp; Violet are free. More colors with Pro.</div>
+                  </div>
+                  <div class="accent-picker">
+                    <div class="accent-presets">
+                      <button class="accent-swatch selected" data-key="green"
+                        style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);" onclick="setAccentColor('green')"
+                        title="Forest"></button>
+                      <button class="accent-swatch" data-key="blue"
+                        style="background:linear-gradient(135deg,#1E4A7C,#2563EB);" onclick="setAccentColor('blue')"
+                        title="Ocean"></button>
+                      <button class="accent-swatch" data-key="purple"
+                        style="background:linear-gradient(135deg,#4A2C6E,#7C3AED);" onclick="setAccentColor('purple')"
+                        title="Violet"></button>
+                      <button class="accent-swatch accent-swatch-pro" data-key="rose"
+                        style="background:linear-gradient(135deg,#7C1D2C,#E11D48);" onclick="setAccentColor('rose')"
+                        title="Rose ✦ Pro"></button>
+                      <button class="accent-swatch accent-swatch-pro" data-key="amber"
+                        style="background:linear-gradient(135deg,#7A4A00,#D97706);" onclick="setAccentColor('amber')"
+                        title="Amber ✦ Pro"></button>
+                      <button class="accent-swatch accent-swatch-pro" data-key="teal"
+                        style="background:linear-gradient(135deg,#0F4C4C,#0D9488);" onclick="setAccentColor('teal')"
+                        title="Teal ✦ Pro"></button>
+                      <button class="accent-swatch accent-swatch-pro" data-key="slate"
+                        style="background:linear-gradient(135deg,#1E293B,#475569);" onclick="setAccentColor('slate')"
+                        title="Slate ✦ Pro"></button>
+                    </div>
+                    <div class="accent-custom-row">
+                      <div class="accent-hex-wrap">
+                        <div class="accent-hex-preview" id="accent-hex-preview"></div>
+                        <span class="accent-hex-hash">#</span>
+                        <input class="accent-hex-input" id="accent-hex-input" type="text" maxlength="6"
+                          placeholder="3A7D5E" oninput="accentHexInput(this)"
+                          onkeydown="if(event.key==='Enter')accentHexConfirm()" />
+                      </div>
+                      <button class="accent-hex-btn" onclick="accentHexConfirm()">Apply <span
+                          class="accent-pro-tag">Pro</span></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="setsec">
+                <div class="setsect">Data</div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Pomodoro History</div>
+                    <div class="setdsc">Clear all session history</div>
+                  </div><button class="bol bsm" onclick="clearPomHistory()">Clear</button>
+                </div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Cloud Backup History <span class="export-pro-badge"
+                        style="vertical-align:middle;">Pro</span></div>
+                    <div class="setdsc">Restore from up to 7 daily snapshots</div>
+                  </div><button class="bol bsm" onclick="showBackupModal()">View</button>
+                </div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Active Devices <span class="export-pro-badge"
+                        style="vertical-align:middle;">Pro</span></div>
+                    <div class="setdsc">Manage sessions across your devices</div>
+                  </div><button class="bol bsm" onclick="showDevicesModal()">Manage</button>
+                </div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Delete account</div>
+                    <div class="setdsc">Permanently delete your account and all data</div>
+                  </div><button class="dbtn full" onclick="delAcc()">Delete account</button>
+                </div>
+              </div>
+              <div class="setsec">
+                <div class="setsect">Export</div>
+                <div class="setrow">
+                  <div>
+                    <div class="setlbl">Export Data</div>
+                    <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
+                  </div>
+                  <button class="bol bsm" onclick="showExportModal()">Export</button>
+                </div>
+              </div>
+              <div class="setsec">
+                <div class="setsect">More</div>
+                <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-about')">
+                  <div>
+                    <div class="setlbl">About Prodify</div>
+                    <div class="setdsc">Meet the creator &amp; tech stack</div>
+                  </div><span style="color:var(--ink4);font-size:18px;">›</span>
+                </div>
+                <div class="setrow" style="cursor:pointer;" onclick="openMo('mo-feedback')">
+                  <div>
+                    <div class="setlbl">Send Feedback</div>
+                    <div class="setdsc">Rate, report bugs, or suggest ideas</div>
+                  </div><span style="color:var(--ink4);font-size:18px;">›</span>
+                </div>
+              </div>
+              <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
+                Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David N.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM TAB BAR (mobile only) -->
+  </div>
+
+
+
+  <!-- MODALS -->
+  <div class="ov" id="mo-sub" onclick="if(event.target===this)closeMo('mo-sub')">
+    <div class="mod ev-mod" style="max-width:440px;">
+      <div class="sub-mo-bar" id="sub-mo-bar"></div>
+      <div style="padding:20px 22px 0;">
+        <input class="sub-name-input" id="sn-i" type="text" placeholder="Project name…" autocomplete="off" />
+        <input class="sub-desc-input" id="sdesc-i" type="text" placeholder="Add a description… (optional)"
+          autocomplete="off" />
+      </div>
+
+      <div class="ev-row-lbl">Due Date <span style="font-weight:400;color:var(--ink3)">(optional)</span></div>
+      <div style="padding:0 22px;">
+        <button class="ev-pick-btn" id="sub-date-btn" onclick="subOpenDatePicker()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="2" y="3" width="12" height="11" rx="2" />
+            <path d="M2 7h12M6 1v3M10 1v3" />
+          </svg>
+          <span id="sub-date-lbl">Choose due date</span>
+        </button>
+        <input type="hidden" id="sdue-i" value="" />
+      </div>
+
+      <div class="ev-row-lbl">Status</div>
+      <div class="sub-status-row" id="sub-status-row">
+        <button class="sub-stat-pill active" data-val="active" onclick="subPickStatus(this)">Active</button>
+        <button class="sub-stat-pill" data-val="hold" onclick="subPickStatus(this)">On Hold</button>
+        <button class="sub-stat-pill" data-val="done" onclick="subPickStatus(this)">Completed</button>
+      </div>
+      <input type="hidden" id="sstat-i" value="active" />
+
+      <div class="mf">
+        <button class="bol bsm" onclick="closeMo('mo-sub')">Cancel</button>
+        <button class="btn bdk bsm" onclick="addSub()">Add Project</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD TASK TO PROJECT MODAL -->
+  <div class="ov" id="mo-ptask" onclick="if(event.target===this)closeMo('mo-ptask')">
+    <div class="mod ev-mod" style="max-width:440px;">
+      <div class="sub-mo-bar" id="ptask-mo-bar" style="background:var(--a2);"></div>
+      <div style="padding:20px 22px 0;">
+        <input class="sub-name-input" id="ptask-name" type="text" placeholder="Task name…" autocomplete="off" />
+      </div>
+
+      <div class="ev-row-lbl">Add to</div>
+      <div class="sub-status-row" id="ptask-col-row">
+        <button class="sub-stat-pill ptask-col-pill active" data-val="todo" onclick="ptaskPickCol(this)">To Do</button>
+        <button class="sub-stat-pill ptask-col-pill" data-val="inprog" onclick="ptaskPickCol(this)">In Progress</button>
+        <button class="sub-stat-pill ptask-col-pill" data-val="done" onclick="ptaskPickCol(this)">Done</button>
+      </div>
+      <input type="hidden" id="ptask-col" value="todo" />
+      <input type="hidden" id="ptask-subjid" value="" />
+
+      <div class="mf">
+        <button class="bol bsm" onclick="closeMo('mo-ptask')">Cancel</button>
+        <button class="btn bdk bsm" onclick="addProjTask()">Add Task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ov" id="mo-ev" onclick="if(event.target===this)closeMo('mo-ev')">
+    <div class="mod ev-mod" style="max-width:440px;">
+      <div class="ev-mod-bar" id="ev-mod-bar"></div>
+      <div class="mh" id="mo-ev-title" style="margin-top:4px;">Add Event</div>
+
+      <div class="fd" style="margin-top:12px;">
+        <input class="fi ev-title-input" id="ev-t" type="text" placeholder="Event title…" autocomplete="off" />
+      </div>
+
+      <div class="ev-row-lbl">Date</div>
+      <div style="padding:0 22px;">
+        <button class="ev-pick-btn" id="ev-date-btn" onclick="evOpenDatePicker()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="2" y="3" width="12" height="11" rx="2" />
+            <path d="M2 7h12M6 1v3M10 1v3" />
+          </svg>
+          <span id="ev-date-lbl">Choose date</span>
+        </button>
+      </div>
+
+      <div class="ev-row-lbl">Color</div>
+      <div class="ev-color-row" id="ev-color-swatches">
+        <div class="ev-cswatch sel" data-color="#3A7D5E" style="background:#3A7D5E;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#5B8DD9" style="background:#5B8DD9;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#D95B5B" style="background:#D95B5B;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#E8A838" style="background:#E8A838;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#8B5BD9" style="background:#8B5BD9;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#5BB8D9" style="background:#5BB8D9;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#D9607A" style="background:#D9607A;" onclick="evPickColor(this)"></div>
+        <div class="ev-cswatch" data-color="#5B8C3E" style="background:#5B8C3E;" onclick="evPickColor(this)"></div>
+      </div>
+
+      <!-- Project field hidden but kept for data compatibility -->
+      <select class="fi" id="ev-s" style="display:none;">
+        <option value="">None</option>
+      </select>
+
+      <div class="fd" style="margin-top:0;padding-top:0;">
+        <input class="fi ev-note-input" id="ev-note" type="text" placeholder="Add a note… (optional)"
+          autocomplete="off" />
+      </div>
+
+      <div id="ev-del-row" style="display:none;padding:0 22px;margin-bottom:4px;">
+        <button class="ev-del-btn" id="ev-del-btn">🗑 Delete event</button>
+      </div>
+      <div id="ev-del-all-row" style="display:none;padding:0 22px;margin-bottom:4px;">
+        <button class="ev-del-btn" id="ev-del-all-btn"
+          style="background:var(--rl);border-color:var(--red);opacity:.85;">🗑 Delete all in series</button>
+      </div>
+
+      <div class="mf">
+        <button class="bol bsm" onclick="closeMo('mo-ev')">Cancel</button>
+        <button class="btn bdk bsm" id="ev-save-btn" onclick="addEv()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ov" id="mo-nm" onclick="if(event.target===this)closeMo('mo-nm')">
+    <div class="mod" style="max-width:380px;">
+      <div class="modhd">
+        <div>
+          <div class="modt">Edit Display Name</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Change how your name appears in the app.</div>
+        </div>
+        <button class="modx" onclick="closeMo('mo-nm')">×</button>
+      </div>
+      <div class="fd">
+        <label class="fl">Display Name</label>
+        <input class="fi" id="nm-i" type="text" placeholder="Your name" autocomplete="off"
+          onkeydown="if(event.key==='Enter')saveName()" />
+      </div>
+      <div class="mf"><button class="bol bsm" onclick="closeMo('mo-nm')">Cancel</button><button class="btn bdk bsm"
+          onclick="saveName()">Save changes</button></div>
+    </div>
+  </div>
+
+
+  <!-- EMAIL MIGRATION MODAL -->
+  <div class="ov" id="mo-migrate-email">
+    <div class="mod">
+      <div class="mh">One more thing 👋</div>
+      <div class="ms">To keep your account secure, please add an email address. This is a one-time step.</div>
+      <div class="fd"><label class="fl">Email</label><input class="fi" id="migrate-email-input" type="email"
+          placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')submitMigrateEmail()" />
+        <div class="ferr" id="migrate-email-err"></div>
+      </div>
+      <div class="mf"><button class="btn bdk bsm" id="migrate-ok-btn" onclick="submitMigrateEmail()">Save &amp;
+          continue</button></div>
+    </div>
+  </div>
+
+  <!-- DESKTOP ABOUT MODAL -->
+  <div class="ov" id="mo-about" onclick="if(event.target===this)closeMo('mo-about')">
+    <div class="mod" style="max-width:420px;padding:0;overflow:hidden;">
+
+      <div style="background:var(--a);padding:32px 24px 24px;text-align:center;position:relative;">
+        <div
+          style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-80px;right:-60px;pointer-events:none;">
+        </div>
+        <img src="https://avatars.githubusercontent.com/u/00000000"
+          style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 14px;background:rgba(255,255,255,.1);"
+          onerror="this.style.display='none'" />
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;">David N.</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:4px;">Creator of Prodify</div>
+
+      </div>
+
+      <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
+        <p style="font-size:13px;color:var(--ink2);line-height:1.7;margin:0;">A student developer passionate about
+          building tools that make everyday life more organized and productive. Prodify started as a personal project
+          and grew into something I hope helps you too.</p>
+        <div>
+          <div
+            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink4);margin-bottom:8px;">
+            Built With</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span
+              style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vanilla
+              JS</span>
+            <span
+              style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Supabase</span>
+            <span
+              style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vercel</span>
+            <span
+              style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">CSS3</span>
+            <span
+              style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">PWA</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:11px;color:var(--ink4);">Prodify v1.0 · Made with ♥</span>
+          <button class="bol bsm" onclick="closeMo('mo-about')">Close</button>
+        </div>
       </div>
 
     </div>
   </div>
 
-  <!-- BOTTOM TAB BAR (mobile only) -->
-</div>
+  <!-- BIO EDIT MODAL -->
 
 
+  <!-- DESKTOP FEEDBACK MODAL -->
+  <div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')">
+    <div class="mod" style="max-width:460px;padding:0;overflow:hidden;">
 
-<!-- MODALS -->
-<div class="ov" id="mo-sub" onclick="if(event.target===this)closeMo('mo-sub')"><div class="mod ev-mod" style="max-width:440px;">
-  <div class="sub-mo-bar" id="sub-mo-bar"></div>
-  <div style="padding:20px 22px 0;">
-    <input class="sub-name-input" id="sn-i" type="text" placeholder="Project name…" autocomplete="off"/>
-    <input class="sub-desc-input" id="sdesc-i" type="text" placeholder="Add a description… (optional)" autocomplete="off"/>
-  </div>
+      <!-- Header band -->
+      <div style="background:var(--a);padding:28px 28px 24px;text-align:center;position:relative;overflow:hidden;">
+        <div
+          style="position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.08) 0%,transparent 60%);pointer-events:none;">
+        </div>
+        <div
+          style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:3px;position:relative;">
+          Send Feedback</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:22px;position:relative;">We read every
+          message — bugs, ideas, or just a hello.</div>
+        <div id="dsk-fb-stars" style="display:flex;gap:12px;justify-content:center;">
+          <svg class="fbs" data-v="1" onclick="fbRate(1)" width="44" height="44" viewBox="0 0 24 24"
+            fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="2" onclick="fbRate(2)" width="44" height="44" viewBox="0 0 24 24"
+            fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="3" onclick="fbRate(3)" width="44" height="44" viewBox="0 0 24 24"
+            fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="4" onclick="fbRate(4)" width="44" height="44" viewBox="0 0 24 24"
+            fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="5" onclick="fbRate(5)" width="44" height="44" viewBox="0 0 24 24"
+            fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </div>
+      </div>
 
-  <div class="ev-row-lbl">Due Date <span style="font-weight:400;color:var(--ink3)">(optional)</span></div>
-  <div style="padding:0 22px;">
-    <button class="ev-pick-btn" id="sub-date-btn" onclick="subOpenDatePicker()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
-      <span id="sub-date-lbl">Choose due date</span>
-    </button>
-    <input type="hidden" id="sdue-i" value=""/>
-  </div>
-
-  <div class="ev-row-lbl">Status</div>
-  <div class="sub-status-row" id="sub-status-row">
-    <button class="sub-stat-pill active" data-val="active" onclick="subPickStatus(this)">Active</button>
-    <button class="sub-stat-pill" data-val="hold" onclick="subPickStatus(this)">On Hold</button>
-    <button class="sub-stat-pill" data-val="done" onclick="subPickStatus(this)">Completed</button>
-  </div>
-  <input type="hidden" id="sstat-i" value="active"/>
-
-  <div class="mf">
-    <button class="bol bsm" onclick="closeMo('mo-sub')">Cancel</button>
-    <button class="btn bdk bsm" onclick="addSub()">Add Project</button>
-  </div>
-</div></div>
-
-<!-- ADD TASK TO PROJECT MODAL -->
-<div class="ov" id="mo-ptask" onclick="if(event.target===this)closeMo('mo-ptask')"><div class="mod ev-mod" style="max-width:440px;">
-  <div class="sub-mo-bar" id="ptask-mo-bar" style="background:var(--a2);"></div>
-  <div style="padding:20px 22px 0;">
-    <input class="sub-name-input" id="ptask-name" type="text" placeholder="Task name…" autocomplete="off"/>
-  </div>
-
-  <div class="ev-row-lbl">Add to</div>
-  <div class="sub-status-row" id="ptask-col-row">
-    <button class="sub-stat-pill ptask-col-pill active" data-val="todo" onclick="ptaskPickCol(this)">To Do</button>
-    <button class="sub-stat-pill ptask-col-pill" data-val="inprog" onclick="ptaskPickCol(this)">In Progress</button>
-    <button class="sub-stat-pill ptask-col-pill" data-val="done" onclick="ptaskPickCol(this)">Done</button>
-  </div>
-  <input type="hidden" id="ptask-col" value="todo"/>
-  <input type="hidden" id="ptask-subjid" value=""/>
-
-  <div class="mf">
-    <button class="bol bsm" onclick="closeMo('mo-ptask')">Cancel</button>
-    <button class="btn bdk bsm" onclick="addProjTask()">Add Task</button>
-  </div>
-</div></div>
-
-<div class="ov" id="mo-ev" onclick="if(event.target===this)closeMo('mo-ev')"><div class="mod ev-mod" style="max-width:440px;">
-  <div class="ev-mod-bar" id="ev-mod-bar"></div>
-  <div class="mh" id="mo-ev-title" style="margin-top:4px;">Add Event</div>
-
-  <div class="fd" style="margin-top:12px;">
-    <input class="fi ev-title-input" id="ev-t" type="text" placeholder="Event title…" autocomplete="off"/>
-  </div>
-
-  <div class="ev-row-lbl">Date</div>
-  <div style="padding:0 22px;">
-    <button class="ev-pick-btn" id="ev-date-btn" onclick="evOpenDatePicker()">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
-      <span id="ev-date-lbl">Choose date</span>
-    </button>
-  </div>
-
-  <div class="ev-row-lbl">Color</div>
-  <div class="ev-color-row" id="ev-color-swatches">
-    <div class="ev-cswatch sel" data-color="#3A7D5E" style="background:#3A7D5E;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#5B8DD9" style="background:#5B8DD9;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#D95B5B" style="background:#D95B5B;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#E8A838" style="background:#E8A838;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#8B5BD9" style="background:#8B5BD9;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#5BB8D9" style="background:#5BB8D9;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#D9607A" style="background:#D9607A;" onclick="evPickColor(this)"></div>
-    <div class="ev-cswatch" data-color="#5B8C3E" style="background:#5B8C3E;" onclick="evPickColor(this)"></div>
-  </div>
-
-  <!-- Project field hidden but kept for data compatibility -->
-  <select class="fi" id="ev-s" style="display:none;"><option value="">None</option></select>
-
-  <div class="fd" style="margin-top:0;padding-top:0;">
-    <input class="fi ev-note-input" id="ev-note" type="text" placeholder="Add a note… (optional)" autocomplete="off"/>
-  </div>
-
-  <div id="ev-del-row" style="display:none;padding:0 22px;margin-bottom:4px;">
-    <button class="ev-del-btn" id="ev-del-btn">🗑 Delete event</button>
-  </div>
-  <div id="ev-del-all-row" style="display:none;padding:0 22px;margin-bottom:4px;">
-    <button class="ev-del-btn" id="ev-del-all-btn" style="background:var(--rl);border-color:var(--red);opacity:.85;">🗑 Delete all in series</button>
-  </div>
-
-  <div class="mf">
-    <button class="bol bsm" onclick="closeMo('mo-ev')">Cancel</button>
-    <button class="btn bdk bsm" id="ev-save-btn" onclick="addEv()">Save</button>
-  </div>
-</div></div>
-
-<div class="ov" id="mo-nm" onclick="if(event.target===this)closeMo('mo-nm')"><div class="mod" style="max-width:380px;">
-  <div class="modhd">
-    <div>
-      <div class="modt">Edit Display Name</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Change how your name appears in the app.</div>
-    </div>
-    <button class="modx" onclick="closeMo('mo-nm')">×</button>
-  </div>
-  <div class="fd">
-    <label class="fl">Display Name</label>
-    <input class="fi" id="nm-i" type="text" placeholder="Your name" autocomplete="off" onkeydown="if(event.key==='Enter')saveName()"/>
-  </div>
-  <div class="mf"><button class="bol bsm" onclick="closeMo('mo-nm')">Cancel</button><button class="btn bdk bsm" onclick="saveName()">Save changes</button></div>
-</div></div>
-
-
-<!-- EMAIL MIGRATION MODAL -->
-<div class="ov" id="mo-migrate-email">
-  <div class="mod">
-    <div class="mh">One more thing 👋</div>
-    <div class="ms">To keep your account secure, please add an email address. This is a one-time step.</div>
-    <div class="fd"><label class="fl">Email</label><input class="fi" id="migrate-email-input" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')submitMigrateEmail()"/><div class="ferr" id="migrate-email-err"></div></div>
-    <div class="mf"><button class="btn bdk bsm" id="migrate-ok-btn" onclick="submitMigrateEmail()">Save &amp; continue</button></div>
-  </div>
-</div>
-
-<!-- DESKTOP ABOUT MODAL -->
-<div class="ov" id="mo-about" onclick="if(event.target===this)closeMo('mo-about')"><div class="mod" style="max-width:420px;padding:0;overflow:hidden;">
-
-  <div style="background:var(--a);padding:32px 24px 24px;text-align:center;position:relative;">
-    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-80px;right:-60px;pointer-events:none;"></div>
-    <img src="https://avatars.githubusercontent.com/u/00000000" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 14px;background:rgba(255,255,255,.1);" onerror="this.style.display='none'"/>
-    <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;">David Nueva</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:4px;">Creator of Prodify</div>
-
-  </div>
-
-  <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
-    <p style="font-size:13px;color:var(--ink2);line-height:1.7;margin:0;">A student developer passionate about building tools that make everyday life more organized and productive. Prodify started as a personal project and grew into something I hope helps you too.</p>
-    <div>
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink4);margin-bottom:8px;">Built With</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vanilla JS</span>
-        <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Supabase</span>
-        <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vercel</span>
-        <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">CSS3</span>
-        <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">PWA</span>
+      <!-- Body -->
+      <div style="padding:22px 28px 24px;display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div
+            style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">
+            Message</div>
+          <textarea class="fi" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind…"
+            style="resize:none;font-size:13px;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn bol bsm" onclick="closeMo('mo-feedback')">Cancel</button>
+          <button class="btn bdk bsm" id="dsk-fb-submit" onclick="submitFeedback(true)">Send Feedback</button>
+        </div>
+        <div id="dsk-fb-success"
+          style="display:none;background:var(--al);border:1.5px solid var(--a2);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;color:var(--a2);text-align:center;margin-top:-6px;">
+          ✓ Thanks for your feedback!</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:11px;color:var(--ink4);">Prodify v1.0 · Made with ♥</span>
-      <button class="bol bsm" onclick="closeMo('mo-about')">Close</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>emailjs.init('JKf5GRjODyTBor1xn');</script>
+  <script>
+    // Stub for functions called from landing page before app.js loads
+    (function () {
+      var _q = [];
+      window.showAuth = function (tab) { _q.push(['showAuth', tab]); };
+      window.showUpgradeModal = function (f) { _q.push(['showUpgradeModal', f]); };
+      window._landingStubFlush = function () {
+        _q.forEach(function (c) {
+          if (window[c[0]] && window[c[0]]._isStub !== true) window[c[0]](c[1]);
+        });
+        _q = [];
+      };
+      window.showAuth._isStub = true;
+      window.showUpgradeModal._isStub = true;
+    })();
+  </script>
+  <script src="app.js"></script>
+  <script>if (window._landingStubFlush) window._landingStubFlush();</script>
+
+  <!-- Custom Confirm Modal -->
+  <div id="mo-confirm"
+    style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surf);border-radius:18px;padding:28px 28px 22px;max-width:320px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+      <div id="mo-confirm-msg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;"></div>
+      <div id="mo-confirm-sub" style="font-size:12px;color:var(--ink3);margin-top:-8px;display:none;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button onclick="confirmResolve(false)"
+          style="padding:9px 20px;border-radius:10px;border:none;background:var(--bdr);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button id="mo-confirm-ok" onclick="confirmResolve(true)"
+          style="padding:9px 20px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+      </div>
     </div>
   </div>
 
-</div></div>
-
-<!-- BIO EDIT MODAL -->
-
-
-<!-- DESKTOP FEEDBACK MODAL -->
-<div class="ov" id="mo-feedback" onclick="if(event.target===this)closeMo('mo-feedback')"><div class="mod" style="max-width:460px;padding:0;overflow:hidden;">
-
-  <!-- Header band -->
-  <div style="background:var(--a);padding:28px 28px 24px;text-align:center;position:relative;overflow:hidden;">
-    <div style="position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(255,255,255,.08) 0%,transparent 60%);pointer-events:none;"></div>
-    <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:3px;position:relative;">Send Feedback</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:22px;position:relative;">We read every message — bugs, ideas, or just a hello.</div>
-    <div id="dsk-fb-stars" style="display:flex;gap:12px;justify-content:center;">
-      <svg class="fbs" data-v="1" onclick="fbRate(1)" width="44" height="44" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="2" onclick="fbRate(2)" width="44" height="44" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="3" onclick="fbRate(3)" width="44" height="44" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="4" onclick="fbRate(4)" width="44" height="44" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="5" onclick="fbRate(5)" width="44" height="44" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    </div>
-  </div>
-
-  <!-- Body -->
-  <div style="padding:22px 28px 24px;display:flex;flex-direction:column;gap:16px;">
-    <div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;">Message</div>
-      <textarea class="fi" id="dsk-fb-msg" rows="4" placeholder="Tell us what's on your mind…" style="resize:none;font-size:13px;"></textarea>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn bol bsm" onclick="closeMo('mo-feedback')">Cancel</button>
-      <button class="btn bdk bsm" id="dsk-fb-submit" onclick="submitFeedback(true)">Send Feedback</button>
-    </div>
-    <div id="dsk-fb-success" style="display:none;background:var(--al);border:1.5px solid var(--a2);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;color:var(--a2);text-align:center;margin-top:-6px;">✓ Thanks for your feedback!</div>
-  </div>
-</div></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init('JKf5GRjODyTBor1xn');</script>
-<script>
-// Stub for functions called from landing page before app.js loads
-(function(){
-  var _q = [];
-  window.showAuth = function(tab){ _q.push(['showAuth', tab]); };
-  window.showUpgradeModal = function(f){ _q.push(['showUpgradeModal', f]); };
-  window._landingStubFlush = function(){
-    _q.forEach(function(c){
-      if(window[c[0]] && window[c[0]]._isStub !== true) window[c[0]](c[1]);
-    });
-    _q = [];
-  };
-  window.showAuth._isStub = true;
-  window.showUpgradeModal._isStub = true;
-})();
-</script>
-<script src="app.js"></script>
-<script>if(window._landingStubFlush) window._landingStubFlush();</script>
-
-<!-- Custom Confirm Modal -->
-<div id="mo-confirm" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-  <div style="background:var(--surf);border-radius:18px;padding:28px 28px 22px;max-width:320px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
-    <div id="mo-confirm-msg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;"></div>
-    <div id="mo-confirm-sub" style="font-size:12px;color:var(--ink3);margin-top:-8px;display:none;"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button onclick="confirmResolve(false)" style="padding:9px 20px;border-radius:10px;border:none;background:var(--bdr);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
-      <button id="mo-confirm-ok" onclick="confirmResolve(true)" style="padding:9px 20px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
-    </div>
-  </div>
-</div>
-
-<script>
-function fbRate(n) {
-  if(typeof _fbStar !== 'undefined') _fbStar = n;
-  document.querySelectorAll('.fbs').forEach(function(s) {
-    var v = parseInt(s.getAttribute('data-v'));
-    if(v <= n) {
-      s.setAttribute('fill','#F5B800');
-      s.setAttribute('stroke','#F5B800');
-    } else {
-      s.setAttribute('fill','rgba(255,255,255,0.2)');
-      s.setAttribute('stroke','rgba(255,255,255,0.4)');
+  <script>
+    function fbRate(n) {
+      if (typeof _fbStar !== 'undefined') _fbStar = n;
+      document.querySelectorAll('.fbs').forEach(function (s) {
+        var v = parseInt(s.getAttribute('data-v'));
+        if (v <= n) {
+          s.setAttribute('fill', '#F5B800');
+          s.setAttribute('stroke', '#F5B800');
+        } else {
+          s.setAttribute('fill', 'rgba(255,255,255,0.2)');
+          s.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+        }
+      });
     }
-  });
-}
-</script>
+  </script>
 
   <!-- FOCUS MODE OVERLAY -->
   <div class="ov" id="fcs-ov" onclick="fcsExit(event)">
-    <div class="mod" id="fcs-mod" style="width:min(420px,92vw);padding:28px 24px 24px;" onclick="event.stopPropagation()">
+    <div class="mod" id="fcs-mod" style="width:min(420px,92vw);padding:28px 24px 24px;"
+      onclick="event.stopPropagation()">
       <div id="fcs-body"></div>
     </div>
   </div>
   <button id="fcs-exit-overlay" onclick="event.stopPropagation();fcsClose()">
-    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    <svg viewBox="0 0 24 24">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
     Exit Focus
   </button>
   <button id="fcs-mob-exit" onclick="fcsMobExit()">
-    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    <svg viewBox="0 0 24 24">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
     Exit Focus
   </button>
 
   <div id="debug-log"></div>
-</div>
-<!-- EXPORT MODAL -->
-<div class="ov" id="mo-export" onclick="if(event.target===this)closeMo('mo-export')"><div class="mod" style="max-width:400px;">
-  <div class="mh">Export Data</div>
-  <div class="ms" style="font-size:12px;color:var(--ink3);margin-bottom:14px;margin-top:-8px;">Download a copy of your Prodify data.</div>
-
-  <!-- JSON export — free -->
-  <div class="export-opt" onclick="exportJSON();closeMo('mo-export')">
-    <div class="export-opt-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-    </div>
-    <div class="export-opt-body">
-      <div class="export-opt-title">JSON <span class="export-free-badge">Free</span></div>
-      <div class="export-opt-desc">Full data export — tasks, journal, habits, projects</div>
-    </div>
-    <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 17V7M7 12l5-5 5 5"/></svg>
   </div>
+  <!-- EXPORT MODAL -->
+  <div class="ov" id="mo-export" onclick="if(event.target===this)closeMo('mo-export')">
+    <div class="mod" style="max-width:400px;">
+      <div class="mh">Export Data</div>
+      <div class="ms" style="font-size:12px;color:var(--ink3);margin-bottom:14px;margin-top:-8px;">Download a copy of
+        your Prodify data.</div>
 
-  <!-- CSV — Pro -->
-  <div class="export-opt" onclick="exportCSV()">
-    <div class="export-opt-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-    </div>
-    <div class="export-opt-body">
-      <div class="export-opt-title">CSV <span class="export-pro-badge">Pro</span></div>
-      <div class="export-opt-desc">Spreadsheet-ready export for tasks &amp; journal</div>
-    </div>
-    <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 17V7M7 12l5-5 5 5"/></svg>
-  </div>
-
-  <!-- PDF — Pro -->
-  <div class="export-opt" onclick="exportPDF()">
-    <div class="export-opt-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    </div>
-    <div class="export-opt-body">
-      <div class="export-opt-title">PDF <span class="export-pro-badge">Pro</span></div>
-      <div class="export-opt-desc">Beautifully formatted report of your productivity</div>
-    </div>
-    <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 17V7M7 12l5-5 5 5"/></svg>
-  </div>
-
-  <div class="mf" style="margin-top:8px;">
-    <button class="bol bsm" onclick="closeMo('mo-export')">Close</button>
-  </div>
-</div></div>
-
-<!-- UPGRADE MODAL -->
-<div class="ov" id="mo-upgrade" onclick="if(event.target===this)closeMo('mo-upgrade')"><div class="mod" style="max-width:400px;padding:0;overflow:hidden;">
-  <div class="upg-header">
-    <div class="upg-glow"></div>
-    <div class="upg-sparkle">✦</div>
-    <div class="upg-title">Prodify Pro</div>
-    <div class="upg-sub" id="mo-upgrade-sub">Unlock everything. Stay in flow.</div>
-  </div>
-  <div class="upg-body">
-    <div class="upg-feats">
-      <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited habits</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily Planner</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent colors</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV &amp; PDF export</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud backups</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span></div>
-    </div>
-    <div class="upg-plans">
-      <div class="upg-plan">
-        <div class="upg-plan-price">$4<span>/mo</span></div>
-        <div class="upg-plan-label">Monthly</div>
+      <!-- JSON export — free -->
+      <div class="export-opt" onclick="exportJSON();closeMo('mo-export')">
+        <div class="export-opt-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="12" x2="12" y2="18" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+        </div>
+        <div class="export-opt-body">
+          <div class="export-opt-title">JSON <span class="export-free-badge">Free</span></div>
+          <div class="export-opt-desc">Full data export — tasks, journal, habits, projects</div>
+        </div>
+        <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <path d="M12 17V7M7 12l5-5 5 5" />
+        </svg>
       </div>
-      <div class="upg-plan upg-plan-best">
-        <div class="upg-plan-pill">Best value</div>
-        <div class="upg-plan-price">$3<span>/mo</span></div>
-        <div class="upg-plan-label">Yearly · billed $36/yr</div>
+
+      <!-- CSV — Pro -->
+      <div class="export-opt" onclick="exportCSV()">
+        <div class="export-opt-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="8" y1="13" x2="16" y2="13" />
+            <line x1="8" y1="17" x2="16" y2="17" />
+          </svg>
+        </div>
+        <div class="export-opt-body">
+          <div class="export-opt-title">CSV <span class="export-pro-badge">Pro</span></div>
+          <div class="export-opt-desc">Spreadsheet-ready export for tasks &amp; journal</div>
+        </div>
+        <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <path d="M12 17V7M7 12l5-5 5 5" />
+        </svg>
+      </div>
+
+      <!-- PDF — Pro -->
+      <div class="export-opt" onclick="exportPDF()">
+        <div class="export-opt-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+        </div>
+        <div class="export-opt-body">
+          <div class="export-opt-title">PDF <span class="export-pro-badge">Pro</span></div>
+          <div class="export-opt-desc">Beautifully formatted report of your productivity</div>
+        </div>
+        <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <path d="M12 17V7M7 12l5-5 5 5" />
+        </svg>
+      </div>
+
+      <div class="mf" style="margin-top:8px;">
+        <button class="bol bsm" onclick="closeMo('mo-export')">Close</button>
       </div>
     </div>
+  </div>
 
-    <!-- WAITLIST STATE: not joined -->
-    <div id="upg-waitlist-join">
-      <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-      <button class="upg-waitlist-btn" id="upg-join-btn" style="width:100%;" onclick="joinWaitlist()">Join the waitlist</button>
-      <p class="upg-note" id="upg-waitlist-err" style="color:var(--red);display:none;margin-top:8px;"></p>
-    </div>
-
-    <!-- WAITLIST STATE: already joined -->
-    <div id="upg-waitlist-joined" style="display:none;">
-      <div class="upg-joined-box">
-        <div class="upg-joined-icon">🎉</div>
-        <div class="upg-joined-pos">You're <span id="upg-position">#—</span> on the waitlist</div>
-        <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly, locked in as long as you're subscribed).</div>
+  <!-- UPGRADE MODAL -->
+  <div class="ov" id="mo-upgrade" onclick="if(event.target===this)closeMo('mo-upgrade')">
+    <div class="mod" style="max-width:400px;padding:0;overflow:hidden;">
+      <div class="upg-header">
+        <div class="upg-glow"></div>
+        <div class="upg-sparkle">✦</div>
+        <div class="upg-title">Prodify Pro</div>
+        <div class="upg-sub" id="mo-upgrade-sub">Unlock everything. Stay in flow.</div>
       </div>
-      <button class="upg-cta" onclick="closeMo('mo-upgrade')">Got it</button>
-    </div>
+      <div class="upg-body">
+        <div class="upg-feats">
+          <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited
+              habits</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily
+              Planner</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent
+              colors</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV &amp; PDF
+              export</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
+              backups</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
+          </div>
+        </div>
+        <div class="upg-plans">
+          <div class="upg-plan">
+            <div class="upg-plan-price">$4<span>/mo</span></div>
+            <div class="upg-plan-label">Monthly</div>
+          </div>
+          <div class="upg-plan upg-plan-best">
+            <div class="upg-plan-pill">Best value</div>
+            <div class="upg-plan-price">$3<span>/mo</span></div>
+            <div class="upg-plan-label">Yearly · billed $36/yr</div>
+          </div>
+        </div>
 
-    <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
-  </div>
-</div></div>
+        <!-- WAITLIST STATE: not joined -->
+        <div id="upg-waitlist-join">
+          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
+          <button class="upg-waitlist-btn" id="upg-join-btn" style="width:100%;" onclick="joinWaitlist()">Join the
+            waitlist</button>
+          <p class="upg-note" id="upg-waitlist-err" style="color:var(--red);display:none;margin-top:8px;"></p>
+        </div>
 
-<!-- LANDING WAITLIST MODAL -->
-<div class="ov" id="mo-landing-waitlist" onclick="if(event.target===this)closeMo('mo-landing-waitlist')"><div class="mod" style="max-width:400px;padding:0;overflow:hidden;">
-  <div class="upg-header">
-    <div class="upg-glow"></div>
-    <div class="upg-sparkle">✦</div>
-    <div class="upg-title">Prodify Pro</div>
-    <div class="upg-sub">Unlock everything. Stay in flow.</div>
-  </div>
-  <div class="upg-body">
-    <div class="upg-feats">
-      <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily Planner</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited habits</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent colors</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV &amp; PDF export</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud backups</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span></div>
-    </div>
-    <div class="upg-plans">
-      <div class="upg-plan">
-        <div class="upg-plan-price">$4<span>/mo</span></div>
-        <div class="upg-plan-label">Monthly</div>
+        <!-- WAITLIST STATE: already joined -->
+        <div id="upg-waitlist-joined" style="display:none;">
+          <div class="upg-joined-box">
+            <div class="upg-joined-icon">🎉</div>
+            <div class="upg-joined-pos">You're <span id="upg-position">#—</span> on the waitlist</div>
+            <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly,
+              locked in as long as you're subscribed).</div>
+          </div>
+          <button class="upg-cta" onclick="closeMo('mo-upgrade')">Got it</button>
+        </div>
+
+        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
       </div>
-      <div class="upg-plan upg-plan-best">
-        <div class="upg-plan-pill">Best value</div>
-        <div class="upg-plan-price">$3<span>/mo</span></div>
-        <div class="upg-plan-label">Yearly · billed $36/yr</div>
+    </div>
+  </div>
+
+  <!-- LANDING WAITLIST MODAL -->
+  <div class="ov" id="mo-landing-waitlist" onclick="if(event.target===this)closeMo('mo-landing-waitlist')">
+    <div class="mod" style="max-width:400px;padding:0;overflow:hidden;">
+      <div class="upg-header">
+        <div class="upg-glow"></div>
+        <div class="upg-sparkle">✦</div>
+        <div class="upg-title">Prodify Pro</div>
+        <div class="upg-sub">Unlock everything. Stay in flow.</div>
+      </div>
+      <div class="upg-body">
+        <div class="upg-feats">
+          <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily
+              Planner</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited
+              habits</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent
+              colors</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV &amp; PDF
+              export</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
+              backups</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
+          </div>
+        </div>
+        <div class="upg-plans">
+          <div class="upg-plan">
+            <div class="upg-plan-price">$4<span>/mo</span></div>
+            <div class="upg-plan-label">Monthly</div>
+          </div>
+          <div class="upg-plan upg-plan-best">
+            <div class="upg-plan-pill">Best value</div>
+            <div class="upg-plan-price">$3<span>/mo</span></div>
+            <div class="upg-plan-label">Yearly · billed $36/yr</div>
+          </div>
+        </div>
+
+        <!-- State: input email -->
+        <div id="lw-join-state">
+          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
+          <div class="lw-email-wrap">
+            <input type="email" id="lw-email-input" class="lw-email-input" placeholder="your@email.com"
+              oninput="lwClearErr()" onkeydown="if(event.key==='Enter')lwSubmit()" />
+          </div>
+          <p class="lw-err" id="lw-err" style="display:none;"></p>
+          <button class="upg-cta" id="lw-submit-btn" onclick="lwSubmit()" style="margin-top:12px;">Join the
+            waitlist</button>
+        </div>
+
+        <!-- State: success -->
+        <div id="lw-joined-state" style="display:none;">
+          <div class="upg-joined-box">
+            <div class="upg-joined-icon">🎉</div>
+            <div class="upg-joined-pos">You're <span id="lw-position">#—</span> on the waitlist</div>
+            <div class="upg-joined-sub">We'll email <span id="lw-joined-email"
+                style="font-weight:700;color:var(--a2);"></span> when Pro launches with your founding member rate ($3/mo
+              yearly, locked in as long as you're subscribed).</div>
+          </div>
+          <button class="upg-cta" onclick="closeMo('mo-landing-waitlist')" style="margin-top:12px;">Got it</button>
+        </div>
+
+        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
       </div>
     </div>
+  </div>
 
-    <!-- State: input email -->
-    <div id="lw-join-state">
-      <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-      <div class="lw-email-wrap">
-        <input type="email" id="lw-email-input" class="lw-email-input" placeholder="your@email.com" oninput="lwClearErr()" onkeydown="if(event.key==='Enter')lwSubmit()"/>
+  <!-- BACKUP HISTORY MODAL -->
+  <div class="ov" id="mo-backup" onclick="if(event.target===this)closeMo('mo-backup')">
+    <div class="mod" style="max-width:460px;">
+      <div class="modhd">
+        <div>
+          <div class="modt">Cloud Backup History</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Auto-saved daily · Up to 30 snapshots</div>
+        </div>
+        <button class="modx" onclick="closeMo('mo-backup')">×</button>
       </div>
-      <p class="lw-err" id="lw-err" style="display:none;"></p>
-      <button class="upg-cta" id="lw-submit-btn" onclick="lwSubmit()" style="margin-top:12px;">Join the waitlist</button>
+      <div id="mo-backup-list"
+        style="max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
     </div>
+  </div>
 
-    <!-- State: success -->
-    <div id="lw-joined-state" style="display:none;">
-      <div class="upg-joined-box">
-        <div class="upg-joined-icon">🎉</div>
-        <div class="upg-joined-pos">You're <span id="lw-position">#—</span> on the waitlist</div>
-        <div class="upg-joined-sub">We'll email <span id="lw-joined-email" style="font-weight:700;color:var(--a2);"></span> when Pro launches with your founding member rate ($3/mo yearly, locked in as long as you're subscribed).</div>
+  <!-- ACTIVE DEVICES MODAL -->
+  <div class="ov" id="mo-devices" onclick="if(event.target===this)closeMo('mo-devices')">
+    <div class="mod" style="max-width:400px;">
+      <div class="modhd">
+        <div>
+          <div class="modt">Active Devices</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Sessions from the last 7 days</div>
+        </div>
+        <button class="modx" onclick="closeMo('mo-devices')">×</button>
       </div>
-      <button class="upg-cta" onclick="closeMo('mo-landing-waitlist')" style="margin-top:12px;">Got it</button>
-    </div>
-
-    <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
-  </div>
-</div></div>
-
-<!-- BACKUP HISTORY MODAL -->
-<div class="ov" id="mo-backup" onclick="if(event.target===this)closeMo('mo-backup')"><div class="mod" style="max-width:460px;">
-  <div class="modhd">
-    <div>
-      <div class="modt">Cloud Backup History</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Auto-saved daily · Up to 30 snapshots</div>
-    </div>
-    <button class="modx" onclick="closeMo('mo-backup')">×</button>
-  </div>
-  <div id="mo-backup-list" style="max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
-</div></div>
-
-<!-- ACTIVE DEVICES MODAL -->
-<div class="ov" id="mo-devices" onclick="if(event.target===this)closeMo('mo-devices')"><div class="mod" style="max-width:400px;">
-  <div class="modhd">
-    <div>
-      <div class="modt">Active Devices</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Sessions from the last 7 days</div>
-    </div>
-    <button class="modx" onclick="closeMo('mo-devices')">×</button>
-  </div>
-  <div id="mo-devices-list" style="display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
-</div></div>
-
-<!-- MULTI-DEVICE BLOCK MODAL -->
-<div class="ov" id="mo-multi-device" style="z-index:99999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">
-  <div class="mod" style="max-width:380px;padding:0;overflow:hidden;text-align:center;">
-    <div style="background:linear-gradient(135deg,var(--a),var(--a2));padding:32px 28px 24px;">
-      <div style="font-size:40px;margin-bottom:10px;">📱</div>
-      <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.3px;">Device Limit Reached</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:6px;line-height:1.5;">Your free plan is active on another device.<br>Only 1 device is allowed at a time.</div>
-    </div>
-    <div style="padding:24px 24px 20px;display:flex;flex-direction:column;gap:10px;">
-      <button class="btn" style="width:100%;padding:13px;font-size:14px;" onclick="closeMo('mo-multi-device');showUpgradeModal('Multi-Device Sync')">
-        ✦ Upgrade to Pro — Unlimited Devices
-      </button>
-      <button class="bol" style="width:100%;padding:11px;font-size:13px;" onclick="doSO();closeMo('mo-multi-device')">
-        Sign out of this device
-      </button>
-      <div style="font-size:11px;color:var(--ink4);margin-top:4px;">Pro unlocks unlimited devices, cloud backup & more</div>
+      <div id="mo-devices-list" style="display:flex;flex-direction:column;gap:8px;padding:4px 0;"></div>
     </div>
   </div>
-</div>
 
-<!-- MOBILE ONLY SCREEN -->
-<div id="mobile-only-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#0f1117;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;">
-  <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#1db76e,#17a05e);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(29,183,110,.25);">
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M9 7h6M9 11h4M12 17h.01"/></svg>
+  <!-- MULTI-DEVICE BLOCK MODAL -->
+  <div class="ov" id="mo-multi-device"
+    style="z-index:99999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">
+    <div class="mod" style="max-width:380px;padding:0;overflow:hidden;text-align:center;">
+      <div style="background:linear-gradient(135deg,var(--a),var(--a2));padding:32px 28px 24px;">
+        <div style="font-size:40px;margin-bottom:10px;">📱</div>
+        <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.3px;">Device Limit Reached</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:6px;line-height:1.5;">Your free plan is active
+          on another device.<br>Only 1 device is allowed at a time.</div>
+      </div>
+      <div style="padding:24px 24px 20px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn" style="width:100%;padding:13px;font-size:14px;"
+          onclick="closeMo('mo-multi-device');showUpgradeModal('Multi-Device Sync')">
+          ✦ Upgrade to Pro — Unlimited Devices
+        </button>
+        <button class="bol" style="width:100%;padding:11px;font-size:13px;" onclick="doSO();closeMo('mo-multi-device')">
+          Sign out of this device
+        </button>
+        <div style="font-size:11px;color:var(--ink4);margin-top:4px;">Pro unlocks unlimited devices, cloud backup & more
+        </div>
+      </div>
+    </div>
   </div>
-  <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:8px;">Desktop only for now</div>
-  <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:24px;">Prodify is currently optimized for desktop. Open it on your computer for the full experience.</div>
-  <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(29,183,110,.15);border:1.5px solid rgba(29,183,110,.35);border-radius:50px;padding:10px 20px;">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db76e" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-    <span style="font-size:13px;font-weight:700;color:#1db76e;">Mobile app coming soon</span>
+
+  <!-- MOBILE ONLY SCREEN -->
+  <div id="mobile-only-screen"
+    style="display:none;position:fixed;inset:0;z-index:99999;background:#0f1117;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;">
+    <div
+      style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#1db76e,#17a05e);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 32px rgba(29,183,110,.25);">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+        <rect x="5" y="2" width="14" height="20" rx="2.5" />
+        <path d="M9 7h6M9 11h4M12 17h.01" />
+      </svg>
+    </div>
+    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:8px;">Desktop only for now
+    </div>
+    <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:24px;">Prodify
+      is currently optimized for desktop. Open it on your computer for the full experience.</div>
+    <div
+      style="display:inline-flex;align-items:center;gap:8px;background:rgba(29,183,110,.15);border:1.5px solid rgba(29,183,110,.35);border-radius:50px;padding:10px 20px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db76e" stroke-width="2.5"
+        stroke-linecap="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 8v4l3 3" />
+      </svg>
+      <span style="font-size:13px;font-weight:700;color:#1db76e;">Mobile app coming soon</span>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.25);margin-top:24px;">Pro<strong
+        style="color:rgba(255,255,255,.4);">dify</strong></div>
   </div>
-  <div style="font-size:12px;color:rgba(255,255,255,.25);margin-top:24px;">Pro<strong style="color:rgba(255,255,255,.4);">dify</strong></div>
-</div>
 
-<script>
-(function(){
-  function checkMobile(){
-    var appEl = document.getElementById('app');
-    var inApp = appEl && !appEl.classList.contains('off');
-    if(window.innerWidth <= 768 && inApp){
-      document.getElementById('mobile-only-screen').style.display='flex';
-      document.body.style.overflow='hidden';
-    } else {
-      document.getElementById('mobile-only-screen').style.display='none';
-      document.body.style.overflow='';
-    }
-  }
-  checkMobile();
-  window.addEventListener('resize', checkMobile);
-  window._checkMobile = checkMobile;
+  <script>
+    (function () {
+      function checkMobile() {
+        var appEl = document.getElementById('app');
+        var inApp = appEl && !appEl.classList.contains('off');
+        if (window.innerWidth <= 768 && inApp) {
+          document.getElementById('mobile-only-screen').style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.getElementById('mobile-only-screen').style.display = 'none';
+          document.body.style.overflow = '';
+        }
+      }
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      window._checkMobile = checkMobile;
 
-  // Scroll-reveal for feature cards
-  // Nav scroll effect + scroll hint hide
-  (function(){
-    var nav = document.querySelector('.lnav');
-    var hint = document.querySelector('.lscroll-hint');
-    if(!nav) return;
-    var sl = document.getElementById('sl');
-    if(!sl) return;
-    sl.addEventListener('scroll', function(){
-      if(sl.scrollTop > 40){ nav.classList.add('scrolled'); }
-      else { nav.classList.remove('scrolled'); }
-      if(hint){ hint.style.opacity = sl.scrollTop > 80 ? '0' : ''; hint.style.pointerEvents = sl.scrollTop > 80 ? 'none' : ''; }
-    });
-  })();
-
-  function initFeatReveal(){
-    var cards = document.querySelectorAll('.sl-feat-card');
-    if(!cards.length) return;
-    if('IntersectionObserver' in window){
-      var io = new IntersectionObserver(function(entries){
-        entries.forEach(function(e){
-          if(e.isIntersecting){ e.target.classList.add('feat-visible'); io.unobserve(e.target); }
+      // Scroll-reveal for feature cards
+      // Nav scroll effect + scroll hint hide
+      (function () {
+        var nav = document.querySelector('.lnav');
+        var hint = document.querySelector('.lscroll-hint');
+        if (!nav) return;
+        var sl = document.getElementById('sl');
+        if (!sl) return;
+        sl.addEventListener('scroll', function () {
+          if (sl.scrollTop > 40) { nav.classList.add('scrolled'); }
+          else { nav.classList.remove('scrolled'); }
+          if (hint) { hint.style.opacity = sl.scrollTop > 80 ? '0' : ''; hint.style.pointerEvents = sl.scrollTop > 80 ? 'none' : ''; }
         });
-      },{threshold:0.15});
-      cards.forEach(function(c){ io.observe(c); });
-    } else {
-      // fallback: just show all
-      cards.forEach(function(c){ c.classList.add('feat-visible'); });
-    }
-  }
+      })();
 
-  // Wait for DOM ready
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded', initFeatReveal);
-  } else {
-    initFeatReveal();
-  }
-})();
-</script>
+      function initFeatReveal() {
+        var cards = document.querySelectorAll('.sl-feat-card');
+        if (!cards.length) return;
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) { e.target.classList.add('feat-visible'); io.unobserve(e.target); }
+            });
+          }, { threshold: 0.15 });
+          cards.forEach(function (c) { io.observe(c); });
+        } else {
+          // fallback: just show all
+          cards.forEach(function (c) { c.classList.add('feat-visible'); });
+        }
+      }
+
+      // Wait for DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFeatReveal);
+      } else {
+        initFeatReveal();
+      }
+    })();
+  </script>
 
 </body>
+
 </html>
