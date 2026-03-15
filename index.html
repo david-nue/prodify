@@ -100,7 +100,7 @@
     <nav class="lnav">
       <div class="logo" style="color:#fff;">Pro<b>dify</b></div>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button class="btn bgw" onclick="showAuth()">Sign in</button>
+        <button class="btn bgw" id="nav-cta" onclick="showAuth()">Sign in</button>
       </div>
     </nav>
 
@@ -375,10 +375,9 @@
     <section class="lbcta">
       <div class="lbcta-tag">Free forever · No credit card</div>
       <h2 class="lbcta-h2">Your most productive day<br />starts here.</h2>
-      <p class="lbcta-p">Sign in with Google and your workspace is ready in seconds.</p>
+      <p class="lbcta-p" id="lbcta-p">Sign in with Google and your workspace is ready in seconds.</p>
       <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:0;">
-        <button class="btn ba lbtn-cta" onclick="showAuth()">Get started free →</button>
-
+        <button class="btn ba lbtn-cta" id="lbtn-cta" onclick="showAuth()">Get started free →</button>
       </div>
     </section>
 
@@ -1788,6 +1787,26 @@
       checkMobile();
       window.addEventListener('resize', checkMobile);
       window._checkMobile = checkMobile;
+
+      // Swap auth CTAs to app install button on mobile
+      if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        var APP_URL = 'https://app.prodify.com';
+        // Nav button
+        var navCta = document.getElementById('nav-cta');
+        if (navCta) {
+          navCta.textContent = 'Get the app';
+          navCta.onclick = function () { window.open(APP_URL, '_blank'); };
+        }
+        // Bottom CTA button
+        var lbtnCta = document.getElementById('lbtn-cta');
+        if (lbtnCta) {
+          lbtnCta.textContent = 'Install Prodify →';
+          lbtnCta.onclick = function () { window.open(APP_URL, '_blank'); };
+        }
+        // Bottom CTA subtitle
+        var lbctaP = document.getElementById('lbcta-p');
+        if (lbctaP) lbctaP.textContent = 'Tap below to open the app and add it to your home screen.';
+      }
 
       // Scroll-reveal for feature cards
       // Nav scroll effect + scroll hint hide
