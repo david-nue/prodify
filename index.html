@@ -1748,21 +1748,28 @@
         <path d="M9 7h6M9 11h4M12 17h.01" />
       </svg>
     </div>
-    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:8px;">Desktop only for now
+    <div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px;margin-bottom:8px;">Prodify has a mobile app!</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:28px;">Tasks, journal, habits, timer & calendar — optimized for your phone. Tap below to open and install it.</div>
+
+    <!-- Primary CTA -->
+    <a href="https://app.prodify.com" target="_blank"
+      style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1db76e,#17a05e);color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;text-decoration:none;box-shadow:0 6px 24px rgba(29,183,110,.35);margin-bottom:16px;letter-spacing:-.2px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M9 7h6M9 11h4M12 17h.01"/></svg>
+      Open Prodify App
+    </a>
+
+    <!-- iOS hint -->
+    <div style="font-size:11px;color:rgba(255,255,255,.3);line-height:1.7;max-width:260px;margin-bottom:24px;">
+      On iPhone: tap <strong style="color:rgba(255,255,255,.5);">Share</strong> → <strong style="color:rgba(255,255,255,.5);">Add to Home Screen</strong> to install
     </div>
-    <div style="font-size:14px;color:rgba(255,255,255,.5);line-height:1.65;max-width:280px;margin-bottom:24px;">Prodify
-      is currently optimized for desktop. Open it on your computer for the full experience.</div>
-    <div
-      style="display:inline-flex;align-items:center;gap:8px;background:rgba(29,183,110,.15);border:1.5px solid rgba(29,183,110,.35);border-radius:50px;padding:10px 20px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1db76e" stroke-width="2.5"
-        stroke-linecap="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 8v4l3 3" />
-      </svg>
-      <span style="font-size:13px;font-weight:700;color:#1db76e;">Mobile app coming soon</span>
-    </div>
-    <div style="font-size:12px;color:rgba(255,255,255,.25);margin-top:24px;">Pro<strong
-        style="color:rgba(255,255,255,.4);">dify</strong></div>
+
+    <!-- Continue to desktop link -->
+    <button onclick="document.getElementById('mobile-only-screen').style.display='none';document.body.style.overflow='';"
+      style="background:none;border:none;font-size:12px;color:rgba(255,255,255,.25);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline;">
+      Continue to desktop site anyway
+    </button>
+
+    <div style="font-size:12px;color:rgba(255,255,255,.2);margin-top:20px;">Pro<strong style="color:rgba(255,255,255,.35);">dify</strong></div>
   </div>
 
   <script>
