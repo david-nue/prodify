@@ -1738,109 +1738,63 @@
   </div>
 
   <!-- MOBILE ONLY SCREEN -->
-  <div id="mobile-only-screen"
-    style="display:none;position:fixed;inset:0;z-index:99999;background:#0B0F0C;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:'Plus Jakarta Sans',sans-serif;">
-
-    <!-- Ambient orbs -->
-    <div style="position:fixed;top:-120px;left:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(29,183,110,.18) 0%,transparent 70%);pointer-events:none;"></div>
-    <div style="position:fixed;top:60%;right:-100px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(29,183,110,.10) 0%,transparent 70%);pointer-events:none;"></div>
-
-    <!-- Nav -->
-    <div style="position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(11,15,12,.85);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.05);">
-      <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px;">Pro<b style="color:#1db76e;">dify</b></div>
-      <a href="https://app.prodify.com" target="_blank"
-        style="display:inline-flex;align-items:center;gap:6px;background:rgba(29,183,110,.15);border:1.5px solid rgba(29,183,110,.4);border-radius:100px;padding:6px 14px;font-size:12px;font-weight:700;color:#1db76e;text-decoration:none;">
-        Get the app
-      </a>
-    </div>
-
-    <!-- Hero -->
-    <div style="padding:32px 24px 20px;text-align:center;">
-      <div style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(29,183,110,.9);background:rgba(29,183,110,.1);border:1px solid rgba(29,183,110,.25);border-radius:100px;padding:4px 12px;margin-bottom:14px;">Free productivity app</div>
-      <h1 style="font-size:34px;font-weight:800;color:#fff;line-height:1.08;letter-spacing:-1.8px;margin-bottom:10px;">The workspace that works <em style="color:#1db76e;font-style:normal;">around you</em></h1>
-      <p style="font-size:14px;color:rgba(255,255,255,.45);line-height:1.55;margin-bottom:22px;">Tasks, journal, timer, habits & calendar — one place, no clutter.</p>
-      <a href="https://app.prodify.com" target="_blank"
-        style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#1db76e,#17a05e);color:#fff;font-size:15px;font-weight:700;padding:14px;border-radius:14px;text-decoration:none;box-shadow:0 6px 24px rgba(29,183,110,.3);margin-bottom:8px;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M9 7h6M9 11h4M12 17h.01"/></svg>
-        Install Prodify — Free
-      </a>
-      <p style="font-size:11px;color:rgba(255,255,255,.22);margin-bottom:4px;">iPhone: Share → Add to Home Screen</p>
-      <button onclick="document.getElementById('mobile-only-screen').style.display='none';document.body.style.overflow='';"
-        style="background:none;border:none;font-size:11px;color:rgba(255,255,255,.18);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:underline;padding:4px;">
-        Use desktop instead
-      </button>
-    </div>
-
-    <!-- Feature pills -->
-    <div style="padding:0 20px 16px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
-      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);">📋 Tasks</div>
-      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);">📓 Journal</div>
-      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);">⏱️ Timer</div>
-      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);">💪 Habits</div>
-      <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,.55);">📅 Calendar</div>
-    </div>
-
-    <!-- Feature grid — 2x2 + 1 wide -->
-    <div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 14px;">
-        <div style="font-size:18px;margin-bottom:7px;">✅</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Tasks</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.5;">Swipe to advance or delete. Set due dates.</div>
+  <div id="mobile-only-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#111009;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div class="mob-orb1"></div>
+    <div class="mob-orb2"></div>
+    <div class="mob-wrap">
+      <div class="login-top">
+        <div class="login-tag">Free productivity app</div>
+        <div class="login-logo">Pro<b>dify</b></div>
+        <h1 class="login-headline">The workspace that<br/>works <em>around you</em></h1>
+        <p class="login-sub">Tasks, journal, focus timer,<br/>habits & calendar — all in one place.</p>
       </div>
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 14px;">
-        <div style="font-size:18px;margin-bottom:7px;">📓</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Journal</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.5;">Mood tracking, templates & search.</div>
+      <div class="login-card">
+        <a class="btn-install" href="https://app.prodify.com" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M9 7h6M9 11h4M12 17h.01"/></svg>
+          Install Prodify — Free
+        </a>
+        <div class="login-note">
+          Free forever · No credit card needed<br/>
+          iPhone: Share → Add to Home Screen<br/>
+          <a href="#" onclick="window._mobileDismissed=true;document.getElementById('mobile-only-screen').style.display='none';document.body.style.overflow='';return false;">Use desktop version instead</a>
+        </div>
       </div>
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 14px;">
-        <div style="font-size:18px;margin-bottom:7px;">⏱️</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Focus Timer</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.5;">Pomodoro + custom. Session history.</div>
+      <div class="login-features">
+        <div class="login-feat"><div class="login-feat-icon">📋</div><div class="login-feat-body"><div class="login-feat-title">Task Board</div><div class="login-feat-desc">Kanban-style — To Do, In Progress, Done. Swipe to complete.</div></div></div>
+        <div class="login-feat"><div class="login-feat-icon">💪</div><div class="login-feat-body"><div class="login-feat-title">Habit Tracker</div><div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div></div></div>
+        <div class="login-feat"><div class="login-feat-icon">⏱️</div><div class="login-feat-body"><div class="login-feat-title">Focus Timer</div><div class="login-feat-desc">Pomodoro sessions — 25 min focus, 5 min breaks. Track your output.</div></div></div>
+        <div class="login-feat"><div class="login-feat-icon">📓</div><div class="login-feat-body"><div class="login-feat-title">Daily Journal</div><div class="login-feat-desc">Write freely, pick a mood, and build a daily reflection habit.</div></div></div>
+        <div class="login-feat"><div class="login-feat-icon">📅</div><div class="login-feat-body"><div class="login-feat-title">Calendar</div><div class="login-feat-desc">Schedule view — your upcoming events in a clean vertical list.</div></div></div>
+        <div class="login-feat"><div class="login-feat-icon">🤖</div><div class="login-feat-body"><div class="login-feat-title">AI Daily Planner</div><div class="login-feat-desc">Let AI build your day around your tasks and energy.</div></div><div class="login-feat-badge">Pro</div></div>
       </div>
-      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 14px;">
-        <div style="font-size:18px;margin-bottom:7px;">💪</div>
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Habits</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.5;">Daily check-ins with streaks.</div>
-      </div>
-    </div>
-
-    <!-- Pricing + bottom CTA combined -->
-    <div style="padding:0 16px 32px;">
-      <div style="background:rgba(29,183,110,.06);border:1px solid rgba(29,183,110,.16);border-radius:14px;padding:18px 16px;margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(29,183,110,.6);margin-bottom:12px;">Pricing</div>
-        <div style="display:flex;gap:12px;">
-          <div style="flex:1;">
-            <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;">Free</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.7;">✓ Tasks & journal<br/>✓ Timer & calendar<br/>✓ 3 habits</div>
+      <div class="login-pricing">
+        <div class="login-pricing-title">Pricing</div>
+        <div class="login-pricing-row">
+          <div class="login-plan">
+            <div class="login-plan-name">Free</div>
+            <div class="login-plan-price">$0<span>/mo</span></div>
+            <div class="login-plan-items">✓ Unlimited tasks<br/>✓ Journal & timer<br/>✓ Calendar<br/>✓ 3 habits<br/>✓ 3 accent colors</div>
+            <a href="https://app.prodify.com" target="_blank" class="login-plan-btn">Install free</a>
           </div>
-          <div style="width:1px;background:rgba(255,255,255,.07);"></div>
-          <div style="flex:1;">
-            <div style="font-size:12px;font-weight:700;color:#1db76e;margin-bottom:6px;">Pro — $3/mo</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.38);line-height:1.7;">✦ Unlimited habits<br/>✦ AI Planner<br/>✦ Cloud backups</div>
+          <div class="login-plan login-plan-pro">
+            <div class="login-plan-badge">Coming soon</div>
+            <div class="login-plan-name">Pro</div>
+            <div class="login-plan-price">$3<span>/mo</span></div>
+            <div class="login-plan-items">✦ Everything in Free<br/>✦ Unlimited habits<br/>✦ All accent colors<br/>✦ AI Daily Planner<br/>✦ Cloud backups</div>
+            <div class="login-plan-btn login-plan-btn-pro">Founding rate locked</div>
           </div>
         </div>
       </div>
-      <a href="https://app.prodify.com" target="_blank"
-        style="display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#1db76e,#17a05e);color:#fff;font-size:15px;font-weight:700;padding:14px;border-radius:14px;text-decoration:none;box-shadow:0 6px 24px rgba(29,183,110,.3);margin-bottom:10px;">
-        Install Prodify — Free
-      </a>
-      <p style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);">Free forever · No credit card needed</p>
+      <div class="login-foot">© 2026 Pro<b>dify</b> · Built by David N.</div>
     </div>
-
-    <!-- Footer -->
-    <div style="padding:12px 20px 24px;text-align:center;border-top:1px solid rgba(255,255,255,.05);">
-      <p style="font-size:11px;color:rgba(255,255,255,.15);">© 2026 Pro<b style="color:rgba(255,255,255,.25);">dify</b> · Built by David N.</p>
-    </div>
-
   </div>
 
   <script>
     (function () {
       function checkMobile() {
-        var appEl = document.getElementById('app');
-        var inApp = appEl && !appEl.classList.contains('off');
-        if (window.innerWidth <= 768 && inApp) {
-          document.getElementById('mobile-only-screen').style.display = 'flex';
+        if (window._mobileDismissed) return;
+        if (window.innerWidth <= 768) {
+          document.getElementById('mobile-only-screen').style.display = 'block';
           document.body.style.overflow = 'hidden';
         } else {
           document.getElementById('mobile-only-screen').style.display = 'none';
