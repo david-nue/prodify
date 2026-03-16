@@ -436,6 +436,11 @@ function launch(){
   goPg('home');
   if(isPro()) backupSnapshotToday();
   checkWaitlist().then(()=>_syncWaitlistUI());
+  // Show AI planner float button for Pro users
+  if(isPro()){
+    const btn = document.getElementById('mob-aip-float-btn');
+    if(btn) btn.style.display = 'flex';
+  }
   // Start cloud sync
   if(cu){
     startRealtimeSync(cu);
@@ -564,36 +569,23 @@ function renderMobProfile(){
 }
 function openAIPlanner(){
   if(!isPro()){ showUpgradeModal('AI Daily Planner'); return; }
-  try {
-    const body = document.getElementById('mob-aip-body');
-    console.log('[AIP] mob-aip-body found:', !!body);
+  const panel = document.getElementById('mob-aip-panel');
+  const body  = document.getElementById('mob-aip-body');
+  if (!panel) return;
+  const isOpen = panel.style.display === 'flex';
+  if (isOpen) {
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(12px) scale(.97)';
+    setTimeout(() => { panel.style.display = 'none'; }, 200);
+  } else {
     if (body) body.innerHTML = '';
-    openSheet('sh-aiplanner');
-    const sheet = document.getElementById('sh-aiplanner');
-    console.log('[AIP] sheet found:', !!sheet, 'classes:', sheet?.className);
-    setTimeout(() => {
-      try {
-        console.log('[AIP] calling renderAIPlanner...');
-        renderAIPlanner('mob-aip-body', true);
-        const bodyAfter = document.getElementById('mob-aip-body');
-        const rect = bodyAfter?.getBoundingClientRect();
-        const sheet = document.getElementById('sh-aiplanner');
-        const sheetRect = sheet?.getBoundingClientRect();
-        console.log('[AIP] innerHTML length:', bodyAfter?.innerHTML?.length);
-        console.log('[AIP] mob-aip-body rect:', JSON.stringify(rect));
-        console.log('[AIP] sheet rect:', JSON.stringify(sheetRect));
-        console.log('[AIP] sheet computed height:', window.getComputedStyle(sheet).height);
-        console.log('[AIP] mob-aip-body computed height:', window.getComputedStyle(bodyAfter).height);
-        console.log('[AIP] mob-aip-body computed display:', window.getComputedStyle(bodyAfter).display);
-      } catch(e) {
-        console.error('[AIP] renderAIPlanner threw:', e);
-        const body = document.getElementById('mob-aip-body');
-        if (body) body.innerHTML = '<div style="padding:20px;color:red;font-size:13px;">Error: ' + e.message + '</div>';
-      }
-    }, 300);
-  } catch(e) {
-    console.error('[AIP] openAIPlanner threw:', e);
-    toast('AI Planner error: ' + e.message);
+    panel.style.display = 'flex';
+    panel.style.flexDirection = 'column';
+    requestAnimationFrame(() => {
+      panel.style.opacity = '1';
+      panel.style.transform = 'none';
+    });
+    renderAIPlanner('mob-aip-body', true);
   }
 }
 
@@ -2716,7 +2708,7 @@ function renderAIPlanner(containerId, isMobile) {
     + '<div class="aip-chat-name">AI Planner <span style="font-size:9px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 5px;border-radius:100px;vertical-align:middle;margin-left:3px;">PRO</span></div>'
     + '<div class="aip-chat-status"><span class="aip-status-dot"></span>' + ctx.pendingCount + ' tasks · ' + ctx.habitCount + ' habits · ' + ctx.eventCount + ' events' + (carried ? ' · <span style=\"color:#dc2626;\">' + carried + ' overdue</span>' : '') + '</div>'
     + '</div></div>'
-    + '<button class="aip-reset-btn" onclick="closeSheets()" style="padding:4px 8px;">✕</button>'
+    + '<button class="aip-reset-btn" onclick="openAIPlanner()" style="padding:4px 8px;">✕</button>'
     + '</div>'
     + '<div class="aip-chat-msgs" id="' + containerId + '-msgs">'
     + '<div id="' + containerId + '-sugg" style="display:flex;flex-direction:column;gap:8px;padding:8px 0;">'
