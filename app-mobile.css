@@ -783,7 +783,7 @@ button,input,select,textarea{font-family:inherit;}
 /* ── AI Planner sheet ── */
 #sh-aiplanner{max-width:100%;height:88vh;}
 #sh-aiplanner .sh-handle{flex-shrink:0;}
-#mob-aip-body{height:calc(88vh - 28px);display:flex;flex-direction:column;overflow:hidden;}
+#mob-aip-body{height:calc(72vh - 28px);display:flex;flex-direction:column;overflow:hidden;}
 #mob-aip-body .aip-chat-wrap{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;}
 #mob-aip-body .aip-chat-msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #mob-aip-body .aip-chat-footer{flex-shrink:0;}
