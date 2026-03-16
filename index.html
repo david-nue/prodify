@@ -1886,26 +1886,40 @@
 
   <!-- GOAL SETUP MODAL -->
   <div class="ov" id="mo-goal-setup" onclick="if(event.target===this)closeMo('mo-goal-setup')">
-    <div class="mod ev-mod" style="max-width:480px;">
-      <div style="padding:22px 24px 0;">
-        <div style="font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-bottom:4px;">Goal Setup
-          <span style="font-size:11px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:2px 8px;border-radius:100px;vertical-align:middle;margin-left:8px;">Pro</span>
-        </div>
-        <div style="font-size:13px;color:var(--ink3);margin-bottom:18px;line-height:1.5;">Describe a goal and AI will break it into tasks, habits, events and a project — ready to add with one tap.</div>
-        <textarea id="goal-input" class="aip-textarea" rows="3" placeholder="e.g. I want to run a 5K in 3 months, learn Spanish in 6 months, launch my side project by July…" style="margin-bottom:12px;"></textarea>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="goal-example-chips">
-          <button class="aip-followup-chips" onclick="document.getElementById('goal-input').value='I want to run a 5K in 3 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;">🏃 Run a 5K</button>
-          <button onclick="document.getElementById('goal-input').value='I want to learn Spanish in 6 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;">🗣️ Learn Spanish</button>
-          <button onclick="document.getElementById('goal-input').value='I want to launch my side project in 2 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;">🚀 Launch side project</button>
+    <div class="mod" style="max-width:460px;padding:0;border-radius:20px;overflow:hidden;max-height:85vh;display:flex;flex-direction:column;">
+      <!-- Header -->
+      <div style="padding:22px 24px 18px;border-bottom:1.5px solid var(--bdr);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--a2));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21"/></svg>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.2;">Goal Setup <span style="font-size:10px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:2px 7px;border-radius:100px;vertical-align:middle;margin-left:4px;">PRO</span></div>
+            <div style="font-size:12px;color:var(--ink4);margin-top:1px;">Cascades into tasks, habits, events & a project</div>
+          </div>
         </div>
       </div>
-      <div style="padding:0 24px 8px;" id="goal-result" style="display:none;"></div>
-      <div style="padding:12px 24px 20px;display:flex;gap:10px;flex-direction:column;">
-        <button class="aip-btn" id="goal-generate-btn" onclick="generateGoalPlan()">
+      <!-- Scrollable body -->
+      <div style="padding:18px 24px;overflow-y:auto;flex:1;">
+        <textarea id="goal-input" rows="3" placeholder="e.g. I want to run a 5K in 3 months, learn Spanish in 6 months, launch my side project by July…"
+          style="width:100%;box-sizing:border-box;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:12px 14px;font-size:13px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.6;transition:border-color .2s;margin-bottom:12px;"
+          onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"></textarea>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;">
+          <button onclick="document.getElementById('goal-input').value='I want to run a 5K in 3 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--ink3)'">🏃 Run a 5K</button>
+          <button onclick="document.getElementById('goal-input').value='I want to learn Spanish in 6 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--ink3)'">🗣️ Learn Spanish</button>
+          <button onclick="document.getElementById('goal-input').value='I want to launch my side project in 2 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--ink3)'">🚀 Launch side project</button>
+        </div>
+        <div id="goal-result" style="display:none;margin-top:16px;"></div>
+      </div>
+      <!-- Footer -->
+      <div style="padding:14px 24px 20px;border-top:1.5px solid var(--bdr);display:flex;gap:10px;flex-direction:column;flex-shrink:0;">
+        <button id="goal-generate-btn" onclick="generateGoalPlan()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;border:none;border-radius:14px;padding:14px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s;"
+          onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21"/></svg>
           Break down my goal
         </button>
-        <button onclick="closeMo('mo-goal-setup')" style="background:none;border:none;color:var(--ink4);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:4px;">Cancel</button>
+        <button onclick="closeMo('mo-goal-setup')" style="background:none;border:none;color:var(--ink4);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:4px;text-align:center;">Cancel</button>
       </div>
     </div>
   </div>
