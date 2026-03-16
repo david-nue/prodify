@@ -2692,17 +2692,28 @@ function renderAIPlanner(containerId, isMobile) {
   const ctx = _buildAipContext();
   const carried = ctx.carriedTasks.length;
 
+  const habitListWithIds = ctx.pendingHabits.length
+    ? ctx.pendingHabits.map(h => '• [id:' + h.id + '] ' + h.emoji + ' ' + h.name).join('\n')
+    : '(none)';
+  const taskListWithIds = ctx.pendingTasks.length
+    ? ctx.pendingTasks.map(t => '• [id:' + t.id + '] ' + (t.title||t.text||'') + (t.priority?' ['+t.priority+']':'') + (t.dueDate?' due '+t.dueDate:'')).join('\n')
+    : '(none)';
+
   _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '.\n'
-    + 'TASKS: ' + ctx.taskList + '\n'
-    + (carried ? 'OVERDUE: ' + ctx.carriedTasks.map(t=>'• '+(t.title||t.text)).join(', ') + '\n' : '')
-    + 'HABITS TO DO: ' + ctx.habitList + (ctx.doneHabitCount>0?' | DONE: '+ctx.doneHabitCount:'') + '\n'
+    + 'PENDING TASKS:\n' + taskListWithIds + '\n'
+    + (carried ? 'OVERDUE FROM YESTERDAY: ' + ctx.carriedTasks.map(t=>'[id:'+t.id+'] '+(t.title||t.text)).join(', ') + '\n' : '')
+    + 'HABITS TO DO:\n' + habitListWithIds + (ctx.doneHabitCount>0?' | ALREADY DONE: '+ctx.doneHabitCount:'') + '\n'
     + 'CALENDAR: ' + ctx.eventList + '\n\n'
+    + 'IMPORTANT RULES:\n'
+    + '- Only use IDs from the data above. Never make up IDs.\n'
+    + '- If the user asks to do something with no matching data (e.g. mark a habit when there are none), tell them honestly.\n'
+    + '- Never confirm an action you did not perform.\n\n'
     + 'Actions — append after text:\n'
     + '<<<ACTION>>>{"type":"create_task","text":"name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"complete_habit","id":123}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"move_task","id":"123","col":"todo|inprog|done"}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"complete_habit","id":EXACT_ID_FROM_ABOVE}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"move_task","id":"EXACT_ID_FROM_ABOVE","col":"todo|inprog|done"}<<<END>>>\n'
     + '<<<ACTION>>>{"type":"create_event","title":"name","date":"YYYY-MM-DD"}<<<END>>>\n'
-    + 'Confirm actions. Plans: **HH:MM - HH:MM** task then > tip. End with **Note:** one line.';
+    + 'Plans: **HH:MM - HH:MM** task then > tip. End with **Note:** one line.';
 
   el.innerHTML =
     '<div class="aip-chat-wrap" id="' + containerId + '-wrap">'

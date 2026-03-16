@@ -4802,17 +4802,43 @@ function renderAIPlanner(containerId, isMobileParam) {
   const ctx = _buildAipContext();
   const carried = ctx.carriedTasks.length;
 
+  // Build detailed lists with IDs for accurate action targeting
+  const habitListWithIds = ctx.pendingHabits.length
+    ? ctx.pendingHabits.map(h => '• [id:' + h.id + '] ' + h.emoji + ' ' + h.name).join('\n')
+    : '(none)';
+  const taskListWithIds = ctx.pendingTasks.length
+    ? ctx.pendingTasks.map(t => '• [id:' + t.id + '] ' + (t.text||t.title) + (t.priority?' ['+t.priority+']':'') + (t.dueDate?' due '+t.dueDate:'')).join('\n')
+    : '(none)';
+
   _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '.\n'
-    + 'TASKS: ' + ctx.taskList + '\n'
-    + (carried ? 'OVERDUE FROM YESTERDAY: ' + ctx.carriedTasks.map(t=>'• '+t.text).join(', ') + '\n' : '')
-    + 'HABITS TO DO: ' + ctx.habitList + (ctx.doneHabitCount>0?' | DONE: '+ctx.doneHabitCount:'') + '\n'
+
+    + 'PENDING TASKS:\n' + taskListWithIds + '\n'
+
+    + (carried ? 'OVERDUE FROM YESTERDAY: ' + ctx.carriedTasks.map(t=>'[id:'+t.id+'] '+t.text).join(', ') + '\n' : '')
+
+    + 'HABITS TO DO:\n' + habitListWithIds + (ctx.doneHabitCount>0?' | ALREADY DONE TODAY: '+ctx.doneHabitCount:'') + '\n'
+
     + 'CALENDAR: ' + ctx.eventList + '\n\n'
+
+    + 'IMPORTANT RULES:\n'
+
+    + '- Only perform actions using IDs from the data above. Never make up IDs.\n'
+
+    + '- If the user asks to do something that has no matching data (e.g. mark a habit done when there are no habits), tell them honestly instead of pretending.\n'
+
+    + '- Never confirm an action you did not actually perform.\n\n'
+
     + 'Actions — append JSON after your text:\n'
+
     + '<<<ACTION>>>{"type":"create_task","text":"name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"complete_habit","id":123}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"move_task","id":"123","col":"todo|inprog|done"}<<<END>>>\n'
+
+    + '<<<ACTION>>>{"type":"complete_habit","id":EXACT_ID_FROM_ABOVE}<<<END>>>\n'
+
+    + '<<<ACTION>>>{"type":"move_task","id":"EXACT_ID_FROM_ABOVE","col":"todo|inprog|done"}<<<END>>>\n'
+
     + '<<<ACTION>>>{"type":"create_event","title":"name","date":"YYYY-MM-DD"}<<<END>>>\n'
-    + 'Confirm actions in your reply. Plans: **HH:MM \u2013 HH:MM** task then > tip. End with **Note:** one line.';
+
+    + 'Plans: **HH:MM \u2013 HH:MM** task then > tip. End with **Note:** one line.';
 
   const closeBtn = isMobileParam ? '' : '<button class="aip-reset-btn" onclick="toggleAipPanel()" title="Close" style="padding:4px 8px;">✕</button>';
 
