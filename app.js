@@ -18,10 +18,10 @@ let _confirmResolve = null;
 function appConfirm(msg, sub='', okLabel='Delete'){
   return new Promise(res=>{
     _confirmResolve = res;
-    const mo = document.getElementById('mo-confirm');
-    const msgEl = document.getElementById('mo-confirm-msg');
-    const subEl = document.getElementById('mo-confirm-sub');
-    const okBtn = document.getElementById('mo-confirm-ok');
+    const mo = document.getElementById('dsk-mo-confirm');
+    const msgEl = document.getElementById('dsk-mo-confirm-msg');
+    const subEl = document.getElementById('dsk-mo-confirm-sub');
+    const okBtn = document.getElementById('dsk-mo-confirm-ok');
     if(msgEl) msgEl.textContent = msg;
     if(subEl){ subEl.textContent = sub; subEl.style.display = sub ? '' : 'none'; }
     if(okBtn) okBtn.textContent = okLabel;
@@ -29,18 +29,18 @@ function appConfirm(msg, sub='', okLabel='Delete'){
   });
 }
 function confirmResolve(val){
-  const mo = document.getElementById('mo-confirm');
+  const mo = document.getElementById('dsk-mo-confirm');
   if(mo) mo.style.display='none';
   if(_confirmResolve){ _confirmResolve(val); _confirmResolve=null; }
 }
 // Close on backdrop click
 document.addEventListener('click', function(e){
-  const mo = document.getElementById('mo-confirm');
+  const mo = document.getElementById('dsk-mo-confirm');
   if(mo && e.target === mo) confirmResolve(false);
 });
 
 // ── Canvas drag-to-pan (mouse + touch) ──
-document.addEventListener('DOMContentLoaded', function(){
+(function(){
   const scroll = document.getElementById('canvas-scroll');
   const cvs    = document.getElementById('canvas');
   if(!scroll || !cvs) return;
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(e.touches.length === 0) active = false;
   });
   cvs.addEventListener('touchcancel', function(){ active = false; _pinching = false; });
-});
+})();
 
 
 
@@ -337,6 +337,8 @@ async function dbSaveUser(username,data){
     // Only mark cloud as up-to-date when save actually succeeded.
     // Also persisted to localStorage so the trustLocal heuristic works across page reloads.
     _lastSaveTs = Date.now();
+    // Keep _localTs alive so incoming realtime from other devices doesn't overwrite
+    if(cu && acc[cu]) { acc[cu]._localTs = _lastSaveTs; LS.s('pd1_acc', acc); }
     try{ localStorage.setItem('pd1_lastSaveTs', String(_lastSaveTs)); }catch(e){}
     return true;
   }catch(e){
@@ -366,8 +368,8 @@ function startRealtimeSync(username){
       table:'users',
       filter:'username=eq.'+username
     }, payload=>{
-      // Block echo from our own save for 5s
-      if(Date.now()-_lastSaveTs < 5000) return;
+      // Block echo from our own save for 500ms (Supabase realtime delivers in ~100-300ms)
+      if(Date.now()-_lastSaveTs < 500) return;
       // Also block if local data is newer than cloud — same guard as pullFromCloud
       const localTs = (acc[cu]||{})._localTs || 0;
       if(localTs > 0 && localTs > _lastSaveTs) return;
@@ -390,17 +392,40 @@ function safeParseJSON(str, fallback){
   catch(e){ console.error('[Prodify] JSON parse error, using fallback:',e); return fallback; }
 }
 
+function normalizeTasks(arr){
+  return (arr||[]).map(t=>{
+    if(!t.text  && t.title) t.text  = t.title;
+    if(!t.title && t.text)  t.title = t.text;
+    if(t.id !== undefined) t.id = String(t.id);
+    if(t.subjectId !== undefined) t.subjectId = String(t.subjectId);
+    return t;
+  });
+}
+
+function normalizeJournal(arr){
+  return (arr||[]).map(j=>{
+    // Ensure id is always a string
+    if(j.id !== undefined) j.id = String(j.id);
+    // Ensure both text and content exist
+    if(!j.text    && j.content) j.text    = j.content;
+    if(!j.content && j.text)    j.content = j.text;
+    // Fix date: mobile stores ISO string, desktop expects "Mon, Mar 16"
+    if(j.date && j.date.includes('T') && j.date.includes('Z')){
+      try{
+        j.date = new Date(j.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      }catch(e){}
+    }
+    return j;
+  });
+}
+
 function applyRemoteData(row){
   if(!row||!cu) return;
   try{
     const d = acc[cu] || {};
-    // Use != null so both null and undefined are caught, but '[]' and '{}' still apply.
-    // Previously `if(row.tasks)` would skip a null column silently, leaving stale local
-    // state while other fields got updated — causing inconsistent data.
-    // Each field uses safeParseJSON so a single corrupted column doesn't abort the rest.
-    if(row.tasks    != null) { tasks    = safeParseJSON(row.tasks,    []); d.tasks    = tasks;    }
-    if(row.journal  != null) { journal  = safeParseJSON(row.journal,  []); d.journal  = journal;  }
-    if(row.subjects != null) { subjects = safeParseJSON(row.subjects, []); d.subjects = subjects; }
+    if(row.tasks    != null) { tasks    = normalizeTasks(safeParseJSON(row.tasks, [])); d.tasks = tasks; }
+    if(row.journal  != null) { journal  = normalizeJournal(safeParseJSON(row.journal,  [])); d.journal  = journal;  }
+    if(row.subjects != null) { subjects = (safeParseJSON(row.subjects, [])||[]).map(s=>{if(s.id!==undefined)s.id=String(s.id);return s;}); d.subjects = subjects; }
     if(row.cal_evs  != null) { calEvs   = safeParseJSON(row.cal_evs,  []); d.calEvs   = calEvs;   }
     if(row.widgets  != null) { widgets  = safeParseJSON(row.widgets,  []); d.widgets  = widgets;  }
     if(row.notes    != null) { notes    = safeParseJSON(row.notes,    {}); d.notes    = notes;    }
@@ -416,20 +441,23 @@ function applyRemoteData(row){
     }
     acc[cu]=d;
     LS.s('pd1_acc',acc);
-    // Re-render everything
-    renderAllTaskW();
-    renderCanvas();
-    updateAllStatsW(); updateFixedStats();
-    if(typeof renderSubFull==='function') renderSubFull();
-    if(typeof renderAllSubW==='function') renderAllSubW();
-    if(typeof renderCal==='function') renderCal();
-    if(typeof renderWidgets==='function') renderWidgets();
-    if(typeof applyDark==='function') applyDark(prefs.dark);
-    if(typeof applyTheme==='function') applyTheme();
-    if(typeof renderProBadge==='function') renderProBadge();
-    if(typeof pomRenderHistory==='function') pomRenderHistory();
-    // Apply avatar across all elements
-    applyAvatar();
+    // Re-render only what changed
+    if(row.tasks    != null) { renderAllTaskW(); updateAllStatsW(); updateFixedStats(); }
+    if(row.journal  != null && typeof renderAllJournalW==='function') renderAllJournalW();
+    if(row.subjects != null) { if(typeof renderSubFull==='function') renderSubFull(); if(typeof renderAllSubW==='function') renderAllSubW(); }
+    if(row.cal_evs  != null && typeof renderCal==='function') renderCal();
+    if(row.prefs    != null) {
+      if(typeof applyDark==='function') applyDark(prefs.dark);
+      if(typeof applyTheme==='function') applyTheme();
+      if(typeof renderProBadge==='function') renderProBadge();
+      if(typeof pomRenderHistory==='function') pomRenderHistory();
+      applyAvatar();
+    }
+    // Only rebuild canvas if widgets changed or tasks/subjects changed (widget content depends on them)
+    if(row.widgets != null || row.tasks != null || row.subjects != null) {
+      if(typeof renderWidgets==='function') renderWidgets();
+      else renderCanvas();
+    }
   }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
 
@@ -516,6 +544,17 @@ function pomGetWeekData(){
   }
   return days;
 }
+async function clearAllData(){
+  if(!await appConfirm('Clear all data?','This will erase all your tasks, journal entries, habits and calendar events. This cannot be undone.','Clear')) return;
+  tasks=[]; journal=[]; subjects=[]; calEvs=[];
+  if(prefs){ prefs.habits=[]; prefs.habitLog={}; prefs.pomHistory={}; }
+  persist();
+  renderAllTaskW(); renderAllJournalW(); renderAllSubW();
+  if(typeof renderAllHabitsW==='function') renderAllHabitsW();
+  if(typeof renderFullCal==='function') renderFullCal();
+  updateAllStatsW(); updateFixedStats();
+}
+
 async function clearPomHistory(){
   if(!await appConfirm('Clear session history?','This will erase all your pomodoro session data.','Clear'))return;
   prefs.pomHistory={};
@@ -592,10 +631,24 @@ function fmtSec(s){
   return `${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`;
 }
 function parseTimeInput(raw){
-  const parts=raw.split(':');
-  if(parts.length===3)return (parseInt(parts[0])||0)*3600+(parseInt(parts[1])||0)*60+(parseInt(parts[2])||0);
-  if(parts.length===2)return (parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);
-  return (parseInt(raw)||0)*60;
+  raw = raw.trim();
+  // No colon: treat as pure seconds (e.g. "30" = 30s, "90" = 90s)
+  if(!raw.includes(':')){
+    const n = parseInt(raw) || 0;
+    return Math.min(Math.max(n, 0), 359999); // cap at 99:59:59
+  }
+  const parts = raw.split(':');
+  if(parts.length === 3){
+    // H:MM:SS
+    const h = Math.min(parseInt(parts[0])||0, 99);
+    const m = Math.min(parseInt(parts[1])||0, 59);
+    const s = Math.min(parseInt(parts[2])||0, 59);
+    return h*3600 + m*60 + s;
+  }
+  // MM:SS
+  const m = Math.min(parseInt(parts[0])||0, 99);
+  const s = Math.min(parseInt(parts[1])||0, 59);
+  return m*60 + s;
 }
 
 // ═══════════════════════════════════════
@@ -1325,6 +1378,8 @@ function stopAlarm(){
 }
 
 async function doSO(){
+  const ok = await appConfirm('Sign out?', 'You will be returned to the landing page.', 'Sign out');
+  if(!ok) return;
   const _cu = cu;
   _pendingGoogleSession = null;
   // Flush any pending debounced save and do a final cloud save BEFORE signing out.
@@ -1367,7 +1422,7 @@ async function pullFromCloud(){
   // >10s, pullFromCloud fires, and blindly stomps local changes that haven't
   // finished syncing to cloud yet.
   const localTs = (acc[cu]||{})._localTs || 0;
-  if(localTs > 0 && localTs > _lastSaveTs) return;
+  if(localTs > 0 && Date.now()-localTs < 1000) return; // local change too recent (<1s)
   try{
     const dbUser=await dbGetUser(cu);
     if(!dbUser){
@@ -1400,7 +1455,7 @@ async function pullFromCloud(){
       _localTs:0, // cloud data — no local timestamp
     };
     LS.s('pd1_acc',acc);
-    tasks=acc[cu].tasks;journal=acc[cu].journal;subjects=acc[cu].subjects;
+    tasks=normalizeTasks(acc[cu].tasks);acc[cu].tasks=tasks;journal=normalizeJournal(acc[cu].journal);acc[cu].journal=journal;subjects=acc[cu].subjects;
     calEvs=acc[cu].calEvs;widgets=acc[cu].widgets;notes=acc[cu].notes;prefs=acc[cu].prefs;
     const newWidgetIds=widgets.map(x=>x.id).sort().join(',');
     if(oldWidgetIds!==newWidgetIds){
@@ -1783,10 +1838,17 @@ document.addEventListener('click',e=>{
 // MODALS
 // ═══════════════════════════════════════
 function openMo(id){
-  $(id).classList.add('open');
+  const el=$(id); if(!el){ console.warn('[Prodify] openMo: element not found:', id); return; }
+  el.classList.add('open');
   if(id==='mo-feedback'){_fbType='general';_fbStar=0;setTimeout(initFbStars,50);}
+  if(id==='mo-about'){
+    const nameEl = document.getElementById('about-display-name');
+    const unEl   = document.getElementById('about-username');
+    if(nameEl) nameEl.textContent = 'David N.';
+    if(unEl)   unEl.textContent   = 'Creator of Prodify';
+  }
 }
-function closeMo(id){$(id).classList.remove('open');}
+function closeMo(id){ const el=$(id); if(el) el.classList.remove('open'); }
 
 // ═══════════════════════════════════════
 // DARK MODE
@@ -1997,13 +2059,17 @@ function renderCanvas(){
   widgets.forEach(w=>buildWidgetEl(w));
 }
 
-function bringToFront(id){
-  const w=widgets.find(x=>x.id===id);if(!w)return;
-  w.z=nextZ++;$(id).style.zIndex=w.z;persist();
-}
-
 function buildWidgetEl(w){
-  const canvas=$('canvas');
+  const WICONS={
+    tasks:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>`,
+    journal:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+    timer:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 3h6"/></svg>`,
+    habits:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>`,
+    subjects:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17.5h7M17.5 14v7"/></svg>`,
+    calendar:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>`,
+    note:`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z"/><path d="M14 2v4h4M8 13h8M8 9h8M8 17h5"/></svg>`,
+  };
+  const wicon=WICONS[w.type]?`<span style="display:inline-flex;align-items:center;opacity:.5;margin-right:5px;flex-shrink:0;">${WICONS[w.type]}</span>`:'';
   const el=document.createElement('div');
   el.className='widget';el.id=w.id;
   el.dataset.type=w.type;
@@ -2123,7 +2189,7 @@ function renderHabitW(wid){
   const habits=habitGetAll();
   const total=habits.length, doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
   if(!total){
-    list.innerHTML=`<div style="text-align:center;padding:24px 10px;color:var(--ink4);font-size:12px;">Add your first habit below</div>`;
+    list.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 12px;text-align:center;"><div style="width:40px;height:40px;border-radius:12px;background:var(--surf2);border:1.5px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--ink4);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></div><div style="font-size:12px;font-weight:700;color:var(--ink3);">No habits yet</div><div style="font-size:11px;color:var(--ink4);">Add one below</div></div>`;
     return;
   }
   const pct=Math.round(doneCount/total*100);
@@ -2413,7 +2479,7 @@ function addTask(wid){
   const inp=$('twi-'+wid);const t=inp.value.trim();if(!t){inp.focus();return;}
   const due=$('twd-'+wid)?.value||'';
   const rec=$('twrd-'+wid)?.getAttribute('data-val')||'none';
-  tasks.unshift({id:Date.now(),text:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
+  tasks.unshift({id:String(Date.now()),text:t,title:t,col:'todo',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),dueDate:due,recurring:rec});
   persist();renderAllTaskW();inp.value='';
   // reset due date
   if($('twd-'+wid))$('twd-'+wid).value='';
@@ -2455,10 +2521,10 @@ function selTask(e,id){
   // If the click landed on the delete button, let its own onclick handle it
   if(e.target.closest('.tcdel')) return;
   e.stopPropagation();
-  _selTask=(_selTask===id)?null:id;
+  _selTask=(String(_selTask)===String(id))?null:String(id);
   renderAllTaskW();
 }
-async function delTask(id){if(!await appConfirm('Delete this task?','This cannot be undone.'))return;tasks=tasks.filter(t=>t.id!==id);_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
+async function delTask(id){if(!await appConfirm('Delete this task?','This cannot be undone.'))return;tasks=tasks.filter(t=>String(t.id)!==String(id));_selTask=null;persist();renderAllTaskW();updateAllStatsW();updateFixedStats();}
 function populateTaskWidgetSubjSels(){
   widgets.forEach(w=>{
     if(w.type!=='tasks')return;
@@ -2481,9 +2547,9 @@ function renderTaskCols(wid){
     $('cn-'+c+'-'+wid).textContent=cols[c].length;
     if(!cols[c].length){
       const _cfg={
-        todo:{icon:'📋',title:'Nothing planned',hint:'Add a task using the field below'},
-        inprog:{icon:'⚡',title:'Nothing in progress',hint:'Drag a task here to start'},
-        done:{icon:'✅',title:'Nothing done yet',hint:'Complete a task to see it here'}
+        todo:{icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>`,title:'Nothing planned',hint:'Add a task below'},
+        inprog:{icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`,title:'Nothing in progress',hint:'Drag a task here'},
+        done:{icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>`,title:'Nothing done yet',hint:'Complete a task to see it here'}
       }[c];
       el.innerHTML='<div class="twempty"><div class="twempty-icon">'+_cfg.icon+'</div><div class="twempty-t">'+_cfg.title+'</div><div class="twempty-hint">'+_cfg.hint+'</div></div>';
       return;
@@ -2493,14 +2559,14 @@ function renderTaskCols(wid){
       const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
       const isOverdue=due?.label==='Overdue';
       const recurTag=t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">${t.recurring==='daily'?'Daily':'Weekly'}</span>`:'';
-      return `<div class="tc${_selTask===t.id?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,${t.id})" ondragend="dend()" onclick="selTask(event,${t.id})" ontouchstart="tcTouchStart(event,${t.id})">
-      <button class="tcdel" onclick="event.stopPropagation();delTask(${t.id})">&times;</button>
-      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text)}</div><div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
+      return `<div class="tc${String(_selTask)===String(t.id)?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,'${t.id}')" ondragend="dend()" onclick="selTask(event,'${t.id}')" ontouchstart="tcTouchStart(event,'${t.id}')">
+      <button class="tcdel" onclick="event.stopPropagation();delTask('${t.id}')">&times;</button>
+      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text||t.title||'')}</div><div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
     </div>`;
     }).join('');
   });
 }
-function dstart(e,id){dragTaskId=id;e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=$('tc-'+id);if(el)el.classList.add('dragging');},0);}
+function dstart(e,id){dragTaskId=String(id);e.dataTransfer.effectAllowed='move';setTimeout(()=>{const el=$('tc-'+id);if(el)el.classList.add('dragging');},0);}
 function dend(){dragTaskId=null;document.querySelectorAll('.tc').forEach(e=>e.classList.remove('dragging'));document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));}
 // Touch drag for mobile tasks
 let _touchDragId=null,_touchDragEl=null,_touchClone=null,_tcDragActive=false,_tcDragClone=null,_tcDragStartX=0,_tcDragStartY=0;
@@ -2567,7 +2633,7 @@ document.addEventListener('touchmove',function(e){if(_tcDragActive)touchDragMove
 document.addEventListener('touchend',function(e){if(_tcDragActive)touchDragEnd(e);});
 function dov(e,col,wid){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));$('col-'+col+'-'+wid).classList.add('dov');}
 function dlv(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');}
-function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>x.id===dragTaskId);if(t&&t.col!==col){t.col=col;syncProjectProgress();persist();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();}dragTaskId=null;}
+function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forEach(e=>e.classList.remove('dov'));if(dragTaskId===null)return;const t=tasks.find(x=>String(x.id)===String(dragTaskId));if(t&&t.col!==col){t.col=col;syncProjectProgress();persist();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();}dragTaskId=null;}
 
 /* ── JOURNAL ── */
 function buildJournalW(body,w){
@@ -2604,7 +2670,8 @@ function buildJournalW(body,w){
           Templates
         </button>
         <button class="jwutil-btn" onclick="dskShufflePrompt('${w.id}')">✨ Prompt</button>
-        <button class="jwsave-btn" onclick="addJournal('${w.id}')">Save</button>
+        <button class="jwcancel-edit-btn" id="jwcancel-${w.id}" onclick="jwCancelEdit('${w.id}')" style="display:none;">Cancel</button>
+        <button class="jwsave-btn" id="jwsave-${w.id}" onclick="addJournal('${w.id}')">Save</button>
       </div>
     </div>`;
   renderJournalW(w.id);
@@ -2690,12 +2757,52 @@ function jwToggleTpl(wid){
 // legacy compat
 function pickMood(m,wid){pickMoodW(m,wid);}
 function toggleMoodPicker(wid,force){}
-function addJournal(wid){
-  const el=$('jwta-'+wid);const t=el.value.trim();if(!t){el.focus();return;}
-  journal.unshift({id:Date.now(),text:t,mood:curMood,date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),ts:Date.now()});
-  persist();renderAllJournalW();updateAllStatsW();updateFixedStats();el.value='';el.style.height='';
+
+// ── Journal edit state ──
+let _jwEditId=null, _jwEditWid=null;
+
+function jwEditEntry(id, wid){
+  const entry=journal.find(j=>String(j.id)===String(id)); if(!entry) return;
+  _jwEditId=id; _jwEditWid=wid;
+  const ta=$('jwta-'+wid); if(!ta) return;
+  ta.value=entry.text||entry.content||'';
+  ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+  curMood=entry.mood||0;
+  pickMoodW(curMood, wid);
+  const saveBtn=document.getElementById('jwsave-'+wid);
+  const cancelBtn=document.getElementById('jwcancel-'+wid);
+  if(saveBtn){ saveBtn.textContent='Update'; saveBtn.style.background='var(--amb,#9A6818)'; }
+  if(cancelBtn){ cancelBtn.style.display='inline-flex'; }
+  document.querySelectorAll('#jwl-'+wid+' .jwje').forEach(el=>el.classList.remove('jw-editing'));
+  const entryEl=document.querySelector('#jwl-'+wid+' .jwje[data-id="'+id+'"]');
+  if(entryEl) entryEl.classList.add('jw-editing');
+  ta.focus();
+  ta.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
-async function delJournal(id){if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;journal=journal.filter(j=>j.id!==id);persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
+
+function jwCancelEdit(wid){
+  _jwEditId=null; _jwEditWid=null;
+  const ta=$('jwta-'+wid); if(ta){ ta.value=''; ta.style.height=''; }
+  const saveBtn=document.getElementById('jwsave-'+wid);
+  const cancelBtn=document.getElementById('jwcancel-'+wid);
+  if(saveBtn){ saveBtn.textContent='Save'; saveBtn.style.background=''; }
+  if(cancelBtn){ cancelBtn.style.display='none'; }
+  document.querySelectorAll('#jwl-'+wid+' .jwje').forEach(el=>el.classList.remove('jw-editing'));
+}
+
+function addJournal(wid){
+  const el=$('jwta-'+wid); const t=el.value.trim(); if(!t){el.focus();return;}
+  if(_jwEditId && _jwEditWid==wid){
+    const entry=journal.find(j=>String(j.id)===String(_jwEditId));
+    if(entry){ entry.text=t; entry.content=t; entry.mood=curMood; }
+    jwCancelEdit(wid);
+  } else {
+    journal.unshift({id:Date.now(),text:t,content:t,mood:curMood,date:new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}),ts:Date.now()});
+  }
+  persist(); renderAllJournalW(); updateAllStatsW(); updateFixedStats();
+  el.value=''; el.style.height='';
+}
+async function delJournal(id){if(!await appConfirm('Delete this journal entry?','This cannot be undone.'))return;journal=journal.filter(j=>String(j.id)!==String(id));persist();renderAllJournalW();updateAllStatsW();updateFixedStats();}
 function renderAllJournalW(){widgets.filter(w=>w.type==='journal').forEach(w=>renderJournalW(w.id));}
 function onJwSearch(wid,val){
   _jwSearch[wid]=val.toLowerCase().trim();
@@ -2706,18 +2813,19 @@ function onJwSearch(wid,val){
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
   const q=_jwSearch[wid]||'';
-  const filtered=q?journal.filter(j=>(j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q)):journal;
-  if(!journal.length){el.innerHTML='<div class="es"><div class="es-icon">📓</div><div class="es-title">No journal entries yet</div><div class="es-hint">Write your first entry below — capture how your day went.</div></div>';return;}
+  const filtered=q?journal.filter(j=>((j.text||j.content||'').toLowerCase().includes(q))||(j.date||'').toLowerCase().includes(q)):journal;
+  if(!journal.length){el.innerHTML='<div class="es"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6M8 15h4"/></svg></div><div class="es-title">No journal entries yet</div><div class="es-hint">Write your first entry below.</div></div>';return;}
   if(!filtered.length){el.innerHTML='<div class="jwempty">No entries match your search.</div>';return;}
   const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
   const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
   el.innerHTML=hdr+filtered.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
-    const preview=j.text.length>120?j.text.slice(0,120)+'…':j.text;
-    const wc=j.text.trim().split(/\s+/).filter(Boolean).length;
+    const _jtext=j.text||j.content||'';
+    const preview=_jtext.length>120?_jtext.slice(0,120)+'…':_jtext;
+    const wc=_jtext.trim().split(/\s+/).filter(Boolean).length;
     const moodColors={'😊':'#2A7D5E','😔':'#5A7AAA','😤':'#C44040','😌':'#7A5EA8','😐':'#888888','🤩':'#D97706','😴':'#6B7280','😰':'#DC2626'};
     const borderCol=moodColors[m.e]||'var(--a2)';
-    return `<div class="jwje" style="border-left-color:${borderCol};">
+    return `<div class="jwje" style="border-left-color:${borderCol};" data-id="${j.id}">
       <div class="jwjehd">
         <span class="jwm" title="${m.l}">${m.e}</span>
         <div style="flex:1;min-width:0;">
@@ -2725,7 +2833,8 @@ function renderJournalW(wid){
           <div class="jwmood-lbl">${m.l}</div>
         </div>
         <span class="jwwc">${wc}w</span>
-        <button class="jwdel" onclick="delJournal(${j.id})">&times;</button>
+        <button class="jwedit" title="Edit" onclick="jwEditEntry('${j.id}','${wid}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="jwdel" onclick="delJournal('${j.id}')">&times;</button>
       </div>
       <div class="jwtx">${hl(esc(preview))}</div>
     </div>`;
@@ -2788,8 +2897,15 @@ function tmStartEdit(wid){
   setTimeout(()=>{inp.focus();inp.select();},50);
 }
 function tmInputFmt(e){
-  // Strip anything that isn't a digit or colon
-  e.target.value=e.target.value.replace(/[^0-9:]/g,'');
+  let v = e.target.value.replace(/[^0-9:]/g, '');
+  // At most 2 colons (H:MM:SS format)
+  const colons = (v.match(/:/g)||[]).length;
+  if(colons > 2) v = v.slice(0, v.lastIndexOf(':'));
+  // No leading colons
+  v = v.replace(/^:+/, '');
+  // No consecutive colons
+  v = v.replace(/:{2,}/g, ':');
+  e.target.value = v;
 }
 function tmInputKey(e,wid){
   if(e.key==='Enter'){e.preventDefault();tmConfirmEdit(wid);}
@@ -2940,45 +3056,45 @@ function goToProject(id){
 }
 function gradeC(g){return g>=90?'#2A5C44':g>=75?'#9A6818':g>=60?'#B87333':'#B83030';}
 function gradeL(g){return g>=90?'A':g>=80?'B':g>=70?'C':g>=60?'D':'F';}
+// ── NEW DESKTOP PROJECT WIDGET ──
 function renderSubW(wid){
   const el=$('swb-'+wid);if(!el)return;
-  if(!subjects.length){el.innerHTML='<div class="es"><div class="es-icon">🗂️</div><div class="es-title">No projects yet</div><div class="es-hint">Create a project from the <b>Projects</b> page to track progress here.</div></div>';return;}
+  if(!subjects.length){el.innerHTML='<div class="es"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17.5h7M17.5 14v7"/></svg></div><div class="es-title">No projects yet</div><div class="es-hint">Create a project from the Projects page.</div></div>';return;}
+  const activeSubjects=subjects.filter(s=>(s.status||'active')!=='done');
+  if(!activeSubjects.length){el.innerHTML='<div class="es"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div class="es-title">All projects completed</div><div class="es-hint">No active projects to show.</div></div>';return;}
   const now=new Date();now.setHours(0,0,0,0);
-  el.innerHTML=subjects.map(s=>{
+  el.innerHTML=activeSubjects.map(s=>{
     const prog=getProjProgress(s);
-    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
     const doneCnt=projTasks.filter(t=>t.col==='done').length;
     const total=projTasks.length;
     const st=s.status||'active';
     const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
     const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
-    const urgent=overdue||dueSoon;
     const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-    const color=s.color||'var(--a2)';
-    const pctColor=urgent?'var(--red)':'var(--ink3)';
-    const urgentHtml=urgent
-      ?'<span style="font-size:10px;font-weight:700;color:var(--red);">'+(overdue?'Overdue':'Due soon')+(dueStr?' · '+dueStr:'')+'</span>'
-      :(dueStr?'<span style="font-size:10px;color:var(--ink3);">'+dueStr+'</span>':'');
-    const taskCntHtml=total?'<span style="font-size:10px;color:var(--ink3);flex-shrink:0;">'+doneCnt+'/'+total+'</span>':'';
-    const arrowBtn='<button onclick="goToProject('+s.id+')" style="background:none;border:none;padding:4px;cursor:pointer;color:var(--ink3);display:flex;align-items:center;flex-shrink:0;border-radius:6px;" title="Open project">'
-      +'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>'
-      +'</button>';
-    return '<div class="swrow">'
-      +'<div class="swdot" style="background:'+color+'"></div>'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;">'
-          +'<div class="swname">'+esc(s.name)+'</div>'
-          +urgentHtml
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:7px;">'
-          +'<div class="swbar" style="flex:1;"><div class="swfill" style="width:'+prog+'%;background:'+color+'"></div></div>'
-          +taskCntHtml
-        +'</div>'
-      +'</div>'
-      +arrowBtn
-    +'</div>';
+    const color=_projColor(s);
+    const urgentHtml=(overdue||dueSoon)
+      ?`<span style="font-size:10px;font-weight:700;color:#E53E3E;">${overdue?'Overdue':'Due soon'}${dueStr?' · '+dueStr:''}</span>`
+      :(dueStr?`<span style="font-size:10px;color:var(--ink4);">${dueStr}</span>`:'');
+    const taskCntHtml=total?`<span style="font-size:10px;color:var(--ink3);flex-shrink:0;">${doneCnt}/${total}</span>`:'';
+    return `<div class="swrow" style="border-left:3px solid ${color};padding-left:9px;${(overdue||dueSoon)?'border-color:#E53E3E;':''}">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px;">
+          <div class="swname">${esc(s.name)}</div>
+          ${urgentHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div class="swbar" style="flex:1;"><div class="swfill" style="width:${prog}%;background:${color}"></div></div>
+          ${taskCntHtml}
+        </div>
+      </div>
+      <button onclick="goToProject('${s.id}')" style="background:none;border:none;padding:4px;cursor:pointer;color:var(--ink3);display:flex;align-items:center;flex-shrink:0;border-radius:6px;" title="Open project">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+      </button>
+    </div>`;
   }).join('');
 }
+
 function buildCalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
   body.innerHTML=`
@@ -3010,11 +3126,7 @@ function renderCalW(wid){
   const totalEvs=days.reduce((a,x)=>a+x.evs.length,0);
   if(sub)sub.textContent=totalEvs?`${totalEvs} event${totalEvs>1?'s':''} this fortnight`:'Next 14 days';
   if(!days.length){
-    el.innerHTML=`<div class="cw-empty">
-      <div class="cw-empty-icon">📅</div>
-      <div>No upcoming events</div>
-      <div style="font-size:11px;margin-top:4px;color:var(--ink4);">Open the planner to add some</div>
-    </div>`;
+    el.innerHTML=`<div class="cw-empty"><div class="cw-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg></div><div>No upcoming events</div><div style="font-size:11px;margin-top:4px;color:var(--ink4);">Open the planner to add some</div></div>`;
     return;
   }
   const todayKey=calFmt(new Date());
@@ -3056,19 +3168,22 @@ function renderSubFull(){
   const g=$('subgrid');if(!g)return;
   const scroll=document.querySelector('#pg-subjects .fpscroll');
   if(_activeSubId!==null){
-    const s=subjects.find(x=>x.id===_activeSubId);
-    if(s){if(scroll)scroll.classList.remove('is-list');renderSubDetail(s);return;}
+    const s=subjects.find(x=>String(x.id)===String(_activeSubId));
+    if(s){if(scroll)scroll.classList.remove('is-list');scroll&&scroll.classList.add('is-detail');renderSubDetail(s);return;}
     _activeSubId=null;
   }
-  if(scroll)scroll.classList.add('is-list');
+  if(scroll){scroll.classList.add('is-list');scroll.classList.remove('is-detail');}
   renderSubList();
 }
 
 function syncProjectProgress(){
   subjects.forEach(s=>{
-    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
     if(projTasks.length){
-      s.progress=Math.round(projTasks.filter(t=>t.col==='done').length/projTasks.length*100);
+      const doneCnt=projTasks.filter(t=>t.col==='done').length;
+      s.progress=Math.round(doneCnt/projTasks.length*100);
+      // Auto-complete when all tasks done; auto-revert when not
+      s.status=doneCnt===projTasks.length?'done':'active';
     }
   });
   if(acc[cu]) acc[cu].subjects=subjects;
@@ -3091,84 +3206,80 @@ function _projColor(s){
   return _projPalette[(idx>=0?idx:allIdx)%_projPalette.length];
 }
 
+// ── NEW DESKTOP PROJECT LIST ──
 function renderSubList(){
   const g=$('subgrid');if(!g)return;
   const hdr=document.querySelector('#pg-subjects .fphdr');
   if(hdr)hdr.innerHTML=`<div class="pg-hdr-inner"><div class="fptit">Projects</div><button class="btn ba bsm" onclick="_resetSubMo();openMo('mo-sub')">+ New Project</button></div>`;
   if(!subjects.length){
-    g.innerHTML=`<div class="sub-empty"><div class="sub-empty-icon">📋</div><div class="sub-empty-title">No projects yet</div><div class="sub-empty-desc">Create your first project to start organizing tasks.</div><button class="btn ba bsm" onclick="_resetSubMo();openMo('mo-sub')">+ New Project</button></div>`;
+    g.innerHTML=`<div class="sub-empty"><div class="sub-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17.5h7M17.5 14v7"/></svg></div><div class="sub-empty-title">No projects yet</div><div class="sub-empty-desc">Create your first project to start organizing tasks.</div><button class="btn ba bsm" onclick="_resetSubMo();openMo('mo-sub')">+ New Project</button></div>`;
     return;
   }
-  // Auto-assign unique colors to any projects that don't have one yet
-  const _usedColors=new Set(subjects.filter(s=>s.color&&s.color!=='var(--a2)').map(s=>s.color));
-  subjects.forEach(s=>{
-    if(!s.color||s.color==='var(--a2)'){
-      const unused=_projPalette.filter(c=>!_usedColors.has(c));
-      const pool=unused.length?unused:_projPalette;
-      s.color=pool[Math.floor(Math.random()*pool.length)];
-      _usedColors.add(s.color);
-    }
-  });
-
   const now=new Date();now.setHours(0,0,0,0);
   function projUrgency(s){
     const st=s.status||'active';
-    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
     const remaining=projTasks.filter(t=>t.col!=='done').length;
-    if(s.due){
-      const d=new Date(s.due+'T00:00:00');
-      const diff=Math.round((d-now)/(1000*60*60*24));
-      if(diff<0) return -10000+diff; // overdue: most overdue first
-      return diff*10 - remaining;   // due soonest + most remaining first
-    }
-    return 5000 - remaining; // no due date: sort by remaining tasks
+    if(s.due){const d=new Date(s.due+'T00:00:00');const diff=Math.round((d-now)/(1000*60*60*24));if(diff<0)return -10000+diff;return diff*10-remaining;}
+    return 5000-remaining;
   }
-  function sortedSubjects(arr){
-    return arr.slice().sort((a,b)=>projUrgency(a)-projUrgency(b));
-  }
+  function sortedSubjects(arr){return arr.slice().sort((a,b)=>projUrgency(a)-projUrgency(b));}
   const groups=[
     {key:'active',label:'Active',subjects:sortedSubjects(subjects.filter(s=>(s.status||'active')==='active'))},
-    {key:'hold',label:'On Hold',subjects:sortedSubjects(subjects.filter(s=>s.status==='hold'))},
     {key:'done',label:'Completed',subjects:subjects.filter(s=>s.status==='done')},
   ].filter(g=>g.subjects.length);
 
-  function cardHtml(s,idx){
+  function cardHtml(s){
     const st=s.status||'active';
     const prog=getProjProgress(s);
-    const projTasks=tasks.filter(t=>t.subjectId===s.id);
+    const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
     const doneCnt=projTasks.filter(t=>t.col==='done').length;
-    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+    const total=projTasks.length;
+    const color=_projColor(s);
     const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
     const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
-    const color=_projColor(s);
-    // dot pips (max 8)
-    const total=Math.min(projTasks.length,8);
-    const doneD=Math.min(doneCnt,total);
-    const dots=total?Array.from({length:total},(_,i)=>`<span class="sub-pip${i<doneD?' filled':''}"></span>`).join(''):`<span style="font-size:10px;color:var(--ink4);">No tasks</span>`;
-    return `<div class="subcard${overdue?' subcard-overdue':dueSoon?' subcard-duesoon':''}" id="subcard-${s.id}" draggable="true"
-      style="--proj-color:${color}"
-      ondragstart="sgDragStart(event,${subjects.indexOf(s)})"
-      ondragend="sgDragEnd(event)"
-      ondragover="sgDragOver(event,${subjects.indexOf(s)})"
-      ondragleave="sgDragLeave(event)"
-      ondrop="sgDrop(event,${subjects.indexOf(s)})"
-      onclick="openSubDetail(${s.id})">
-      <div class="subcard-strip"></div>
+    const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+    const urgentBorder=overdue?'border-color:#E53E3E;':dueSoon?'border-color:#E53E3E;':'';
+    const urgentBadge=overdue
+      ?`<span style="font-size:10px;font-weight:700;color:#E53E3E;background:#FEF2F2;border:1px solid #FECACA;border-radius:100px;padding:2px 8px;white-space:nowrap;">Overdue</span>`
+      :dueSoon
+      ?`<span style="font-size:10px;font-weight:700;color:#E53E3E;background:#FEF2F2;border:1px solid #FECACA;border-radius:100px;padding:2px 8px;white-space:nowrap;">Due soon</span>`
+      :'';
+    const statLabel={active:'Ongoing',done:'Completed'};
+    const statClass={active:'st-active',done:'st-done'};
+    // Show up to 4 task pills
+    const shownTasks=projTasks.slice(0,4);
+    const taskPills=shownTasks.map(t=>{
+      const done=t.col==='done';
+      const inprog=t.col==='inprog';
+      const bg=done?`${color}22`:inprog?`${color}44`:'var(--surf2)';
+      const border=done?`${color}44`:inprog?`${color}88`:'var(--bdr)';
+      const textDecor=done?'text-decoration:line-through;opacity:.5;':'';
+      return `<div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:${bg};border:1px solid ${border};border-radius:100px;font-size:11px;font-weight:600;color:var(--ink);max-width:100%;overflow:hidden;">
+        ${done?`<svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"><path d="M2 8l4 4 8-8"/></svg>`
+        :inprog?`<div style="width:6px;height:6px;border-radius:50%;background:${color};flex-shrink:0;"></div>`
+        :`<div style="width:6px;height:6px;border-radius:50%;background:var(--bdr);flex-shrink:0;"></div>`}
+        <span style="${textDecor}white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.text||t.title||'')}</span>
+      </div>`;
+    }).join('');
+    const moreTasks=projTasks.length>4?`<div style="font-size:11px;color:var(--ink4);padding:2px 6px;">+${projTasks.length-4} more</div>`:'';
+    return `<div class="subcard" id="subcard-${s.id}" style="--proj-color:${color};${urgentBorder}" onclick="openSubDetail('${s.id}')">
+      <div style="height:5px;background:${color};flex-shrink:0;border-radius:0;"></div>
       <div class="subbody">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
-          <div class="subname">${esc(s.name)}${overdue?` <span class="sub-warn">!</span>`:dueSoon?` <span class="sub-warn sub-warn-amb">!</span>`:''}</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <div class="subname">${esc(s.name)}</div>
+          ${urgentBadge||`<span class="subtag ${statClass[st]}">${statLabel[st]}</span>`}
         </div>
         ${s.desc?`<div class="subdesc">${esc(s.desc)}</div>`:''}
-        ${s.lead?`<div class="subteach">👤 ${esc(s.lead)}</div>`:''}
-        <div class="subprog-row" style="margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0 6px;">
           <div class="subbar" style="flex:1;"><div class="subbarfill" style="width:${prog}%;background:${color}"></div></div>
-          <span class="subpct">${prog}%</span>
+          <span style="font-size:11px;font-weight:700;color:var(--ink3);min-width:26px;">${prog}%</span>
         </div>
-        <div class="sub-pips">${dots}</div>
+        ${total?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${taskPills}${moreTasks}</div>`:'<div style="font-size:11px;color:var(--ink4);">No tasks yet</div>'}
       </div>
       <div class="subfoot">
         <span class="subdue${overdue?' overdue':dueSoon?' duesoon':''}">${dueStr?(overdue?'Overdue: ':dueSoon?'Due soon: ':'Due: ')+dueStr:''}</span>
-        <span class="subtag sub-cycle-tag st-${st}" onclick="event.stopPropagation();cycProjStatus(${s.id})" title="Click to change status">${{active:'Active',hold:'On Hold',done:'Completed'}[st]}</span>
+        ${!urgentBadge?'':`<span class="subtag ${statClass[st]}">${statLabel[st]}</span>`}
       </div>
     </div>`;
   }
@@ -3177,13 +3288,14 @@ function renderSubList(){
   g.innerHTML=groups.map(grp=>`
     <div class="sub-group">
       <div class="sub-group-hd">${grp.label} <span class="sub-group-cnt">${grp.subjects.length}</span></div>
-      <div class="subgrid-inner">${grp.subjects.map((s,i)=>cardHtml(s,i)).join('')}</div>
+      <div class="subgrid-inner">${grp.subjects.map(s=>cardHtml(s)).join('')}</div>
     </div>
   `).join('');
 }
 
+
 function cycProjStatus(id){
-  const s=subjects.find(x=>x.id===id);if(!s)return;
+  const s=subjects.find(x=>String(x.id)===String(id));if(!s)return;
   const cycle={active:'hold',hold:'done',done:'active'};
   s.status=cycle[s.status||'active'];
   persist();renderSubFull();
@@ -3203,9 +3315,14 @@ function sgDragEnd(e){
   _sgDragIdx=null;
   document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragging','subcard-dragover'));
 }
+function _sgSameBucket(a,b){
+  // Same bucket = same due date string (including both empty)
+  return (a.due||'') === (b.due||'');
+}
 function sgDragOver(e,idx){
   e.preventDefault();
   if(_sgDragIdx===null||_sgDragIdx===idx)return;
+  if(!_sgSameBucket(subjects[_sgDragIdx],subjects[idx]))return;
   document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragover'));
   e.currentTarget.classList.add('subcard-dragover');
 }
@@ -3217,6 +3334,7 @@ function sgDrop(e,idx){
   e.stopPropagation();
   document.querySelectorAll('.subcard').forEach(c=>c.classList.remove('subcard-dragging','subcard-dragover'));
   if(_sgDragIdx===null||_sgDragIdx===idx){_sgDragIdx=null;return;}
+  if(!_sgSameBucket(subjects[_sgDragIdx],subjects[idx])){_sgDragIdx=null;return;}
   const moved=subjects.splice(_sgDragIdx,1)[0];
   subjects.splice(idx,0,moved);
   _sgDragIdx=null;
@@ -3224,22 +3342,24 @@ function sgDrop(e,idx){
 }
 
 function openSubDetail(id){
-  _activeSubId=id;
-  renderSubDetail(subjects.find(s=>s.id===id));
+  _activeSubId=String(id);
+  renderSubDetail(subjects.find(s=>String(s.id)===String(id)));
 }
 
+// ── NEW DESKTOP PROJECT DETAIL ──
 function renderSubDetail(s){
   const g=$('subgrid');if(!g||!s)return;
   const color=_projColor(s);
   const hdr=document.querySelector('#pg-subjects .fphdr');
-  if(hdr)hdr.innerHTML=`<div class="pg-hdr-inner"><div style="display:flex;align-items:center;gap:10px;"><button class="subdet-back" onclick="_activeSubId=null;renderSubFull()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L5 8l5-5"/></svg></button><div class="fptit">${esc(s.name)}</div></div><button class="btn ba bsm" onclick="openAddTaskToProj(${s.id})">+ Add Task</button></div>`;
-  const projTasks=tasks.filter(t=>t.subjectId===s.id);
+  if(hdr)hdr.innerHTML=`<div class="pg-hdr-inner"><div style="display:flex;align-items:center;gap:10px;"><button class="subdet-back" onclick="_activeSubId=null;renderSubFull()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13L5 8l5-5"/></svg></button><div class="fptit">${esc(s.name)}</div></div><button class="btn ba bsm" onclick="openAddTaskToProj('${s.id}')">+ Add Task</button></div>`;
+  const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
   const prog=getProjProgress(s);
-  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
-  const statClass={active:'st-active',hold:'st-hold',done:'st-done'};
+  const statLabel={active:'Ongoing',done:'Completed'};
+  const statClass={active:'st-active',done:'st-done'};
   const st=s.status||'active';
   const now=new Date();now.setHours(0,0,0,0);
   const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
+  const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
   const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
   const todo=sortByDue(projTasks.filter(t=>t.col==='todo'));
   const inprog=sortByDue(projTasks.filter(t=>t.col==='inprog'));
@@ -3248,72 +3368,81 @@ function renderSubDetail(s){
   function taskCard(t){
     const due=taskDueInfo(t);
     const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
-    const recurTag=t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">${t.recurring==='daily'?'Daily':'Weekly'}</span>`:'';
     const isOverdue=due?.label==='Overdue';
+    const isDone=t.col==='done';
     return `<div class="tc${isOverdue?' tc-overdue':''}" id="sdtc-${t.id}" draggable="true"
-      ondragstart="sdDragStart(event,${t.id},${s.id})"
+      ondragstart="sdDragStart(event,'${t.id}','${s.id}')"
       ondragend="sdDragEnd()"
-      onclick="sdSelTask(event,${t.id},${s.id})">
-      <button class="tcdel" onclick="event.stopPropagation();removeTaskFromProj(${t.id})">&times;</button>
-      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text)}</div>
-      <div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
+      style="${isDone?'opacity:.5;cursor:default;':''}">
+      <div class="tct" style="${isDone?'text-decoration:line-through;opacity:.6;':''}">${esc(t.text||t.title||'')}</div>
+      <div class="tcf" style="${isDone?'opacity:.4;':''}">
+        ${dueTag}<span class="tcd">${t.date||''}</span>
+      </div>
     </div>`;
   }
+
+  function dropCol(col){
+    return `id="sdc-${col}-${s.id}" ondragover="sdDragOver(event,'${col}','${s.id}')" ondragleave="sdDragLeave(event)" ondrop="sdDrop(event,'${col}','${s.id}')"`;
+  }
+
+  // Due date bar — shown only when due date exists
+  const dueDateBar=(overdue||dueSoon)?`
+    <div style="height:3px;background:#E53E3E;margin-bottom:0;"></div>
+    <div style="padding:7px 16px;background:#FEF2F2;border-bottom:1px solid #FECACA;display:flex;align-items:center;gap:8px;">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#E53E3E" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
+      <span style="font-size:11px;font-weight:700;color:#E53E3E;">${overdue?'Overdue':'Due soon'} — ${dueStr}</span>
+    </div>`
+    :dueStr?`<div style="padding:6px 16px;background:var(--surf2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
+      <span style="font-size:11px;color:var(--ink3);">Due ${dueStr}</span>
+    </div>`:'';
 
   g.style.display='block';
   g.innerHTML=`
     <div class="subdet">
       <div class="subdet-meta" style="padding:0;overflow:hidden;">
-        <div class="subdet-band" style="background:${color};height:4px;width:100%;"></div>
-        <div style="padding:10px 14px;">
+        <div style="height:4px;background:${color};"></div>
+        ${dueDateBar}
+        <div style="padding:12px 16px;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span class="subtag sub-cycle-tag ${statClass[st]}" onclick="cycProjStatus(${s.id})" title="Click to change status">${statLabel[st]}</span>
+            <span class="subtag ${statClass[st]}">${statLabel[st]}</span>
             <span class="subdet-stat-sep">·</span>
             <span class="subdet-stat-chip">${projTasks.length} task${projTasks.length!==1?'s':''}</span>
             <span class="subdet-stat-sep">·</span>
             <span class="subdet-stat-chip">${done.length} done</span>
-            ${dueStr?`<span class="subdet-stat-sep">·</span><span class="subdet-stat-chip${overdue?' overdue':''}">${overdue?'Overdue: ':'Due: '}${dueStr}</span>`:''}
             <div style="flex:1;min-width:60px;"></div>
-            <div class="subdet-prog-track" style="width:80px;"><div class="subdet-prog-fill" style="width:${prog}%;background:${color};"></div></div>
-            <span style="font-size:11px;font-weight:700;color:var(--ink3);min-width:26px;">${prog}%</span>
-            <button class="subdet-del-btn" onclick="delSub(${s.id})" title="Delete project"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 13 5"/><path d="M6 5V3h4v2M6 8v5M10 8v5"/><rect x="4" y="5" width="8" height="9" rx="1.5"/></svg></button>
+            <div class="subdet-prog-track" style="width:100px;"><div class="subdet-prog-fill" style="width:${prog}%;background:${color};"></div></div>
+            <span style="font-size:11px;font-weight:700;color:var(--ink3);min-width:30px;">${prog}%</span>
+            <button class="subdet-del-btn" onclick="delSub('${s.id}')" title="Delete project"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 13 5"/><path d="M6 5V3h4v2M6 8v5M10 8v5"/><rect x="4" y="5" width="8" height="9" rx="1.5"/></svg></button>
           </div>
-          ${s.desc?`<div style="font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.5;">${esc(s.desc)}</div>`:''}
+          ${s.desc?`<div style="font-size:12px;color:var(--ink3);margin-top:8px;line-height:1.5;">${esc(s.desc)}</div>`:''}
+          <div style="font-size:11px;color:var(--ink4);margin-top:8px;letter-spacing:.01em;">Drag tasks forward to advance</div>
         </div>
       </div>
       <div class="subdt-cols">
         <div class="subdt-col">
           <div class="subdt-colhd"><div class="twdot twdot-todo"></div>To Do <span class="twcnt">${todo.length}</span></div>
-          <div class="twbody" id="sdc-todo-${s.id}"
-            ondragover="sdDragOver(event,'todo',${s.id})"
-            ondragleave="sdDragLeave(event)"
-            ondrop="sdDrop(event,'todo',${s.id})">
-            ${todo.length?todo.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">No tasks</div><div class="twempty-hint">Drag tasks here</div></div>`}
+          <div class="twbody" ${dropCol('todo')}>
+            ${todo.length?todo.map(t=>taskCard(t)).join(''):`<div class="twempty"><div class="twempty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="twempty-t">No tasks</div><div class="twempty-hint">Click + Add Task above</div></div>`}
           </div>
         </div>
         <div class="subdt-col">
           <div class="subdt-colhd"><div class="twdot twdot-inprog"></div>In Progress <span class="twcnt">${inprog.length}</span></div>
-          <div class="twbody" id="sdc-inprog-${s.id}"
-            ondragover="sdDragOver(event,'inprog',${s.id})"
-            ondragleave="sdDragLeave(event)"
-            ondrop="sdDrop(event,'inprog',${s.id})">
-            ${inprog.length?inprog.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">Nothing in progress</div><div class="twempty-hint">Drag a task here</div></div>`}
+          <div class="twbody" ${dropCol('inprog')}>
+            ${inprog.length?inprog.map(t=>taskCard(t)).join(''):`<div class="twempty"><div class="twempty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div class="twempty-t">Nothing in progress</div><div class="twempty-hint">Drag a task here</div></div>`}
           </div>
         </div>
         <div class="subdt-col">
-          <div class="subdt-colhd"><div class="twdot twdot-done"></div>Done <span class="twcnt">${done.length}</span></div>
-          <div class="twbody" id="sdc-done-${s.id}"
-            ondragover="sdDragOver(event,'done',${s.id})"
-            ondragleave="sdDragLeave(event)"
-            ondrop="sdDrop(event,'done',${s.id})">
-            ${done.length?done.map(taskCard).join(''):`<div class="twempty"><div class="twempty-t">Nothing done yet</div><div class="twempty-hint">Complete a task</div></div>`}
+          <div class="subdt-colhd"><div class="twdot" style="background:${color}"></div>Done <span class="twcnt">${done.length}</span></div>
+          <div class="twbody" ${dropCol('done')}>
+            ${done.length?done.map(t=>taskCard(t)).join(''):`<div class="twempty"><div class="twempty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg></div><div class="twempty-t">Nothing done yet</div></div>`}
           </div>
         </div>
       </div>
     </div>`;
 }
 
-// ── PROJECT DETAIL DRAG & DROP ──
+
 let _sdDragId=null;
 function sdDragStart(e,id,subjId){
   _sdDragId=id;
@@ -3328,7 +3457,11 @@ function sdDragEnd(){
 function sdDragOver(e,col,subjId){
   e.preventDefault();
   document.querySelectorAll('[id^="sdc-"]').forEach(e=>e.classList.remove('dov'));
-  const el=$('sdc-'+col+'-'+subjId);if(el)el.classList.add('dov');
+  const cols=['todo','inprog','done'];
+  const t=tasks.find(x=>String(x.id)===String(_sdDragId));
+  if(t&&cols.indexOf(col)>cols.indexOf(t.col)){
+    const el=$('sdc-'+col+'-'+subjId);if(el)el.classList.add('dov');
+  }
 }
 function sdDragLeave(e){
   if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('dov');
@@ -3337,10 +3470,23 @@ function sdDrop(e,col,subjId){
   e.preventDefault();
   document.querySelectorAll('[id^="sdc-"]').forEach(e=>e.classList.remove('dov'));
   if(_sdDragId===null)return;
-  const t=tasks.find(x=>x.id===_sdDragId);
-  if(t&&t.col!==col){t.col=col;syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();}
+  const t=tasks.find(x=>String(x.id)===String(_sdDragId));
+  const cols=['todo','inprog','done'];
+  // forward-only: only allow moving to a column ahead of the current one
+  if(t&&cols.indexOf(col)>cols.indexOf(t.col)){
+    t.col=col;syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();
+  }
   _sdDragId=null;
 }
+function sdAdvanceTask(id,subjId){
+  const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+  const cols=['todo','inprog','done'];
+  const idx=cols.indexOf(t.col);
+  if(idx>=2)return;
+  t.col=cols[idx+1];
+  syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();
+}
+
 function sdSelTask(e,id,subjId){
   e.stopPropagation();
   // clicking card does nothing extra in project view — drag handles movement
@@ -3371,14 +3517,17 @@ function ptaskPickCol(el){
 }
 function addProjTask(){
   const name=$('ptask-name').value.trim();if(!name)return;
-  const subjId=parseInt($('ptask-subjid').value);
+  const subjId=String($('ptask-subjid').value);
   const col=$('ptask-col').value||'todo';
   tasks.unshift({
-    id:Date.now(),text:name,col,
+    id:Date.now(),text:name,title:name,col,
     date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
-    dueDate:null,recurring:null,subjectId:subjId
+    dueDate:null,recurring:'none',subjectId:subjId
   });
-  persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();
+  // Adding a task always makes the project ongoing again
+  const s=subjects.find(x=>String(x.id)===String(subjId));
+  if(s) s.status='active';
+  syncProjectProgress();persist();renderSubFull();renderAllTaskW();updateAllStatsW();updateFixedStats();renderAllSubW();
   closeMo('mo-ptask');
 }
 
@@ -3429,6 +3578,9 @@ function _resetSubMo(){
   const pool=unused.length?unused:colors;
   _subPickedColor=pool[Math.floor(Math.random()*pool.length)];
   ['sn-i','sdesc-i'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  _subDraftTasks=[];
+  const taskList=$('sub-task-list');if(taskList)taskList.innerHTML='';
+  const taskInp=$('sub-task-inp');if(taskInp)taskInp.value='';
   const due=$('sdue-i');if(due)due.value='';
   const lbl=document.getElementById('sub-date-lbl');if(lbl)lbl.textContent='Choose due date';
   const btn=document.getElementById('sub-date-btn');if(btn)btn.classList.remove('filled');
@@ -3437,18 +3589,48 @@ function _resetSubMo(){
   const bar=document.getElementById('sub-mo-bar');if(bar)bar.style.background=_subPickedColor;
 }
 
+let _subDraftTasks=[];
+function subAddTaskItem(){
+  const inp=$('sub-task-inp'); if(!inp) return;
+  const name=inp.value.trim(); if(!name) return;
+  _subDraftTasks.push({text:name});
+  inp.value='';
+  subRenderDraftTasks();
+  inp.focus();
+}
+function subRenderDraftTasks(){
+  const list=$('sub-task-list'); if(!list) return;
+  list.innerHTML=_subDraftTasks.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px;">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M3 5h10M3 11h6"/></svg>
+      <span style="flex:1;font-size:13px;color:var(--ink);">${esc(t.text)}</span>
+      <button onclick="subRemoveDraftTask(${i})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;">&times;</button>
+    </div>`).join('');
+}
+function subRemoveDraftTask(i){
+  _subDraftTasks.splice(i,1);
+  subRenderDraftTasks();
+}
+
 function addSub(){
   const name=$('sn-i').value.trim();if(!name)return;
-  subjects.push({id:Date.now(),name,
+  const subjId=Date.now();
+  subjects.push({id:subjId,name,
     desc:$('sdesc-i').value.trim(),
     due:$('sdue-i').value,
-    status:$('sstat-i').value||'active',
+    status:'active',
     color:_subPickedColor||'#3A7D5E',
     progress:0,created:Date.now()});
+  // Add draft tasks linked to this project
+  _subDraftTasks.forEach(t=>{
+    tasks.unshift({id:Date.now()+Math.random(),text:t.text,title:t.text,col:'todo',
+      date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
+      dueDate:null,recurring:'none',subjectId:subjId,created:Date.now()});
+  });
   persist();renderSubFull();renderAllSubW();updateAllStatsW();populateTaskWidgetSubjSels();closeMo('mo-sub');
   _resetSubMo();
 }
-async function delSub(id){if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;subjects=subjects.filter(s=>s.id!==id);if(_activeSubId===id)_activeSubId=null;persist();renderSubFull();renderAllSubW();updateAllStatsW();populateTaskWidgetSubjSels();}
+async function delSub(id){if(!await appConfirm('Delete this project?','All project data will be permanently removed.'))return;subjects=subjects.filter(s=>String(s.id)!==String(id));if(String(_activeSubId)===String(id))_activeSubId=null;persist();renderSubFull();renderAllSubW();updateAllStatsW();populateTaskWidgetSubjSels();}
 function updProjStatus(id,val){
   const s=subjects.find(x=>x.id===id);if(!s)return;
   s.status=val;if(val==='done')s.progress=100;
@@ -3472,7 +3654,13 @@ function updateEvSubSel(){
 }
 // addEv now defined in planner helpers section above
 
-function delEv(id){calEvs=calEvs.filter(e=>e.id!==id);persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});}
+async function delEv(id){
+  if(!await appConfirm('Delete this event?','This cannot be undone.')) return;
+  calEvs=calEvs.filter(e=>String(e.id)!==String(id));
+  persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  // Refresh the day events list in the modal if still open
+  if(_evDate) _populateDayEvents(_evDate, null);
+}
 // ── PLANNER helpers ──────────────────────────────────
 const PLANNER_START=6,PLANNER_END=23;
 const HOUR_H=56;
@@ -3709,81 +3897,139 @@ function saveEvEdit(){
 }
 function addEv(){
   const t=document.getElementById('ev-t').value.trim();if(!t||!_evDate)return;
-  const sid=document.getElementById('ev-s').value,sub=subjects.find(s=>s.id==sid);
-  const note=document.getElementById('ev-note').value.trim();
-  calEvs.push({
-    id:Date.now(),title:t,date:_evDate,
-    timeStart:_evHasTime?_evTimeStart:'',
-    timeEnd:_evHasTime?_evTimeEnd:'',
-    color:_evColor,note,
-    subName:sub?sub.name:'',subColor:sub?sub.color:''
-  });
+  calEvs.push({id:String(Date.now()),title:t,date:_evDate,color:_evColor});
   persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
   closeMo('mo-ev');
 }
 
 function renderFullCal(){
-  const days=getWeekDays(calOff),tok=fdk(new Date());
-  const f=days[0],l=days[6];
+  const now=new Date();
+  const base=new Date(now.getFullYear(),now.getMonth()+calOff,1);
+  const yr=base.getFullYear(), mo=base.getMonth();
+  const tok=fdk(new Date());
+
+  // Update header label
   const wlbl=$('calwlbl');
-  if(wlbl)wlbl.textContent=f.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' \u2013 '+l.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  const g=$('planner-grid');if(!g)return;
+  if(wlbl) wlbl.textContent=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+  const g=$('planner-grid'); if(!g) return;
+
+  const firstDay=(new Date(yr,mo,1).getDay()+6)%7; // Mon=0
+  const daysInMonth=new Date(yr,mo+1,0).getDate();
   const dn=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const hours=Array.from({length:PLANNER_END-PLANNER_START},(_,i)=>PLANNER_START+i);
-  const totalH=hours.length*HOUR_H;
-  let html='';
-  html+=`<div class="planner-day-hd gutter" style="grid-column:1;grid-row:1;background:var(--bg);border-bottom:2px solid var(--bdr);"></div>`;
-  days.forEach((d,i)=>{
-    const k=fdk(d),isT=k===tok;
-    html+=`<div class="planner-day-hd${isT?' today':''}" style="grid-column:${i+2};grid-row:1;">
-      <div class="planner-dname">${dn[i]}</div>
-      <div class="planner-dnum">${d.getDate()}</div>
+
+  let html=`<div class="cal-month-grid">`;
+  // Day headers
+  html+=`<div class="cal-month-hd-row">${dn.map(d=>`<div class="cal-month-hd">${d}</div>`).join('')}</div>`;
+  // Day cells
+  html+=`<div class="cal-month-body">`;
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const mmdd=ds.slice(5);
+    const isToday=ds===tok;
+    const dayEvs=calEvs.filter(e=>(e.date||'').slice(5)===mmdd);
+    html+=`<div class="cal-day${isToday?' today':''}" onclick="calDayClick('${ds}')">
+      <div class="cal-day-num${isToday?' today':''}">${d}</div>
+      <div class="cal-day-dots">${dayEvs.slice(0,3).map(e=>`
+        <div class="cal-ev-dot" style="background:${e.color||'var(--a2)'};" title="${esc(e.title)}" onclick="event.stopPropagation();calEvClick('${e.id}')"></div>
+      `).join('')}${dayEvs.length>3?`<div class="cal-ev-dot-more">+${dayEvs.length-3}</div>`:''}</div>
     </div>`;
-  });
-  html+=`<div class="planner-time-gutter" style="grid-column:1;grid-row:2;">`;
-  hours.forEach(h=>{
-    const label=h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
-    html+=`<div class="planner-time-label">${label}</div>`;
-  });
-  html+=`</div>`;
-  days.forEach((d,i)=>{
-    const k=fdk(d),isT=k===tok;
-    const dayEvs=calEvs.filter(e=>e.date===k);
-    html+=`<div class="planner-day-col${isT?' today-col':''}" data-date="${k}" style="grid-column:${i+2};grid-row:2;height:${totalH}px;position:relative;">`;
-    hours.forEach((h,hi)=>{
-      const label=h===0?'12:00 AM':h<12?`${h}:00 AM`:h===12?'12:00 PM':`${h-12}:00 PM`;
-      html+=`<div class="planner-hour-line" style="top:${hi*HOUR_H}px;" data-time="${label}"></div>`;
-    });
-    dayEvs.forEach(ev=>{
-      const y=plannerTimeToY(ev.timeStart||'09:00');
-      const h2=plannerDuration(ev.timeStart,ev.timeEnd);
-      const col=ev.color||ev.subColor||'#3A7D5E';
-      html+=`<div class="planner-ev-block" data-id="${ev.id}" style="top:${y}px;height:${h2}px;background:${col};color:#fff;">
-        <div class="planner-ev-title">${esc(ev.title)}</div>
-        ${ev.timeStart?`<div class="planner-ev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' \u2013 '+fmtTime(ev.timeEnd):''}</div>`:''}
-        <div class="planner-ev-resize" data-id="${ev.id}"></div>
+  }
+  html+=`</div></div>`;
+
+  // Event list: today + next 3 days only
+  const _today=new Date(); _today.setHours(0,0,0,0);
+  const _in3=new Date(_today); _in3.setDate(_in3.getDate()+3);
+  const todayKey=fdk(_today);
+  const in3Key=fdk(_in3);
+  const upcomingEvs=calEvs.filter(e=>e.date>=todayKey&&e.date<=in3Key).sort((a,b)=>a.date>b.date?1:-1);
+  if(upcomingEvs.length){
+    html+=`<div class="cal-month-list"><div class="cal-upcoming-hd">Upcoming — next 3 days</div>`;
+    upcomingEvs.forEach(ev=>{
+      const d=new Date(ev.date+'T12:00:00');
+      const isToday=ev.date===todayKey;
+      const lbl=isToday?'Today':d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      html+=`<div class="cal-month-ev" onclick="calEvClick('${ev.id}')">
+        <div class="cal-month-ev-dot" style="background:${ev.color||'var(--a2)'}"></div>
+        <div class="cal-month-ev-body">
+          <div class="cal-month-ev-title">${esc(ev.title)}</div>
+          <div class="cal-month-ev-date">${lbl}</div>
+        </div>
+        <button class="cal-month-ev-del" onclick="event.stopPropagation();delEv('${ev.id}')" title="Delete">×</button>
       </div>`;
     });
-    if(isT){
-      const now=new Date();
-      const nowY=((now.getHours()-PLANNER_START)*60+now.getMinutes())/60*HOUR_H;
-      if(nowY>=0&&nowY<=totalH){
-        const nowLabel=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-        html+=`<div class="planner-now-line" style="top:${nowY}px;" data-time="${nowLabel}"><div class="planner-now-dot"></div></div>`;
-      }
-    }
     html+=`</div>`;
-  });
-  g.innerHTML=html;
-  // Always scroll to 6am (start of day) when opening calendar
-  setTimeout(()=>{ g.scrollTop=0; },30);
-  // show/hide clear recurring button
-  const crBtn=document.getElementById('btn-clear-recurring');
-  if(crBtn)crBtn.style.display=calEvs.some(e=>e.recurringId)?'':'none';
-  plannerBindDrag(g);
+  } else {
+    html+=`<div class="cal-month-list"><div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px 20px;text-align:center;"><div style="width:44px;height:44px;border-radius:14px;background:var(--surf2);border:1.5px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--ink4);"><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><path d='M3 9h18M8 2v3M16 2v3'/></svg></div><div style="font-size:13px;font-weight:700;color:var(--ink2);">Nothing in the next 3 days</div><div style="font-size:11px;color:var(--ink4);">Click any day on the calendar to add an event</div></div></div>`;
+  } g.innerHTML=html;
+}
+
+function _populateDayEvents(ds, excludeId){
+  const dayEvs=calEvs.filter(e=>e.date===ds&&String(e.id)!==String(excludeId||''));
+  const wrap=document.getElementById('ev-day-events');
+  const list=document.getElementById('ev-day-events-list');
+  const lbl=document.getElementById('ev-day-events-lbl');
+  if(!wrap||!list) return;
+  if(!dayEvs.length){ wrap.style.display='none'; return; }
+  const dateStr=new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(lbl) lbl.textContent=`Events on ${dateStr}`;
+  list.innerHTML=dayEvs.map(e=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bdr);">
+      <div style="width:10px;height:10px;border-radius:50%;background:${e.color||'var(--a2)'};flex-shrink:0;"></div>
+      <div style="flex:1;font-size:13px;font-weight:600;color:var(--ink);">${esc(e.title)}</div>
+      <button onclick="calEvClick('${e.id}')" style="font-size:11px;font-weight:700;color:var(--a2);background:none;border:none;cursor:pointer;padding:2px 6px;">Edit</button>
+      <button onclick="delEv('${e.id}')" style="font-size:11px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 6px;">Del</button>
+    </div>`).join('');
+  wrap.style.display='';
+}
+
+function calDayClick(ds){
+  _evDate=ds;
+  const btn=document.getElementById('ev-date-btn');
+  const lbl=document.getElementById('ev-date-lbl');
+  if(lbl) lbl.textContent=new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(btn) btn.classList.add('filled');
+  document.getElementById('ev-t').value='';
+  document.getElementById('ev-del-row').style.display='none';
+  document.getElementById('mo-ev-title').textContent='Add Event';
+  document.getElementById('ev-save-btn').onclick=addEv;
+  document.querySelectorAll('#ev-color-swatches .ev-cswatch').forEach((s,i)=>s.classList.toggle('sel',i===0));
+  _evColor='#3A7D5E';
+  _populateDayEvents(ds, null);
+  openMo('mo-ev');
+  setTimeout(()=>{ const t=document.getElementById('ev-t'); if(t) t.focus(); },200);
+}
+
+function calEvClick(id){
+  const ev=calEvs.find(e=>String(e.id)===String(id)); if(!ev) return;
+  _evDate=ev.date;
+  const btn=document.getElementById('ev-date-btn');
+  const lbl=document.getElementById('ev-date-lbl');
+  if(lbl) lbl.textContent=new Date(ev.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  if(btn) btn.classList.add('filled');
+  document.getElementById('ev-t').value=ev.title;
+  document.getElementById('mo-ev-title').textContent='Edit Event';
+  document.getElementById('ev-del-row').style.display='';
+  document.getElementById('ev-del-btn').onclick=()=>{delEv(String(id));closeMo('mo-ev');};
+  document.getElementById('ev-save-btn').onclick=()=>editEv(String(id));
+  _evColor=ev.color||'#3A7D5E';
+  document.querySelectorAll('#ev-color-swatches .ev-cswatch').forEach(s=>s.classList.toggle('sel',s.dataset.color===_evColor));
+  _populateDayEvents(ev.date, String(id));
+  openMo('mo-ev');
+}
+
+function editEv(id){
+  const t=document.getElementById('ev-t').value.trim(); if(!t||!_evDate) return;
+  const note=document.getElementById('ev-note').value.trim();
+  const idx=calEvs.findIndex(e=>String(e.id)===String(id)); if(idx===-1) return;
+  calEvs[idx]={...calEvs[idx],title:t,date:_evDate,color:_evColor};
+  persist(); renderFullCal(); widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+  closeMo('mo-ev');
 }
 
 // ── PLANNER DRAG & DROP ──────────────────────────────
+
 function pxToTime(px){
   const totalMins=(px/HOUR_H)*60;
   const mins=Math.round(totalMins/15)*15; // snap to 15min
@@ -4013,7 +4259,14 @@ function renderSettings(){
   const d=acc[cu]||{};
   const displayName=d.displayName||d.display_name||'—';
   const el=document.getElementById('set-dn');if(el)el.textContent=displayName;
-  const un=document.getElementById('set-un');if(un)un.textContent='@'+cu;
+  const un=document.getElementById('set-un');
+  if(un){
+    // Show email from auth if available, fall back to stored email
+    const storedEmail=acc[cu]?.email||'';
+    if(storedEmail){ un.textContent=storedEmail; }
+    else if(sbReady){ sb.auth.getUser().then(({data})=>{ if(data?.user?.email&&un) un.textContent=data.user.email; }).catch(()=>{}); }
+    else { un.textContent='—'; }
+  }
   const nmInput=$('nm-i');if(nmInput)nmInput.value=d.displayName||'';
   $('tog-dk').className='tog'+(prefs.dark?' on':'');
 }
@@ -4233,7 +4486,7 @@ function renderHabits(containerId){
   const doneCount=habits.filter(h=>habitDoneToday(h.id)).length;
 
   if(!total){
-    el.innerHTML='<div class="es" style="padding:24px 16px;"><div class="es-icon">🎯</div><div class="es-title">Build a daily routine</div><div class="es-hint">Add habits below and check them off each day. <b>Streaks</b> track how many days in a row you showed up.</div></div>';
+    el.innerHTML='<div class="es" style="padding:24px 16px;"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/><path d="M8 12l3 3 5-5"/></svg></div><div class="es-title">Build a daily routine</div><div class="es-hint">Add habits below and check them off each day.</div></div>';
     return;
   }
 
@@ -4456,122 +4709,186 @@ function openAIPlanner() {
   renderAIPlanner('aip-body', false);
 }
 
-function renderAIPlanner(containerId, isMobileParam) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
+// ── AI Planner state ──
+let _aipHistory = [];        // full conversation history for the API
+let _aipContext = '';        // system context string (tasks, habits, events)
+let _aipPlanGenerated = false;
 
-  // Auto-gather context
+function _buildAipContext() {
   const pending = tasks.filter(t => t.col !== 'done');
-  const taskList = pending.map(t => {
-    let line = `• ${t.text}`;
-    if (t.priority) line += ` [${t.priority} priority]`;
-    if (t.dueDate) line += ` (due ${t.dueDate})`;
-    if (t.recurring && t.recurring !== 'none') line += ` [${t.recurring}]`;
-    return line;
-  }).join('\n') || '(no tasks yet)';
+  const taskList = pending.length
+    ? pending.map(t => {
+        let line = `• ${t.text}`;
+        if (t.priority) line += ` [${t.priority} priority]`;
+        if (t.dueDate)  line += ` (due ${t.dueDate})`;
+        if (t.recurring && t.recurring !== 'none') line += ` [${t.recurring}]`;
+        return line;
+      }).join('\n')
+    : '(no tasks)';
 
-  // Today's habits not yet done
   const pendingHabits = (prefs.habits||[]).filter(h => !habitDoneToday(h.id));
   const habitList = pendingHabits.length
     ? pendingHabits.map(h => `• ${h.emoji} ${h.name}`).join('\n')
-    : null;
+    : '(no habits pending)';
 
-  // Today's calendar events
   const todayStr = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const todayEvs = calEvs.filter(e => e.date === todayStr);
   const eventList = todayEvs.length
     ? todayEvs.map(e => `• ${e.timeStart||''} ${e.title}`).join('\n')
-    : null;
+    : '(no calendar events today)';
 
-  // Current time greeting
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  return { taskList, habitList, eventList, timeStr, dateStr };
+}
+
+function renderAIPlanner(containerId, isMobileParam) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  // Reset state for fresh render
+  _aipHistory = [];
+  _aipPlanGenerated = false;
+
+  const { taskList, habitList, eventList, timeStr, dateStr } = _buildAipContext();
   const hr = new Date().getHours();
   const timeOfDay = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
 
+  // Build system context string
+  _aipContext = `You are a sharp, practical productivity coach embedded inside Prodify, a productivity app.
+Today is ${dateStr}. Current time: ${timeStr}.
+
+USER'S DATA (auto-pulled from their app):
+PENDING TASKS:
+${taskList}
+
+HABITS NOT YET DONE TODAY:
+${habitList}
+
+CALENDAR EVENTS TODAY:
+${eventList}
+
+Your job:
+1. On the FIRST message, generate a realistic time-blocked daily plan starting from the current time.
+2. On follow-up messages, refine or adjust the plan based on what the user says — move things around, add/remove tasks, change timing, etc.
+3. Always be specific, opinionated, and concise. No fluff.
+4. Format time blocks as: **HH:MM – HH:MM** Task name, followed by > one sharp tip
+5. End every plan with **Note:** one sentence of honest encouragement.`;
+
   el.innerHTML = `
-    <div class="aip-intro">
-      <div class="aip-intro-title">AI Daily Planner</div>
-      <div class="aip-intro-sub">Good ${timeOfDay}. Here's what I found for today — edit anything before generating.</div>
+    <div class="aip-chat-wrap" id="${containerId}-wrap">
+
+      <div class="aip-chat-header">
+        <div class="aip-chat-header-left">
+          <div class="aip-chat-avatar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div>
+            <div class="aip-chat-name">AI Daily Planner</div>
+            <div class="aip-chat-status"><span class="aip-status-dot"></span>Ready</div>
+          </div>
+        </div>
+        <button class="aip-reset-btn" onclick="renderAIPlanner('${containerId}', false)" title="Start over">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/></svg>
+          Reset
+        </button>
+      </div>
+
+      <div class="aip-chat-msgs" id="${containerId}-msgs">
+        <div class="aip-welcome">
+          <div class="aip-welcome-title">Good ${timeOfDay}! 👋</div>
+          <div class="aip-welcome-body">I've pulled your tasks, habits, and calendar events for today. Hit <strong>Generate my plan</strong> and I'll build a time-blocked schedule for you — then you can ask me to adjust anything.</div>
+          <div class="aip-welcome-context">
+            <div class="aip-ctx-row"><span class="aip-ctx-icon">✅</span><span class="aip-ctx-text">${tasks.filter(t=>t.col!=='done').length} pending task${tasks.filter(t=>t.col!=='done').length!==1?'s':''}</span></div>
+            <div class="aip-ctx-row"><span class="aip-ctx-icon">🔁</span><span class="aip-ctx-text">${(prefs.habits||[]).filter(h=>!habitDoneToday(h.id)).length} habit${(prefs.habits||[]).filter(h=>!habitDoneToday(h.id)).length!==1?'s':''} to do</span></div>
+            <div class="aip-ctx-row"><span class="aip-ctx-icon">📅</span><span class="aip-ctx-text">${calEvs.filter(e=>e.date===new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})).length} event${calEvs.filter(e=>e.date===new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})).length!==1?'s':''} today</span></div>
+          </div>
+          <div class="aip-welcome-hint">💡 After your plan is generated, try saying things like:<br>
+            <em>"Move my workout to 6pm"</em> · <em>"I only have 3 hours"</em> · <em>"Add a 30-min break at 2pm"</em>
+          </div>
+        </div>
+      </div>
+
+      <div class="aip-chat-footer">
+        <div class="aip-suggestions" id="${containerId}-sugg">
+          <button class="aip-sugg-btn" onclick="aipSendMessage('${containerId}', 'Generate my plan for today')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Generate my plan
+          </button>
+          <button class="aip-sugg-btn" onclick="aipSendMessage('${containerId}', 'What should I focus on first?')">🎯 What to focus on first</button>
+          <button class="aip-sugg-btn" onclick="aipSendMessage('${containerId}', 'I only have 2 hours today, give me the most important things')">⚡ Short on time</button>
+        </div>
+        <div class="aip-input-row">
+          <textarea class="aip-input" id="${containerId}-input" placeholder="Ask me to adjust your plan…" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aipSend('${containerId}');}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
+          <button class="aip-send-btn" id="${containerId}-sendbtn" onclick="aipSend('${containerId}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+
     </div>
-
-    <div class="aip-section">
-      <div class="aip-label">Tasks</div>
-      <textarea class="aip-textarea" id="${containerId}-tasks" rows="5" placeholder="Add tasks...">${taskList}</textarea>
-    </div>
-
-    ${habitList ? `
-    <div class="aip-section">
-      <div class="aip-label">Habits to fit in <span style="font-size:10px;color:var(--ink4);font-weight:500;">auto-detected</span></div>
-      <textarea class="aip-textarea" id="${containerId}-habits" rows="${Math.min(pendingHabits.length+1,4)}">${habitList}</textarea>
-    </div>` : `<textarea id="${containerId}-habits" style="display:none;"></textarea>`}
-
-    ${eventList ? `
-    <div class="aip-section">
-      <div class="aip-label">Calendar events today <span style="font-size:10px;color:var(--ink4);font-weight:500;">auto-detected</span></div>
-      <textarea class="aip-textarea" id="${containerId}-events" rows="${Math.min(todayEvs.length+1,3)}">${eventList}</textarea>
-    </div>` : `<textarea id="${containerId}-events" style="display:none;"></textarea>`}
-
-    <div class="aip-section">
-      <div class="aip-label">Anything else <span style="font-size:10px;color:var(--ink4);font-weight:500;">optional</span></div>
-      <textarea class="aip-textarea" id="${containerId}-ctx" rows="2" placeholder="e.g. I only have 4 hours, feeling tired, skip lunch break..."></textarea>
-    </div>
-
-    <button class="aip-btn" id="${containerId}-genbtn" onclick="generatePlan('${containerId}')">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      Generate My Plan
-    </button>
-
-    <div class="aip-result" id="${containerId}-result" style="display:none;"></div>
   `;
 }
 
-async function generatePlan(containerId) {
+function aipSend(containerId) {
+  const input = document.getElementById(containerId + '-input');
+  const text = input?.value?.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  aipSendMessage(containerId, text);
+}
+
+async function aipSendMessage(containerId, userText) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
 
-  const tasksVal   = document.getElementById(containerId + '-tasks')?.value?.trim() || '';
-  const habitsVal  = document.getElementById(containerId + '-habits')?.value?.trim() || '';
-  const eventsVal  = document.getElementById(containerId + '-events')?.value?.trim() || '';
-  const ctxVal     = document.getElementById(containerId + '-ctx')?.value?.trim() || '';
-  const btn        = document.getElementById(containerId + '-genbtn');
-  const result     = document.getElementById(containerId + '-result');
+  const msgs  = document.getElementById(containerId + '-msgs');
+  const sugg  = document.getElementById(containerId + '-sugg');
+  const sendBtn = document.getElementById(containerId + '-sendbtn');
+  const input = document.getElementById(containerId + '-input');
+  if (!msgs) return;
 
-  if (!result) return;
+  // Hide suggestions after first interaction
+  if (sugg) sugg.style.display = 'none';
 
-  // Current time context
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  // Append user bubble
+  const userBubble = document.createElement('div');
+  userBubble.className = 'aip-bubble aip-bubble-user';
+  userBubble.textContent = userText;
+  msgs.appendChild(userBubble);
 
-  btn.disabled = true;
-  btn.innerHTML = `<span class="aip-spinner"></span> Building your plan…`;
-  result.style.display = 'block';
-  result.innerHTML = `<div class="aip-loading"><span class="aip-spinner"></span> Thinking…</div>`;
+  // Typing indicator
+  const typingEl = document.createElement('div');
+  typingEl.className = 'aip-bubble aip-bubble-ai aip-typing';
+  typingEl.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
 
-  const prompt = `You are a sharp, practical productivity coach. Today is ${dateStr} and the current time is ${timeStr}.
+  // Disable input while loading
+  if (sendBtn) { sendBtn.disabled = true; }
+  if (input)   { input.disabled = true; }
 
-Create a realistic, time-blocked daily schedule starting from the current time. Be specific, opinionated, and concise.
+  // Add to history
+  _aipHistory.push({ role: 'user', content: userText });
 
-TASKS TO COMPLETE:
-${tasksVal || '(none listed)'}
-${habitsVal ? `\nHABITS TO FIT IN:\n${habitsVal}` : ''}
-${eventsVal ? `\nCALENDAR EVENTS (work around these):\n${eventsVal}` : ''}
-${ctxVal ? `\nEXTRA CONTEXT:\n${ctxVal}` : ''}
-
-Rules:
-- Start blocks from the current time, not from 9am
-- Group similar tasks together
-- Include a short break every 90 minutes
-- Be realistic about how long things actually take
-- If calendar events exist, schedule around them
-- Fit habits into natural gaps
-
-Respond ONLY in this exact format, no preamble, no markdown fences:
-
-## Your Plan for ${dateStr.split(',')[0]}
-
-**HH:MM – HH:MM** Task name
-> One sharp, specific tip for this block
-
-**Note:** One sentence of honest encouragement.`;
+  // Build messages with system context as first user message if history was empty
+  let apiMessages = [];
+  if (_aipHistory.length === 1) {
+    // First message — prepend context
+    apiMessages = [
+      { role: 'user', content: _aipContext + '\n\nUser: ' + userText }
+    ];
+  } else {
+    // Reconstruct: first message always carries context
+    apiMessages = [
+      { role: 'user', content: _aipContext + '\n\nUser: ' + _aipHistory[0].content },
+      ..._aipHistory.slice(1)
+    ];
+  }
 
   try {
     const response = await fetch('/api/ai', {
@@ -4579,42 +4896,74 @@ Respond ONLY in this exact format, no preamble, no markdown fences:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
+        max_tokens: 1500,
+        messages: apiMessages
       })
     });
 
     const data = await response.json();
-    const text = data.content?.map(b => b.text || '').join('') || '';
-    if (!text) throw new Error('Empty response');
+    const aiText = data.content?.map(b => b.text || '').join('') || '';
+    if (!aiText) throw new Error(data.error?.message || data.error?.type || 'Empty response');
 
-    result.innerHTML = `
-      <div class="aip-plan">${formatPlan(text)}</div>
-      <button class="aip-regen-btn" onclick="generatePlan('${containerId}')">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/></svg>
-        Regenerate
-      </button>`;
-  } catch (err) {
-    result.innerHTML = `<div class="aip-error">⚠️ Something went wrong. Check your connection and try again.<br><small style="opacity:.6;">${err.message}</small></div>`;
+    // Add AI reply to history
+    _aipHistory.push({ role: 'assistant', content: aiText });
+    _aipPlanGenerated = true;
+
+    // Remove typing indicator
+    typingEl.remove();
+
+    // Append AI bubble
+    const aiBubble = document.createElement('div');
+    aiBubble.className = 'aip-bubble aip-bubble-ai';
+    aiBubble.innerHTML = formatAipMessage(aiText);
+    msgs.appendChild(aiBubble);
+
+    // Show follow-up suggestions after first plan
+    if (_aipHistory.length === 2) {
+      const followUpSugg = document.createElement('div');
+      followUpSugg.className = 'aip-followup-sugg';
+      followUpSugg.innerHTML = `
+        <div class="aip-followup-label">Try asking:</div>
+        <div class="aip-followup-chips">
+          <button onclick="aipSendMessage('${containerId}','Move my workout to later in the day')">Move workout later</button>
+          <button onclick="aipSendMessage('${containerId}','I only have 2 hours, cut it down')">Cut it to 2 hours</button>
+          <button onclick="aipSendMessage('${containerId}','Add a 15-minute break after each task')">Add more breaks</button>
+          <button onclick="aipSendMessage('${containerId}','What should I prioritize if something comes up?')">What to prioritize</button>
+        </div>`;
+      msgs.appendChild(followUpSugg);
+    }
+
+  } catch(err) {
+    typingEl.remove();
+    const errBubble = document.createElement('div');
+    errBubble.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
+    errBubble.textContent = '⚠️ Something went wrong. Check your connection and try again.';
+    msgs.appendChild(errBubble);
+    // Remove failed message from history
+    _aipHistory.pop();
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate My Plan`;
+    if (sendBtn) sendBtn.disabled = false;
+    if (input)   { input.disabled = false; input.focus(); }
+    msgs.scrollTop = msgs.scrollHeight;
   }
 }
 
-function formatPlan(text) {
-  // Convert markdown-like format to styled HTML
+function formatAipMessage(text) {
   return text
     .replace(/^## (.+)$/gm, '<div class="aip-plan-title">$1</div>')
     .replace(/\*\*(\d{1,2}:\d{2}[\s–\-]+\d{1,2}:\d{2})\*\*/g, '<span class="aip-time-block">$1</span>')
     .replace(/\*\*Note:\*\*/g, '<span class="aip-note-label">Note:</span>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/^> (.+)$/gm, '<div class="aip-tip">$1</div>')
-    .replace(/\n\n/g, '</div><div class="aip-block">')
+    .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>')
-    .replace(/^/, '<div class="aip-block">')
-    .replace(/$/, '</div>');
+    .replace(/^/, '<p>')
+    .replace(/$/, '</p>');
 }
+
+// Keep old generatePlan as no-op for any lingering references
+function generatePlan(containerId) { aipSendMessage(containerId, 'Generate my plan for today'); }
+function formatPlan(text) { return formatAipMessage(text); }
 
 // ═══════════════════════════════════════
 // SESSION 9 — PRO SYSTEM
@@ -4644,8 +4993,8 @@ async function checkWaitlist() {
 }
 
 async function joinWaitlist() {
-  const errEl = document.getElementById('upg-waitlist-err');
-  const btn = document.getElementById('upg-join-btn');
+  const errEl = document.getElementById('dsk-upg-waitlist-err');
+  const btn = document.getElementById('dsk-upg-join-btn');
 
   if (errEl) errEl.style.display = 'none';
   if (btn) { btn.textContent = 'Joining…'; btn.disabled = true; }
@@ -4711,20 +5060,20 @@ async function joinWaitlist() {
 }
 
 function _showWaitlistJoined() {
-  const joinEl = document.getElementById('upg-waitlist-join');
-  const joinedEl = document.getElementById('upg-waitlist-joined');
-  const posEl = document.getElementById('upg-position');
+  const joinEl = document.getElementById('dsk-upg-waitlist-join');
+  const joinedEl = document.getElementById('dsk-upg-waitlist-joined');
+  const posEl = document.getElementById('dsk-upg-position');
   if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
   if (joinEl) joinEl.style.display = 'none';
   if (joinedEl) joinedEl.style.display = 'block';
 }
 
 function _syncWaitlistUI() {
-  const joinEl = document.getElementById('upg-waitlist-join');
-  const joinedEl = document.getElementById('upg-waitlist-joined');
+  const joinEl = document.getElementById('dsk-upg-waitlist-join');
+  const joinedEl = document.getElementById('dsk-upg-waitlist-joined');
   if (!joinEl || !joinedEl) return;
   if (_onWaitlist) {
-    const posEl = document.getElementById('upg-position');
+    const posEl = document.getElementById('dsk-upg-position');
     if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
     joinEl.style.display = 'none';
     joinedEl.style.display = 'block';
@@ -4746,7 +5095,7 @@ const _featureDescriptions = {
 };
 
 function showUpgradeModal(featureName) {
-  const sub = document.getElementById('mo-upgrade-sub');
+  const sub = document.getElementById('dsk-mo-upgrade-sub');
   if (sub) {
     const desc = featureName && _featureDescriptions[featureName];
     sub.textContent = desc
@@ -4766,7 +5115,7 @@ function showUpgradeModal(featureName) {
   });
 
   _syncWaitlistUI();
-  openMo('mo-upgrade');
+  openMo('dsk-mo-upgrade');
   if (!_waitlistChecked) {
     checkWaitlist().then(() => _syncWaitlistUI());
   }

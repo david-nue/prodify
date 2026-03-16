@@ -25,10 +25,18 @@
     {
       "source": "/app.js",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/app-mobile.css",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/app-mobile.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ],
   "rewrites": [
     { "source": "/api/ai", "destination": "/api/ai.js" },
-    { "source": "/((?!sitemap\\.xml|robots\\.txt|manifest\\.json|sw\\.js|style\\.css|app\\.js|icons/|.*\\.png|.*\\.ico).*)", "destination": "/index.html" }
+    { "source": "/((?!sitemap\\.xml|robots\\.txt|manifest\\.json|sw\\.js|style\\.css|app\\.js|app-mobile\\.css|app-mobile\\.js|icons/|.*\\.png|.*\\.ico).*)", "destination": "/index.html" }
   ]
 }
