@@ -564,8 +564,11 @@ function renderMobProfile(){
 }
 function openAIPlanner(){
   if(!isPro()){ showUpgradeModal('AI Daily Planner'); return; }
+  // Clear so renderAIPlanner always re-renders with fresh context
+  const body = document.getElementById('mob-aip-body');
+  if (body) body.innerHTML = '';
   openSheet('sh-aiplanner');
-  renderAIPlanner('mob-aip-body', true);
+  setTimeout(() => renderAIPlanner('mob-aip-body', true), 50);
 }
 
 function shuffleQuote(){
@@ -2662,8 +2665,6 @@ function _buildAipContext() {
 function renderAIPlanner(containerId, isMobile) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  if (el.querySelector('.aip-chat-wrap')) return;
-
   _aipHistory = [];
   const ctx = _buildAipContext();
   const carried = ctx.carriedTasks.length;

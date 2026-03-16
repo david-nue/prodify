@@ -779,3 +779,8 @@ button,input,select,textarea{font-family:inherit;}
 
 /* ── GOAL SECTION fix ── */
 .goal-section{display:flex;flex-direction:column;gap:6px;}
+
+/* ── AI Planner sheet specific ── */
+#sh-aiplanner{max-width:100%;border-radius:20px 20px 0 0;}
+#sh-aiplanner .aip-chat-msgs{flex:1;min-height:0;overflow-y:auto;}
+#sh-aiplanner .aip-chat-footer{flex-shrink:0;}

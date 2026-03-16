@@ -822,16 +822,7 @@
         </svg>
         <span class="fltlbl">Calendar</span>
       </button>
-      <button class="sbb" onclick="toggleAipPanel()" style="position:relative;">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <circle cx="8" cy="8" r="6" />
-          <path d="M8 5v3l2 2" />
-          <path d="M5 2.5C3.5 3.5 2.5 5.6 2.5 8" />
-        </svg>
-        <span class="fltlbl">AI Planner</span>
-        <span
-          style="position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;">PRO</span>
-      </button>
+
 
       <div class="flt-div" id="wkp-sep"></div>
       <!-- Widget picker -->
@@ -2959,9 +2950,9 @@
 </div>
 
 <!-- AI PLANNER SHEET (mobile) -->
-<div class="sheet" id="sh-aiplanner" style="max-height:88vh;display:flex;flex-direction:column;">
+<div class="sheet" id="sh-aiplanner" style="max-height:90vh;height:90vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);">
   <div class="sh-handle"></div>
-  <div id="mob-aip-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;"></div>
+  <div id="mob-aip-body" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;"></div>
 </div>
 </body>
 </html>
