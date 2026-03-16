@@ -2640,34 +2640,30 @@ function _buildAipContext() {
 
   const pending = getTasks().filter(t => t.col !== 'done');
   const taskList = pending.length
-    ? pending.map(t => {
-        let line = '• ' + (t.title || t.text || '');
-        if (t.priority) line += ' [' + t.priority + ' priority]';
-        if (t.dueDate)  line += ' (due ' + t.dueDate + ')';
-        return line;
-      }).join('\n')
+    ? pending.map(t => '• ' + (t.title||t.text||'') + (t.priority?' ['+t.priority+']':'') + (t.dueDate?' (due '+t.dueDate+')':'')).join('\n')
     : '(no tasks)';
 
   const habits = p.habits || [];
-  const pendingHabits = habits.filter(h => !(log[today] || []).includes(h.id));
-  const habitList = pendingHabits.length
-    ? pendingHabits.map(h => '• ' + h.emoji + ' ' + h.name).join('\n')
-    : '(no habits pending)';
+  const pendingHabits = habits.filter(h => !(log[today]||[]).includes(h.id));
+  const doneHabits = habits.filter(h => (log[today]||[]).includes(h.id));
+  const habitList = pendingHabits.length ? pendingHabits.map(h => '• '+h.emoji+' '+h.name).join('\n') : '(all done)';
 
-  const todayStr = new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+  const todayStr = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   const todayEvs = getCalEvs().filter(e => e.date === todayStr);
-  const eventList = todayEvs.length
-    ? todayEvs.map(e => '• ' + (e.timeStart||'') + ' ' + e.title).join('\n')
-    : '(no calendar events today)';
+  const eventList = todayEvs.length ? todayEvs.map(e => '• '+(e.timeStart||'')+' '+e.title).join('\n') : '(none)';
+
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yStr = yesterday.toISOString().slice(0,10);
+  const carried = getTasks().filter(t => t.col !== 'done' && t.dueDate === yStr);
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:true});
-  const dateStr = now.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 
   return { taskList, habitList, eventList, timeStr, dateStr,
-           pendingCount: pending.length,
-           habitCount: pendingHabits.length,
-           eventCount: todayEvs.length };
+    pendingCount: pending.length, habitCount: pendingHabits.length,
+    doneHabitCount: doneHabits.length, eventCount: todayEvs.length,
+    carriedTasks: carried, doneHabits, pendingHabits, todayEvs, pendingTasks: pending };
 }
 
 function renderAIPlanner(containerId, isMobile) {
@@ -2679,20 +2675,21 @@ function renderAIPlanner(containerId, isMobile) {
   const hr = new Date().getHours();
   const timeOfDay = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
 
-  _aipContext = 'You are a sharp, practical productivity coach embedded inside Prodify.\n'
+  _aipContext = 'You are a sharp, practical productivity coach in Prodify.\n'
     + 'Today is ' + ctx.dateStr + '. Current time: ' + ctx.timeStr + '.\n\n'
-    + 'USER\'S DATA:\nPENDING TASKS:\n' + ctx.taskList + '\n\n'
-    + 'HABITS NOT YET DONE TODAY:\n' + ctx.habitList + '\n\n'
-    + 'CALENDAR EVENTS TODAY:\n' + ctx.eventList + '\n\n'
-    + 'Your job:\n'
-    + '1. On the FIRST message, generate a realistic time-blocked daily plan starting from now.\n'
-    + '2. On follow-up messages, refine the plan based on what the user says.\n'
-    + '3. Always be specific, opinionated, and concise.\n'
-    + '4. Format time blocks as: **HH:MM \u2013 HH:MM** Task name, then > one sharp tip.\n'
-    + '5. End every plan with **Note:** one sentence of encouragement.';
+    + 'USER DATA:\nPENDING TASKS:\n' + ctx.taskList + '\n'
+    + (ctx.carriedTasks.length ? '\nCARRIED FROM YESTERDAY:\n' + ctx.carriedTasks.map(t=>'• '+(t.title||t.text)).join('\n') + '\n' : '')
+    + '\nHABITS TO DO:\n' + ctx.habitList + '\n'
+    + (ctx.doneHabitCount > 0 ? 'HABITS DONE: ' + ctx.doneHabitCount + '\n' : '')
+    + '\nCALENDAR TODAY:\n' + ctx.eventList + '\n\n'
+    + 'You can perform ACTIONS. Include JSON at the END of your response in <<<ACTION>>> tags:\n'
+    + '<<<ACTION>>>{"type":"create_task","text":"name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"complete_habit","id":123}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"move_task","id":"123","col":"todo|inprog|done"}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"create_event","title":"name","date":"YYYY-MM-DD"}<<<END>>>\n'
+    + 'Always confirm the action in your text. Format plans as **HH:MM - HH:MM** Task then > tip. End with **Note:** encouragement.';
 
   el.innerHTML = '<div class="aip-chat-wrap" id="' + containerId + '-wrap">'
-
     + '<div class="aip-chat-header">'
     + '<div class="aip-chat-header-left">'
     + '<div class="aip-chat-avatar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'
@@ -2701,36 +2698,33 @@ function renderAIPlanner(containerId, isMobile) {
     + '</div>'
     + '<button class="aip-reset-btn" onclick="renderAIPlanner(\'' + containerId + '\',true)">↺ Reset</button>'
     + '</div>'
-
     + '<div class="aip-chat-msgs" id="' + containerId + '-msgs">'
     + '<div class="aip-welcome">'
     + '<div class="aip-welcome-title">Good ' + timeOfDay + '! 👋</div>'
-    + '<div class="aip-welcome-body">I\'ve pulled your tasks, habits, and calendar for today. Tap <strong>Generate my plan</strong> and I\'ll build a time-blocked schedule — then ask me to adjust anything.</div>'
+    + '<div class="aip-welcome-body">I\'ve pulled your data. Generate your plan — then ask me to adjust or take actions like adding tasks or marking habits done.</div>'
     + '<div class="aip-welcome-context">'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">✅</span><span class="aip-ctx-text">' + ctx.pendingCount + ' task' + (ctx.pendingCount !== 1 ? 's' : '') + '</span></div>'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">🔁</span><span class="aip-ctx-text">' + ctx.habitCount + ' habit' + (ctx.habitCount !== 1 ? 's' : '') + ' to do</span></div>'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">📅</span><span class="aip-ctx-text">' + ctx.eventCount + ' event' + (ctx.eventCount !== 1 ? 's' : '') + ' today</span></div>'
+    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">✅</span><span class="aip-ctx-text">' + ctx.pendingCount + ' task' + (ctx.pendingCount!==1?'s':'') + '</span></div>'
+    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">🔁</span><span class="aip-ctx-text">' + ctx.habitCount + ' habit' + (ctx.habitCount!==1?'s':'')+' to do</span></div>'
+    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">📅</span><span class="aip-ctx-text">' + ctx.eventCount + ' event' + (ctx.eventCount!==1?'s':'')+' today</span></div>'
+    + (ctx.carriedTasks.length ? '<div class="aip-ctx-row" style="border-color:rgba(220,38,38,.3);"><span class="aip-ctx-icon">⚠️</span><span class="aip-ctx-text" style="color:#dc2626;">' + ctx.carriedTasks.length + ' from yesterday</span></div>' : '')
     + '</div>'
-    + '<div class="aip-welcome-hint">💡 After your plan, try: <em>"Move workout to later"</em> · <em>"I only have 2 hours"</em> · <em>"Add more breaks"</em></div>'
+    + '<div class="aip-welcome-hint">💡 Try: <em>"Generate my plan"</em> · <em>"Add a task to call dentist"</em> · <em>"Mark workout done"</em> · <em>"How\'s my day going?"</em></div>'
     + '</div>'
     + '</div>'
-
     + '<div class="aip-chat-footer">'
     + '<div class="aip-suggestions" id="' + containerId + '-sugg">'
     + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate my plan</button>'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'What should I focus on first?\')">🎯 What to focus on</button>'
+    + (ctx.carriedTasks.length ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + ctx.carriedTasks.length + ' tasks from yesterday, help me catch up\')">⚠️ Catch up</button>' : '')
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 How\'s my day?</button>'
     + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⚡ Short on time</button>'
     + '</div>'
     + '<div class="aip-input-row">'
-    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Ask me to adjust your plan…" rows="1"'
+    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Adjust plan, add tasks, mark habits done…" rows="1"'
     + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();aipSend(\'' + containerId + '\');}"'
     + ' oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\';"></textarea>'
     + '<button class="aip-send-btn" id="' + containerId + '-sendbtn" onclick="aipSend(\'' + containerId + '\')">'
     + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
-    + '</button>'
-    + '</div>'
-    + '</div>'
-    + '</div>';
+    + '</button></div></div></div>';
 }
 
 function aipSend(containerId, presetText) {
@@ -2752,13 +2746,11 @@ async function _aipDispatch(containerId, userText) {
 
   if (sugg) sugg.style.display = 'none';
 
-  // User bubble
   const ub = document.createElement('div');
   ub.className = 'aip-bubble aip-bubble-user';
   ub.textContent = userText;
   msgs.appendChild(ub);
 
-  // Typing indicator
   const ty = document.createElement('div');
   ty.className = 'aip-bubble aip-bubble-ai aip-typing';
   ty.innerHTML = '<span></span><span></span><span></span>';
@@ -2784,16 +2776,14 @@ async function _aipDispatch(containerId, userText) {
     const resp = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
-        messages: apiMessages
-      })
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: apiMessages })
     });
-
     const data = await resp.json();
-    const aiText = (data.content || []).map(b => b.text || '').join('');
+    let aiText = (data.content || []).map(b => b.text || '').join('');
     if (!aiText) throw new Error(data.error?.message || 'Empty response');
+
+    // Execute actions
+    aiText = await _mobAipExecuteActions(aiText);
 
     _aipHistory.push({ role: 'assistant', content: aiText });
     ty.remove();
@@ -2803,16 +2793,15 @@ async function _aipDispatch(containerId, userText) {
     ab.innerHTML = _aipFormat(aiText);
     msgs.appendChild(ab);
 
-    // Follow-up chips after first plan
     if (_aipHistory.length === 2) {
       const fc = document.createElement('div');
       fc.className = 'aip-followup-sugg';
       fc.innerHTML = '<div class="aip-followup-label">Try asking:</div>'
         + '<div class="aip-followup-chips">'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'Move my workout to later\')">Move workout later</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'Cut it down to 2 hours\')">Cut to 2 hours</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'Add more breaks\')">More breaks</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'What should I prioritize if something comes up?\')">What to prioritize</button>'
+        + '<button onclick="aipSend(\'' + containerId + '\',\'I got distracted, help me refocus\')">Help me refocus</button>'
+        + '<button onclick="aipSend(\'' + containerId + '\',\'Add a task to review emails\')">Add a task</button>'
+        + '<button onclick="aipSend(\'' + containerId + '\',\'Mark my first habit as done\')">Mark habit done</button>'
+        + '<button onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">How\'s my day?</button>'
         + '</div>';
       msgs.appendChild(fc);
     }
@@ -2821,7 +2810,7 @@ async function _aipDispatch(containerId, userText) {
     ty.remove();
     const eb = document.createElement('div');
     eb.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
-    eb.textContent = '⚠️ Something went wrong: ' + err.message;
+    eb.textContent = '⚠️ ' + err.message;
     msgs.appendChild(eb);
     _aipHistory.pop();
   } finally {
@@ -2829,6 +2818,52 @@ async function _aipDispatch(containerId, userText) {
     if (input)   { input.disabled = false; input.focus(); }
     msgs.scrollTop = msgs.scrollHeight;
   }
+}
+
+async function _mobAipExecuteActions(text) {
+  const actionRegex = /<<<ACTION>>>(.*?)<<<END>>>/gs;
+  let match;
+  const actions = [];
+  while ((match = actionRegex.exec(text)) !== null) {
+    try { actions.push(JSON.parse(match[1])); } catch(e) {}
+  }
+  let cleanText = text.replace(/<<<ACTION>>>.*?<<<END>>>/gs, '').trim();
+  if (!actions.length) return cleanText;
+
+  const d = getD();
+  let changed = false;
+  const today = toDay();
+
+  for (const action of actions) {
+    try {
+      if (action.type === 'create_task') {
+        d.tasks = d.tasks || [];
+        d.tasks.unshift({ id: uid(), text: action.text, title: action.text, col: 'todo',
+          dueDate: action.dueDate || null, priority: action.priority || 'medium',
+          recurring: 'none', date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}), created: Date.now() });
+        changed = true;
+      } else if (action.type === 'complete_habit') {
+        const p = d.prefs || {}; if (!p.habitLog) p.habitLog = {};
+        const arr = p.habitLog[today] || [];
+        const hid = Number(action.id);
+        if (!arr.includes(hid)) { p.habitLog[today] = [...arr, hid]; d.prefs = p; changed = true; }
+      } else if (action.type === 'move_task') {
+        const t = (d.tasks||[]).find(x => String(x.id) === String(action.id));
+        if (t) { t.col = action.col; changed = true; }
+      } else if (action.type === 'create_event') {
+        d.calEvs = d.calEvs || [];
+        d.calEvs.push({ id: uid(), title: action.title, date: action.date, color: '#3A7D5E' });
+        changed = true;
+      }
+    } catch(e) {}
+  }
+
+  if (changed) {
+    if (cu) acc[cu] = d;
+    saveAll();
+    renderAll();
+  }
+  return cleanText;
 }
 
 function _aipFormat(text) {
@@ -2842,200 +2877,4 @@ function _aipFormat(text) {
     .replace(/\n/g, '<br>')
     .replace(/^/, '<p>')
     .replace(/$/, '</p>');
-}
-
-// ═══════════════════════════════════════
-// GOAL SETUP — mobile
-// ═══════════════════════════════════════
-function openGoalSetup() {
-  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
-  openSheet('sh-goal-setup');
-  setTimeout(() => { const i = document.getElementById('mob-goal-input'); if (i) { i.value = ''; i.focus(); } }, 300);
-  const ctx = document.getElementById('mob-goal-context');
-  if (ctx) ctx.value = '';
-  const res = document.getElementById('mob-goal-result');
-  if (res) { res.innerHTML = ''; res.style.display = 'none'; }
-  const errEl = document.getElementById('mob-goal-error');
-  if (errEl) { errEl.innerHTML = ''; errEl.style.display = 'none'; }
-  const btn = document.getElementById('mob-goal-btn');
-  if (btn) { btn.disabled = false; btn.textContent = '✨ Break down my goal'; }
-}
-
-async function mobGenerateGoalPlan() {
-  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
-  const inp = document.getElementById('mob-goal-input');
-  const ctxInp = document.getElementById('mob-goal-context');
-  const res = document.getElementById('mob-goal-result');
-  const errEl = document.getElementById('mob-goal-error');
-  const btn = document.getElementById('mob-goal-btn');
-  const goal = inp?.value?.trim();
-  if (!goal) { inp?.focus(); return; }
-  const context = ctxInp?.value?.trim() || '';
-
-  if (errEl) { errEl.style.display = 'none'; errEl.innerHTML = ''; }
-  if (res) { res.style.display = 'none'; res.innerHTML = ''; }
-
-  btn.disabled = true;
-  btn.textContent = 'Thinking…';
-
-  const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-
-  const prompt = `You are a productivity coach inside Prodify.
-Today is ${today}.
-
-The user typed: "${goal}"
-${context ? `Additional context: "${context}"` : ''}
-
-FIRST validate. If the input is gibberish, a typo, too vague (e.g. "stuff", "idk", "asdff"), or not a real goal, respond ONLY with:
-{ "error": "One friendly sentence explaining what's wrong and asking them to be more specific." }
-
-If valid, respond ONLY with this JSON:
-{
-  "project": { "name": "string", "desc": "string (tailored to context)", "due": "YYYY-MM-DD or null" },
-  "tasks": [ { "text": "string (specific to context)", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
-  "habits": [ { "name": "string (short, specific)", "emoji": "single emoji" } ],
-  "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string" } ]
-}
-Rules: use context to be specific, 3-6 tasks, 2-5 habits (Pro user), 1-3 milestones, realistic dates, no markdown fences.`;
-
-  try {
-    const resp = await fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await resp.json();
-    const text = (data.content || []).map(b => b.text || '').join('').trim();
-    if (!text) throw new Error(data.error?.message || 'Empty response');
-    const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
-    const plan = JSON.parse(clean);
-    if (plan.error) {
-      if (errEl) { errEl.innerHTML = '⚠️ ' + plan.error; errEl.style.display = 'block'; }
-      return;
-    }
-    _mobRenderGoalPreview(plan);
-  } catch (err) {
-    res.innerHTML = '<div style="color:#c0392b;font-size:12px;">⚠️ ' + err.message + '</div>';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '↺ Regenerate';
-    btn.style.fontFamily = 'inherit';
-  }
-}
-
-function _mobRenderGoalPreview(plan) {
-  const res = document.getElementById('mob-goal-result');
-  if (!res) return;
-
-  let html = '<div style="border-top:1.5px solid var(--bdr);padding-top:14px;display:flex;flex-direction:column;gap:12px;">';
-
-  if (plan.project) {
-    html += '<div><div class="goal-section-title">📁 Project</div>'
-      + '<div class="goal-item"><div class="goal-item-name">' + _mesc(plan.project.name) + '</div>'
-      + (plan.project.desc ? '<div class="goal-item-sub">' + _mesc(plan.project.desc) + '</div>' : '')
-      + (plan.project.due ? '<div class="goal-item-tag">Due ' + plan.project.due + '</div>' : '')
-      + '</div></div>';
-  }
-
-  if (plan.tasks?.length) {
-    html += '<div><div class="goal-section-title">✅ Tasks (' + plan.tasks.length + ')</div>';
-    plan.tasks.forEach(t => {
-      const pc = t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#d97706' : 'var(--ink4)';
-      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(t.text) + '</div>'
-        + '<div style="display:flex;gap:6px;margin-top:2px;">'
-        + (t.priority ? '<span style="font-size:10px;font-weight:700;color:' + pc + ';text-transform:uppercase;">' + t.priority + '</span>' : '')
-        + (t.dueDate ? '<span style="font-size:10px;color:var(--ink4);">Due ' + t.dueDate + '</span>' : '')
-        + '</div></div>';
-    });
-    html += '</div>';
-  }
-
-  if (plan.habits?.length) {
-    html += '<div><div class="goal-section-title">🔁 Habits</div>';
-    plan.habits.forEach(h => {
-      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(h.emoji || '✅') + ' ' + _mesc(h.name) + '</div></div>';
-    });
-    html += '</div>';
-  }
-
-  if (plan.events?.length) {
-    html += '<div><div class="goal-section-title">📅 Events</div>';
-    plan.events.forEach(e => {
-      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(e.title) + '</div>'
-        + '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">' + _mesc(e.date) + '</div></div>';
-    });
-    html += '</div>';
-  }
-
-  html += '</div>';
-
-  res.innerHTML = html;
-  res.style.display = 'block';
-
-  // Store plan safely — avoids encoding issues in onclick
-  window._pendingGoalPlan = plan;
-  const applyBtn = document.createElement('button');
-  applyBtn.className = 'sh-btn sh-btn-primary';
-  applyBtn.style.marginTop = '14px';
-  applyBtn.style.fontFamily = 'inherit';
-  applyBtn.textContent = '✅ Add everything to Prodify';
-  applyBtn.onclick = () => _mobApplyGoalPlan(window._pendingGoalPlan);
-  res.appendChild(applyBtn);
-}
-
-function _mobApplyGoalPlan(encodedPlan) {
-  const plan = JSON.parse(decodeURIComponent(encodedPlan));
-  const d = getD();
-  const now = Date.now();
-
-  // Project
-  let projectId = null;
-  if (plan.project) {
-    projectId = now;
-    d.subjects = d.subjects || [];
-    d.subjects.push({ id: projectId, name: plan.project.name, desc: plan.project.desc || '', due: plan.project.due || '', status: 'active', color: '#3A7D5E', progress: 0, created: now });
-  }
-
-  // Tasks
-  d.tasks = d.tasks || [];
-  (plan.tasks || []).forEach((t, i) => {
-    d.tasks.unshift({ id: uid(), text: t.text, title: t.text, col: 'todo', dueDate: t.dueDate || null, priority: t.priority || 'medium', recurring: 'none', date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }), subjectId: projectId, created: now + i + 1 });
-  });
-
-  // Habits
-  const p = d.prefs || {};
-  p.habits = p.habits || [];
-  (plan.habits || []).forEach((h, i) => {
-    p.habits.push({ id: now + 100 + i, name: h.name, emoji: h.emoji || '✅', created: toDay() });
-  });
-  d.prefs = p;
-
-  // Events
-  d.calEvs = d.calEvs || [];
-  (plan.events || []).forEach((e, i) => {
-    d.calEvs.push({ id: uid(), title: e.title, date: _mobGoalFmtDate(e.date), color: '#3A7D5E' });
-  });
-
-  if (cu) acc[cu] = d;
-  saveAll();
-  renderAll();
-  closeSheets();
-
-  const total = (plan.tasks?.length || 0) + (plan.habits?.length || 0) + (plan.events?.length || 0) + (plan.project ? 1 : 0);
-  toast('Goal added! ' + total + ' items created ✨');
-}
-
-function _mobGoalFmtDate(iso) {
-  // Mobile calendar uses YYYY-MM-DD format — pass through directly
-  if (!iso) return '';
-  return iso;
-}
-
-function _mesc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
