@@ -720,7 +720,7 @@ button,input,select,textarea{font-family:inherit;}
 .mob-cal-upcoming-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink4);padding:14px 18px 6px;}
 
 /* ── AI PLANNER CHAT UI (mobile) ── */
-.aip-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:400px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:20px;overflow:hidden;}
+.aip-chat-wrap{display:flex;flex-direction:column;height:100%;background:var(--surf);border-radius:0;overflow:hidden;}
 .aip-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1.5px solid var(--bdr);background:var(--surf);flex-shrink:0;}
 .aip-chat-header-left{display:flex;align-items:center;gap:10px;}
 .aip-chat-avatar{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--a2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}

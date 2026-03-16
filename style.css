@@ -1420,7 +1420,7 @@ to{opacity:1;transform:translateY(0);}
 
 /* ── AI DAILY PLANNER ── */
 /* ── AI PLANNER CHAT UI ── */
-.aip-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 140px);min-height:500px;max-height:800px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:20px;overflow:hidden;}
+.aip-chat-wrap{display:flex;flex-direction:column;height:100%;background:var(--surf);border-radius:20px;overflow:hidden;}
 
 /* header */
 .aip-chat-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1.5px solid var(--bdr);background:var(--surf);flex-shrink:0;}

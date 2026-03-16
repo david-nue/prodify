@@ -564,14 +564,7 @@ function renderMobProfile(){
 }
 function openAIPlanner(){
   if(!isPro()){ showUpgradeModal('AI Daily Planner'); return; }
-  // Use mobile goPg system with the mobile-specific page and container
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  const pg=document.getElementById('mob-pg-aiplanner');
-  if(pg) pg.classList.add('active');
-  const nav=document.querySelector('.bottom-nav');
-  if(nav) nav.style.display='';
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const nb=document.getElementById('nav-aiplanner'); if(nb) nb.classList.add('active');
+  openSheet('sh-aiplanner');
   renderAIPlanner('mob-aip-body', true);
 }
 
@@ -2669,64 +2662,52 @@ function _buildAipContext() {
 function renderAIPlanner(containerId, isMobile) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  if (el.querySelector('.aip-chat-wrap')) return;
 
   _aipHistory = [];
   const ctx = _buildAipContext();
-  const hr = new Date().getHours();
-  const timeOfDay = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
+  const carried = ctx.carriedTasks.length;
 
-  _aipContext = 'You are a sharp, practical productivity coach in Prodify.\n'
-    + 'Today is ' + ctx.dateStr + '. Current time: ' + ctx.timeStr + '.\n\n'
-    + 'USER DATA:\nPENDING TASKS:\n' + ctx.taskList + '\n'
-    + (ctx.carriedTasks.length ? '\nCARRIED FROM YESTERDAY:\n' + ctx.carriedTasks.map(t=>'• '+(t.title||t.text)).join('\n') + '\n' : '')
-    + '\nHABITS TO DO:\n' + ctx.habitList + '\n'
-    + (ctx.doneHabitCount > 0 ? 'HABITS DONE: ' + ctx.doneHabitCount + '\n' : '')
-    + '\nCALENDAR TODAY:\n' + ctx.eventList + '\n\n'
-    + 'You can perform ACTIONS. Include JSON at the END of your response in <<<ACTION>>> tags:\n'
+  _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '.\n'
+    + 'TASKS: ' + ctx.taskList + '\n'
+    + (carried ? 'OVERDUE: ' + ctx.carriedTasks.map(t=>'• '+(t.title||t.text)).join(', ') + '\n' : '')
+    + 'HABITS TO DO: ' + ctx.habitList + (ctx.doneHabitCount>0?' | DONE: '+ctx.doneHabitCount:'') + '\n'
+    + 'CALENDAR: ' + ctx.eventList + '\n\n'
+    + 'Actions — append after text:\n'
     + '<<<ACTION>>>{"type":"create_task","text":"name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
     + '<<<ACTION>>>{"type":"complete_habit","id":123}<<<END>>>\n'
     + '<<<ACTION>>>{"type":"move_task","id":"123","col":"todo|inprog|done"}<<<END>>>\n'
     + '<<<ACTION>>>{"type":"create_event","title":"name","date":"YYYY-MM-DD"}<<<END>>>\n'
-    + 'Always confirm the action in your text. Format plans as **HH:MM - HH:MM** Task then > tip. End with **Note:** encouragement.';
+    + 'Confirm actions. Plans: **HH:MM - HH:MM** task then > tip. End with **Note:** one line.';
 
-  el.innerHTML = '<div class="aip-chat-wrap" id="' + containerId + '-wrap">'
+  el.innerHTML =
+    '<div class="aip-chat-wrap" id="' + containerId + '-wrap" style="height:100%;max-height:calc(88vh - 60px);">'
     + '<div class="aip-chat-header">'
     + '<div class="aip-chat-header-left">'
-    + '<div class="aip-chat-avatar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'
-    + '<div><div class="aip-chat-name">AI Daily Planner</div>'
-    + '<div class="aip-chat-status"><span class="aip-status-dot"></span>Ready</div></div>'
+    + '<div class="aip-chat-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'
+    + '<div>'
+    + '<div class="aip-chat-name">AI Planner <span style="font-size:9px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 5px;border-radius:100px;vertical-align:middle;margin-left:3px;">PRO</span></div>'
+    + '<div class="aip-chat-status"><span class="aip-status-dot"></span>' + ctx.pendingCount + ' tasks · ' + ctx.habitCount + ' habits · ' + ctx.eventCount + ' events' + (carried ? ' · <span style=\"color:#dc2626;\">' + carried + ' overdue</span>' : '') + '</div>'
+    + '</div></div>'
+    + '<button class="aip-reset-btn" onclick="closeSheets()" style="padding:4px 8px;">✕</button>'
     + '</div>'
-    + '<button class="aip-reset-btn" onclick="renderAIPlanner(\'' + containerId + '\',true)">↺ Reset</button>'
-    + '</div>'
-    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs">'
-    + '<div class="aip-welcome">'
-    + '<div class="aip-welcome-title">Good ' + timeOfDay + '! 👋</div>'
-    + '<div class="aip-welcome-body">I\'ve pulled your data. Generate your plan — then ask me to adjust or take actions like adding tasks or marking habits done.</div>'
-    + '<div class="aip-welcome-context">'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">✅</span><span class="aip-ctx-text">' + ctx.pendingCount + ' task' + (ctx.pendingCount!==1?'s':'') + '</span></div>'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">🔁</span><span class="aip-ctx-text">' + ctx.habitCount + ' habit' + (ctx.habitCount!==1?'s':'')+' to do</span></div>'
-    + '<div class="aip-ctx-row"><span class="aip-ctx-icon">📅</span><span class="aip-ctx-text">' + ctx.eventCount + ' event' + (ctx.eventCount!==1?'s':'')+' today</span></div>'
-    + (ctx.carriedTasks.length ? '<div class="aip-ctx-row" style="border-color:rgba(220,38,38,.3);"><span class="aip-ctx-icon">⚠️</span><span class="aip-ctx-text" style="color:#dc2626;">' + ctx.carriedTasks.length + ' from yesterday</span></div>' : '')
-    + '</div>'
-    + '<div class="aip-welcome-hint">💡 Try: <em>"Generate my plan"</em> · <em>"Add a task to call dentist"</em> · <em>"Mark workout done"</em> · <em>"How\'s my day going?"</em></div>'
-    + '</div>'
-    + '</div>'
+    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'
     + '<div class="aip-chat-footer">'
     + '<div class="aip-suggestions" id="' + containerId + '-sugg">'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate my plan</button>'
-    + (ctx.carriedTasks.length ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + ctx.carriedTasks.length + ' tasks from yesterday, help me catch up\')">⚠️ Catch up</button>' : '')
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 How\'s my day?</button>'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⚡ Short on time</button>'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')">⚡ Plan my day</button>'
+    + (carried ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks, help me catch up\')">⚠️ Catch up</button>' : '')
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 Check in</button>'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⏱ Short on time</button>'
     + '</div>'
     + '<div class="aip-input-row">'
-    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Adjust plan, add tasks, mark habits done…" rows="1"'
+    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Plan day, add task, mark habit done…" rows="1"'
     + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();aipSend(\'' + containerId + '\');}"'
-    + ' oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\';"></textarea>'
+    + ' oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,90)+\'px\';"></textarea>'
     + '<button class="aip-send-btn" id="' + containerId + '-sendbtn" onclick="aipSend(\'' + containerId + '\')">'
-    + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
-    + '</button></div></div></div>';
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+    + '</button>'
+    + '</div></div></div>';
 }
-
 function aipSend(containerId, presetText) {
   const input = document.getElementById(containerId + '-input');
   const text = presetText || (input && input.value.trim());
