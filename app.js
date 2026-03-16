@@ -5953,18 +5953,23 @@ function _renderGoalPreview(plan) {
 
   html += '</div>';
 
-  // Add to Prodify button
-  html += '<button class="aip-btn" style="margin-top:16px;" onclick=\'_applyGoalPlan(' + JSON.stringify(JSON.stringify(plan)) + ')\'>'
-    + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
-    + ' Add everything to Prodify'
-    + '</button>';
-
   res.innerHTML = html;
+
+  // Store plan safely and attach button handler — avoids JSON injection in onclick
+  window._pendingGoalPlan = plan;
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'aip-btn';
+  applyBtn.style.marginTop = '16px';
+  applyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Add everything to Prodify';
+  applyBtn.onclick = () => _applyGoalPlan(window._pendingGoalPlan);
+  res.appendChild(applyBtn);
   res.style.display = 'block';
 }
 
-function _applyGoalPlan(planJson) {
-  const plan = JSON.parse(planJson);
+function _applyGoalPlan(planOrJson) {
+  const plan = (typeof planOrJson === 'string') ? JSON.parse(planOrJson) : planOrJson;
+  // Safety check — abort if globals not populated (user not logged in)
+  if (!cu || !acc[cu]) { console.warn('[Prodify] Goal apply aborted: no active user'); return; }
   const now = Date.now();
 
   // Create project

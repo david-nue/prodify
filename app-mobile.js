@@ -2956,12 +2956,17 @@ function _mobRenderGoalPreview(plan) {
 
   html += '</div>';
 
-  const planStr = JSON.stringify(plan).replace(/'/g, "\\'");
-  html += '<button class="sh-btn" style="margin-top:14px;" onclick=\'_mobApplyGoalPlan(\'' + encodeURIComponent(JSON.stringify(plan)) + '\')\'>'
-    + '✅ Add everything to Prodify</button>';
-
   res.innerHTML = html;
   res.style.display = 'block';
+
+  // Store plan safely — avoids encoding issues in onclick
+  window._pendingGoalPlan = plan;
+  const applyBtn = document.createElement('button');
+  applyBtn.className = 'sh-btn';
+  applyBtn.style.marginTop = '14px';
+  applyBtn.textContent = '✅ Add everything to Prodify';
+  applyBtn.onclick = () => _mobApplyGoalPlan(window._pendingGoalPlan);
+  res.appendChild(applyBtn);
 }
 
 function _mobApplyGoalPlan(encodedPlan) {
