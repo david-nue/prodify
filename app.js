@@ -5816,3 +5816,230 @@ function lwShowSuccess(email, position) {
   if (posEl) posEl.textContent = position ? '#' + position : '#—';
   if (emailEl) emailEl.textContent = email;
 }
+
+// ═══════════════════════════════════════
+// GOAL SETUP — AI cascades a goal into tasks, habits, events, project
+// ═══════════════════════════════════════
+function openGoalSetup() {
+  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
+  // Reset state
+  const inp = document.getElementById('goal-input');
+  const res = document.getElementById('goal-result');
+  const btn = document.getElementById('goal-generate-btn');
+  if (inp) inp.value = '';
+  if (res) { res.innerHTML = ''; res.style.display = 'none'; }
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21"/></svg> Break down my goal';
+  }
+  openMo('mo-goal-setup');
+  setTimeout(() => { const i = document.getElementById('goal-input'); if (i) i.focus(); }, 200);
+}
+
+async function generateGoalPlan() {
+  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
+  const inp = document.getElementById('goal-input');
+  const res = document.getElementById('goal-result');
+  const btn = document.getElementById('goal-generate-btn');
+  const goal = inp?.value?.trim();
+  if (!goal) { inp?.focus(); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="aip-spinner"></span> Thinking…';
+  res.style.display = 'block';
+  res.innerHTML = '<div class="aip-loading"><span class="aip-spinner" style="border-color:rgba(var(--a2-rgb,58,125,94),.2);border-top-color:var(--a2);"></span> Breaking down your goal…</div>';
+
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  const prompt = `You are a productivity coach. The user has a goal. Break it down into actionable Prodify items.
+Today is ${today}.
+
+Goal: "${goal}"
+
+Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation. Use this exact structure:
+{
+  "project": { "name": "string (short project name)", "desc": "string (one sentence)", "due": "YYYY-MM-DD or null" },
+  "tasks": [ { "text": "string", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
+  "habits": [ { "name": "string (short, actionable)", "emoji": "single emoji" } ],
+  "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string (why this date)" } ]
+}
+
+Rules:
+- project: always create one named after the goal
+- tasks: 3–6 concrete first steps, ordered by priority
+- habits: 1–3 daily/weekly habits that support the goal (max 3)
+- events: 1–3 key milestone dates or check-in events spread over the timeline
+- Keep all text short and actionable
+- Use realistic future dates based on the goal timeline`;
+
+  try {
+    const response = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b => b.text || '').join('').trim();
+    if (!text) throw new Error(data.error?.message || 'Empty response');
+
+    // Strip any accidental markdown fences
+    const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+    const plan = JSON.parse(clean);
+    _renderGoalPreview(plan);
+  } catch (err) {
+    res.innerHTML = '<div class="aip-error">⚠️ Something went wrong: ' + err.message + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21"/></svg> Regenerate';
+  }
+}
+
+function _renderGoalPreview(plan) {
+  const res = document.getElementById('goal-result');
+  if (!res) return;
+
+  let html = '<div style="border-top:1.5px solid var(--bdr);padding-top:16px;display:flex;flex-direction:column;gap:14px;">';
+
+  // Project
+  if (plan.project) {
+    html += '<div class="goal-section">'
+      + '<div class="goal-section-title">📁 Project</div>'
+      + '<div class="goal-item">'
+      + '<div class="goal-item-name">' + _esc(plan.project.name) + '</div>'
+      + (plan.project.desc ? '<div class="goal-item-sub">' + _esc(plan.project.desc) + '</div>' : '')
+      + (plan.project.due ? '<div class="goal-item-tag">Due ' + plan.project.due + '</div>' : '')
+      + '</div></div>';
+  }
+
+  // Tasks
+  if (plan.tasks?.length) {
+    html += '<div class="goal-section"><div class="goal-section-title">✅ Tasks (' + plan.tasks.length + ')</div><div class="goal-items-list">';
+    plan.tasks.forEach(t => {
+      const priColor = t.priority === 'high' ? 'var(--red)' : t.priority === 'medium' ? '#d97706' : 'var(--ink4)';
+      html += '<div class="goal-item">'
+        + '<div class="goal-item-name">' + _esc(t.text) + '</div>'
+        + '<div style="display:flex;gap:6px;margin-top:3px;">'
+        + (t.priority ? '<span style="font-size:10px;font-weight:700;color:' + priColor + ';text-transform:uppercase;">' + t.priority + '</span>' : '')
+        + (t.dueDate ? '<span style="font-size:10px;color:var(--ink4);">Due ' + t.dueDate + '</span>' : '')
+        + '</div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Habits
+  if (plan.habits?.length) {
+    html += '<div class="goal-section"><div class="goal-section-title">🔁 Habits</div><div class="goal-items-list">';
+    plan.habits.forEach(h => {
+      html += '<div class="goal-item"><div class="goal-item-name">' + _esc(h.emoji || '✅') + ' ' + _esc(h.name) + '</div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Events
+  if (plan.events?.length) {
+    html += '<div class="goal-section"><div class="goal-section-title">📅 Calendar Events</div><div class="goal-items-list">';
+    plan.events.forEach(e => {
+      html += '<div class="goal-item">'
+        + '<div class="goal-item-name">' + _esc(e.title) + '</div>'
+        + '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">' + _esc(e.date) + (e.note ? ' · ' + _esc(e.note) : '') + '</div>'
+        + '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+
+  // Add to Prodify button
+  html += '<button class="aip-btn" style="margin-top:16px;" onclick=\'_applyGoalPlan(' + JSON.stringify(JSON.stringify(plan)) + ')\'>'
+    + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    + ' Add everything to Prodify'
+    + '</button>';
+
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
+
+function _applyGoalPlan(planJson) {
+  const plan = JSON.parse(planJson);
+  const now = Date.now();
+
+  // Create project
+  let projectId = null;
+  if (plan.project) {
+    projectId = now;
+    subjects.push({
+      id: projectId,
+      name: plan.project.name,
+      desc: plan.project.desc || '',
+      due: plan.project.due || '',
+      status: 'active',
+      color: '#3A7D5E',
+      progress: 0,
+      created: now
+    });
+  }
+
+  // Create tasks
+  (plan.tasks || []).forEach((t, i) => {
+    tasks.unshift({
+      id: String(now + i + 1),
+      text: t.text, title: t.text,
+      col: 'todo',
+      dueDate: t.dueDate || null,
+      priority: t.priority || 'medium',
+      recurring: 'none',
+      date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+      subjectId: projectId,
+      created: now + i + 1
+    });
+  });
+
+  // Create habits
+  (plan.habits || []).forEach((h, i) => {
+    if (!prefs.habits) prefs.habits = [];
+    prefs.habits.push({ id: now + 100 + i, name: h.name, emoji: h.emoji || '✅', created: habitToday() });
+  });
+
+  // Create calendar events
+  (plan.events || []).forEach((e, i) => {
+    calEvs.push({ id: String(now + 200 + i), title: e.title, date: _goalFmtDate(e.date), color: '#3A7D5E' });
+  });
+
+  persist();
+  renderAllTaskW?.();
+  renderSubFull?.();
+  renderFullCal?.();
+  updateFixedStats?.();
+
+  closeMo('mo-goal-setup');
+  // Show success toast
+  const total = (plan.tasks?.length || 0) + (plan.habits?.length || 0) + (plan.events?.length || 0) + (plan.project ? 1 : 0);
+  _showToast('Goal added! ' + total + ' items created ✨');
+}
+
+function _goalFmtDate(iso) {
+  // Convert YYYY-MM-DD to "Mar 16, 2025" format used by calEvs
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function _esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _showToast(msg) {
+  // Use existing toast if available, else create one
+  if (typeof toast === 'function') { toast(msg); return; }
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:100px;font-size:13px;font-weight:600;z-index:99999;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}

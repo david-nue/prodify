@@ -767,3 +767,12 @@ button,input,select,textarea{font-family:inherit;}
 .aip-send-btn:disabled{opacity:.5;}
 .aip-spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;display:inline-block;animation:aip-spin .7s linear infinite;flex-shrink:0;}
 @keyframes aip-spin{to{transform:rotate(360deg);}}
+
+/* ── GOAL SETUP ── */
+.goal-section-title{font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.goal-items-list{display:flex;flex-direction:column;gap:6px;}
+.goal-item{background:var(--surf);border:1.5px solid var(--bdr);border-radius:12px;padding:10px 13px;}
+.goal-item-name{font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;}
+.goal-item-sub{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.4;}
+.goal-item-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--a2);background:var(--al);border-radius:100px;padding:2px 8px;margin-top:4px;}
+

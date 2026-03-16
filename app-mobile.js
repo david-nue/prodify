@@ -2843,3 +2843,176 @@ function _aipFormat(text) {
     .replace(/^/, '<p>')
     .replace(/$/, '</p>');
 }
+
+// ═══════════════════════════════════════
+// GOAL SETUP — mobile
+// ═══════════════════════════════════════
+function openGoalSetup() {
+  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
+  openSheet('sh-goal-setup');
+  setTimeout(() => { const i = document.getElementById('mob-goal-input'); if (i) { i.value = ''; i.focus(); } }, 300);
+  const res = document.getElementById('mob-goal-result');
+  if (res) { res.innerHTML = ''; res.style.display = 'none'; }
+  const btn = document.getElementById('mob-goal-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '✨ Break down my goal'; }
+}
+
+async function mobGenerateGoalPlan() {
+  if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
+  const inp = document.getElementById('mob-goal-input');
+  const res = document.getElementById('mob-goal-result');
+  const btn = document.getElementById('mob-goal-btn');
+  const goal = inp?.value?.trim();
+  if (!goal) { inp?.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Thinking…';
+  res.style.display = 'block';
+  res.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--ink3);font-size:13px;padding:8px 0;"><div class="aip-spinner" style="border-color:rgba(58,125,94,.2);border-top-color:var(--a2);"></div> Breaking down your goal…</div>';
+
+  const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  const prompt = `You are a productivity coach. The user has a goal. Break it down into actionable Prodify items.
+Today is ${today}.
+
+Goal: "${goal}"
+
+Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation. Use this exact structure:
+{
+  "project": { "name": "string", "desc": "string", "due": "YYYY-MM-DD or null" },
+  "tasks": [ { "text": "string", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
+  "habits": [ { "name": "string", "emoji": "single emoji" } ],
+  "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string" } ]
+}
+Rules: project always created, 3-6 tasks, 1-3 habits max, 1-3 milestone events, realistic future dates.`;
+
+  try {
+    const resp = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content || []).map(b => b.text || '').join('').trim();
+    if (!text) throw new Error(data.error?.message || 'Empty response');
+    const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+    const plan = JSON.parse(clean);
+    _mobRenderGoalPreview(plan);
+  } catch (err) {
+    res.innerHTML = '<div style="color:#c0392b;font-size:12px;">⚠️ ' + err.message + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ Regenerate';
+  }
+}
+
+function _mobRenderGoalPreview(plan) {
+  const res = document.getElementById('mob-goal-result');
+  if (!res) return;
+
+  let html = '<div style="border-top:1.5px solid var(--bdr);padding-top:14px;display:flex;flex-direction:column;gap:12px;">';
+
+  if (plan.project) {
+    html += '<div><div class="goal-section-title">📁 Project</div>'
+      + '<div class="goal-item"><div class="goal-item-name">' + _mesc(plan.project.name) + '</div>'
+      + (plan.project.desc ? '<div class="goal-item-sub">' + _mesc(plan.project.desc) + '</div>' : '')
+      + (plan.project.due ? '<div class="goal-item-tag">Due ' + plan.project.due + '</div>' : '')
+      + '</div></div>';
+  }
+
+  if (plan.tasks?.length) {
+    html += '<div><div class="goal-section-title">✅ Tasks (' + plan.tasks.length + ')</div>';
+    plan.tasks.forEach(t => {
+      const pc = t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#d97706' : 'var(--ink4)';
+      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(t.text) + '</div>'
+        + '<div style="display:flex;gap:6px;margin-top:2px;">'
+        + (t.priority ? '<span style="font-size:10px;font-weight:700;color:' + pc + ';text-transform:uppercase;">' + t.priority + '</span>' : '')
+        + (t.dueDate ? '<span style="font-size:10px;color:var(--ink4);">Due ' + t.dueDate + '</span>' : '')
+        + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  if (plan.habits?.length) {
+    html += '<div><div class="goal-section-title">🔁 Habits</div>';
+    plan.habits.forEach(h => {
+      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(h.emoji || '✅') + ' ' + _mesc(h.name) + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  if (plan.events?.length) {
+    html += '<div><div class="goal-section-title">📅 Events</div>';
+    plan.events.forEach(e => {
+      html += '<div class="goal-item"><div class="goal-item-name">' + _mesc(e.title) + '</div>'
+        + '<div style="font-size:11px;color:var(--ink4);margin-top:2px;">' + _mesc(e.date) + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  const planStr = JSON.stringify(plan).replace(/'/g, "\\'");
+  html += '<button class="sh-btn" style="margin-top:14px;" onclick=\'_mobApplyGoalPlan(\'' + encodeURIComponent(JSON.stringify(plan)) + '\')\'>'
+    + '✅ Add everything to Prodify</button>';
+
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
+
+function _mobApplyGoalPlan(encodedPlan) {
+  const plan = JSON.parse(decodeURIComponent(encodedPlan));
+  const d = getD();
+  const now = Date.now();
+
+  // Project
+  let projectId = null;
+  if (plan.project) {
+    projectId = now;
+    d.subjects = d.subjects || [];
+    d.subjects.push({ id: projectId, name: plan.project.name, desc: plan.project.desc || '', due: plan.project.due || '', status: 'active', color: '#3A7D5E', progress: 0, created: now });
+  }
+
+  // Tasks
+  d.tasks = d.tasks || [];
+  (plan.tasks || []).forEach((t, i) => {
+    d.tasks.unshift({ id: uid(), text: t.text, title: t.text, col: 'todo', dueDate: t.dueDate || null, priority: t.priority || 'medium', recurring: 'none', date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }), subjectId: projectId, created: now + i + 1 });
+  });
+
+  // Habits
+  const p = d.prefs || {};
+  p.habits = p.habits || [];
+  (plan.habits || []).forEach((h, i) => {
+    p.habits.push({ id: now + 100 + i, name: h.name, emoji: h.emoji || '✅', created: toDay() });
+  });
+  d.prefs = p;
+
+  // Events
+  d.calEvs = d.calEvs || [];
+  (plan.events || []).forEach((e, i) => {
+    d.calEvs.push({ id: uid(), title: e.title, date: _mobGoalFmtDate(e.date), color: '#3A7D5E' });
+  });
+
+  if (cu) acc[cu] = d;
+  saveAll();
+  renderAll();
+  closeSheets();
+
+  const total = (plan.tasks?.length || 0) + (plan.habits?.length || 0) + (plan.events?.length || 0) + (plan.project ? 1 : 0);
+  toast('Goal added! ' + total + ' items created ✨');
+}
+
+function _mobGoalFmtDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function _mesc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
