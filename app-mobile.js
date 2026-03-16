@@ -564,11 +564,31 @@ function renderMobProfile(){
 }
 function openAIPlanner(){
   if(!isPro()){ showUpgradeModal('AI Daily Planner'); return; }
-  // Clear so renderAIPlanner always re-renders with fresh context
-  const body = document.getElementById('mob-aip-body');
-  if (body) body.innerHTML = '';
-  openSheet('sh-aiplanner');
-  setTimeout(() => renderAIPlanner('mob-aip-body', true), 50);
+  try {
+    const body = document.getElementById('mob-aip-body');
+    console.log('[AIP] mob-aip-body found:', !!body);
+    if (body) body.innerHTML = '';
+    openSheet('sh-aiplanner');
+    const sheet = document.getElementById('sh-aiplanner');
+    console.log('[AIP] sheet found:', !!sheet, 'classes:', sheet?.className);
+    setTimeout(() => {
+      try {
+        console.log('[AIP] calling renderAIPlanner...');
+        renderAIPlanner('mob-aip-body', true);
+        const wrap = document.getElementById('mob-aip-body-wrap');
+        const bodyAfter = document.getElementById('mob-aip-body');
+        console.log('[AIP] after render, mob-aip-body innerHTML length:', bodyAfter?.innerHTML?.length);
+        console.log('[AIP] wrap found:', !!wrap);
+      } catch(e) {
+        console.error('[AIP] renderAIPlanner threw:', e);
+        const body = document.getElementById('mob-aip-body');
+        if (body) body.innerHTML = '<div style="padding:20px;color:red;font-size:13px;">Error: ' + e.message + '</div>';
+      }
+    }, 100);
+  } catch(e) {
+    console.error('[AIP] openAIPlanner threw:', e);
+    toast('AI Planner error: ' + e.message);
+  }
 }
 
 function shuffleQuote(){
