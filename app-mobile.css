@@ -787,3 +787,10 @@ button,input,select,textarea{font-family:inherit;}
 #mob-aip-body .aip-chat-msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #mob-aip-body .aip-chat-footer{flex-shrink:0;}
 
+
+/* ── LOADING SCREEN ── */
+.mob-loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:24px;}
+.mob-loading-logo{font-size:28px;font-weight:300;letter-spacing:-.5px;color:var(--ink);}
+.mob-loading-logo b{font-weight:700;color:var(--a2);}
+.mob-loading-spinner{width:28px;height:28px;border:2.5px solid var(--bdr);border-top-color:var(--a2);border-radius:50%;animation:mobSpin .7s linear infinite;}
+@keyframes mobSpin{to{transform:rotate(360deg);}}

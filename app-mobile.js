@@ -189,6 +189,9 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');});
   const el=document.getElementById('screen-'+id);
   if(el){ el.style.animation='none'; el.classList.add('active'); void el.offsetWidth; el.style.animation=''; }
+  // Always dismiss loading screen once a real screen is shown
+  const loadEl=document.getElementById('screen-loading');
+  if(loadEl) loadEl.classList.remove('active');
 }
 
 // ══════════════════════════════════════════════
@@ -356,7 +359,7 @@ function obSetProgress(step){
 
 function obGo(step){
   document.querySelectorAll('.ob-panel').forEach(p=>p.classList.remove('active'));
-  const next=document.getElementById('ob-'+step);
+  const next=document.getElementById('mob-ob-'+step);
   if(next){ next.classList.add('active'); const inp=next.querySelector('input'); if(inp) setTimeout(()=>inp.focus(),80); }
   obSetProgress(Math.min(step,3));
   // Hide progress on last step
@@ -2564,6 +2567,11 @@ async function unregisterDevice(username){
 
 
 (async ()=>{
+  // Show a neutral loading state while we resolve auth — prevents login flash
+  const loginEl = document.getElementById('screen-login');
+  const loadEl = document.getElementById('screen-loading');
+  if(loadEl) loadEl.classList.add('active');
+
   // Check for OAuth redirect first
   const hasOAuthParams = window.location.hash.includes('access_token') || window.location.search.includes('code=');
   if(hasOAuthParams && sbReady){
