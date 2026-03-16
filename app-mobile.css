@@ -760,7 +760,7 @@ button,input,select,textarea{font-family:inherit;}
 .aip-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
 .aip-sugg-btn{display:flex;align-items:center;gap:5px;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:6px 11px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;}
 .aip-input-row{display:flex;align-items:flex-end;gap:8px;}
-.aip-input{flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:9px 13px;font-size:13px;font-family:inherit;color:var(--ink);outline:none;resize:none;line-height:1.5;max-height:100px;overflow-y:auto;transition:border-color .2s;}
+.aip-input{flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:8px 12px;font-size:12px;font-family:inherit;color:var(--ink);outline:none;resize:none;line-height:1.5;max-height:90px;overflow-y:auto;transition:border-color .2s;}
 .aip-input:focus{border-color:var(--a2);}
 .aip-input:disabled{opacity:.5;}
 .aip-send-btn{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--a),var(--a2));border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
@@ -787,5 +787,3 @@ button,input,select,textarea{font-family:inherit;}
 #mob-aip-body .aip-chat-msgs{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #mob-aip-body .aip-chat-footer{flex-shrink:0;}
 
-/* Full-width suggestion buttons in empty state */
-.aip-sugg-full{width:100%;justify-content:flex-start;padding:9px 13px;font-size:12px;border-radius:10px;border:1.5px solid var(--bdr) !important;}

@@ -4734,7 +4734,11 @@ function toggleAipPanel() {
       panel.style.opacity = '1';
       panel.style.transform = 'none';
     });
-    renderAIPlanner('aip-body', false);
+    // Only render if not already rendered — preserves chat history
+    const aipBody = document.getElementById('aip-body');
+    if (aipBody && !aipBody.querySelector('.aip-chat-wrap')) {
+      renderAIPlanner('aip-body', false);
+    }
   }
 }
 

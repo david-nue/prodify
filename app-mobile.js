@@ -576,18 +576,21 @@ function openAIPlanner(){
   if (!panel) return;
   const isOpen = panel.style.display === 'flex';
   if (isOpen) {
+    // Just hide — keep chat history intact
     panel.style.opacity = '0';
     panel.style.transform = 'translateY(12px) scale(.97)';
     setTimeout(() => { panel.style.display = 'none'; }, 200);
   } else {
-    if (body) body.innerHTML = '';
     panel.style.display = 'flex';
     panel.style.flexDirection = 'column';
     requestAnimationFrame(() => {
       panel.style.opacity = '1';
       panel.style.transform = 'none';
     });
-    renderAIPlanner('mob-aip-body', true);
+    // Only render if not already rendered — preserves chat history
+    if (body && !body.querySelector('.aip-chat-wrap')) {
+      renderAIPlanner('mob-aip-body', true);
+    }
   }
 }
 
@@ -2712,15 +2715,14 @@ function renderAIPlanner(containerId, isMobile) {
     + '</div></div>'
     + '<button class="aip-reset-btn" onclick="openAIPlanner()" style="padding:4px 8px;">✕</button>'
     + '</div>'
-    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs">'
-    + '<div id="' + containerId + '-sugg" style="display:flex;flex-direction:column;gap:8px;padding:8px 0;">'
-    + '<button class="aip-sugg-btn aip-sugg-full" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')">⚡ Plan my day</button>'
-    + (carried ? '<button class="aip-sugg-btn aip-sugg-full" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks, help me catch up\')">⚠️ Catch up from yesterday</button>' : '')
-    + '<button class="aip-sugg-btn aip-sugg-full" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 Check in on my day</button>'
-    + '<button class="aip-sugg-btn aip-sugg-full" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⏱ Short on time</button>'
-    + '</div>'
-    + '</div>'
+    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'
     + '<div class="aip-chat-footer">'
+    + '<div class="aip-suggestions" id="' + containerId + '-sugg">'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')">⚡ Plan my day</button>'
+    + (carried ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks\')">⚠️ Catch up</button>' : '')
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 Check in</button>'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⏱ Short on time</button>'
+    + '</div>'
     + '<div class="aip-input-row">'
     + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Plan day, add task, mark habit done…" rows="1"'
     + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();aipSend(\'' + containerId + '\');}"'
