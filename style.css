@@ -2314,3 +2314,14 @@ body.in-focus #fcs-exit-overlay{display:flex;}
 
 /* ── GOAL SECTION fix ── */
 .goal-section{display:flex;flex-direction:column;gap:6px;}
+
+/* ── aip-btn (used by AI planner and Goal Setup) ── */
+.aip-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;
+  border:none;border-radius:14px;padding:14px 15px;
+  font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;
+  transition:opacity .2s;margin-top:4px;
+}
+.aip-btn:hover{opacity:.9;}
+.aip-btn:disabled{opacity:.6;cursor:not-allowed;}

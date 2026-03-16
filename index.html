@@ -1909,6 +1909,13 @@
           <button onclick="document.getElementById('goal-input').value='I want to learn Spanish in 6 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--ink3)'">🗣️ Learn Spanish</button>
           <button onclick="document.getElementById('goal-input').value='I want to launch my side project in 2 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--a2)';this.style.color='var(--a2)'" onmouseout="this.style.borderColor='var(--bdr)';this.style.color='var(--ink3)'">🚀 Launch side project</button>
         </div>
+        <div style="margin-top:14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;">Details <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);opacity:.7;">(optional but helps)</span></div>
+          <textarea id="goal-context" rows="2" placeholder="e.g. I'm a beginner, training at home, 4 days a week, no equipment…"
+            style="width:100%;box-sizing:border-box;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:10px 14px;font-size:13px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.6;transition:border-color .2s;"
+            onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"></textarea>
+        </div>
+        <div id="goal-error" style="display:none;margin-top:10px;padding:10px 13px;background:rgba(220,38,38,0.07);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;font-size:12px;color:#dc2626;line-height:1.5;"></div>
         <div id="goal-result" style="display:none;margin-top:16px;"></div>
       </div>
       <!-- Footer -->
@@ -2951,6 +2958,11 @@
       <button onclick="document.getElementById('mob-goal-input').value='I want to launch my side project in 2 months'" style="background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--ink3);font-family:inherit;cursor:pointer;">🚀 Side project</button>
     </div>
     <button class="sh-btn" id="mob-goal-btn" onclick="mobGenerateGoalPlan()">✨ Break down my goal</button>
+    <div style="margin-top:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Details <span style="font-weight:400;text-transform:none;letter-spacing:0;opacity:.7;">(optional)</span></div>
+      <textarea id="mob-goal-context" class="sh-input" rows="2" placeholder="e.g. beginner, home workout, 4 days a week…" style="resize:none;height:60px;"></textarea>
+    </div>
+    <div id="mob-goal-error" style="display:none;margin-top:8px;padding:10px 13px;background:rgba(220,38,38,0.07);border:1.5px solid rgba(220,38,38,0.2);border-radius:12px;font-size:12px;color:#dc2626;line-height:1.5;"></div>
     <div id="mob-goal-result" style="display:none;margin-top:4px;"></div>
     <button class="sh-btn sh-btn-secondary" onclick="closeSheets()" style="margin-top:8px;">Cancel</button>
   </div>

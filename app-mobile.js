@@ -2851,8 +2851,12 @@ function openGoalSetup() {
   if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
   openSheet('sh-goal-setup');
   setTimeout(() => { const i = document.getElementById('mob-goal-input'); if (i) { i.value = ''; i.focus(); } }, 300);
+  const ctx = document.getElementById('mob-goal-context');
+  if (ctx) ctx.value = '';
   const res = document.getElementById('mob-goal-result');
   if (res) { res.innerHTML = ''; res.style.display = 'none'; }
+  const errEl = document.getElementById('mob-goal-error');
+  if (errEl) { errEl.innerHTML = ''; errEl.style.display = 'none'; }
   const btn = document.getElementById('mob-goal-btn');
   if (btn) { btn.disabled = false; btn.textContent = '✨ Break down my goal'; }
 }
@@ -2860,31 +2864,39 @@ function openGoalSetup() {
 async function mobGenerateGoalPlan() {
   if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
   const inp = document.getElementById('mob-goal-input');
+  const ctxInp = document.getElementById('mob-goal-context');
   const res = document.getElementById('mob-goal-result');
+  const errEl = document.getElementById('mob-goal-error');
   const btn = document.getElementById('mob-goal-btn');
   const goal = inp?.value?.trim();
   if (!goal) { inp?.focus(); return; }
+  const context = ctxInp?.value?.trim() || '';
+
+  if (errEl) { errEl.style.display = 'none'; errEl.innerHTML = ''; }
+  if (res) { res.style.display = 'none'; res.innerHTML = ''; }
 
   btn.disabled = true;
   btn.textContent = 'Thinking…';
-  res.style.display = 'block';
-  res.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--ink3);font-size:13px;padding:8px 0;"><div class="aip-spinner" style="border-color:rgba(58,125,94,.2);border-top-color:var(--a2);"></div> Breaking down your goal…</div>';
 
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
-  const prompt = `You are a productivity coach. The user has a goal. Break it down into actionable Prodify items.
+  const prompt = `You are a productivity coach inside Prodify.
 Today is ${today}.
 
-Goal: "${goal}"
+The user typed: "${goal}"
+${context ? `Additional context: "${context}"` : ''}
 
-Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation. Use this exact structure:
+FIRST validate. If the input is gibberish, a typo, too vague (e.g. "stuff", "idk", "asdff"), or not a real goal, respond ONLY with:
+{ "error": "One friendly sentence explaining what's wrong and asking them to be more specific." }
+
+If valid, respond ONLY with this JSON:
 {
-  "project": { "name": "string", "desc": "string", "due": "YYYY-MM-DD or null" },
-  "tasks": [ { "text": "string", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
-  "habits": [ { "name": "string", "emoji": "single emoji" } ],
+  "project": { "name": "string", "desc": "string (tailored to context)", "due": "YYYY-MM-DD or null" },
+  "tasks": [ { "text": "string (specific to context)", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
+  "habits": [ { "name": "string (short, specific)", "emoji": "single emoji" } ],
   "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string" } ]
 }
-Rules: project always created, 3-6 tasks, 2-5 habits (user is Pro, no habit limit), 1-3 milestone events, realistic future dates.`;
+Rules: use context to be specific, 3-6 tasks, 2-5 habits (Pro user), 1-3 milestones, realistic dates, no markdown fences.`;
 
   try {
     const resp = await fetch('/api/ai', {
@@ -2901,12 +2913,17 @@ Rules: project always created, 3-6 tasks, 2-5 habits (user is Pro, no habit limi
     if (!text) throw new Error(data.error?.message || 'Empty response');
     const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
     const plan = JSON.parse(clean);
+    if (plan.error) {
+      if (errEl) { errEl.innerHTML = '⚠️ ' + plan.error; errEl.style.display = 'block'; }
+      return;
+    }
     _mobRenderGoalPreview(plan);
   } catch (err) {
     res.innerHTML = '<div style="color:#c0392b;font-size:12px;">⚠️ ' + err.message + '</div>';
   } finally {
     btn.disabled = false;
     btn.textContent = '↺ Regenerate';
+    btn.style.fontFamily = 'inherit';
   }
 }
 

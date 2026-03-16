@@ -1979,7 +1979,17 @@ const WD={
   habits:{w:300,h:340,title:'Daily Habits'},
 };
 
-function addW(type,opts={}){
+function bringToFront(id) {
+  const w = widgets.find(x => x.id === id);
+  if (!w) return;
+  const maxZ = widgets.reduce((m, x) => Math.max(m, x.z || 10), 10);
+  w.z = maxZ + 1;
+  const el = $(id);
+  if (el) el.style.zIndex = w.z;
+  persist();
+}
+
+function addW(type,opts={}) {
   // Single-instance rule: only notes can have multiples
   if(type!=='note'){
     const existing=widgets.find(w=>w.type===type);
@@ -5824,10 +5834,14 @@ function openGoalSetup() {
   if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
   // Reset state
   const inp = document.getElementById('goal-input');
+  const ctx = document.getElementById('goal-context');
   const res = document.getElementById('goal-result');
+  const err = document.getElementById('goal-error');
   const btn = document.getElementById('goal-generate-btn');
   if (inp) inp.value = '';
+  if (ctx) ctx.value = '';
   if (res) { res.innerHTML = ''; res.style.display = 'none'; }
+  if (err) { err.innerHTML = ''; err.style.display = 'none'; }
   if (btn) {
     btn.disabled = false;
     btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v1.5M12 19.5V21M3 12h1.5M19.5 12H21"/></svg> Break down my goal';
@@ -5839,38 +5853,46 @@ function openGoalSetup() {
 async function generateGoalPlan() {
   if (!isPro()) { showUpgradeModal('Goal Setup'); return; }
   const inp = document.getElementById('goal-input');
+  const ctxInp = document.getElementById('goal-context');
   const res = document.getElementById('goal-result');
+  const errEl = document.getElementById('goal-error');
   const btn = document.getElementById('goal-generate-btn');
   const goal = inp?.value?.trim();
   if (!goal) { inp?.focus(); return; }
+  const context = ctxInp?.value?.trim() || '';
+
+  if (errEl) { errEl.style.display = 'none'; errEl.innerHTML = ''; }
+  if (res) { res.style.display = 'none'; res.innerHTML = ''; }
 
   btn.disabled = true;
   btn.innerHTML = '<span class="aip-spinner"></span> Thinking…';
-  res.style.display = 'block';
-  res.innerHTML = '<div class="aip-loading"><span class="aip-spinner" style="border-color:rgba(var(--a2-rgb,58,125,94),.2);border-top-color:var(--a2);"></span> Breaking down your goal…</div>';
+  btn.style.fontFamily = 'inherit';
 
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 
-  const prompt = `You are a productivity coach. The user has a goal. Break it down into actionable Prodify items.
+  const prompt = `You are a productivity coach inside Prodify.
 Today is ${today}.
 
-Goal: "${goal}"
+The user typed: "${goal}"
+${context ? `Additional context: "${context}"` : ''}
 
-Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation. Use this exact structure:
+FIRST validate. If the input is gibberish, a typo, too vague (e.g. "stuff", "idk", "asdff"), or not a real goal, respond ONLY with:
+{ "error": "One friendly sentence explaining what's wrong and asking them to be more specific." }
+
+If valid, respond ONLY with this JSON:
 {
-  "project": { "name": "string (short project name)", "desc": "string (one sentence)", "due": "YYYY-MM-DD or null" },
-  "tasks": [ { "text": "string", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
-  "habits": [ { "name": "string (short, actionable)", "emoji": "single emoji" } ],
-  "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string (why this date)" } ]
+  "project": { "name": "string", "desc": "string (one sentence tailored to their context)", "due": "YYYY-MM-DD or null" },
+  "tasks": [ { "text": "string (specific to context)", "dueDate": "YYYY-MM-DD or null", "priority": "high|medium|low" } ],
+  "habits": [ { "name": "string (short, specific)", "emoji": "single emoji" } ],
+  "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string" } ]
 }
 
 Rules:
-- project: always create one named after the goal
-- tasks: 3–6 concrete first steps, ordered by priority
-- habits: 2–5 daily/weekly habits that support the goal (user is Pro, no limit)
-- events: 1–3 key milestone dates or check-in events spread over the timeline
-- Keep all text short and actionable
-- Use realistic future dates based on the goal timeline`;
+- Use context to make output specific (home vs gym, beginner vs advanced, etc.)
+- tasks: 3–6 first steps ordered by priority
+- habits: 2–5 habits (Pro user, no limit)
+- events: 1–3 milestones
+- Realistic future dates, no markdown fences, no preamble`;
 
   try {
     const response = await fetch('/api/ai', {
@@ -5889,6 +5911,15 @@ Rules:
     // Strip any accidental markdown fences
     const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
     const plan = JSON.parse(clean);
+
+    // Check if AI returned a validation error
+    if (plan.error) {
+      if (errEl) {
+        errEl.innerHTML = '⚠️ ' + _esc(plan.error);
+        errEl.style.display = 'block';
+      }
+      return;
+    }
     _renderGoalPreview(plan);
   } catch (err) {
     res.innerHTML = '<div class="aip-error">⚠️ Something went wrong: ' + err.message + '</div>';
