@@ -519,6 +519,13 @@ function clearAll(){
 // ══════════════════════════════════════════════
 const SUB_PAGES=['settings'];
 function goPg(id){
+  // Close AI planner panel when navigating
+  const aipPanel = document.getElementById('mob-aip-panel');
+  if(aipPanel && aipPanel.style.display === 'flex'){
+    aipPanel.style.opacity = '0';
+    aipPanel.style.transform = 'translateY(16px) scale(.98)';
+    setTimeout(()=>{ aipPanel.style.display = 'none'; }, 200);
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   // settings, calendar, profile have mob- prefix to avoid desktop ID conflicts
   const pgId = (id==='settings'||id==='calendar'||id==='profile') ? 'mob-pg-'+id : 'pg-'+id;
