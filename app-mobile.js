@@ -2682,7 +2682,7 @@ function renderAIPlanner(containerId, isMobile) {
     + 'Confirm actions. Plans: **HH:MM - HH:MM** task then > tip. End with **Note:** one line.';
 
   el.innerHTML =
-    '<div class="aip-chat-wrap" id="' + containerId + '-wrap" style="height:100%;max-height:calc(88vh - 60px);">'
+    '<div class="aip-chat-wrap" id="' + containerId + '-wrap">'
     + '<div class="aip-chat-header">'
     + '<div class="aip-chat-header-left">'
     + '<div class="aip-chat-avatar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'

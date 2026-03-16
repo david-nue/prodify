@@ -1,4 +1,4 @@
-const CACHE = 'prodify-v126';
+const CACHE = 'prodify-v127';
 const ASSETS = [
   '/',
   '/index.html',
@@ -31,7 +31,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.hostname.includes('supabase') || (url.hostname.includes('googleapis') && url.pathname.includes('webfonts'))) return;
+  if (url.hostname.includes('supabase') || url.hostname.includes('githubusercontent.com') || (url.hostname.includes('googleapis') && url.pathname.includes('webfonts'))) return;
 
   const isCore = e.request.destination === 'document'
     || url.pathname === '/'
