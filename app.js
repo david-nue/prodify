@@ -4926,13 +4926,13 @@ async function aipSendMessage(containerId, userText) {
     if (_aipHistory.length === 2) {
       const fc = document.createElement('div');
       fc.className = 'aip-followup-sugg';
-      fc.innerHTML = \`<div class="aip-followup-label">Try asking:</div>
-        <div class="aip-followup-chips">
-          <button onclick="aipSend('${containerId}','Move my workout to later')">Move workout later</button>
-          <button onclick="aipSend('${containerId}','I got distracted, help me refocus')">Help me refocus</button>
-          <button onclick="aipSend('${containerId}','Add a task to review emails')">Add a task</button>
-          <button onclick="aipSend('${containerId}','Mark my first habit as done')">Mark habit done</button>
-        </div>\`;
+      fc.innerHTML = '<div class="aip-followup-label">Try asking:</div>'
+        + '<div class="aip-followup-chips">'
+        + '<button onclick="aipSend(\''+containerId+'\',\'Move my workout to later\')">Move workout later</button>'
+        + '<button onclick="aipSend(\''+containerId+'\',\'I got distracted, help me refocus\')">Help me refocus</button>'
+        + '<button onclick="aipSend(\''+containerId+'\',\'Add a task to review emails\')">Add a task</button>'
+        + '<button onclick="aipSend(\''+containerId+'\',\'Mark my first habit as done\')">Mark habit done</button>'
+        + '</div>';
       msgs.appendChild(fc);
     }
 
