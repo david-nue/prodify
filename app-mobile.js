@@ -575,16 +575,22 @@ function openAIPlanner(){
       try {
         console.log('[AIP] calling renderAIPlanner...');
         renderAIPlanner('mob-aip-body', true);
-        const wrap = document.getElementById('mob-aip-body-wrap');
         const bodyAfter = document.getElementById('mob-aip-body');
-        console.log('[AIP] after render, mob-aip-body innerHTML length:', bodyAfter?.innerHTML?.length);
-        console.log('[AIP] wrap found:', !!wrap);
+        const rect = bodyAfter?.getBoundingClientRect();
+        const sheet = document.getElementById('sh-aiplanner');
+        const sheetRect = sheet?.getBoundingClientRect();
+        console.log('[AIP] innerHTML length:', bodyAfter?.innerHTML?.length);
+        console.log('[AIP] mob-aip-body rect:', JSON.stringify(rect));
+        console.log('[AIP] sheet rect:', JSON.stringify(sheetRect));
+        console.log('[AIP] sheet computed height:', window.getComputedStyle(sheet).height);
+        console.log('[AIP] mob-aip-body computed height:', window.getComputedStyle(bodyAfter).height);
+        console.log('[AIP] mob-aip-body computed display:', window.getComputedStyle(bodyAfter).display);
       } catch(e) {
         console.error('[AIP] renderAIPlanner threw:', e);
         const body = document.getElementById('mob-aip-body');
         if (body) body.innerHTML = '<div style="padding:20px;color:red;font-size:13px;">Error: ' + e.message + '</div>';
       }
-    }, 100);
+    }, 300);
   } catch(e) {
     console.error('[AIP] openAIPlanner threw:', e);
     toast('AI Planner error: ' + e.message);
