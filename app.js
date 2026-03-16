@@ -389,6 +389,25 @@ function safeParseJSON(str, fallback){
   catch(e){ console.error('[Prodify] JSON parse error, using fallback:',e); return fallback; }
 }
 
+// Migrate old notes format (object keyed by widget ID) to new array format
+function migrateNotes(raw){
+  if(!raw) return [];
+  // Already an array — new format
+  if(Array.isArray(raw)) return raw;
+  // Old format: { widgetId: { title, content }, ... }
+  if(typeof raw === 'object'){
+    const entries = Object.values(raw).filter(v => v && typeof v === 'object');
+    if(!entries.length) return [];
+    return entries.map(e => ({
+      id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title: e.title || '',
+      content: e.content || '',
+      updated: Date.now()
+    }));
+  }
+  return [];
+}
+
 function normalizeTasks(arr){
   return (arr||[]).map(t=>{
     if(!t.text  && t.title) t.text  = t.title;
@@ -420,12 +439,17 @@ function applyRemoteData(row){
   if(!row||!cu) return;
   try{
     const d = acc[cu] || {};
+    // Sync display_name so name changes on mobile show on desktop immediately
+    if(row.display_name != null && row.display_name !== '') {
+      d.displayName = row.display_name;
+      const ddnmEl=$('ddnm'); if(ddnmEl) ddnmEl.textContent=row.display_name;
+    }
     if(row.tasks    != null) { tasks    = normalizeTasks(safeParseJSON(row.tasks, [])); d.tasks = tasks; }
     if(row.journal  != null) { journal  = normalizeJournal(safeParseJSON(row.journal,  [])); d.journal  = journal;  }
     if(row.subjects != null) { subjects = (safeParseJSON(row.subjects, [])||[]).map(s=>{if(s.id!==undefined)s.id=String(s.id);return s;}); d.subjects = subjects; }
     if(row.cal_evs  != null) { calEvs   = safeParseJSON(row.cal_evs,  []); d.calEvs   = calEvs;   }
     if(row.widgets  != null) { widgets  = safeParseJSON(row.widgets,  []); d.widgets  = widgets;  }
-    if(row.notes    != null) { notes    = safeParseJSON(row.notes,    {}); d.notes    = notes;    }
+    if(row.notes    != null) { notes    = migrateNotes(safeParseJSON(row.notes, [])); d.notes    = notes;    }
     if(row.prefs){
       const rp=safeParseJSON(row.prefs, {});
       prefs=rp;
@@ -440,20 +464,18 @@ function applyRemoteData(row){
     LS.s('pd1_acc',acc);
     // Re-render only what changed
     if(row.tasks    != null) { renderAllTaskW(); updateAllStatsW(); updateFixedStats(); }
-    if(row.journal  != null && typeof renderAllJournalW==='function') renderAllJournalW();
-    if(row.subjects != null) { if(typeof renderSubFull==='function') renderSubFull(); if(typeof renderAllSubW==='function') renderAllSubW(); }
-    if(row.cal_evs  != null && typeof renderCal==='function') renderCal();
+    if(row.journal  != null) renderAllJournalW();
+    if(row.subjects != null) { renderSubFull(); renderAllSubW(); }
+    if(row.cal_evs  != null) renderFullCal();
     if(row.prefs    != null) {
-      if(typeof applyDark==='function') applyDark(prefs.dark);
-      if(typeof applyTheme==='function') applyTheme();
-      if(typeof renderProBadge==='function') renderProBadge();
-      if(typeof pomRenderHistory==='function') pomRenderHistory();
+      applyTheme();
+      renderProBadge();
+      pomRenderHistory();
       applyAvatar();
     }
-    // Only rebuild canvas if widgets changed or tasks/subjects changed (widget content depends on them)
+    // Rebuild canvas if widgets/tasks/subjects changed
     if(row.widgets != null || row.tasks != null || row.subjects != null) {
-      if(typeof renderWidgets==='function') renderWidgets();
-      else renderCanvas();
+      renderCanvas();
     }
   }catch(e){ console.error('[Prodify] applyRemoteData error',e); }
 }
@@ -507,7 +529,7 @@ let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
 // Must be declared before initSupabase() registers onAuthStateChange
 window._oauthRedirectInProgress = false;
 initSupabase();
-let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes={};
+let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes=[];
 let _jwSearch={},_mobJSearch='';
 const HABIT_MAX_FREE=3;
 const HABIT_EMOJIS=['✔️','❌','💪','📚','🏃','💧','🧘','🥗','😴','🎯','✍️','🌿'];
@@ -547,7 +569,8 @@ async function clearAllData(){
   if(prefs){ prefs.habits=[]; prefs.habitLog={}; prefs.pomHistory={}; }
   persist();
   renderAllTaskW(); renderAllJournalW(); renderAllSubW();
-  if(typeof renderAllHabitsW==='function') renderAllHabitsW();
+  // Re-render habit widgets on canvas (renderAllHabitsW doesn't exist — iterate directly)
+  widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
   if(typeof renderFullCal==='function') renderFullCal();
   updateAllStatsW(); updateFixedStats();
 }
@@ -697,7 +720,7 @@ async function doSU(){
   if(p!==p2){fe('sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
   if(!sbReady){fe('sue','Sync unavailable, please try again.');return;}
-  const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},joined:Date.now()};
+  const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{dark:false},joined:Date.now()};
   if(sbReady){
     // Use RPC to check username + email availability before doing anything else
     // Both checks use SECURITY DEFINER so RLS cannot block them
@@ -822,7 +845,7 @@ async function doSI(){
   if(!acc[u].displayName||acc[u].displayName.trim()===''){
     const _d=acc[u];
     tasks=_d.tasks||[];journal=_d.journal||[];subjects=_d.subjects||[];
-    calEvs=_d.calEvs||[];widgets=_d.widgets||[];notes=_d.notes||{};prefs=_d.prefs||{dark:false};
+    calEvs=_d.calEvs||[];widgets=_d.widgets||[];notes=migrateNotes(_d.notes||[]);prefs=_d.prefs||{dark:false};
     show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);
   }
   else {
@@ -964,7 +987,7 @@ async function handleGoogleCallback(passedSession = null) {
         subjects = _d.subjects || [];
         calEvs   = _d.calEvs   || [];
         widgets  = _d.widgets  || [];
-        notes    = _d.notes    || {};
+        notes    = migrateNotes(_d.notes    || []);
         prefs    = _d.prefs    || { dark: false };
         show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
       } else {
@@ -1453,7 +1476,7 @@ async function pullFromCloud(){
     };
     LS.s('pd1_acc',acc);
     tasks=normalizeTasks(acc[cu].tasks);acc[cu].tasks=tasks;journal=normalizeJournal(acc[cu].journal);acc[cu].journal=journal;subjects=acc[cu].subjects;
-    calEvs=acc[cu].calEvs;widgets=acc[cu].widgets;notes=acc[cu].notes;prefs=acc[cu].prefs;
+    calEvs=acc[cu].calEvs;widgets=acc[cu].widgets;notes=migrateNotes(acc[cu].notes);prefs=acc[cu].prefs;
     const newWidgetIds=widgets.map(x=>x.id).sort().join(',');
     if(oldWidgetIds!==newWidgetIds){
       renderCanvas();
@@ -1506,12 +1529,14 @@ function launch(){
   }, msToMidnight);
   const d=acc[cu];
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
-  calEvs=d.calEvs||[];widgets=d.widgets||[];notes=d.notes||{};prefs=d.prefs||{dark:false};
+  calEvs=d.calEvs||[];widgets=d.widgets||[];notes=migrateNotes(d.notes||[]);prefs=d.prefs||{dark:false};
   // avatarUrl lives inside prefs — already set before launch() is called in doSI
   // just make sure it wasn't lost when prefs was reassigned above
   if(d.prefs?.avatarUrl) prefs.avatarUrl=d.prefs.avatarUrl;
   const nm=d.displayName||cu,av=nm[0].toUpperCase();
-  $('ddnm').textContent=nm;$('ddun').textContent='@'+cu;
+  const ddnmEl=$('ddnm'), ddunEl=$('ddun');
+  if(ddnmEl) ddnmEl.textContent=nm;
+  if(ddunEl) ddunEl.textContent='@'+cu;
   const floatBtn=document.getElementById('aip-float-btn');if(floatBtn)floatBtn.style.display='flex';
   applyAvatar();
   // _evDate is set by openCalAdd/openCalEdit
@@ -1650,7 +1675,7 @@ async function submitFeedback(isDesktop=false){
   const u=LS.g('pd1_cur',null);
   if(!u){show('sl');return;}
   cu=u;
-  if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{dark:false},displayName:'',passHash:''};}
+  if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{dark:false},displayName:'',passHash:''};}
   // Wait for Supabase device check before launching — prevents bypass
   try{
     if(!sbReady){launch();return;} // offline — skip device check
@@ -1687,14 +1712,14 @@ async function submitFeedback(isDesktop=false){
     if(trustLocal){
       // Local is fresher — use it wholesale, sync back to cloud
       fT=loc.tasks||[];fJ=loc.journal||[];fS=loc.subjects||[];
-      fC=loc.calEvs||[];fW=loc.widgets||[];fN=loc.notes||{};
+      fC=loc.calEvs||[];fW=loc.widgets||[];fN=migrateNotes(loc.notes||[]);
       fP=loc.prefs||{};
       if(dbUser.avatar_url) fP.avatarUrl=dbUser.avatar_url;
     } else {
       // Cloud is source of truth
       fT=JSON.parse(dbUser.tasks||'[]');fJ=JSON.parse(dbUser.journal||'[]');
       fS=JSON.parse(dbUser.subjects||'[]');fC=JSON.parse(dbUser.cal_evs||'[]');
-      fW=JSON.parse(dbUser.widgets||'[]');fN=JSON.parse(dbUser.notes||'{}');
+      fW=JSON.parse(dbUser.widgets||'[]');fN=migrateNotes(JSON.parse(dbUser.notes||'[]'));
       fP=cP;
     }
     acc[cu]={passHash:dbUser.pass_hash,displayName:dbUser.display_name||loc.displayName||'',
@@ -1702,7 +1727,6 @@ async function submitFeedback(isDesktop=false){
     LS.s('pd1_acc',acc);
     tasks=fT;journal=fJ;subjects=fS;calEvs=fC;widgets=fW;notes=fN;
     prefs=fP;
-    // Load avatar_url from DB column (source of truth)
     if(dbUser.avatar_url) prefs.avatarUrl = dbUser.avatar_url;
     acc[cu].prefs = prefs;
     // If local was ahead, push it to cloud now to close the gap
@@ -1726,22 +1750,10 @@ async function submitFeedback(isDesktop=false){
     }
     // Device check passed — launch app
     launch();
-    const nm2=acc[cu].displayName||cu;
-    if($('ddnm'))$('ddnm').textContent=nm2;
-    if($('ddun'))$('ddun').textContent='@'+cu;
-    applyAvatar();
-    applyTheme();
-    renderCanvas();
-      updateFixedStats();
-    updateAllStatsW();
-    renderAllTaskW();
-    if(typeof renderAllJournalW==='function') renderAllJournalW();
-    if(typeof renderAllSubW==='function') renderAllSubW();
-    if(typeof renderFullCal==='function') renderFullCal();
+    // launch() already calls goPg, renderCanvas, applyTheme, updateFixedStats,
+    // startRealtime and startRealtimeSync — no need to call any of them again here.
     
   }catch(e){console.warn('[Prodify] cloud sync failed',e);}
-  startRealtime();
-  startRealtimeSync(cu);
 })();
 
 // ═══════════════════════════════════════
@@ -1859,14 +1871,19 @@ function applyTheme(){
   // Apply custom accent color — Pro only, free users always get green
   const root = document.documentElement;
   const freeColors = ['green','blue','purple'];
-  const accentKey = prefs.accentColor || 'green';
+  const accentKey = prefs.accentColor || prefs.accentKey || 'green';
   const isFreeColor = freeColors.includes(accentKey);
-  if(prefs.accentColor && (isPro() || isFreeColor)){
-    const acc = deriveAccent(prefs.accentColor);
+  if(accentKey && accentKey !== 'green' && (isPro() || isFreeColor)){
+    const acc = deriveAccent(accentKey);
     root.style.setProperty('--a', acc.a);
     root.style.setProperty('--a2', acc.a2);
     root.style.setProperty('--al', acc.al);
     if(acc.a2Rgb) root.style.setProperty('--a2-rgb', acc.a2Rgb);
+  } else if(accentKey === 'green') {
+    root.style.removeProperty('--a');
+    root.style.removeProperty('--a2');
+    root.style.removeProperty('--al');
+    root.style.removeProperty('--a2-rgb');
   } else {
     root.style.removeProperty('--a');
     root.style.removeProperty('--a2');
@@ -1876,7 +1893,7 @@ function applyTheme(){
   // Sync color picker UI
   const picks = document.querySelectorAll('.accent-swatch.selected');
   picks.forEach(s => s.classList.remove('selected'));
-  const cur = prefs.accentColor || 'green';
+  const cur = prefs.accentColor || prefs.accentKey || 'green';
   document.querySelectorAll(`.accent-swatch[data-key="${cur}"]`).forEach(s => s.classList.add('selected'));
   // Sync hex input + preview
   const hexInp = document.getElementById('accent-hex-input');
@@ -1969,7 +1986,7 @@ const WD={
   tasks:{w:580,h:340,title:'Task Board'},
   journal:{w:420,h:320,title:'Journal'},
   timer:{w:320,h:400,title:'Focus Timer'},
-  note:{w:240,h:220,title:'Note'},
+  note:{w:340,h:240,title:'Notes'},
   stats:{w:320,h:200,title:'Stats'},
   subjects:{w:300,h:260,title:'Project Progress'},
   quote:{w:280,h:160,title:'Quote'},
@@ -2000,8 +2017,12 @@ function addW(type,opts={}) {
   }
   const def=WD[type]||{w:300,h:240,title:type};
   const wrap=$('canvas-wrap')||document.querySelector('.canvas-wrap');
-  const sx=wrap?wrap.scrollLeft:0,sy=wrap?wrap.scrollTop:0;
-  const cw=wrap?wrap.clientWidth:800,ch=wrap?wrap.clientHeight:600;
+  // Account for canvas zoom scale so widget spawns at correct visual position
+  const scale=window._canvasScale||1;
+  const sx=(wrap?wrap.scrollLeft:0)/scale;
+  const sy=(wrap?wrap.scrollTop:0)/scale;
+  const cw=(wrap?wrap.clientWidth:800)/scale;
+  const ch=(wrap?wrap.clientHeight:600)/scale;
   let x,y;
   if(opts.x!==undefined){x=opts.x;}
   else{
@@ -2016,12 +2037,16 @@ function addW(type,opts={}) {
   }
   if(opts.y!==undefined)y=opts.y;
   const id='w'+Date.now().toString(36);
-  const ent={id,type,x:Math.round(x),y:Math.round(y),w:opts.w||def.w,h:opts.h||def.h,title:opts.title||def.title,z:nextZ++,noteId:opts.noteId||null};
-  if(type==='note'&&!ent.noteId){ent.noteId=id;notes[id]={title:'',content:''};}
+  // Always place new widget above every existing one — fixes "spawns behind" bug
+  const maxZ=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
+  const topZ=Math.max(maxZ+1,nextZ);
+  nextZ=topZ+1;
+  const ent={id,type,x:Math.round(x),y:Math.round(y),w:opts.w||def.w,h:opts.h||def.h,title:opts.title||def.title,z:topZ};
+  if(type==='note') ent._noteOpen=null; // will be set in buildNoteW
   widgets.push(ent);
-  if(cu&&acc[cu]&&!acc[cu].hasAddedWidget){acc[cu].hasAddedWidget=true;persist();}
+  if(cu&&acc[cu]) acc[cu].hasAddedWidget=true; // mark without triggering extra persist
   const hint=$('canvas-hint');if(hint)hint.remove();
-  persist();
+  persist(); // single persist — removed duplicate call
   buildWidgetEl(ent);
 }
 
@@ -2047,8 +2072,9 @@ async function clearCanvas(){
 
 function renderCanvas(){
   $('canvas').innerHTML='';
-  nextZ=10;
   if(!widgets.length){
+    // Reset nextZ cleanly when canvas is empty
+    nextZ=10;
     const isNew=acc[cu]&&!acc[cu].hasAddedWidget;
     if(isNew){
       const div=document.createElement('div');
@@ -2060,10 +2086,9 @@ function renderCanvas(){
     }
     return;
   }
-  if(widgets.length){
-    const mz=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
-    nextZ=mz+1;
-  }
+  // Always sync nextZ from the actual highest stored z — prevents new widgets spawning behind existing ones
+  const mz=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
+  nextZ=mz+1;
   widgets.forEach(w=>buildWidgetEl(w));
 }
 
@@ -2261,6 +2286,8 @@ function startDrag(e,id){
   e.preventDefault();
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
+  // Lift widget to top immediately so it renders above everything while dragging
+  bringToFront(id);
   el.classList.add('wdrag');
   document.querySelectorAll('.widget').forEach(wd=>{if(wd.id!==id)wd.style.pointerEvents='none';});
   const scale=window._canvasScale||1;
@@ -2308,7 +2335,7 @@ function startResize(e,id){
     subjects:{w:240,h:220},
     calendar:{w:400,h:240},
     quote:  {w:200, h:130},
-    note:   {w:180, h:140},
+    note:   {w:280, h:180},
   };
   const wm=WMIN[w.type]||{w:180,h:130};
   const minW=wm.w,maxW=99999;
@@ -3004,21 +3031,110 @@ function resetTimer(wid){
 }
 
 /* ── NOTE ── */
-function buildNoteW(body,w){
-  body.style.display='flex';body.style.flexDirection='column';
-  const nid=w.noteId||w.id;
-  if(!notes[nid])notes[nid]={title:'',content:''};
-  const n=notes[nid];
-  body.innerHTML=`<div class="notebody">
-    <input class="notetitl" placeholder="Note title..." value="${esc(n.title)}" oninput="saveNote('${nid}','title',this.value)"/>
-    <textarea class="noteta" placeholder="Start writing..."  oninput="saveNote('${nid}','content',this.value)">${esc(n.content)}</textarea>
-  </div>`;
+// ── NOTES WIDGET ──
+// notes is now an array: [{id, title, content, updated}, ...]
+// Each Note widget remembers which entry is open via w._noteOpen (entry id)
+
+function buildNoteW(body, w){
+  body.style.display='flex';
+  body.style.flexDirection='column';
+  // If no entries exist yet, create a blank one
+  if(!notes.length){
+    const first={id:'n'+Date.now().toString(36),title:'',content:'',updated:Date.now()};
+    notes.push(first);
+    persist();
+  }
+  // Determine which entry to show — default to most recently updated
+  if(!w._noteOpen || !notes.find(n=>n.id===w._noteOpen)){
+    w._noteOpen = notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0].id;
+  }
+  _renderNoteW(body, w);
 }
+
+function _renderNoteW(body, w){
+  const open = notes.find(n=>n.id===w._noteOpen);
+  if(!open){ buildNoteW(body, w); return; }
+
+  // Sort by most recently updated for the list
+  const sorted = notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+
+  body.innerHTML=`
+    <div class="nw-wrap">
+      <div class="nw-list" id="nwl-${w.id}">
+        ${sorted.map(n=>`
+          <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${w.id}','${n.id}')">
+            <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
+            <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
+          </div>
+        `).join('')}
+        <button class="nw-add-btn" onclick="noteWAdd('${w.id}')">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New note
+        </button>
+      </div>
+      <div class="nw-editor" id="nwe-${w.id}">
+        <div class="nw-editor-head">
+          <input class="nw-title-inp" id="nwti-${w.id}" placeholder="Title…" value="${esc(open.title)}"
+            oninput="saveNoteField('${w.id}','${open.id}','title',this.value)"/>
+          <button class="nw-del-btn" onclick="noteWDel('${w.id}','${open.id}')" title="Delete note">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+        <textarea class="nw-content-ta" id="nwta-${w.id}" placeholder="Start writing…"
+          oninput="saveNoteField('${w.id}','${open.id}','content',this.value)">${esc(open.content)}</textarea>
+      </div>
+    </div>`;
+}
+
+function noteWOpen(wid, nid){
+  const w=widgets.find(x=>x.id===wid); if(!w) return;
+  w._noteOpen=nid;
+  const body=$('wb-'+wid); if(body){ body.innerHTML=''; _renderNoteW(body,w); }
+}
+
+function noteWAdd(wid){
+  const w=widgets.find(x=>x.id===wid); if(!w) return;
+  const n={id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title:'',content:'',updated:Date.now()};
+  notes.unshift(n);
+  w._noteOpen=n.id;
+  persistSilent();
+  const body=$('wb-'+wid); if(body){ body.innerHTML=''; _renderNoteW(body,w); }
+  // Focus title input
+  setTimeout(()=>{ const ti=$('nwti-'+wid); if(ti) ti.focus(); },50);
+}
+
+async function noteWDel(wid, nid){
+  if(!await appConfirm('Delete this note?','This cannot be undone.')) return;
+  notes=notes.filter(n=>n.id!==nid);
+  const w=widgets.find(x=>x.id===wid); if(!w) return;
+  // If deleted the open one, switch to next or create blank
+  if(w._noteOpen===nid){
+    if(notes.length) w._noteOpen=notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0))[0].id;
+    else { const blank={id:'n'+Date.now().toString(36),title:'',content:'',updated:Date.now()}; notes.push(blank); w._noteOpen=blank.id; }
+  }
+  persistSilent();
+  const body=$('wb-'+wid); if(body){ body.innerHTML=''; _renderNoteW(body,w); }
+}
+
 let _noteTimer=null;
-function saveNote(nid,field,val){
-  if(!notes[nid])notes[nid]={title:'',content:''};
-  notes[nid][field]=val;
-  // debounce — don't persist on every keystroke (would rebuild DOM and lose focus)
+function saveNoteField(wid, nid, field, val){
+  const n=notes.find(x=>x.id===nid); if(!n) return;
+  n[field]=val;
+  n.updated=Date.now();
+  // Re-render the list panel to show updated preview/title without losing focus
+  const list=document.getElementById('nwl-'+wid);
+  if(list){
+    const w=widgets.find(x=>x.id===wid);
+    if(w){
+      const sorted=notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+      list.innerHTML=sorted.map(n2=>`
+        <div class="nw-list-item${n2.id===w._noteOpen?' active':''}" onclick="noteWOpen('${wid}','${n2.id}')">
+          <div class="nw-list-title">${esc(n2.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
+          <div class="nw-list-preview">${esc((n2.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
+        </div>
+      `).join('')+`<button class="nw-add-btn" onclick="noteWAdd('${wid}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New note</button>`;
+    }
+  }
   clearTimeout(_noteTimer);
   _noteTimer=setTimeout(()=>persistSilent(),800);
 }
@@ -3027,7 +3143,9 @@ function persistSilent(){
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
   d.widgets=widgets;d.notes=notes;d.prefs=prefs;
+  d._localTs=Date.now(); // stamp so pullFromCloud won't overwrite a freshly typed note
   LS.s('pd1_acc',acc);
+  try{ localStorage.setItem('pd1_lastSaveTs', String(d._localTs)); }catch(e){}
   dbSaveUser(cu,d);
 }
 
@@ -3197,7 +3315,7 @@ function syncProjectProgress(){
   if(acc[cu]) acc[cu].subjects=subjects;
 }
 function getProjProgress(s){
-  const projTasks=tasks.filter(t=>t.subjectId===s.id);
+  const projTasks=tasks.filter(t=>String(t.subjectId)===String(s.id));
   if(!projTasks.length)return s.progress||0;
   const done=projTasks.filter(t=>t.col==='done').length;
   return Math.round((done/projTasks.length)*100);
@@ -3501,7 +3619,7 @@ function sdSelTask(e,id,subjId){
 }
 
 function openAddTaskToProj(subjId){
-  const s=subjects.find(x=>x.id===subjId);
+  const s=subjects.find(x=>String(x.id)===String(subjId));
   const bar=document.getElementById('ptask-mo-bar');
   if(bar)bar.style.background=s?_projColor(s):'var(--a2)';
   const nameEl=$('ptask-name');if(nameEl)nameEl.value='';
@@ -3528,7 +3646,7 @@ function addProjTask(){
   const subjId=String($('ptask-subjid').value);
   const col=$('ptask-col').value||'todo';
   tasks.unshift({
-    id:Date.now(),text:name,title:name,col,
+    id:String(Date.now()),text:name,title:name,col,
     date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
     dueDate:null,recurring:'none',subjectId:subjId
   });
@@ -3895,7 +4013,7 @@ function saveEvEdit(){
   if(!_editEvId)return;
   const t=document.getElementById('ev-t').value.trim();if(!t)return;
   const ev=calEvs.find(e=>e.id===_editEvId);if(!ev)return;
-  const sid=document.getElementById('ev-s').value,sub=subjects.find(s=>s.id==sid);
+  const sid=document.getElementById('ev-s').value,sub=subjects.find(s=>String(s.id)===String(sid));
   ev.title=t;ev.date=_evDate||calFmt(calToday());
   ev.color=_evColor;ev.note=document.getElementById('ev-note').value.trim();
   ev.subName=sub?sub.name:'';ev.subColor=sub?sub.color:'';
@@ -4255,9 +4373,9 @@ function renderProfile(){
       pbavEl.innerHTML=esc(nm[0].toUpperCase())+'<div class="pbav-overlay">📷 Change</div>';
     }
   }
-  $('pbnm').textContent=nm;
-  $('pbun').textContent='@'+cu;
-  $('pbjn').textContent='Joined '+new Date(d.joined||Date.now()).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const pbnm=$('pbnm'); if(pbnm) pbnm.textContent=nm;
+  const pbun=$('pbun'); if(pbun) pbun.textContent='@'+cu;
+  const pbjn=$('pbjn'); if(pbjn) pbjn.textContent='Joined '+new Date(d.joined||Date.now()).toLocaleDateString('en-US',{month:'long',year:'numeric'});
 }
 
 // ═══════════════════════════════════════
@@ -4276,7 +4394,7 @@ function renderSettings(){
     else { un.textContent='—'; }
   }
   const nmInput=$('nm-i');if(nmInput)nmInput.value=d.displayName||'';
-  $('tog-dk').className='tog'+(prefs.dark?' on':'');
+  const togDk=$('tog-dk'); if(togDk) togDk.className='tog'+(prefs.dark?' on':'');
 }
 function copySql(){
   const sql=$('sb-sql');if(!sql)return;
@@ -4319,6 +4437,9 @@ async function delAcc(){
   const ok = await appConfirm('Delete your account?', 'All your data will be permanently erased. This cannot be undone.', 'Delete Account');
   if(!ok) return;
   const _cu = cu;
+  // Cancel any pending debounced save — prevents a ghost write after account is gone
+  if(_persistTimer){ clearTimeout(_persistTimer); _persistTimer=null; }
+  stopRealtimeSync();
   delete acc[_cu]; LS.s('pd1_acc',acc); LS.d('pd1_cur'); cu = null;
   await dbDeleteUser(_cu);
   if(sbReady) sbSignOut().catch(()=>{});
@@ -4422,17 +4543,17 @@ function habitGetLog(){ return prefs.habitLog||{}; }
 
 function habitDoneToday(id){
   const log=habitGetLog();
-  return (log[habitToday()]||[]).includes(id);
+  return (log[habitToday()]||[]).map(Number).includes(+id);
 }
 
 function habitToggle(id){
   if(!prefs.habitLog) prefs.habitLog={};
   const key=habitToday();
-  const arr=prefs.habitLog[key]||[];
-  if(arr.includes(id)){
-    prefs.habitLog[key]=arr.filter(x=>x!==id);
+  const arr=(prefs.habitLog[key]||[]).map(Number);
+  if(arr.includes(+id)){
+    prefs.habitLog[key]=arr.filter(x=>+x!==+id);
   } else {
-    prefs.habitLog[key]=[...arr,id];
+    prefs.habitLog[key]=[...arr,+id];
   }
   habitSave();
   renderHabits('habit-list');
@@ -4445,10 +4566,10 @@ function habitStreak(id){
   let streak=0, d=new Date();
   // if not done today, start checking from yesterday
   const todayKey=habitToday();
-  if(!(log[todayKey]||[]).includes(id)) d.setDate(d.getDate()-1);
+  if(!(log[todayKey]||[]).map(Number).includes(+id)) d.setDate(d.getDate()-1);
   for(let i=0;i<365;i++){
     const key=d.toISOString().slice(0,10);
-    if((log[key]||[]).includes(id)){ streak++; d.setDate(d.getDate()-1); }
+    if((log[key]||[]).map(Number).includes(+id)){ streak++; d.setDate(d.getDate()-1); }
     else break;
   }
   return streak;
@@ -4461,7 +4582,7 @@ function habitActivityGrid(id){
   for(let i=27;i>=0;i--){
     const dd=new Date(d); dd.setDate(dd.getDate()-i);
     const key=dd.toISOString().slice(0,10);
-    days.push((log[key]||[]).includes(id)?1:0);
+    days.push((log[key]||[]).map(Number).includes(+id)?1:0);
   }
   return days;
 }
@@ -5412,6 +5533,10 @@ function fcsClose() {
 // backdrop click disabled — use Exit Focus button only
 function fcsExit(e) { /* no-op */ }
 
+// Mobile focus-exit button stub — element is hidden via CSS on all platforms,
+// but the onclick attribute must resolve to a function to avoid a TypeError
+function fcsMobExit() { fcsClose(); }
+
 function _fcsKey(e) { if (e.key === 'Escape') fcsClose(); }
 
 function _fcsBuild(wid, body) {
@@ -5520,7 +5645,7 @@ function renderProBadgeRing() {
   const pro = isPro();
 
   // Use current accent color for everyone — not just Pro users
-  const accentKey = prefs.accentColor || 'green';
+  const accentKey = prefs.accentColor || prefs.accentKey || 'green';
   const colors = deriveAccent(accentKey);
   const a2 = colors.a2;
   const al = colors.al;
@@ -5642,7 +5767,7 @@ async function restoreBackup(idx) {
   closeMo('mo-backup');
   persist();
   renderAllTaskW(); renderCanvas(); updateAllStatsW(); updateFixedStats();
-  if (typeof renderCal === 'function') renderCal();
+  renderFullCal();
 }
 
 // ═══════════════════════════════════════

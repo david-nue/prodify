@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
   <title>Prodify — Your Free All-in-One Productivity Workspace</title>
   <meta name="theme-color" content="#3A7D5E" />
   <meta name="description" content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
@@ -68,7 +68,13 @@
     rel="stylesheet" />
   <script>
     // Detect mobile early in <head> so we can conditionally load CSS
-    window.PRODIFY_IS_MOBILE = window.innerWidth <= 768;
+    // Uses both screen width and user agent for reliability (handles tablets, DevTools resize, etc.)
+    (function() {
+      var w = window.innerWidth || document.documentElement.clientWidth || screen.width;
+      var ua = navigator.userAgent || '';
+      var uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      window.PRODIFY_IS_MOBILE = w <= 768 || (uaMobile && w <= 1024);
+    })();
   </script>
   <!-- style.css only for desktop — mobile uses app-mobile.css loaded dynamically -->
   <script>
@@ -1029,8 +1035,24 @@
 
 
         <!-- AI PLANNER PAGE -->
+        <div class="pg off fullpg" id="pg-aiplanner">
+          <div class="fphdr pg-hdr-full">
+            <div class="pg-hdr-inner">
+              <div class="fptit">AI Daily Planner</div>
+            </div>
+          </div>
+          <div class="fpscroll" style="display:flex;align-items:center;justify-content:center;padding:40px 22px;">
+            <div style="text-align:center;max-width:420px;">
+              <div style="font-size:48px;margin-bottom:16px;">🤖</div>
+              <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:10px;">AI Daily Planner</div>
+              <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Tell Prodify what's on your plate and it'll build a realistic, prioritized schedule around your tasks, energy level, and available time. Coming with Pro.</p>
+              <button onclick="showUpgradeModal('AI Daily Planner')" style="padding:13px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Join the waitlist ✦</button>
+              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · Founding member rate from $3/mo</div>
+            </div>
+          </div>
+        </div>
 
-        <!-- SETTINGS PAGE -->
+
         <div class="pg off fullpg" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
           <div class="fphdr">
             <div class="fptit">Settings</div>
@@ -1374,7 +1396,7 @@
         <div
           style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-80px;right:-60px;pointer-events:none;">
         </div>
-        <img src="https://avatars.githubusercontent.com/u/00000000"
+        <img src="https://avatars.githubusercontent.com/u/266276185"
           style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 14px;background:rgba(255,255,255,.1);"
           onerror="this.style.display='none'" />
         <div id="about-display-name" style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;">David N.</div>
@@ -1557,18 +1579,34 @@
       var gBtn = root.querySelector('#btn-google');
       if (gBtn) gBtn.disabled = true;
 
-      // Load Supabase then mobile JS
+      // Load Supabase then EmailJS then mobile JS
       var sbScript = document.createElement('script');
       sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
       sbScript.onload = function() {
-        var mjs = document.createElement('script');
-        mjs.src = '/app-mobile.js';
-        mjs.onload = function() {
-          // Re-enable google button once JS is fully loaded
-          var gBtn2 = document.getElementById('btn-google');
-          if (gBtn2) gBtn2.disabled = false;
+        var ejsScript = document.createElement('script');
+        ejsScript.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+        ejsScript.onload = function() {
+          if (typeof emailjs !== 'undefined') emailjs.init('JKf5GRjODyTBor1xn');
+          var mjs = document.createElement('script');
+          mjs.src = '/app-mobile.js';
+          mjs.onload = function() {
+            // Re-enable google button once JS is fully loaded
+            var gBtn2 = document.getElementById('btn-google');
+            if (gBtn2) gBtn2.disabled = false;
+          };
+          document.body.appendChild(mjs);
         };
-        document.body.appendChild(mjs);
+        ejsScript.onerror = function() {
+          // EmailJS failed to load — proceed without it (feedback will use Supabase only)
+          var mjs = document.createElement('script');
+          mjs.src = '/app-mobile.js';
+          mjs.onload = function() {
+            var gBtn2 = document.getElementById('btn-google');
+            if (gBtn2) gBtn2.disabled = false;
+          };
+          document.body.appendChild(mjs);
+        };
+        document.head.appendChild(ejsScript);
       };
       document.head.appendChild(sbScript);
     });
@@ -2200,6 +2238,50 @@
           </div>
       </div>
 
+      <!-- NOTES -->
+      <div class="page" id="pg-notes" style="padding-bottom:88px;">
+        <!-- List view -->
+        <div id="mob-notes-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+          <div class="fphdr">
+            <div class="fptit">Notes</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button id="notes-search-btn" class="jwutil-btn" onclick="notesToggleSearch()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              </button>
+              <button id="notes-sort-btn" class="jwutil-btn" onclick="notesToggleSort()" title="Sort A–Z">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+              </button>
+              <button onclick="notesNew()" style="background:none;border:none;cursor:pointer;font-size:24px;color:var(--a2);padding:2px 6px;font-weight:300;line-height:1;">+</button>
+            </div>
+          </div>
+          <!-- Search bar (hidden by default) -->
+          <div id="notes-search-bar" class="jw-search-bar" style="display:none;">
+            <div class="jw-search-inner">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input class="jw-search-inp" id="notes-search-inp" type="text" placeholder="Search notes…" oninput="notesSearch(this.value)"/>
+              <button class="jw-search-clear" id="notes-search-clear" onclick="notesClearSearch()" style="display:none;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="mob-notes-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 16px 16px;"></div>
+        </div>
+        <!-- Editor view -->
+        <div id="mob-notes-editor-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
+          <div class="fphdr">
+            <button onclick="notesBack()" class="set-back" style="min-width:60px;">
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Notes
+            </button>
+            <div id="mob-note-editor-hdr" class="fptit" style="flex:1;text-align:center;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;">Untitled</div>
+            <button onclick="deleteNote()" style="min-width:60px;display:flex;justify-content:flex-end;align-items:center;background:none;border:none;cursor:pointer;color:var(--ink4);padding:0 4px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+          <input id="mob-note-title-inp" class="mob-note-title-inp" type="text" placeholder="Title…" oninput="noteEditorInput()" autocomplete="off"/>
+          <textarea id="mob-note-content-ta" class="mob-note-content-ta" placeholder="Start writing…" oninput="noteEditorInput()"></textarea>
+        </div>
+      </div>
+
       <!-- HABITS -->
       <div class="page" id="pg-habits" style="padding-bottom:100px;">
         <div id="hab-list" class="hab-list-scroll"></div>
@@ -2294,9 +2376,22 @@
         </div>
 
         <!-- AI PLANNER PAGE (mobile) -->
+        <div class="page" id="mob-pg-aiplanner" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+          <div class="fphdr">
+            <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
+            <div class="fptit" style="flex:1;text-align:center;">AI Planner</div>
+            <div style="min-width:60px;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;">
+            <div style="font-size:52px;margin-bottom:18px;">🤖</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--ink);margin-bottom:10px;">AI Daily Planner</div>
+            <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;max-width:320px;">Tell Prodify what's on your plate and it'll build a realistic, prioritized schedule for your day. Coming with Pro.</p>
+            <button onclick="showUpgradeModal('AI Daily Planner')" style="padding:14px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;max-width:280px;">Join the waitlist ✦</button>
+            <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · From $3/mo</div>
+          </div>
+        </div>
 
 
-                <!-- PROFILE PAGE (mobile) -->
         <div class="page" id="mob-pg-profile" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
           <div class="fphdr">
             <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
@@ -2307,7 +2402,7 @@
             <!-- Banner -->
             <div style="background:var(--a);border-radius:18px;padding:22px 22px 20px;position:relative;overflow:hidden;display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
               <div style="position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.18) 0%,transparent 65%);top:-80px;right:-50px;pointer-events:none;"></div>
-              <div id="mob-pbav" style="width:64px;height:64px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;border:3px solid rgba(255,255,255,.18);position:relative;z-index:1;flex-shrink:0;overflow:hidden;" id="mob-pbav"></div>
+              <div id="mob-pbav" style="width:64px;height:64px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;border:3px solid rgba(255,255,255,.18);position:relative;z-index:1;flex-shrink:0;overflow:hidden;"></div>
               <div style="position:relative;z-index:1;">
                 <div id="mob-pbnm" style="font-size:20px;font-weight:800;letter-spacing:-.4px;color:#fff;line-height:1.1;"></div>
                 <div id="mob-pbun" style="font-size:13px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:500;"></div>
@@ -2422,7 +2517,7 @@
                         <div class="accent-hex-preview" id="mob-accent-hex-preview"></div>
                         <span class="accent-hex-hash">#</span>
                         <input class="accent-hex-input" id="mob-accent-hex-input" type="text" maxlength="6"
-                          placeholder="3A7D5E" oninput="accentHexInput(this)" id="mob-accent-hex-input"
+                          placeholder="3A7D5E" oninput="accentHexInput(this)"
                           onkeydown="if(event.key==='Enter')accentHexConfirm()" />
                       </div>
                       <button class="accent-hex-btn" onclick="accentHexConfirm()">Apply <span
@@ -2554,6 +2649,10 @@
       <button class="nav-btn" id="nav-journal" onclick="goPg('journal')">
         <svg viewBox="0 0 24 24"><rect x="4" y="2" width="14" height="20" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
         <span>Journal</span>
+      </button>
+      <button class="nav-btn" id="nav-notes" onclick="goPg('notes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z"/><path d="M14 2v4h4M8 13h8M8 9h8M8 17h5"/></svg>
+        <span>Notes</span>
       </button>
       <button class="nav-btn" id="nav-timer" onclick="goPg('timer')">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 3h6"/></svg>
@@ -2842,7 +2941,7 @@
     <!-- Header band matching desktop -->
     <div style="background:var(--a);padding:28px 24px 24px;text-align:center;position:relative;">
       <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-60px;right:-40px;pointer-events:none;"></div>
-      <img src="https://avatars.githubusercontent.com/u/00000000"
+      <img src="https://avatars.githubusercontent.com/u/266276185"
         style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 12px;background:rgba(255,255,255,.1);"
         onerror="this.style.display='none'" />
       <div id="mob-about-name" style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;">—</div>

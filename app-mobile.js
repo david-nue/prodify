@@ -38,16 +38,19 @@ function getD(){
     if(acc[cu].journal) acc[cu].journal = normalizeJournal(acc[cu].journal);
     return acc[cu];
   }
-  return {tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},prefs:{},displayName:''};
+  return {tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{},displayName:''};
 }
 function getP(){ return getD().prefs || {}; }
 function getTasks(){ return getD().tasks || []; }
 function getJournal(){ return getD().journal || []; }
 function getCalEvs(){ return getD().calEvs || []; }
+function getNotes(){ return migrateNotes(getD().notes); }
+function saveNotes(arr){ const d=getD(); d.notes=arr; if(cu) acc[cu]=d; saveAll(); }
 
 let _saveTimer=null;
 let _lastSaveTs=0;
 let _realtimeChannel=null;
+let _pendingGoogleSession=null; // holds authUser/email/googleName while username picker is open
 
 function saveAll(){
   if(!cu) return;
@@ -62,16 +65,19 @@ function saveAll(){
     const d=acc[cu]; if(!d) return;
     try{
       await sb.from('users').update({
+        display_name: d.displayName||'',
         tasks:JSON.stringify(d.tasks||[]),
         journal:JSON.stringify(d.journal||[]),
         cal_evs:JSON.stringify(d.calEvs||[]),
         subjects:JSON.stringify(d.subjects||[]),
-        notes:JSON.stringify(d.notes||{}),
+        widgets:JSON.stringify(d.widgets||[]),
+        notes:JSON.stringify(d.notes||[]),
         prefs:JSON.stringify(d.prefs||{}),
       }).eq('username',cu);
       _lastSaveTs=Date.now();
       acc[cu]._localTs=_lastSaveTs;
       LS.s('pd1_acc',acc);
+      try{ localStorage.setItem('pd1_lastSaveTs', String(_lastSaveTs)); }catch(e){}
     }catch(e){ /* silent — localStorage is source of truth */ }
   },50);
 }
@@ -80,11 +86,13 @@ function saveAll(){
 function applyRemoteData(row){
   if(!row||!cu) return;
   const d=acc[cu]||{};
+  if(row.display_name != null && row.display_name !== '') d.displayName=row.display_name;
   if(row.tasks    !=null){ try{d.tasks    =normalizeTasks(JSON.parse(row.tasks));   }catch(e){} }
   if(row.journal  !=null){ try{d.journal  =normalizeJournal(JSON.parse(row.journal)); }catch(e){} }
   if(row.subjects !=null){ try{d.subjects =JSON.parse(row.subjects);}catch(e){} }
   if(row.cal_evs  !=null){ try{d.calEvs   =JSON.parse(row.cal_evs); }catch(e){} }
-  if(row.notes    !=null){ try{d.notes    =JSON.parse(row.notes);   }catch(e){} }
+  if(row.widgets  !=null){ try{d.widgets  =JSON.parse(row.widgets);  }catch(e){} }
+  if(row.notes    !=null){ try{d.notes    =migrateNotes(JSON.parse(row.notes));   }catch(e){} }
   if(row.prefs    !=null){ try{
     const rp=JSON.parse(row.prefs);
     if(row.avatar_url) rp.avatarUrl=row.avatar_url;
@@ -101,9 +109,9 @@ function applyRemoteData(row){
 async function pullFromCloud(){
   if(!sbReady||!cu) return;
   const localTs=(acc[cu]||{})._localTs||0;
-  if(localTs>0 && Date.now()-localTs<500) return; // local change too recent
+  if(localTs>0 && Date.now()-localTs<3000) return; // local change too recent — matches desktop threshold
   try{
-    const {data,error}=await sb.from('users').select('tasks,journal,subjects,cal_evs,notes,prefs,avatar_url').eq('username',cu).single();
+    const {data,error}=await sb.from('users').select('display_name,tasks,journal,subjects,cal_evs,notes,prefs,widgets,avatar_url').eq('username',cu).single();
     if(error||!data) return;
     // Re-check after async fetch
     const localTs2=(acc[cu]||{})._localTs||0;
@@ -119,7 +127,7 @@ function startRealtimeSync(username){
   _realtimeChannel=sb.channel('prodify-user-'+username)
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'users',filter:'username=eq.'+username},
       payload=>{
-        if(Date.now()-_lastSaveTs<500) return; // ignore echo from our own save
+        if(Date.now()-_lastSaveTs<2000) return; // ignore echo from our own save — matches desktop
         const localTs=(acc[cu]||{})._localTs||0;
         if(localTs>0 && localTs>_lastSaveTs) return; // local is newer
         applyRemoteData(payload.new);
@@ -161,6 +169,21 @@ function normalizeJournal(arr){
     if(!j.text    && j.content) j.text    = j.content;
     return j;
   });
+}
+function migrateNotes(raw){
+  if(!raw) return [];
+  if(Array.isArray(raw)) return raw;
+  if(typeof raw === 'object'){
+    const entries=Object.values(raw).filter(v=>v&&typeof v==='object');
+    if(!entries.length) return [];
+    return entries.map(e=>({
+      id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      title:e.title||'',
+      content:e.content||'',
+      updated:Date.now()
+    }));
+  }
+  return [];
 }
 function toDay(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
@@ -246,54 +269,151 @@ async function handleGoogleCallback(){
     }catch(e){ console.warn('[Prodify Mobile] Email lookup error',e); }
 
     if(existingUser){
-      // Existing user — load their data
       const u=existingUser.username;
       cu=u; LS.s('pd1_cur',u);
       if(email && acc[u]) acc[u].email=email;
+
+      // Respect _localTs — if local is fresher than last known cloud save, keep local
+      const loc=acc[u]||{};
+      const localTs=loc._localTs||0;
+      // _lastSaveTs persisted across reloads in localStorage
+      const persistedSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0;
+      _lastSaveTs=Math.max(_lastSaveTs,persistedSaveTs);
+      const trustLocal=localTs>0 && localTs>=_lastSaveTs && Object.keys(loc).length>3;
+
       const cP=JSON.parse(existingUser.prefs||'{}');
       if(existingUser.avatar_url) cP.avatarUrl=existingUser.avatar_url;
-      acc[u]={
-        passHash:existingUser.pass_hash||'',
-        displayName:existingUser.display_name||googleName||'',
-        tasks:JSON.parse(existingUser.tasks||'[]'),
-        journal:JSON.parse(existingUser.journal||'[]'),
-        subjects:JSON.parse(existingUser.subjects||'[]'),
-        calEvs:JSON.parse(existingUser.cal_evs||'[]'),
-        widgets:JSON.parse(existingUser.widgets||'[]'),
-        notes:JSON.parse(existingUser.notes||'{}'),
-        prefs:cP,
-        joined:new Date(existingUser.joined_at).getTime()||Date.now(),
-      };
+
+      if(trustLocal){
+        // Local is fresher — keep it, patch in auth fields
+        acc[u]=Object.assign({},loc,{
+          passHash:existingUser.pass_hash||loc.passHash||'',
+          displayName:existingUser.display_name||loc.displayName||'',
+          joined:new Date(existingUser.joined_at).getTime()||loc.joined||Date.now(),
+        });
+      } else {
+        // Cloud is source of truth
+        acc[u]={
+          passHash:existingUser.pass_hash||'',
+          displayName:existingUser.display_name||googleName||'',
+          tasks:JSON.parse(existingUser.tasks||'[]'),
+          journal:JSON.parse(existingUser.journal||'[]'),
+          subjects:JSON.parse(existingUser.subjects||'[]'),
+          calEvs:JSON.parse(existingUser.cal_evs||'[]'),
+          widgets:JSON.parse(existingUser.widgets||'[]'),
+          notes:JSON.parse(existingUser.notes||'[]'),
+          prefs:cP,
+          joined:new Date(existingUser.joined_at).getTime()||Date.now(),
+          _localTs:0,
+        };
+      }
       LS.s('pd1_acc',acc);
-      // Need onboarding if no displayName
+      startRealtimeSync(u);
       if(!acc[u].displayName||acc[u].displayName.trim()===''){
         startOnboarding(googleName);
       } else {
         launch();
       }
     } else {
-      // New user — create account row
-      const newUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'user'+Date.now().toString(36);
-      cu=newUsername; LS.s('pd1_cur',newUsername);
-      acc[newUsername]={
-        passHash:'',displayName:googleName||'',
-        tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:{},
-        prefs:{dark:false},joined:Date.now(),
-      };
-      LS.s('pd1_acc',acc);
-      try{
-        await sb.from('users').insert({
-          username:newUsername,pass_hash:'',display_name:googleName||'',
-          email,auth_id:authUser.id,
-          tasks:'[]',journal:'[]',subjects:'[]',cal_evs:'[]',
-          widgets:'[]',notes:'{}',prefs:'{}',
-          joined_at:new Date().toISOString()
-        });
-      }catch(e){ console.warn('[Prodify Mobile] User insert error',e); }
-      startOnboarding(googleName);
+      // New Google user — show username picker (matches desktop flow)
+      _pendingGoogleSession = { authUser, email, googleName };
+      _showMobUsernamePicker();
     }
     return true;
   }catch(e){ console.error('[Prodify Mobile] handleGoogleCallback error',e); return false; }
+}
+
+// ── MOBILE USERNAME PICKER for new Google users ──
+
+function _showMobUsernamePicker() {
+  const { googleName, email } = _pendingGoogleSession || {};
+  // Build a simple fullscreen picker over the login screen
+  let picker = document.getElementById('mob-username-picker');
+  if (!picker) {
+    picker = document.createElement('div');
+    picker.id = 'mob-username-picker';
+    picker.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--color-bg,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;';
+    picker.innerHTML = `
+      <div style="font-size:22px;font-weight:800;color:var(--ink,#111);margin-bottom:8px;">Pick a username</div>
+      <div style="font-size:14px;color:var(--ink3,#888);margin-bottom:28px;text-align:center;">This is your Prodify handle. You can't change it later.</div>
+      <input id="mob-gu-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        placeholder="e.g. alex_work" maxlength="30"
+        style="width:100%;border:1.5px solid var(--bdr,#ddd);border-radius:14px;padding:14px 16px;font-size:16px;font-family:inherit;color:var(--ink,#111);background:var(--surf2,#f5f5f5);outline:none;box-sizing:border-box;margin-bottom:8px;"
+        oninput="mobGuValidate(this)"
+        onkeydown="if(event.key==='Enter')mobDoGoogleUsername()" />
+      <div id="mob-gu-err" style="font-size:12px;color:#E53E3E;min-height:18px;margin-bottom:16px;align-self:flex-start;"></div>
+      <button onclick="mobDoGoogleUsername()" id="mob-gu-btn"
+        style="width:100%;background:var(--a2,#3A7D5E);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;">
+        Create my workspace
+      </button>
+      <div style="font-size:11px;color:var(--ink4,#aaa);margin-top:14px;">Letters, numbers, and underscores only · Min 3 characters</div>
+    `;
+    const root = document.getElementById('mobile-app-root') || document.body;
+    root.appendChild(picker);
+  }
+  // Pre-fill suggestion from Google name
+  const suggestion = (googleName?.split(' ')[0] || email?.split('@')[0] || '')
+    .toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 20);
+  const inp = document.getElementById('mob-gu-input');
+  if (inp && suggestion.length >= 3) inp.value = suggestion;
+  picker.style.display = 'flex';
+  setTimeout(() => inp && inp.focus(), 300);
+}
+
+function mobGuValidate(inp) {
+  const val = inp.value.trim().toLowerCase();
+  const err = document.getElementById('mob-gu-err');
+  if (!err) return;
+  if (val.length > 0 && val.length < 3) err.textContent = 'Minimum 3 characters.';
+  else if (val.length > 0 && !/^[a-z0-9_]+$/.test(val)) err.textContent = 'Letters, numbers, and underscores only.';
+  else err.textContent = '';
+}
+
+async function mobDoGoogleUsername() {
+  const inp = document.getElementById('mob-gu-input');
+  const err = document.getElementById('mob-gu-err');
+  const btn = document.getElementById('mob-gu-btn');
+  const u = (inp?.value || '').trim().toLowerCase();
+
+  if (err) err.textContent = '';
+  if (!u || u.length < 3) { if (err) err.textContent = 'Minimum 3 characters.'; return; }
+  if (!/^[a-z0-9_]+$/.test(u)) { if (err) err.textContent = 'Letters, numbers, and underscores only.'; return; }
+  if (!_pendingGoogleSession) { if (err) err.textContent = 'Session expired. Please sign in again.'; return; }
+
+  if (btn) { btn.textContent = 'Creating workspace…'; btn.disabled = true; }
+
+  try {
+    const { authUser, email, googleName } = _pendingGoogleSession;
+    // Check username availability
+    const { data: avail, error: availErr } = await sb.rpc('check_signup_availability', { p_username: u, p_email: email });
+    if (availErr) throw new Error('Could not verify availability. Please try again.');
+    const result = avail && avail[0];
+    if (result && result.username_taken) { if (err) err.textContent = 'This username is already taken.'; if (btn) { btn.textContent = 'Create my workspace'; btn.disabled = false; } return; }
+
+    const displayName = googleName || u;
+    await sb.from('users').insert({
+      username: u, pass_hash: '', display_name: displayName,
+      email, auth_id: authUser.id,
+      tasks: '[]', journal: '[]', subjects: '[]', cal_evs: '[]',
+      widgets: '[]', notes: '[]', prefs: '{}',
+      joined_at: new Date().toISOString()
+    });
+
+    acc[u] = { passHash: '', displayName, tasks: [], journal: [], subjects: [], calEvs: [], widgets: [], notes: {}, prefs: { dark: false }, joined: Date.now() };
+    LS.s('pd1_acc', acc);
+    cu = u; LS.s('pd1_cur', u);
+    _pendingGoogleSession = null;
+
+    // Hide picker
+    const picker = document.getElementById('mob-username-picker');
+    if (picker) picker.style.display = 'none';
+
+    startRealtimeSync(u);
+    startOnboarding(displayName);
+  } catch(e) {
+    if (btn) { btn.textContent = 'Create my workspace'; btn.disabled = false; }
+    if (err) err.textContent = e.message || 'Something went wrong. Try again.';
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -316,10 +436,32 @@ document.addEventListener('click', e => {
 });
 function doSignOut(){
   closeDD();
-  appConfirm('Sign out?','You will be returned to the login screen.','Sign out').then(ok=>{
+  appConfirm('Sign out?','You will be returned to the login screen.','Sign out').then(async ok=>{
     if(!ok) return;
     const _cu=cu;
+    // Flush any pending debounced save — do a final cloud save BEFORE signing out
+    // sbSignOut() kills the JWT immediately so any in-flight saves after that fail RLS
+    if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer=null; }
+    if(_cu && sbReady && acc[_cu]){
+      const d=acc[_cu];
+      d._localTs=Date.now();
+      LS.s('pd1_acc',acc);
+      try{ localStorage.setItem('pd1_lastSaveTs',String(d._localTs)); }catch(e){}
+      try{
+        await sb.from('users').update({
+          display_name:d.displayName||'',
+          tasks:JSON.stringify(d.tasks||[]),
+          journal:JSON.stringify(d.journal||[]),
+          cal_evs:JSON.stringify(d.calEvs||[]),
+          subjects:JSON.stringify(d.subjects||[]),
+          widgets:JSON.stringify(d.widgets||[]),
+          notes:JSON.stringify(d.notes||[]),
+          prefs:JSON.stringify(d.prefs||{}),
+        }).eq('username',_cu);
+      }catch(e){}
+    }
     if(sbReady){ unregisterDevice(_cu).catch(()=>{}); sb.auth.signOut().catch(()=>{}); }
+    if(_realtimeChannel && sb){ try{sb.removeChannel(_realtimeChannel);}catch(e){} _realtimeChannel=null; }
     LS.d('pd1_cur'); cu=null;
     showScreen('login');
   });
@@ -388,18 +530,18 @@ function obNext(step){
   if(step===0){
     const n=document.getElementById('ob-name').value.trim();
     if(!n){ document.getElementById('ob-name').focus(); return; }
-    if(cu) { acc[cu].displayName=n; LS.s('pd1_acc',acc); }
+    if(cu){ acc[cu].displayName=n; saveAll(); }
     const dt=document.getElementById('mob-ob-done-title');
     if(dt) dt.textContent="You're all set, "+n.split(' ')[0]+'!';
     obGo(1);
   } else if(step===1){
-    if(_obUseCase && cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.useCase=_obUseCase; LS.s('pd1_acc',acc); }
+    if(_obUseCase && cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.useCase=_obUseCase; saveAll(); }
     obGo(2);
   } else if(step===2){
-    if(cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.accentKey=_obColor; acc[cu].prefs.accentColor=_obColor; LS.s('pd1_acc',acc); }
+    if(cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.accentKey=_obColor; acc[cu].prefs.accentColor=_obColor; saveAll(); }
     obGo(3);
   } else if(step===3){
-    if(cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.dark=(_obTheme==='dark'); LS.s('pd1_acc',acc); }
+    if(cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.dark=(_obTheme==='dark'); saveAll(); }
     obGo(4);
   }
 }
@@ -407,22 +549,26 @@ function obNext(step){
 async function obFinish(){
   if(cu){
     acc[cu].onboarded=true;
-    // seed sample data for new users
     const d=acc[cu];
-    if(!(d.tasks&&d.tasks.length) && !(d.journal&&d.journal.length)){
-      d.tasks=[{id:uid(),title:'Try swiping a task →',col:'todo',dueDate:null,recurring:'none',date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),created:Date.now()}];
-      d.journal=[{id:uid(),date:new Date().toISOString(),content:'Welcome to Prodify! This is your journal — tap any entry to edit it, or write something new below.',mood:0}];
-      if(!d.prefs) d.prefs={};
-      if(!d.prefs.habits) d.prefs.habits=[{id:Date.now(),name:'Daily check-in',emoji:'✅',created:toDay()}];
-    }
+    acc[cu]=d;
     LS.s('pd1_acc',acc);
+    // Save ALL fields to cloud — matches desktop dbSaveUser behaviour
     if(sbReady){
       try{
-        const p=acc[cu].prefs||{};
         await sb.from('users').update({
-          display_name:acc[cu].displayName||'',
-          prefs:JSON.stringify(p),
+          display_name:d.displayName||'',
+          tasks:JSON.stringify(d.tasks||[]),
+          journal:JSON.stringify(d.journal||[]),
+          subjects:JSON.stringify(d.subjects||[]),
+          cal_evs:JSON.stringify(d.calEvs||[]),
+          widgets:JSON.stringify(d.widgets||[]),
+          notes:JSON.stringify(d.notes||[]),
+          prefs:JSON.stringify(d.prefs||{}),
         }).eq('username',cu);
+        _lastSaveTs=Date.now();
+        acc[cu]._localTs=_lastSaveTs;
+        LS.s('pd1_acc',acc);
+        try{ localStorage.setItem('pd1_lastSaveTs',String(_lastSaveTs)); }catch(e){}
       }catch(e){}
     }
   }
@@ -434,6 +580,7 @@ async function obFinish(){
 // ══════════════════════════════════════════════
 function launch(){
   applySettings();
+  scheduleRecurringCheck(); // reset daily/weekly tasks — matches desktop
   renderAll();
   showScreen('app');
   goPg('home');
@@ -446,13 +593,47 @@ function launch(){
   }
 }
 
+// ── RECURRING TASK RESET (mirrors desktop scheduleRecurringCheck) ──
+function checkRecurringReset(){
+  const today = new Date().toISOString().slice(0, 10);
+  const d = getD();
+  const p = d.prefs || {};
+  const lastReset = p.lastRecurringReset || '';
+  if (lastReset === today) return;
+  let changed = false;
+  (d.tasks || []).forEach(t => {
+    if (!t.recurring || t.recurring === 'none') return;
+    if (t.col !== 'done') return;
+    if (t.recurring === 'daily') {
+      t.col = 'todo'; changed = true;
+    } else if (t.recurring === 'weekly') {
+      const lastDate = lastReset ? new Date(lastReset) : null;
+      const now = new Date();
+      const weekStart = dd => { const c = new Date(dd); c.setDate(c.getDate() - c.getDay()); return c.toISOString().slice(0, 10); };
+      if (!lastDate || weekStart(lastDate) !== weekStart(now)) { t.col = 'todo'; changed = true; }
+    }
+  });
+  p.lastRecurringReset = today;
+  d.prefs = p;
+  if (cu) acc[cu] = d;
+  if (changed) { saveAll(); renderTasks(); renderHome(); }
+  else { LS.s('pd1_acc', acc); } // still stamp the reset date so we don't re-check today
+}
+
+function scheduleRecurringCheck(){
+  checkRecurringReset();
+  const now = new Date();
+  const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
+  setTimeout(() => { checkRecurringReset(); scheduleRecurringCheck(); }, msUntilMidnight);
+}
+
 // ══════════════════════════════════════════════
 // SETTINGS
 // ══════════════════════════════════════════════
 function applySettings(){
   const p=getP();
-  if(p.dark){ document.body.setAttribute('data-dark','1'); const t=document.getElementById('toggle-dark'); if(t) t.classList.add('on'); }
-  else { document.body.removeAttribute('data-dark'); }
+  if(p.dark){ document.documentElement.setAttribute('data-dark','1'); const t=document.getElementById('toggle-dark'); if(t) t.classList.add('on'); }
+  else { document.documentElement.removeAttribute('data-dark'); }
   applyAccentCSS(p.accentColor||p.accentKey||'green');
   const name = getD().displayName || (cu && cu!=='__mobile__' ? cu : 'You') || 'You';
   const username = (cu && cu!=='__mobile__') ? '@'+cu : '';
@@ -496,7 +677,7 @@ function toggleDark(el){
   el.classList.toggle('on');
   const on=el.classList.contains('on');
   const p=getP(); p.dark=on; if(cu) acc[cu].prefs=p; saveAll();
-  if(on) document.body.setAttribute('data-dark','1'); else document.body.removeAttribute('data-dark');
+  if(on) document.documentElement.setAttribute('data-dark','1'); else document.documentElement.removeAttribute('data-dark');
   applyAccentCSS(p.accentColor||p.accentKey||'green');
 }
 function saveName(){
@@ -513,7 +694,8 @@ function clearAll(){
     if(!ok) return;
     if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
     acc[cu]=d; saveAll(); }
-    renderAll(); toast('All data cleared');
+    _mobActiveProj=null; // reset any open project detail view
+    renderAll(); renderMobProjects(); toast('All data cleared');
   });
 }
 
@@ -537,7 +719,7 @@ function goPg(id){
   const SUB=['settings','profile'];
   if(!SUB.includes(id)){
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    const map={home:'nav-home',tasks:'nav-tasks',projects:'nav-projects',habits:'nav-habits',calendar:'nav-calendar',journal:'nav-journal',timer:'nav-timer'};
+    const map={home:'nav-home',tasks:'nav-tasks',projects:'nav-projects',habits:'nav-habits',calendar:'nav-calendar',journal:'nav-journal',timer:'nav-timer',notes:'nav-notes'};
     const nb=document.getElementById(map[id]); if(nb) nb.classList.add('active');
     if(nav) nav.style.display='';
   } else {
@@ -547,6 +729,7 @@ function goPg(id){
   if(id==='projects') renderMobProjects();
   if(id==='habits') renderHabitsList();
   if(id==='journal') renderJournalList();
+  if(id==='notes') renderNotesList();
   if(id==='timer'){ mobSetTMode(_mobTMode); }
   if(id==='settings') renderSettingsPage();
   if(id==='profile') renderMobProfile();
@@ -652,7 +835,7 @@ function renderHome(){
 
   // ── HABITS GLANCE ──
   const habits=getP().habits||[]; const log=getP().habitLog||{};
-  const doneToday=habits.filter(hb=>(log[today]||[]).includes(hb.id)).length;
+  const doneToday=habits.filter(hb=>(log[today]||[]).map(Number).includes(+hb.id)).length;
   const streak=calcStreak();
   let habitsHtml='';
   if(!habits.length){
@@ -666,7 +849,7 @@ function renderHome(){
         <div class="gc-prog-pct">${pct}%</div>
       </div>
       <div class="gc-items">${habits.slice(0,4).map(hb=>{
-        const done=(log[today]||[]).includes(hb.id);
+        const done=(log[today]||[]).map(Number).includes(+hb.id);
         return `<div class="gc-item">
           <div class="gc-check${done?' done':''}">${done?'<svg viewBox="0 0 16 16"><path d="M3 8l4 4 6-7"/></svg>':''}</div>
           <div class="gc-item-title" style="${done?'text-decoration:line-through;opacity:.5;':''}">${esc(hb.name)}</div>
@@ -1319,7 +1502,7 @@ function renderHabitsList(){
   const list=document.getElementById('hab-list');
   if(!list) return;
   const habits=getP().habits||[]; const log=getP().habitLog||{}; const today=toDay();
-  const total=habits.length, doneCount=habits.filter(h=>(log[today]||[]).includes(h.id)).length;
+  const total=habits.length, doneCount=habits.filter(h=>(log[today]||[]).map(Number).includes(+h.id)).length;
   if(!total){
     list.innerHTML=`<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/><path d="M8 12l3 3 5-5"/></svg></div><div class="mob-es-title">No habits yet</div><div class="mob-es-sub">Build your routine — type a habit below.</div></div>`;
     return;
@@ -1334,7 +1517,7 @@ function renderHabitsList(){
       <div class="hab-progress-bar"><div class="hab-progress-fill" style="width:${pct}%"></div></div>
     </div>
     ${habits.map(h=>{
-      const done=(log[today]||[]).includes(h.id);
+      const done=(log[today]||[]).map(Number).includes(+h.id);
       const streak=habStreak(h.id);
       return `<div class="hab-row">
         <button class="hab-circle-btn ${done?'done':''}" onclick="habitToggle('${h.id}')">
@@ -1350,21 +1533,21 @@ function renderHabitsList(){
     }).join('')}`;
 }
 function habStreak(id){
-  id=+id;
+  id=+id; // always compare as number
   const log=getP().habitLog||{}; let streak=0; const d=new Date();
-  if(!(log[toDay()]||[]).includes(id)) d.setDate(d.getDate()-1);
-  for(let i=0;i<365;i++){ const k=d.toISOString().slice(0,10); if((log[k]||[]).includes(id)){streak++;d.setDate(d.getDate()-1);}else break; }
+  if(!(log[toDay()]||[]).map(Number).includes(id)) d.setDate(d.getDate()-1);
+  for(let i=0;i<365;i++){ const k=d.toISOString().slice(0,10); if((log[k]||[]).map(Number).includes(id)){streak++;d.setDate(d.getDate()-1);}else break; }
   return streak;
 }
 function habitToggle(id){
-  id=+id;
+  id=+id; // always compare as number
   // pulse the circle before re-render
   const btn=document.querySelector(`.hab-circle-btn[onclick="habitToggle('${id}')"]`);
   if(btn){ btn.classList.add('pulse'); }
   setTimeout(()=>{
     const d=getD(); const p=d.prefs||{}; if(!p.habitLog) p.habitLog={};
-    const today=toDay(); const arr=p.habitLog[today]||[];
-    if(arr.includes(id)) p.habitLog[today]=arr.filter(x=>x!==id);
+    const today=toDay(); const arr=(p.habitLog[today]||[]).map(Number);
+    if(arr.includes(id)) p.habitLog[today]=arr.filter(x=>+x!==id);
     else p.habitLog[today]=[...arr,id];
     d.prefs=p; if(cu) acc[cu]=d; saveAll(); renderHabitsList(); renderHome();
   },120);
@@ -1850,7 +2033,228 @@ function fmtDate(iso,short=false){ try{ const d=new Date(iso); if(isNaN(d)) retu
 let _toastTm;
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_toastTm); _toastTm=setTimeout(()=>el.classList.remove('show'),2000); }
 
-function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderMobProjects(); }
+function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderMobProjects(); renderNotesList(); }
+
+// ══════════════════════════════════════════════
+// NOTES PAGE
+// ══════════════════════════════════════════════
+let _notesView = 'list';
+let _notesOpenId = null;
+let _notesSaveTimer = null;
+let _notesSearchQ = '';
+let _notesSortMode = 'updated'; // 'updated' | 'title'
+
+function renderNotesList(){
+  const list = document.getElementById('mob-notes-list');
+  if(!list) return;
+  const allNotes = getNotes();
+  const sorted = allNotes.slice().sort((a,b)=>{
+    if(_notesSortMode === 'title'){
+      const ta=(a.title||'').toLowerCase(), tb=(b.title||'').toLowerCase();
+      if(!ta && tb) return 1; if(ta && !tb) return -1;
+      return ta.localeCompare(tb);
+    }
+    return (b.updated||0)-(a.updated||0);
+  });
+  const q = _notesSearchQ.toLowerCase().trim();
+  const filtered = q ? sorted.filter(n=>
+    (n.title||'').toLowerCase().includes(q) ||
+    (n.content||'').toLowerCase().includes(q)
+  ) : sorted;
+  const cl = document.getElementById('notes-search-clear');
+  if(cl) cl.style.display = q ? 'flex' : 'none';
+  const sortBtn = document.getElementById('notes-sort-btn');
+  if(sortBtn) sortBtn.classList.toggle('active', _notesSortMode === 'title');
+
+  if(!allNotes.length){
+    list.innerHTML=`<div class="mob-es">
+      <div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z"/><path d="M14 2v4h4M8 13h8M8 9h8M8 17h5"/></svg></div>
+      <div class="mob-es-title">No notes yet</div>
+      <div class="mob-es-sub">Tap + to write your first note</div>
+    </div>`;
+    return;
+  }
+  const hl = txt => q ? txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>') : txt;
+  const hdr = `<div class="notes-list-meta"><span>${filtered.length} of ${allNotes.length} note${allNotes.length!==1?'s':''}</span></div>`;
+  if(!filtered.length){
+    list.innerHTML = hdr + `<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z"/><path d="M14 2v4h4M8 13h8M8 9h8M8 17h5"/></svg></div><div class="mob-es-title">No results</div><div class="mob-es-sub">Try a different search.</div></div>`;
+    return;
+  }
+  list.innerHTML = hdr + filtered.map(n=>{
+    const preview = (n.content||'').split('\n').find(l=>l.trim()) || '';
+    const d = n.updated ? new Date(n.updated) : new Date();
+    const dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const titleHtml = hl(esc(n.title)) || '<span style="color:var(--ink4);font-style:italic;">Untitled</span>';
+    const previewHtml = preview ? hl(esc(preview.slice(0,100))) : '';
+    return `<div class="mob-note-card" onclick="openNote('${n.id}')">
+      <div class="mob-note-card-head">
+        <div class="mob-note-card-title">${titleHtml}</div>
+        <div class="mob-note-card-date">${dateStr}</div>
+      </div>
+      ${previewHtml ? `<div class="mob-note-card-preview">${previewHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function notesToggleSearch(){
+  const bar = document.getElementById('notes-search-bar');
+  const inp = document.getElementById('notes-search-inp');
+  const btn = document.getElementById('notes-search-btn');
+  const open = bar.style.display !== 'none';
+  bar.style.display = open ? 'none' : 'block';
+  btn.classList.toggle('active', !open);
+  if(!open){ setTimeout(()=>inp&&inp.focus(), 50); }
+  else { notesClearSearch(); }
+}
+
+function notesSearch(val){
+  _notesSearchQ = val;
+  renderNotesList();
+}
+
+function notesClearSearch(){
+  _notesSearchQ = '';
+  const inp = document.getElementById('notes-search-inp');
+  const cl = document.getElementById('notes-search-clear');
+  if(inp) inp.value = '';
+  if(cl) cl.style.display = 'none';
+  renderNotesList();
+}
+
+function notesToggleSort(){
+  _notesSortMode = _notesSortMode === 'updated' ? 'title' : 'updated';
+  renderNotesList();
+}
+
+function openNote(id){
+  const notes = getNotes();
+  const note = notes.find(n=>n.id===id);
+  if(!note) return;
+  _notesOpenId = id;
+  _notesView = 'editor';
+  const listView = document.getElementById('mob-notes-list-view');
+  const editorView = document.getElementById('mob-notes-editor-view');
+  if(listView) listView.style.display='none';
+  if(editorView) editorView.style.display='flex';
+  const titleInp = document.getElementById('mob-note-title-inp');
+  const contentTa = document.getElementById('mob-note-content-ta');
+  if(titleInp) titleInp.value = note.title || '';
+  if(contentTa) contentTa.value = note.content || '';
+  const hdrTitle = document.getElementById('mob-note-editor-hdr');
+  if(hdrTitle) hdrTitle.textContent = note.title || 'Untitled';
+}
+
+function notesBack(){
+  _notesView = 'list';
+  _notesOpenId = null;
+  const listView = document.getElementById('mob-notes-list-view');
+  const editorView = document.getElementById('mob-notes-editor-view');
+  if(listView) listView.style.display='flex';
+  if(editorView) editorView.style.display='none';
+  renderNotesList();
+}
+
+function notesNew(){
+  const notes = getNotes();
+  const n = {id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:'', content:'', updated:Date.now()};
+  notes.unshift(n);
+  saveNotes(notes);
+  openNote(n.id);
+  setTimeout(()=>{ const t=document.getElementById('mob-note-title-inp'); if(t) t.focus(); },100);
+}
+
+function noteEditorInput(){
+  if(!_notesOpenId) return;
+  const titleInp = document.getElementById('mob-note-title-inp');
+  const contentTa = document.getElementById('mob-note-content-ta');
+  const title = titleInp ? titleInp.value : '';
+  const content = contentTa ? contentTa.value : '';
+  const hdrTitle = document.getElementById('mob-note-editor-hdr');
+  if(hdrTitle) hdrTitle.textContent = title || 'Untitled';
+  clearTimeout(_notesSaveTimer);
+  _notesSaveTimer = setTimeout(()=>{
+    const notes = getNotes();
+    const n = notes.find(x=>x.id===_notesOpenId);
+    if(!n) return;
+    n.title = title;
+    n.content = content;
+    n.updated = Date.now();
+    saveNotes(notes);
+  }, 400);
+}
+
+async function deleteNote(){
+  if(!_notesOpenId) return;
+  const ok = await appConfirm('Delete this note?','This cannot be undone.');
+  if(!ok) return;
+  const notes = getNotes().filter(n=>n.id!==_notesOpenId);
+  saveNotes(notes);
+  notesBack();
+}
+
+// ══════════════════════════════════════════════
+// FEEDBACK
+// ══════════════════════════════════════════════
+let _fbStar = 0;
+function fbRate(n) {
+  _fbStar = n;
+  const container = document.getElementById('fb-stars');
+  if (!container) return;
+  container.querySelectorAll('.fbs').forEach(s => {
+    const v = parseInt(s.dataset.v);
+    if (v <= n) {
+      s.setAttribute('fill', '#F5B800');
+      s.setAttribute('stroke', '#F5B800');
+    } else {
+      s.setAttribute('fill', 'var(--bdr)');
+      s.setAttribute('stroke', 'var(--ink4)');
+    }
+  });
+}
+async function submitFeedback(isDesktop) {
+  const msg = (document.getElementById('fb-msg') || {}).value?.trim();
+  if (!msg) { toast('Please write a message first'); return; }
+  const btn = document.getElementById('fb-submit');
+  const succEl = document.getElementById('fb-success');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    if (typeof emailjs !== 'undefined') {
+      await emailjs.send('service_4y11evv', 'template_nsoadni', {
+        user: cu || 'anonymous',
+        type: 'general',
+        rating: _fbStar || 'No rating',
+        message: msg,
+        ts: new Date().toLocaleString()
+      });
+    }
+    if (sbReady) {
+      await sb.from('feedback').insert({
+        username: cu || null,
+        type: 'general',
+        rating: _fbStar || null,
+        message: msg
+      });
+    }
+    if (succEl) succEl.style.display = 'block';
+    if (document.getElementById('fb-msg')) document.getElementById('fb-msg').value = '';
+    _fbStar = 0;
+    // Reset stars visually
+    const container = document.getElementById('fb-stars');
+    if (container) container.querySelectorAll('.fbs').forEach(s => {
+      s.setAttribute('fill', 'var(--bdr)');
+      s.setAttribute('stroke', 'var(--ink4)');
+    });
+    setTimeout(() => {
+      if (succEl) succEl.style.display = 'none';
+      closeSheets();
+    }, 2500);
+  } catch (e) {
+    toast('Failed to send. Please try again.');
+    console.warn('[Prodify] Feedback error:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Feedback'; }
+  }
+}
 
 // ══════════════════════════════════════════════
 // PRO SYSTEM
@@ -2037,6 +2441,8 @@ async function restoreBackup(idx){
   if(b.tasks)   dd.tasks=b.tasks;
   if(b.journal) dd.journal=b.journal;
   if(b.subjects)dd.subjects=b.subjects;
+  if(b.calEvs)  dd.calEvs=b.calEvs;   // matches desktop
+  if(b.notes)   dd.notes=b.notes;     // matches desktop
   if(b.habits)  { const p=getP(); p.habits=b.habits; dd.prefs=p; }
   if(cu) acc[cu]=dd; saveAll();
   renderAll(); closeSheets(); toast('Backup restored!');
@@ -2066,8 +2472,11 @@ function clearPomHistory(){
 async function deleteAccount(){
   const ok=await appConfirm('Delete your account?','All your data will be permanently erased. This cannot be undone.','Delete Account');
   if(!ok) return;
-  if(cu){ delete acc[cu]; LS.s('pd1_acc',acc); LS.d('pd1_cur'); }
+  // Cancel any pending debounced save — prevents a ghost write after the account is gone
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer=null; }
   if(sbReady){ try{ await sb.rpc('delete_auth_user',{p_username:cu}); }catch(e){} await sb.auth.signOut().catch(()=>{}); }
+  if(cu){ delete acc[cu]; LS.s('pd1_acc',acc); LS.d('pd1_cur'); }
+  if(_realtimeChannel && sb){ try{sb.removeChannel(_realtimeChannel);}catch(e){} _realtimeChannel=null; }
   cu=null; showScreen('login');
 }
 
@@ -2568,9 +2977,11 @@ async function unregisterDevice(username){
 
 (async ()=>{
   // Show a neutral loading state while we resolve auth — prevents login flash
-  const loginEl = document.getElementById('screen-login');
   const loadEl = document.getElementById('screen-loading');
   if(loadEl) loadEl.classList.add('active');
+
+  // Restore persisted _lastSaveTs so trustLocal guard works across reloads
+  try{ _lastSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; }catch(e){}
 
   // Check for OAuth redirect first
   const hasOAuthParams = window.location.hash.includes('access_token') || window.location.search.includes('code=');
@@ -2583,18 +2994,44 @@ async function unregisterDevice(username){
     try{
       const {data} = await sb.auth.getSession();
       if(data.session){
-        const handled = await handleGoogleCallback(data.session);
+        const handled = await handleGoogleCallback();
         if(handled) return;
       }
     }catch(e){}
   }
-  // Check for existing local session
+  // Check for existing local session — but still pull cloud to stay in sync
   if(cu && acc[cu]){
+    // Launch from local immediately for speed, then sync cloud in background
     launch();
+    // Pull cloud data after launch — updates UI if cloud is newer
+    if(sbReady){
+      setTimeout(()=>pullFromCloud(), 500);
+    }
   } else {
     showScreen('login');
   }
 })();
+
+// Save on page unload / app backgrounding — matches desktop beforeunload handler
+// pagehide is more reliable than beforeunload on iOS Safari
+window.addEventListener('pagehide', function(){
+  if(!cu || !acc[cu]) return;
+  const d=acc[cu];
+  d._localTs=Date.now();
+  try{ localStorage.setItem('pd1_lastSaveTs', String(d._localTs)); }catch(e){}
+  LS.s('pd1_acc', acc);
+  // Best-effort cloud save on app background
+  if(sbReady){
+    saveAll();
+  }
+});
+window.addEventListener('beforeunload', function(){
+  if(!cu || !acc[cu]) return;
+  const d=acc[cu];
+  d._localTs=Date.now();
+  try{ localStorage.setItem('pd1_lastSaveTs', String(d._localTs)); }catch(e){}
+  LS.s('pd1_acc', acc);
+});
 
 // Register service worker
 if('serviceWorker' in navigator){
@@ -2671,12 +3108,11 @@ function _buildAipContext() {
     : '(no tasks)';
 
   const habits = p.habits || [];
-  const pendingHabits = habits.filter(h => !(log[today]||[]).includes(h.id));
-  const doneHabits = habits.filter(h => (log[today]||[]).includes(h.id));
+  const pendingHabits = habits.filter(h => !(log[today]||[]).map(Number).includes(+h.id));
+  const doneHabits = habits.filter(h => (log[today]||[]).map(Number).includes(+h.id));
   const habitList = pendingHabits.length ? pendingHabits.map(h => '• '+h.emoji+' '+h.name).join('\n') : '(all done)';
 
-  const todayStr = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  const todayEvs = getCalEvs().filter(e => e.date === todayStr);
+  const todayEvs = getCalEvs().filter(e => e.date === today);
   const eventList = todayEvs.length ? todayEvs.map(e => '• '+(e.timeStart||'')+' '+e.title).join('\n') : '(none)';
 
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);

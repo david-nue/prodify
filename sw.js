@@ -1,9 +1,11 @@
-const CACHE = 'prodify-v127';
+const CACHE = 'prodify-v128';
 const ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
+  '/app-mobile.js',
+  '/app-mobile.css',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

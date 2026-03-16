@@ -794,3 +794,108 @@ button,input,select,textarea{font-family:inherit;}
 .mob-loading-logo b{font-weight:700;color:var(--a2);}
 .mob-loading-spinner{width:28px;height:28px;border:2.5px solid var(--bdr);border-top-color:var(--a2);border-radius:50%;animation:mobSpin .7s linear infinite;}
 @keyframes mobSpin{to{transform:rotate(360deg);}}
+
+/* ══════════════════════════════════════════════
+   NOTES PAGE
+══════════════════════════════════════════════ */
+.mob-note-card{
+  background:var(--surf);
+  border:1px solid var(--bdr);
+  border-radius:14px;
+  padding:13px 14px;
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:background .15s, box-shadow .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mob-note-card:active{
+  background:var(--surf2);
+  box-shadow:var(--sh1);
+}
+.mob-note-card-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:4px;
+}
+.mob-note-card-title{
+  font-size:14px;
+  font-weight:700;
+  color:var(--ink);
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  line-height:1.3;
+}
+.mob-note-card-date{
+  font-size:10px;
+  font-weight:600;
+  color:var(--ink4);
+  flex-shrink:0;
+}
+.mob-note-card-preview{
+  font-size:12px;
+  color:var(--ink3);
+  line-height:1.55;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+/* Note editor */
+.mob-note-title-inp{
+  display:block;
+  width:100%;
+  background:var(--surf);
+  border:none;
+  border-bottom:1px solid var(--bdr);
+  outline:none;
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:-.4px;
+  color:var(--ink);
+  padding:14px 18px 12px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  flex-shrink:0;
+  transition:border-color .2s;
+}
+.mob-note-title-inp:focus{
+  border-bottom-color:var(--a2);
+}
+.mob-note-title-inp::placeholder{ color:var(--ink4); }
+.mob-note-content-ta{
+  flex:1;
+  display:block;
+  width:100%;
+  background:var(--surf);
+  border:none;
+  outline:none;
+  resize:none;
+  font-size:14px;
+  color:var(--ink2);
+  line-height:1.8;
+  padding:14px 18px 88px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  -webkit-overflow-scrolling:touch;
+  overflow-y:auto;
+  box-sizing:border-box;
+}
+.mob-note-content-ta::placeholder{ color:var(--ink4); font-style:italic; }
+
+/* Notes list meta row */
+.notes-list-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2px 2px 8px;
+  font-size:10px;
+  color:var(--ink4);
+}
+/* Notes page needs flex layout when active */
+#pg-notes.active{
+  display:flex;
+  flex-direction:column;
+}
