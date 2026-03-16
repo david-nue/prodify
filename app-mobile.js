@@ -508,7 +508,7 @@ function exportData(){
 function clearAll(){
   appConfirm('Clear all data?','This will erase all your tasks, journal entries, habits and events. This cannot be undone.','Clear').then(ok=>{
     if(!ok) return;
-    if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
+    if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
     acc[cu]=d; saveAll(); }
     renderAll(); toast('All data cleared');
   });
@@ -2884,7 +2884,7 @@ Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation
   "habits": [ { "name": "string", "emoji": "single emoji" } ],
   "events": [ { "title": "string", "date": "YYYY-MM-DD", "note": "string" } ]
 }
-Rules: project always created, 3-6 tasks, 1-3 habits max, 1-3 milestone events, realistic future dates.`;
+Rules: project always created, 3-6 tasks, 2-5 habits (user is Pro, no habit limit), 1-3 milestone events, realistic future dates.`;
 
   try {
     const resp = await fetch('/api/ai', {
@@ -2962,8 +2962,9 @@ function _mobRenderGoalPreview(plan) {
   // Store plan safely — avoids encoding issues in onclick
   window._pendingGoalPlan = plan;
   const applyBtn = document.createElement('button');
-  applyBtn.className = 'sh-btn';
+  applyBtn.className = 'sh-btn sh-btn-primary';
   applyBtn.style.marginTop = '14px';
+  applyBtn.style.fontFamily = 'inherit';
   applyBtn.textContent = '✅ Add everything to Prodify';
   applyBtn.onclick = () => _mobApplyGoalPlan(window._pendingGoalPlan);
   res.appendChild(applyBtn);
@@ -3012,9 +3013,9 @@ function _mobApplyGoalPlan(encodedPlan) {
 }
 
 function _mobGoalFmtDate(iso) {
+  // Mobile calendar uses YYYY-MM-DD format — pass through directly
   if (!iso) return '';
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  return iso;
 }
 
 function _mesc(str) {

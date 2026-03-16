@@ -547,7 +547,7 @@ button,input,select,textarea{font-family:inherit;}
 .emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px;}
 .emoji-btn{aspect-ratio:1;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf2);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 .emoji-btn.active{border-color:var(--a2);background:var(--al);}
-.sh-btn{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer;margin-top:16px;}
+.sh-btn{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer;margin-top:16px;font-family:inherit;}
 .sh-btn-primary{background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;}
 .sh-btn-primary:active{opacity:.9;}
 .sh-btn-secondary{background:var(--surf2);color:var(--ink2);border:1.5px solid var(--bdr);}
@@ -772,7 +772,10 @@ button,input,select,textarea{font-family:inherit;}
 .goal-section-title{font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
 .goal-items-list{display:flex;flex-direction:column;gap:6px;}
 .goal-item{background:var(--surf);border:1.5px solid var(--bdr);border-radius:12px;padding:10px 13px;}
-.goal-item-name{font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;}
+.goal-item-name{font-size:13px;font-weight:400;color:var(--ink);line-height:1.4;}
 .goal-item-sub{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.4;}
 .goal-item-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--a2);background:var(--al);border-radius:100px;padding:2px 8px;margin-top:4px;}
 
+
+/* ── GOAL SECTION fix ── */
+.goal-section{display:flex;flex-direction:column;gap:6px;}

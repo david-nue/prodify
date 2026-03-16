@@ -5867,7 +5867,7 @@ Respond ONLY with valid JSON — no preamble, no markdown fences, no explanation
 Rules:
 - project: always create one named after the goal
 - tasks: 3–6 concrete first steps, ordered by priority
-- habits: 1–3 daily/weekly habits that support the goal (max 3)
+- habits: 2–5 daily/weekly habits that support the goal (user is Pro, no limit)
 - events: 1–3 key milestone dates or check-in events spread over the timeline
 - Keep all text short and actionable
 - Use realistic future dates based on the goal timeline`;
@@ -5960,6 +5960,7 @@ function _renderGoalPreview(plan) {
   const applyBtn = document.createElement('button');
   applyBtn.className = 'aip-btn';
   applyBtn.style.marginTop = '16px';
+  applyBtn.style.fontFamily = 'inherit';
   applyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Add everything to Prodify';
   applyBtn.onclick = () => _applyGoalPlan(window._pendingGoalPlan);
   res.appendChild(applyBtn);
@@ -6027,11 +6028,9 @@ function _applyGoalPlan(planOrJson) {
 }
 
 function _goalFmtDate(iso) {
-  // Convert YYYY-MM-DD to "Mar 16, 2025" format used by calEvs
+  // Calendar uses YYYY-MM-DD format (calFmt output)
   if (!iso) return '';
-  const [y, m, d] = iso.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  return iso; // AI already returns YYYY-MM-DD — pass through directly
 }
 
 function _esc(str) {
