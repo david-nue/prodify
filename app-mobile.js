@@ -436,11 +436,6 @@ function launch(){
   goPg('home');
   if(isPro()) backupSnapshotToday();
   checkWaitlist().then(()=>_syncWaitlistUI());
-  // Show AI planner float button for Pro users
-  if(isPro()){
-    const btn = document.getElementById('mob-aip-float-btn');
-    if(btn) btn.style.display = 'flex';
-  }
   // Start cloud sync
   if(cu){
     startRealtimeSync(cu);
