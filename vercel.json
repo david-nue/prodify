@@ -4,39 +4,76 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' data: https: https://*.githubusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.prodify.cc https://cdn.jsdelivr.net https://api.anthropic.com https://api.emailjs.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.githubusercontent.com; font-src 'self' data: fonts.gstatic.com" }
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net https://cloud.umami.is; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; img-src 'self' data: https: https://*.githubusercontent.com https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.prodify.cc https://cloud.umami.is https://cdn.jsdelivr.net https://api.anthropic.com https://api.emailjs.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.githubusercontent.com; font-src 'self' data: fonts.gstatic.com"
+        }
       ]
     },
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
       "source": "/style.css",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     },
     {
       "source": "/app.js",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     },
     {
       "source": "/app-mobile.css",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     },
     {
       "source": "/app-mobile.js",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
-  ],
-  "rewrites": [
-    { "source": "/api/ai", "destination": "/api/ai.js" },
-    { "source": "/((?!sitemap\\.xml|robots\\.txt|manifest\\.json|sw\\.js|style\\.css|app\\.js|app-mobile\\.css|app-mobile\\.js|icons/|.*\\.png|.*\\.ico).*)", "destination": "/index.html" }
   ]
 }
