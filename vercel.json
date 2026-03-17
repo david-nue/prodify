@@ -56,24 +56,6 @@
           "value": "no-cache"
         }
       ]
-    },
-    {
-      "source": "/app-mobile.css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
-    },
-    {
-      "source": "/app-mobile.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
     }
   ]
 }
