@@ -5044,11 +5044,25 @@ async function aipSendMessage(containerId, userText) {
   }
 
   try {
+    const { data: { session: _aipSess } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
+    const _aipToken = _aipSess?.access_token || '';
     const response = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: apiMessages })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_aipToken}` },
+      body: JSON.stringify({ messages: apiMessages })
     });
+    // Handle rate limit
+    if (response.status === 429) {
+      const errData = await response.json();
+      throw new Error(errData.error || 'Daily limit reached. Try again tomorrow.');
+    }
+    if (response.status === 403) {
+      showUpgradeModal('AI Daily Planner');
+      throw new Error('pro_gate');
+    }
+    if (response.status === 401) {
+      throw new Error('Session expired. Please sign out and back in.');
+    }
     const data = await response.json();
     let aiText = (data.content || []).map(b => b.text || '').join('');
     if (!aiText) throw new Error(data.error?.message || 'Empty response');
@@ -5081,11 +5095,12 @@ async function aipSendMessage(containerId, userText) {
 
   } catch(err) {
     typingEl.remove();
+    _aipHistory.pop();
+    if (err.message === 'pro_gate') return; // upgrade modal already shown
     const errBubble = document.createElement('div');
     errBubble.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
     errBubble.textContent = '⚠️ ' + err.message;
     msgs.appendChild(errBubble);
-    _aipHistory.pop();
   } finally {
     if (sendBtn) sendBtn.disabled = false;
     if (input)   { input.disabled = false; input.focus(); }
