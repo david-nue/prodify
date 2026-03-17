@@ -7,13 +7,28 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
+
   <title>Prodify — Your Free All-in-One Productivity Workspace</title>
+
   <meta name="theme-color" content="#3A7D5E" />
-  <meta name="description" content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
-  <meta name="keywords" content="productivity app, free productivity workspace, task manager, habit tracker, focus timer, pomodoro timer, daily journal, project tracker, all in one productivity, prodify" />
+  <meta name="description"
+    content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
+  <meta name="keywords"
+    content="productivity app, free productivity workspace, task manager, habit tracker, focus timer, pomodoro timer, daily journal, project tracker, all in one productivity, prodify" />
+
   <link rel="canonical" href="https://prodify.cc" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
   <meta name="google-site-verification" content="mQM8QwAOefVY7ei2QcTQG8Su1HCEjtJ5UkJqkODwpqM" />
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-8CG26NBMY1');
+  </script>
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -49,7 +64,8 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://prodify.cc" />
   <meta property="og:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
-  <meta property="og:description" content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
+  <meta property="og:description"
+    content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
   <meta property="og:image" content="https://prodify.cc/og-preview.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -59,7 +75,8 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://prodify.cc" />
   <meta name="twitter:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
-  <meta name="twitter:description" content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
+  <meta name="twitter:description"
+    content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
   <meta name="twitter:image" content="https://prodify.cc/og-preview.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
@@ -69,7 +86,7 @@
   <script>
     // Detect mobile early in <head> so we can conditionally load CSS
     // Uses both screen width and user agent for reliability (handles tablets, DevTools resize, etc.)
-    (function() {
+    (function () {
       var w = window.innerWidth || document.documentElement.clientWidth || screen.width;
       var ua = navigator.userAgent || '';
       var uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
@@ -83,98 +100,269 @@
     }
   </script>
 
-<style>
-/* Desktop nav bar always on top — above widget drag z-index:1000 */
-.fltbar { z-index: 1001 !important; }
+  <style>
+    /* Desktop nav bar always on top — above widget drag z-index:1000 */
+    .fltbar {
+      z-index: 1001 !important;
+    }
 
-/* ── Desktop monthly calendar ── */
-.cal-month-grid{width:100%;}
-.cal-month-hd-row{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:4px;}
-.cal-month-hd{font-size:11px;font-weight:700;color:var(--ink4);text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.5px;}
-.cal-month-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.cal-day{min-height:80px;background:var(--surf);border:1px solid var(--bdr);border-radius:10px;padding:6px 8px;cursor:pointer;transition:background .15s;}
-.cal-day:hover{background:var(--surf2);}
-.cal-day.empty{background:transparent;border-color:transparent;cursor:default;}
-.cal-day.today{border-color:var(--a2);border-width:2px;}
-.cal-day-num{font-size:13px;font-weight:700;color:var(--ink3);margin-bottom:4px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
-.cal-day-num.today{background:var(--a2);color:#fff;}
-.cal-day-dots{display:flex;flex-wrap:wrap;gap:3px;}
-.cal-ev-dot{width:8px;height:8px;border-radius:50%;cursor:pointer;flex-shrink:0;}
-.cal-ev-dot:hover{transform:scale(1.4);}
-.cal-ev-dot-more{font-size:9px;font-weight:700;color:var(--ink4);}
-.cal-month-list{margin-top:20px;display:flex;flex-direction:column;gap:6px;}
-.cal-month-ev{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surf);border:1px solid var(--bdr);border-radius:12px;cursor:pointer;transition:background .15s;}
-.cal-month-ev:hover{background:var(--surf2);}
-.cal-month-ev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.cal-month-ev-body{flex:1;min-width:0;}
-.cal-month-ev-title{font-size:14px;font-weight:600;color:var(--ink);}
-.cal-month-ev-date{font-size:12px;color:var(--ink4);margin-top:1px;}
-.cal-month-ev-del{background:none;border:none;font-size:18px;color:var(--ink4);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0;}
-.cal-month-ev-del:hover{color:var(--red);}
-.cal-upcoming-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink4);padding:16px 0 8px;}
+    /* ── Desktop monthly calendar ── */
+    .cal-month-grid {
+      width: 100%;
+    }
 
-/* Journal edit mode — desktop */
-.jwje.jw-editing {
-  outline: 2px solid var(--a2);
-  background: var(--al);
-  border-radius: 10px;
-}
-.jwedit {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--ink4);
-  padding: 2px 4px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  transition: color .15s;
-  flex-shrink: 0;
-}
-.jwedit:hover { color: var(--a2); }
-.jwcancel-edit-btn {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink3);
-  background: var(--surf2);
-  border: 1.5px solid var(--bdr);
-  border-radius: 8px;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: color .15s, border-color .15s;
-}
-.jwcancel-edit-btn:hover { color: var(--red); border-color: var(--red); }
-.jwedit-mob { background:none; border:none; cursor:pointer; color:var(--ink4); padding:3px 6px; border-radius:4px; display:inline-flex; align-items:center; transition:color .15s; flex-shrink:0; }
-.jwedit-mob:hover, .jwedit-mob:active { color:var(--a2); }
-.fbs.on { fill:#F5B800 !important; stroke:#F5B800 !important; }
-</style>
+    .cal-month-hd-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      margin-bottom: 4px;
+    }
+
+    .cal-month-hd {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink4);
+      text-align: center;
+      padding: 4px 0;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .cal-month-body {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .cal-day {
+      min-height: 80px;
+      background: var(--surf);
+      border: 1px solid var(--bdr);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .cal-day:hover {
+      background: var(--surf2);
+    }
+
+    .cal-day.empty {
+      background: transparent;
+      border-color: transparent;
+      cursor: default;
+    }
+
+    .cal-day.today {
+      border-color: var(--a2);
+      border-width: 2px;
+    }
+
+    .cal-day-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink3);
+      margin-bottom: 4px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .cal-day-num.today {
+      background: var(--a2);
+      color: #fff;
+    }
+
+    .cal-day-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+
+    .cal-ev-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .cal-ev-dot:hover {
+      transform: scale(1.4);
+    }
+
+    .cal-ev-dot-more {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--ink4);
+    }
+
+    .cal-month-list {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cal-month-ev {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--surf);
+      border: 1px solid var(--bdr);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .cal-month-ev:hover {
+      background: var(--surf2);
+    }
+
+    .cal-month-ev-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cal-month-ev-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cal-month-ev-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .cal-month-ev-date {
+      font-size: 12px;
+      color: var(--ink4);
+      margin-top: 1px;
+    }
+
+    .cal-month-ev-del {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--ink4);
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .cal-month-ev-del:hover {
+      color: var(--red);
+    }
+
+    .cal-upcoming-hd {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--ink4);
+      padding: 16px 0 8px;
+    }
+
+    /* Journal edit mode — desktop */
+    .jwje.jw-editing {
+      outline: 2px solid var(--a2);
+      background: var(--al);
+      border-radius: 10px;
+    }
+
+    .jwedit {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ink4);
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .15s;
+      flex-shrink: 0;
+    }
+
+    .jwedit:hover {
+      color: var(--a2);
+    }
+
+    .jwcancel-edit-btn {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink3);
+      background: var(--surf2);
+      border: 1.5px solid var(--bdr);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+    }
+
+    .jwcancel-edit-btn:hover {
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    .jwedit-mob {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--ink4);
+      padding: 3px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      transition: color .15s;
+      flex-shrink: 0;
+    }
+
+    .jwedit-mob:hover,
+    .jwedit-mob:active {
+      color: var(--a2);
+    }
+
+    .fbs.on {
+      fill: #F5B800 !important;
+      stroke: #F5B800 !important;
+    }
+  </style>
 </head>
 
 <body>
-<script>
-  // ── MOBILE GUARD: runs synchronously before anything else renders ──
-  // PRODIFY_IS_MOBILE already set in <head>; just add the class here
-  if (window.PRODIFY_IS_MOBILE) {
-    document.documentElement.classList.add('is-mobile');
-  }
-</script>
-<style>
-  /* Hide all desktop content instantly on mobile — no flash */
-  html.is-mobile #g-tip,
-  html.is-mobile #sl,
-  html.is-mobile #sg,
-  html.is-mobile #sa,
-  html.is-mobile #sn,
-  html.is-mobile #app,
-  html.is-mobile .ov,
-  html.is-mobile #desktop-only-els,
-  html.is-mobile #fcs-ov,
-  html.is-mobile #fcs-exit-overlay,
-  html.is-mobile #fcs-mob-exit,
-  html.is-mobile #debug-log {
-    display: none !important;
-  }
-</style>
+  <script>
+    // ── MOBILE GUARD: runs synchronously before anything else renders ──
+    // PRODIFY_IS_MOBILE already set in <head>; just add the class here
+    if (window.PRODIFY_IS_MOBILE) {
+      document.documentElement.classList.add('is-mobile');
+    }
+  </script>
+  <style>
+    /* Hide all desktop content instantly on mobile — no flash */
+    html.is-mobile #g-tip,
+    html.is-mobile #sl,
+    html.is-mobile #sg,
+    html.is-mobile #sa,
+    html.is-mobile #sn,
+    html.is-mobile #app,
+    html.is-mobile .ov,
+    html.is-mobile #desktop-only-els,
+    html.is-mobile #fcs-ov,
+    html.is-mobile #fcs-exit-overlay,
+    html.is-mobile #fcs-mob-exit,
+    html.is-mobile #debug-log {
+      display: none !important;
+    }
+  </style>
 
   <script>
     // Hide landing screen instantly if user is logged in — prevents flash on refresh
@@ -212,7 +400,8 @@
     <section class="lhero-wrap">
       <div class="lhero-tag">Free productivity workspace</div>
       <h1 class="lh1">The workspace that<br />works <em>around you</em></h1>
-      <p class="lsub">One place for your tasks, journal, focus timer, habit tracker, and calendar. No switching. No clutter.
+      <p class="lsub">One place for your tasks, journal, focus timer, habit tracker, and calendar. No switching. No
+        clutter.
         Just you, working.</p>
 
       <!-- App preview screenshot -->
@@ -233,7 +422,9 @@
         <!-- Screenshot -->
         <div
           style="border-radius:0 0 14px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-top:none;box-shadow:0 32px 80px rgba(0,0,0,.5);">
-          <img src="/screenshot.png" alt="Prodify productivity workspace — task board, daily journal, focus timer, habit tracker and calendar in one app" style="width:100%;display:block;" />
+          <img src="/screenshot.png"
+            alt="Prodify productivity workspace — task board, daily journal, focus timer, habit tracker and calendar in one app"
+            style="width:100%;display:block;" />
         </div>
       </div>
 
@@ -986,13 +1177,20 @@
           <div class="fphdr pg-hdr-full">
             <div class="pg-hdr-inner" style="position:relative;">
               <div class="fptit">Calendar</div>
-              <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px;">
-                <button class="cwib" data-tip="Previous month" onclick="shiftW(-1)"><svg viewBox="0 0 10 10"><path d="M7 2L3 5l4 3"/></svg></button>
-                <span id="calwlbl" style="font-size:12px;font-weight:600;color:var(--ink2);min-width:148px;text-align:center;"></span>
-                <button class="cwib" data-tip="Next month" onclick="shiftW(1)"><svg viewBox="0 0 10 10"><path d="M3 2l4 3-4 3"/></svg></button>
+              <div
+                style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px;">
+                <button class="cwib" data-tip="Previous month" onclick="shiftW(-1)"><svg viewBox="0 0 10 10">
+                    <path d="M7 2L3 5l4 3" />
+                  </svg></button>
+                <span id="calwlbl"
+                  style="font-size:12px;font-weight:600;color:var(--ink2);min-width:148px;text-align:center;"></span>
+                <button class="cwib" data-tip="Next month" onclick="shiftW(1)"><svg viewBox="0 0 10 10">
+                    <path d="M3 2l4 3-4 3" />
+                  </svg></button>
               </div>
               <div style="display:flex;gap:6px;align-items:center;">
-                <button class="bol bsm" data-tip="Jump to current month" onclick="calOff=0;renderFullCal()">Today</button>
+                <button class="bol bsm" data-tip="Jump to current month"
+                  onclick="calOff=0;renderFullCal()">Today</button>
                 <button class="btn ba bsm" data-tip="Add a new event" onclick="openCalAdd()">+ Add Event</button>
               </div>
             </div>
@@ -1044,10 +1242,16 @@
           <div class="fpscroll" style="display:flex;align-items:center;justify-content:center;padding:40px 22px;">
             <div style="text-align:center;max-width:420px;">
               <div style="font-size:48px;margin-bottom:16px;">🤖</div>
-              <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:10px;">AI Daily Planner</div>
-              <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Tell Prodify what's on your plate and it'll build a realistic, prioritized schedule around your tasks, energy level, and available time. Coming with Pro.</p>
-              <button onclick="showUpgradeModal('AI Daily Planner')" style="padding:13px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Join the waitlist ✦</button>
-              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · Founding member rate from $3/mo</div>
+              <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:10px;">AI
+                Daily Planner</div>
+              <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Tell Prodify what's on
+                your plate and it'll build a realistic, prioritized schedule around your tasks, energy level, and
+                available time. Coming with Pro.</p>
+              <button onclick="showUpgradeModal('AI Daily Planner')"
+                style="padding:13px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Join
+                the waitlist ✦</button>
+              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · Founding member rate from
+                $3/mo</div>
             </div>
           </div>
         </div>
@@ -1076,16 +1280,20 @@
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
                     <div
                       style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>🤖</span>AI Daily Planner</div>
+                      <span>🤖</span>AI Daily Planner
+                    </div>
                     <div
                       style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>♾️</span>Unlimited habits</div>
+                      <span>♾️</span>Unlimited habits
+                    </div>
                     <div
                       style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>🎨</span>Custom colors</div>
+                      <span>🎨</span>Custom colors
+                    </div>
                     <div
                       style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>☁️</span>7-day backups</div>
+                      <span>☁️</span>7-day backups
+                    </div>
                   </div>
                   <div
                     style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:700;color:#fff;">
@@ -1177,7 +1385,8 @@
                   <div>
                     <div class="setlbl">Clear All Data</div>
                     <div class="setdsc">Erase all tasks, journal entries, habits &amp; events</div>
-                  </div><button class="bol bsm" style="color:var(--red);border-color:var(--red);" onclick="clearAllData()">Clear</button>
+                  </div><button class="bol bsm" style="color:var(--red);border-color:var(--red);"
+                    onclick="clearAllData()">Clear</button>
                 </div>
                 <div class="setrow">
                   <div>
@@ -1225,8 +1434,14 @@
                   </div><span style="color:var(--ink4);font-size:18px;">›</span>
                 </div>
               </div>
-              <button onclick="doSO()" style="width:100%;margin:4px 0 8px;padding:14px;border-radius:14px;border:1.5px solid var(--red);background:var(--rl,#FAEBEB);color:var(--red);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <button onclick="doSO()"
+                style="width:100%;margin:4px 0 8px;padding:14px;border-radius:14px;border:1.5px solid var(--red);background:var(--rl,#FAEBEB);color:var(--red);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
                 Sign out
               </button>
               <div style="text-align:center;padding:16px 0 80px;font-size:11px;color:var(--ink4);">
@@ -1308,7 +1523,9 @@
 
       <!-- Existing events on this day -->
       <div id="ev-day-events" style="display:none;padding:0 22px 4px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:8px;" id="ev-day-events-lbl">Events on this day</div>
+        <div
+          style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:8px;"
+          id="ev-day-events-lbl">Events on this day</div>
         <div id="ev-day-events-list"></div>
       </div>
 
@@ -1340,7 +1557,9 @@
       </div>
 
       <!-- hidden for data compat -->
-      <select class="fi" id="ev-s" style="display:none;"><option value="">None</option></select>
+      <select class="fi" id="ev-s" style="display:none;">
+        <option value="">None</option>
+      </select>
       <input type="hidden" id="ev-note" value="" />
 
       <div id="ev-del-row" style="display:none;padding:0 22px;margin-bottom:4px;">
@@ -1399,8 +1618,10 @@
         <img src="https://avatars.githubusercontent.com/u/266276185"
           style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 14px;background:rgba(255,255,255,.1);"
           onerror="this.style.display='none'" />
-        <div id="about-display-name" style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;">David N.</div>
-        <div id="about-username" style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:4px;">Creator of Prodify</div>
+        <div id="about-display-name" style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px;">David N.
+        </div>
+        <div id="about-username" style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:4px;">
+          Creator of Prodify</div>
 
       </div>
 
@@ -1509,44 +1730,47 @@
 
   <!-- ═══ DESKTOP SCRIPTS — skipped entirely on mobile ═══ -->
   <script>
-  if (!window.PRODIFY_IS_MOBILE) {
-    // Load Supabase
-    var _s1 = document.createElement('script');
-    _s1.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-    document.head.appendChild(_s1);
-    // Load emailjs
-    var _s2 = document.createElement('script');
-    _s2.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    _s2.onload = function() { emailjs.init('JKf5GRjODyTBor1xn'); };
-    document.head.appendChild(_s2);
-    // Stub for functions called from landing page before app.js loads
-    (function () {
-      var _q = [];
-      window.showAuth = function (tab) { _q.push(['showAuth', tab]); };
-      window.showUpgradeModal = function (f) { _q.push(['showUpgradeModal', f]); };
-      window._landingStubFlush = function () {
-        _q.forEach(function (c) {
-          if (window[c[0]] && window[c[0]]._isStub !== true) window[c[0]](c[1]);
-        });
-        _q = [];
+    if (!window.PRODIFY_IS_MOBILE) {
+      // Load Supabase
+      var _s1 = document.createElement('script');
+      _s1.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      document.head.appendChild(_s1);
+      // Load emailjs
+      var _s2 = document.createElement('script');
+      _s2.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+      _s2.onload = function () { emailjs.init('JKf5GRjODyTBor1xn'); };
+      document.head.appendChild(_s2);
+      // Stub for functions called from landing page before app.js loads
+      (function () {
+        var _q = [];
+        window.showAuth = function (tab) { _q.push(['showAuth', tab]); };
+        window.showUpgradeModal = function (f) { _q.push(['showUpgradeModal', f]); };
+        window._landingStubFlush = function () {
+          _q.forEach(function (c) {
+            if (window[c[0]] && window[c[0]]._isStub !== true) window[c[0]](c[1]);
+          });
+          _q = [];
+        };
+        window.showAuth._isStub = true;
+        window.showUpgradeModal._isStub = true;
+      })();
+      // Load app.js after Supabase is ready
+      _s1.onload = function () {
+        var _sa = document.createElement('script');
+        _sa.src = 'app.js';
+        _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
+        document.body.appendChild(_sa);
       };
-      window.showAuth._isStub = true;
-      window.showUpgradeModal._isStub = true;
-    })();
-    // Load app.js after Supabase is ready
-    _s1.onload = function() {
-      var _sa = document.createElement('script');
-      _sa.src = 'app.js';
-      _sa.onload = function() { if (window._landingStubFlush) window._landingStubFlush(); };
-      document.body.appendChild(_sa);
-    };
-  }
+    }
   </script>
 
   <!-- ═══ MOBILE APP — only active when PRODIFY_IS_MOBILE is true ═══ -->
   <div id="mobile-app-root"></div>
   <style>
-    #mobile-app-root { display: none; }
+    #mobile-app-root {
+      display: none;
+    }
+
     html.is-mobile #mobile-app-root {
       display: block;
       position: fixed;
@@ -1557,118 +1781,118 @@
   </style>
 
   <script>
-  if (window.PRODIFY_IS_MOBILE) {
-    document.addEventListener('DOMContentLoaded', function() {
-      var root = document.getElementById('mobile-app-root');
-      var tpl  = document.getElementById('mob-html-tpl');
-      if (!root || !tpl) return;
+    if (window.PRODIFY_IS_MOBILE) {
+      document.addEventListener('DOMContentLoaded', function () {
+        var root = document.getElementById('mobile-app-root');
+        var tpl = document.getElementById('mob-html-tpl');
+        if (!root || !tpl) return;
 
-      // Serialize all children of the template's DocumentFragment
-      var frag = tpl.content;
-      var tmp = document.createElement('div');
-      tmp.appendChild(frag.cloneNode(true));
-      root.innerHTML = tmp.innerHTML;
+        // Serialize all children of the template's DocumentFragment
+        var frag = tpl.content;
+        var tmp = document.createElement('div');
+        tmp.appendChild(frag.cloneNode(true));
+        root.innerHTML = tmp.innerHTML;
 
-      // Load mobile CSS
-      var link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = '/app-mobile.css';
-      document.head.appendChild(link);
+        // Load mobile CSS
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/app-mobile.css';
+        document.head.appendChild(link);
 
-      // Disable google button until JS is ready (prevents "not defined" if tapped early)
-      var gBtn = root.querySelector('#btn-google');
-      if (gBtn) gBtn.disabled = true;
+        // Disable google button until JS is ready (prevents "not defined" if tapped early)
+        var gBtn = root.querySelector('#btn-google');
+        if (gBtn) gBtn.disabled = true;
 
-      // Load Supabase then EmailJS then mobile JS
-      var sbScript = document.createElement('script');
-      sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-      sbScript.onload = function() {
-        var ejsScript = document.createElement('script');
-        ejsScript.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-        ejsScript.onload = function() {
-          if (typeof emailjs !== 'undefined') emailjs.init('JKf5GRjODyTBor1xn');
-          var mjs = document.createElement('script');
-          mjs.src = '/app-mobile.js';
-          mjs.onload = function() {
-            // Re-enable google button once JS is fully loaded
-            var gBtn2 = document.getElementById('btn-google');
-            if (gBtn2) gBtn2.disabled = false;
+        // Load Supabase then EmailJS then mobile JS
+        var sbScript = document.createElement('script');
+        sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+        sbScript.onload = function () {
+          var ejsScript = document.createElement('script');
+          ejsScript.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+          ejsScript.onload = function () {
+            if (typeof emailjs !== 'undefined') emailjs.init('JKf5GRjODyTBor1xn');
+            var mjs = document.createElement('script');
+            mjs.src = '/app-mobile.js';
+            mjs.onload = function () {
+              // Re-enable google button once JS is fully loaded
+              var gBtn2 = document.getElementById('btn-google');
+              if (gBtn2) gBtn2.disabled = false;
+            };
+            document.body.appendChild(mjs);
           };
-          document.body.appendChild(mjs);
-        };
-        ejsScript.onerror = function() {
-          // EmailJS failed to load — proceed without it (feedback will use Supabase only)
-          var mjs = document.createElement('script');
-          mjs.src = '/app-mobile.js';
-          mjs.onload = function() {
-            var gBtn2 = document.getElementById('btn-google');
-            if (gBtn2) gBtn2.disabled = false;
+          ejsScript.onerror = function () {
+            // EmailJS failed to load — proceed without it (feedback will use Supabase only)
+            var mjs = document.createElement('script');
+            mjs.src = '/app-mobile.js';
+            mjs.onload = function () {
+              var gBtn2 = document.getElementById('btn-google');
+              if (gBtn2) gBtn2.disabled = false;
+            };
+            document.body.appendChild(mjs);
           };
-          document.body.appendChild(mjs);
+          document.head.appendChild(ejsScript);
         };
-        document.head.appendChild(ejsScript);
-      };
-      document.head.appendChild(sbScript);
-    });
-  }
+        document.head.appendChild(sbScript);
+      });
+    }
   </script>
 
   <!-- Mobile HTML stored in <template> so browser doesn't parse/render it on desktop -->
 
   <!-- ═══ DESKTOP-ONLY ELEMENTS ═══ -->
   <div id="desktop-only-els" style="">
-  <div id="dsk-mo-confirm"
-    style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-    <div
-      style="background:var(--surf);border-radius:18px;padding:28px 28px 22px;max-width:320px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
-      <div id="dsk-mo-confirm-msg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;"></div>
-      <div id="dsk-mo-confirm-sub" style="font-size:12px;color:var(--ink3);margin-top:-8px;display:none;"></div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-        <button onclick="confirmResolve(false)"
-          style="padding:9px 20px;border-radius:10px;border:none;background:var(--bdr);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="dsk-mo-confirm-ok" onclick="confirmResolve(true)"
-          style="padding:9px 20px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+    <div id="dsk-mo-confirm"
+      style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+      <div
+        style="background:var(--surf);border-radius:18px;padding:28px 28px 22px;max-width:320px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+        <div id="dsk-mo-confirm-msg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;"></div>
+        <div id="dsk-mo-confirm-sub" style="font-size:12px;color:var(--ink3);margin-top:-8px;display:none;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+          <button onclick="confirmResolve(false)"
+            style="padding:9px 20px;border-radius:10px;border:none;background:var(--bdr);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
+          <button id="dsk-mo-confirm-ok" onclick="confirmResolve(true)"
+            style="padding:9px 20px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Delete</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    function fbRate(n) {
-      if (typeof _fbStar !== 'undefined') _fbStar = n;
-      document.querySelectorAll('.fbs').forEach(function (s) {
-        var v = parseInt(s.getAttribute('data-v'));
-        if (v <= n) {
-          s.setAttribute('fill', '#F5B800');
-          s.setAttribute('stroke', '#F5B800');
-        } else {
-          s.setAttribute('fill', 'rgba(255,255,255,0.2)');
-          s.setAttribute('stroke', 'rgba(255,255,255,0.4)');
-        }
-      });
-    }
-  </script>
+    <script>
+      function fbRate(n) {
+        if (typeof _fbStar !== 'undefined') _fbStar = n;
+        document.querySelectorAll('.fbs').forEach(function (s) {
+          var v = parseInt(s.getAttribute('data-v'));
+          if (v <= n) {
+            s.setAttribute('fill', '#F5B800');
+            s.setAttribute('stroke', '#F5B800');
+          } else {
+            s.setAttribute('fill', 'rgba(255,255,255,0.2)');
+            s.setAttribute('stroke', 'rgba(255,255,255,0.4)');
+          }
+        });
+      }
+    </script>
 
-  <!-- FOCUS MODE OVERLAY -->
-  <div class="ov" id="fcs-ov" onclick="fcsExit(event)">
-    <div class="mod" id="fcs-mod" style="width:min(420px,92vw);padding:28px 24px 24px;"
-      onclick="event.stopPropagation()">
-      <div id="fcs-body"></div>
+    <!-- FOCUS MODE OVERLAY -->
+    <div class="ov" id="fcs-ov" onclick="fcsExit(event)">
+      <div class="mod" id="fcs-mod" style="width:min(420px,92vw);padding:28px 24px 24px;"
+        onclick="event.stopPropagation()">
+        <div id="fcs-body"></div>
+      </div>
     </div>
-  </div>
-  <button id="fcs-exit-overlay" onclick="event.stopPropagation();fcsClose()">
-    <svg viewBox="0 0 24 24">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-    Exit Focus
-  </button>
-  <button id="fcs-mob-exit" onclick="fcsMobExit()">
-    <svg viewBox="0 0 24 24">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-    Exit Focus
-  </button>
+    <button id="fcs-exit-overlay" onclick="event.stopPropagation();fcsClose()">
+      <svg viewBox="0 0 24 24">
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+      Exit Focus
+    </button>
+    <button id="fcs-mob-exit" onclick="fcsMobExit()">
+      <svg viewBox="0 0 24 24">
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+      Exit Focus
+    </button>
 
-  <div id="debug-log"></div>
+    <div id="debug-log"></div>
   </div>
   <!-- EXPORT MODAL -->
 
@@ -1896,7 +2120,7 @@
     </div>
   </div>
 
-    <!-- MULTI-DEVICE BLOCK MODAL -->
+  <!-- MULTI-DEVICE BLOCK MODAL -->
   <div class="ov" id="mo-multi-device"
     style="z-index:99999;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">
     <div class="mod" style="max-width:380px;padding:0;overflow:hidden;text-align:center;">
@@ -1925,1143 +2149,1451 @@
 
   <template id="mob-html-tpl">
 
-<!-- ══ LOADING SCREEN ══ -->
-<div class="screen" id="screen-loading">
-  <div class="mob-loading-wrap">
-    <div class="mob-loading-logo">Pro<b>dify</b></div>
-    <div class="mob-loading-spinner"></div>
-  </div>
-</div>
-
-<!-- ══ LOGIN SCREEN ══ -->
-<div class="screen" id="screen-login">
-  <!-- Animated orbs matching desktop -->
-  <div class="login-orb1"></div>
-  <div class="login-orb2"></div>
-
-  <!-- Top: dark branding section -->
-  <div class="login-top">
-    <div class="login-tag">Free productivity workspace</div>
-    <div class="login-logo">Pro<b>dify</b></div>
-    <h1 class="login-headline">The workspace that<br/>works <em>around you</em></h1>
-    <p class="login-sub">Tasks, journal, focus timer,<br/>habits & calendar — all in one place.</p>
-  </div>
-
-  <!-- CTA: borderless, centered -->
-  <div class="login-card">
-    <button class="btn-google" id="btn-google" onclick="doGoogleAuth()">
-      <svg width="18" height="18" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/>
-      </svg>
-      Continue with Google
-    </button>
-    <div id="offline-banner" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,100,100,.35);border-radius:10px;font-size:12px;font-weight:600;color:rgba(255,180,180,.9);text-align:center;">
-      ⚡ No connection — check your internet and try again
-    </div>
-    <div class="login-err" id="login-err"></div>
-    <div class="login-note">Free to start · No credit card needed<br/>More sign-in options coming soon</div>
-  </div>
-
-  <!-- Feature list in dark zone -->
-  <div class="login-features">
-    <div class="login-feat">
-      <div class="login-feat-icon">📋</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">Task Board</div>
-        <div class="login-feat-desc">Kanban-style — To Do, In Progress, Done. Swipe to complete.</div>
+    <!-- ══ LOADING SCREEN ══ -->
+    <div class="screen" id="screen-loading">
+      <div class="mob-loading-wrap">
+        <div class="mob-loading-logo">Pro<b>dify</b></div>
+        <div class="mob-loading-spinner"></div>
       </div>
     </div>
-    <div class="login-feat">
-      <div class="login-feat-icon">💪</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">Habit Tracker</div>
-        <div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div>
-      </div>
-    </div>
-    <div class="login-feat">
-      <div class="login-feat-icon">⏱️</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">Focus Timer</div>
-        <div class="login-feat-desc">Pomodoro sessions — 25 min focus, 5 min breaks. Track your output.</div>
-      </div>
-    </div>
-    <div class="login-feat">
-      <div class="login-feat-icon">📓</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">Daily Journal</div>
-        <div class="login-feat-desc">Write freely, pick a mood, and build a daily reflection habit.</div>
-      </div>
-    </div>
-    <div class="login-feat">
-      <div class="login-feat-icon">📅</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">Calendar</div>
-        <div class="login-feat-desc">Schedule view — your upcoming events in a clean vertical list.</div>
-      </div>
-    </div>
-    <div class="login-feat">
-      <div class="login-feat-icon">🤖</div>
-      <div class="login-feat-body">
-        <div class="login-feat-title">AI Daily Planner</div>
-        <div class="login-feat-desc">Let AI build your day around your tasks and energy.</div>
-      </div>
-      <div class="login-feat-badge">Pro</div>
-    </div>
-  </div>
-</div>
 
-<!-- ══ ONBOARDING SCREEN ══ -->
-<div class="screen" id="screen-onboarding">
-  <div class="ob-wrap">
-    <div class="ob-progress">
-      <div class="ob-prog-track"><div class="ob-prog-fill" id="ob-fill" style="width:25%"></div></div>
-      <div class="ob-prog-lbl" id="ob-prog-lbl">Step 1 of 4</div>
-    </div>
+    <!-- ══ LOGIN SCREEN ══ -->
+    <div class="screen" id="screen-login">
+      <!-- Animated orbs matching desktop -->
+      <div class="login-orb1"></div>
+      <div class="login-orb2"></div>
 
-    <!-- Step 0: Name -->
-    <div class="ob-panel active" id="mob-ob-0">
-      <span class="ob-emoji">👋</span>
-      <h2 class="ob-title">What should<br/>we call you?</h2>
-      <p class="ob-sub">This is how Prodify greets you each day. You can change it anytime.</p>
-      <input class="ob-input" id="ob-name" type="text" placeholder="Your name or nickname…" autocapitalize="words" maxlength="28" onkeydown="if(event.key==='Enter')obNext(0)"/>
-      <button class="ob-btn" onclick="obNext(0)">Continue →</button>
-    </div>
+      <!-- Top: dark branding section -->
+      <div class="login-top">
+        <div class="login-tag">Free productivity workspace</div>
+        <div class="login-logo">Pro<b>dify</b></div>
+        <h1 class="login-headline">The workspace that<br />works <em>around you</em></h1>
+        <p class="login-sub">Tasks, journal, focus timer,<br />habits & calendar — all in one place.</p>
+      </div>
 
-    <!-- Step 1: Use case -->
-    <div class="ob-panel" id="mob-ob-1">
-      <span class="ob-emoji">🎯</span>
-      <h2 class="ob-title">How will you<br/>use Prodify?</h2>
-      <p class="ob-sub">We'll tailor your experience to how you work.</p>
-      <div class="ob-uc-grid">
-        <div class="ob-uc-card" data-uc="student" onclick="obPickUC(this,'student')">
-          <div class="ob-uc-icon">🎓</div>
-          <div><span class="ob-uc-label">Student</span><span class="ob-uc-desc">Assignments, study sessions & deadlines</span></div>
+      <!-- CTA: borderless, centered -->
+      <div class="login-card">
+        <button class="btn-google" id="btn-google" onclick="doGoogleAuth()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z" />
+          </svg>
+          Continue with Google
+        </button>
+        <div id="offline-banner"
+          style="display:none;margin-top:10px;padding:9px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,100,100,.35);border-radius:10px;font-size:12px;font-weight:600;color:rgba(255,180,180,.9);text-align:center;">
+          ⚡ No connection — check your internet and try again
         </div>
-        <div class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
-          <div class="ob-uc-icon">💼</div>
-          <div><span class="ob-uc-label">Work</span><span class="ob-uc-desc">Projects, meetings & team goals</span></div>
-        </div>
-        <div class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
-          <div class="ob-uc-icon">🌱</div>
-          <div><span class="ob-uc-label">Personal</span><span class="ob-uc-desc">Habits, journaling & life goals</span></div>
-        </div>
+        <div class="login-err" id="login-err"></div>
+        <div class="login-note">Free to start · No credit card needed<br />More sign-in options coming soon</div>
       </div>
-      <button class="ob-btn" onclick="obNext(1)">Continue →</button>
-    </div>
 
-    <!-- Step 2: Accent color -->
-    <div class="ob-panel" id="mob-ob-2">
-      <span class="ob-emoji">🎨</span>
-      <h2 class="ob-title">Pick your<br/>accent color</h2>
-      <p class="ob-sub">Forest, Ocean, and Violet are free.</p>
-      <div class="ob-colors">
-        <div class="ob-color-btn active" data-key="green" onclick="obPickColor(this,'green')">
-          <div class="ob-color-swatch" style="background:linear-gradient(135deg,#2A5C44,#4A9D74)"></div>
-          <div class="ob-color-name">Forest</div>
-        </div>
-        <div class="ob-color-btn" data-key="blue" onclick="obPickColor(this,'blue')">
-          <div class="ob-color-swatch" style="background:linear-gradient(135deg,#1E4A7C,#2563EB)"></div>
-          <div class="ob-color-name">Ocean</div>
-        </div>
-        <div class="ob-color-btn" data-key="purple" onclick="obPickColor(this,'purple')">
-          <div class="ob-color-swatch" style="background:linear-gradient(135deg,#4A2C6E,#7C3AED)"></div>
-          <div class="ob-color-name">Violet</div>
-        </div>
-      </div>
-      <button class="ob-btn" onclick="obNext(2)">Looks good →</button>
-    </div>
-
-    <!-- Step 3: Theme -->
-    <div class="ob-panel" id="mob-ob-3">
-      <span class="ob-emoji">✨</span>
-      <h2 class="ob-title">Choose your<br/>vibe</h2>
-      <p class="ob-sub">Pick a theme — switch any time in Settings.</p>
-      <div class="ob-theme-grid">
-        <div class="ob-theme-card active" id="mob-ob-theme-light" onclick="obPickTheme(this,'light')">
-          <div class="ob-theme-preview ob-tp-light">
-            <div class="ob-tp-bar"></div>
-            <div class="ob-tp-card"></div>
-            <div class="ob-tp-card ob-tp-card-sm"></div>
+      <!-- Feature list in dark zone -->
+      <div class="login-features">
+        <div class="login-feat">
+          <div class="login-feat-icon">📋</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Task Board</div>
+            <div class="login-feat-desc">Kanban-style — To Do, In Progress, Done. Swipe to complete.</div>
           </div>
-          <div class="ob-theme-lbl">Light</div>
         </div>
-        <div class="ob-theme-card" id="mob-ob-theme-dark" onclick="obPickTheme(this,'dark')">
-          <div class="ob-theme-preview ob-tp-dark">
-            <div class="ob-tp-bar"></div>
-            <div class="ob-tp-card"></div>
-            <div class="ob-tp-card ob-tp-card-sm"></div>
+        <div class="login-feat">
+          <div class="login-feat-icon">💪</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Habit Tracker</div>
+            <div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div>
           </div>
-          <div class="ob-theme-lbl">Dark</div>
+        </div>
+        <div class="login-feat">
+          <div class="login-feat-icon">⏱️</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Focus Timer</div>
+            <div class="login-feat-desc">Pomodoro sessions — 25 min focus, 5 min breaks. Track your output.</div>
+          </div>
+        </div>
+        <div class="login-feat">
+          <div class="login-feat-icon">📓</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Daily Journal</div>
+            <div class="login-feat-desc">Write freely, pick a mood, and build a daily reflection habit.</div>
+          </div>
+        </div>
+        <div class="login-feat">
+          <div class="login-feat-icon">📅</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Calendar</div>
+            <div class="login-feat-desc">Schedule view — your upcoming events in a clean vertical list.</div>
+          </div>
+        </div>
+        <div class="login-feat">
+          <div class="login-feat-icon">🤖</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">AI Daily Planner</div>
+            <div class="login-feat-desc">Let AI build your day around your tasks and energy.</div>
+          </div>
+          <div class="login-feat-badge">Pro</div>
         </div>
       </div>
-      <button class="ob-btn" onclick="obNext(3)">Continue →</button>
     </div>
 
-    <!-- Step 4: All set -->
-    <div class="ob-panel" id="mob-ob-4">
-      <div class="ob-allset">
-        <div class="ob-allset-icon"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <h2 class="ob-title" id="mob-ob-done-title">You're all set!</h2>
-        <p class="ob-sub" id="mob-ob-done-sub">Your workspace is ready. Time to get things done.</p>
-        <div class="ob-allset-feats">
-          <div class="ob-allset-feat"><div class="ob-allset-feat-icon">📋</div><div class="ob-allset-feat-text"><b>Tasks</b> — stay on top of everything</div></div>
-          <div class="ob-allset-feat"><div class="ob-allset-feat-icon">📓</div><div class="ob-allset-feat-text"><b>Journal</b> — reflect and grow each day</div></div>
-          <div class="ob-allset-feat"><div class="ob-allset-feat-icon">⏱️</div><div class="ob-allset-feat-text"><b>Focus timer</b> — deep work made easy</div></div>
-          <div class="ob-allset-feat"><div class="ob-allset-feat-icon">💪</div><div class="ob-allset-feat-text"><b>Habits</b> — build streaks that stick</div></div>
-        </div>
-        <button class="ob-btn" style="width:100%;" onclick="obFinish()">Open my workspace →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ APP SCREEN ══ -->
-<div class="screen" id="screen-app">
-  <div class="shell">
-    <div class="topbar">
-      <div class="tb-logo">Pro<b>dify</b></div>
-      <div style="flex:1"></div>
-      <div class="tb-avatar" id="tb-avatar" onclick="toggleDD()">
-        <span id="tb-avatar-text">U</span>
-        <div class="tb-dd" id="tb-dd">
-          <div class="ddhd">
-            <div class="ddav" id="dd-av">U</div>
-            <div class="ddnm" id="dd-nm">—</div>
-            <div class="ddun" id="dd-un">—</div>
+    <!-- ══ ONBOARDING SCREEN ══ -->
+    <div class="screen" id="screen-onboarding">
+      <div class="ob-wrap">
+        <div class="ob-progress">
+          <div class="ob-prog-track">
+            <div class="ob-prog-fill" id="ob-fill" style="width:25%"></div>
           </div>
-          <div class="ddbd">
-            <button class="ddi" onclick="event.stopPropagation();ddGo('profile')">
-              <span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="6" cy="4" r="2.5"/><path d="M1 11c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg></span>
-              View Profile
-            </button>
-            <button class="ddi" onclick="event.stopPropagation();ddGo('settings')">
-              <span class="ddic"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="1.5"/><path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.6 2.6l1 1M8.4 8.4l1 1M9.4 2.6l-1 1M3.6 8.4l-1 1"/></svg></span>
-              Settings
-            </button>
-            <div class="dddiv"></div>
-            <div class="ddi ddi-soon">
-              <span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="4.5" cy="4" r="1.8"/><path d="M1 10c0-1.8 1.6-3 3.5-3"/><circle cx="8.5" cy="4" r="1.8"/><path d="M12 10c0-1.8-1.6-3-3.5-3s-3.5 1.2-3.5 3"/></svg></span>
-              Team Workspace
-              <span class="ddi-soon-badge">Soon</span>
+          <div class="ob-prog-lbl" id="ob-prog-lbl">Step 1 of 4</div>
+        </div>
+
+        <!-- Step 0: Name -->
+        <div class="ob-panel active" id="mob-ob-0">
+          <span class="ob-emoji">👋</span>
+          <h2 class="ob-title">What should<br />we call you?</h2>
+          <p class="ob-sub">This is how Prodify greets you each day. You can change it anytime.</p>
+          <input class="ob-input" id="ob-name" type="text" placeholder="Your name or nickname…" autocapitalize="words"
+            maxlength="28" onkeydown="if(event.key==='Enter')obNext(0)" />
+          <button class="ob-btn" onclick="obNext(0)">Continue →</button>
+        </div>
+
+        <!-- Step 1: Use case -->
+        <div class="ob-panel" id="mob-ob-1">
+          <span class="ob-emoji">🎯</span>
+          <h2 class="ob-title">How will you<br />use Prodify?</h2>
+          <p class="ob-sub">We'll tailor your experience to how you work.</p>
+          <div class="ob-uc-grid">
+            <div class="ob-uc-card" data-uc="student" onclick="obPickUC(this,'student')">
+              <div class="ob-uc-icon">🎓</div>
+              <div><span class="ob-uc-label">Student</span><span class="ob-uc-desc">Assignments, study sessions &
+                  deadlines</span></div>
             </div>
-            <div class="dddiv"></div>
-            <button class="ddi dng" onclick="event.stopPropagation();doSignOut()">
-              <span class="ddic"><svg viewBox="0 0 12 12"><path d="M8 2h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H8M5 8.5L8 6 5 3.5M8 6H1"/></svg></span>
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="pages">
-
-      <!-- HOME -->
-      <div class="page active" id="pg-home" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:100px;">
-        <div class="home-header">
-          <div class="home-greet" id="home-greet">Good morning!</div>
-          <div class="home-date" id="home-date">—</div>
-          <div class="home-quote">
-            <div class="home-quote-text" id="hqt">—</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-              <div class="home-quote-author" id="hqa">—</div>
-              <button onclick="shuffleQuote()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;transition:color .15s;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.4)'">↻</button>
+            <div class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
+              <div class="ob-uc-icon">💼</div>
+              <div><span class="ob-uc-label">Work</span><span class="ob-uc-desc">Projects, meetings & team goals</span>
+              </div>
+            </div>
+            <div class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
+              <div class="ob-uc-icon">🌱</div>
+              <div><span class="ob-uc-label">Personal</span><span class="ob-uc-desc">Habits, journaling & life
+                  goals</span></div>
             </div>
           </div>
+          <button class="ob-btn" onclick="obNext(1)">Continue →</button>
         </div>
-        <div class="home-section" style="margin-top:18px;">
-          <div class="home-sh"><div class="home-sh-title">Today at a glance</div></div>
-          <div id="home-glance"></div>
+
+        <!-- Step 2: Accent color -->
+        <div class="ob-panel" id="mob-ob-2">
+          <span class="ob-emoji">🎨</span>
+          <h2 class="ob-title">Pick your<br />accent color</h2>
+          <p class="ob-sub">Forest, Ocean, and Violet are free.</p>
+          <div class="ob-colors">
+            <div class="ob-color-btn active" data-key="green" onclick="obPickColor(this,'green')">
+              <div class="ob-color-swatch" style="background:linear-gradient(135deg,#2A5C44,#4A9D74)"></div>
+              <div class="ob-color-name">Forest</div>
+            </div>
+            <div class="ob-color-btn" data-key="blue" onclick="obPickColor(this,'blue')">
+              <div class="ob-color-swatch" style="background:linear-gradient(135deg,#1E4A7C,#2563EB)"></div>
+              <div class="ob-color-name">Ocean</div>
+            </div>
+            <div class="ob-color-btn" data-key="purple" onclick="obPickColor(this,'purple')">
+              <div class="ob-color-swatch" style="background:linear-gradient(135deg,#4A2C6E,#7C3AED)"></div>
+              <div class="ob-color-name">Violet</div>
+            </div>
+          </div>
+          <button class="ob-btn" onclick="obNext(2)">Looks good →</button>
+        </div>
+
+        <!-- Step 3: Theme -->
+        <div class="ob-panel" id="mob-ob-3">
+          <span class="ob-emoji">✨</span>
+          <h2 class="ob-title">Choose your<br />vibe</h2>
+          <p class="ob-sub">Pick a theme — switch any time in Settings.</p>
+          <div class="ob-theme-grid">
+            <div class="ob-theme-card active" id="mob-ob-theme-light" onclick="obPickTheme(this,'light')">
+              <div class="ob-theme-preview ob-tp-light">
+                <div class="ob-tp-bar"></div>
+                <div class="ob-tp-card"></div>
+                <div class="ob-tp-card ob-tp-card-sm"></div>
+              </div>
+              <div class="ob-theme-lbl">Light</div>
+            </div>
+            <div class="ob-theme-card" id="mob-ob-theme-dark" onclick="obPickTheme(this,'dark')">
+              <div class="ob-theme-preview ob-tp-dark">
+                <div class="ob-tp-bar"></div>
+                <div class="ob-tp-card"></div>
+                <div class="ob-tp-card ob-tp-card-sm"></div>
+              </div>
+              <div class="ob-theme-lbl">Dark</div>
+            </div>
+          </div>
+          <button class="ob-btn" onclick="obNext(3)">Continue →</button>
+        </div>
+
+        <!-- Step 4: All set -->
+        <div class="ob-panel" id="mob-ob-4">
+          <div class="ob-allset">
+            <div class="ob-allset-icon"><svg viewBox="0 0 24 24">
+                <path d="M20 6L9 17l-5-5" />
+              </svg></div>
+            <h2 class="ob-title" id="mob-ob-done-title">You're all set!</h2>
+            <p class="ob-sub" id="mob-ob-done-sub">Your workspace is ready. Time to get things done.</p>
+            <div class="ob-allset-feats">
+              <div class="ob-allset-feat">
+                <div class="ob-allset-feat-icon">📋</div>
+                <div class="ob-allset-feat-text"><b>Tasks</b> — stay on top of everything</div>
+              </div>
+              <div class="ob-allset-feat">
+                <div class="ob-allset-feat-icon">📓</div>
+                <div class="ob-allset-feat-text"><b>Journal</b> — reflect and grow each day</div>
+              </div>
+              <div class="ob-allset-feat">
+                <div class="ob-allset-feat-icon">⏱️</div>
+                <div class="ob-allset-feat-text"><b>Focus timer</b> — deep work made easy</div>
+              </div>
+              <div class="ob-allset-feat">
+                <div class="ob-allset-feat-icon">💪</div>
+                <div class="ob-allset-feat-text"><b>Habits</b> — build streaks that stick</div>
+              </div>
+            </div>
+            <button class="ob-btn" style="width:100%;" onclick="obFinish()">Open my workspace →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ APP SCREEN ══ -->
+    <div class="screen" id="screen-app">
+      <div class="shell">
+        <div class="topbar">
+          <div class="tb-logo">Pro<b>dify</b></div>
+          <div style="flex:1"></div>
+          <div class="tb-avatar" id="tb-avatar" onclick="toggleDD()">
+            <span id="tb-avatar-text">U</span>
+            <div class="tb-dd" id="tb-dd">
+              <div class="ddhd">
+                <div class="ddav" id="dd-av">U</div>
+                <div class="ddnm" id="dd-nm">—</div>
+                <div class="ddun" id="dd-un">—</div>
+              </div>
+              <div class="ddbd">
+                <button class="ddi" onclick="event.stopPropagation();ddGo('profile')">
+                  <span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"
+                      stroke-linecap="round">
+                      <circle cx="6" cy="4" r="2.5" />
+                      <path d="M1 11c0-2.5 2.2-4 5-4s5 1.5 5 4" />
+                    </svg></span>
+                  View Profile
+                </button>
+                <button class="ddi" onclick="event.stopPropagation();ddGo('settings')">
+                  <span class="ddic"><svg viewBox="0 0 12 12">
+                      <circle cx="6" cy="6" r="1.5" />
+                      <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11M2.6 2.6l1 1M8.4 8.4l1 1M9.4 2.6l-1 1M3.6 8.4l-1 1" />
+                    </svg></span>
+                  Settings
+                </button>
+                <div class="dddiv"></div>
+                <div class="ddi ddi-soon">
+                  <span class="ddic"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"
+                      stroke-linecap="round">
+                      <circle cx="4.5" cy="4" r="1.8" />
+                      <path d="M1 10c0-1.8 1.6-3 3.5-3" />
+                      <circle cx="8.5" cy="4" r="1.8" />
+                      <path d="M12 10c0-1.8-1.6-3-3.5-3s-3.5 1.2-3.5 3" />
+                    </svg></span>
+                  Team Workspace
+                  <span class="ddi-soon-badge">Soon</span>
+                </div>
+                <div class="dddiv"></div>
+                <button class="ddi dng" onclick="event.stopPropagation();doSignOut()">
+                  <span class="ddic"><svg viewBox="0 0 12 12">
+                      <path d="M8 2h2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H8M5 8.5L8 6 5 3.5M8 6H1" />
+                    </svg></span>
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pages">
+
+          <!-- HOME -->
+          <div class="page active" id="pg-home"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:100px;">
+            <div class="home-header">
+              <div class="home-greet" id="home-greet">Good morning!</div>
+              <div class="home-date" id="home-date">—</div>
+              <div class="home-quote">
+                <div class="home-quote-text" id="hqt">—</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                  <div class="home-quote-author" id="hqa">—</div>
+                  <button onclick="shuffleQuote()"
+                    style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;transition:color .15s;"
+                    onmouseover="this.style.color='rgba(255,255,255,.8)'"
+                    onmouseout="this.style.color='rgba(255,255,255,.4)'">↻</button>
+                </div>
+              </div>
+            </div>
+            <div class="home-section" style="margin-top:18px;">
+              <div class="home-sh">
+                <div class="home-sh-title">Today at a glance</div>
+              </div>
+              <div id="home-glance"></div>
+            </div>
+          </div>
+
+          <!-- TASKS -->
+          <div class="page" id="pg-tasks" style="padding-bottom:100px;">
+            <div id="task-list"></div>
+            <button class="fab" onclick="openSheet('sh-task')">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- JOURNAL -->
+          <div class="page" id="pg-journal" style="bottom:240px;">
+            <div class="jw-search-bar" id="jw-search-bar" style="display:none;">
+              <div class="jw-search-inner">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+                <input class="jw-search-inp" id="jw-search-inp" type="text" placeholder="Search entries…"
+                  oninput="jwSearch(this.value)" />
+                <button class="jw-search-clear" id="jw-search-clear" onclick="jwClearSearch()" style="display:none;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="jwlist" id="journal-list"></div>
+          </div>
+          <div class="jwadd hidden">
+            <div class="jwtpl-row" id="jwtpl-mob" style="display:none;">
+              <button class="jw-tpl-chip" onclick="jwUseTpl(0)" title="Morning Intention">🌅 Morning</button>
+              <button class="jw-tpl-chip" onclick="jwUseTpl(1)" title="Evening Reflection">🌙 Evening</button>
+              <button class="jw-tpl-chip" onclick="jwUseTpl(2)" title="Gratitude">🙏 Gratitude</button>
+              <button class="jw-tpl-chip" onclick="jwUseTpl(3)" title="Brain Dump">🧠 Dump</button>
+            </div>
+            <textarea class="jwta" id="jwta-mob" rows="2" placeholder="What's on your mind today?"></textarea>
+            <div class="jwmood-row" id="jwmood-row-mob">
+              <span class="jwmood-cur-lbl">Mood:</span>
+              <button class="jwmood-cur-btn" id="jwmcur-mob" onclick="jwToggleMoodPop()">
+                😄 <span class="jwmood-cur-txt" id="jwmcurtxt-mob">Great</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              <div class="jwmood-pop" id="jwmpop-mob">
+                <button class="jwmpop-btn on" data-m="0" onclick="jwPickMood(0)">😄<span
+                    class="jwmpop-lbl">Great</span></button>
+                <button class="jwmpop-btn" data-m="1" onclick="jwPickMood(1)">🙂<span
+                    class="jwmpop-lbl">Good</span></button>
+                <button class="jwmpop-btn" data-m="2" onclick="jwPickMood(2)">😐<span
+                    class="jwmpop-lbl">Okay</span></button>
+                <button class="jwmpop-btn" data-m="3" onclick="jwPickMood(3)">😔<span
+                    class="jwmpop-lbl">Low</span></button>
+                <button class="jwmpop-btn" data-m="4" onclick="jwPickMood(4)">😴<span
+                    class="jwmpop-lbl">Tired</span></button>
+                <button class="jwmpop-btn" data-m="5" onclick="jwPickMood(5)">😤<span
+                    class="jwmpop-lbl">Stressed</span></button>
+                <button class="jwmpop-btn" data-m="6" onclick="jwPickMood(6)">😰<span
+                    class="jwmpop-lbl">Anxious</span></button>
+                <button class="jwmpop-btn" data-m="7" onclick="jwPickMood(7)">🔥<span
+                    class="jwmpop-lbl">Pumped</span></button>
+                <button class="jwmpop-btn" data-m="8" onclick="jwPickMood(8)">🧘<span
+                    class="jwmpop-lbl">Calm</span></button>
+                <button class="jwmpop-btn" data-m="9" onclick="jwPickMood(9)">🥰<span class="jwmpop-lbl">In
+                    Love</span></button>
+              </div>
+            </div>
+            <div class="jwfoot">
+              <button class="jwutil-btn" onclick="jwToggleTpl()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                Templates
+              </button>
+              <button class="jwutil-btn" onclick="jwShufflePrompt()">✨ Prompt</button>
+              <button class="jwutil-btn" id="jw-search-toggle" onclick="jwToggleSearch()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </button>
+              <button class="jwsave-btn" onclick="jwSave()">Save</button>
+            </div>
+          </div>
+
+          <!-- NOTES -->
+          <div class="page" id="pg-notes" style="padding-bottom:88px;">
+            <!-- List view -->
+            <div id="mob-notes-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+              <div class="fphdr">
+                <div class="fptit">Notes</div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button id="notes-search-btn" class="jwutil-btn" onclick="notesToggleSearch()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                  </button>
+                  <button id="notes-sort-btn" class="jwutil-btn" onclick="notesToggleSort()" title="Sort A–Z">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <path d="M3 6h18M7 12h10M11 18h2" />
+                    </svg>
+                  </button>
+                  <button onclick="notesNew()"
+                    style="background:none;border:none;cursor:pointer;font-size:24px;color:var(--a2);padding:2px 6px;font-weight:300;line-height:1;">+</button>
+                </div>
+              </div>
+              <!-- Search bar (hidden by default) -->
+              <div id="notes-search-bar" class="jw-search-bar" style="display:none;">
+                <div class="jw-search-inner">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                  <input class="jw-search-inp" id="notes-search-inp" type="text" placeholder="Search notes…"
+                    oninput="notesSearch(this.value)" />
+                  <button class="jw-search-clear" id="notes-search-clear" onclick="notesClearSearch()"
+                    style="display:none;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div id="mob-notes-list"
+                style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 16px 16px;"></div>
+            </div>
+            <!-- Editor view -->
+            <div id="mob-notes-editor-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
+              <div class="fphdr">
+                <button onclick="notesBack()" class="set-back" style="min-width:60px;">
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <path d="M10 3L5 8l5 5" />
+                  </svg>Notes
+                </button>
+                <div id="mob-note-editor-hdr" class="fptit"
+                  style="flex:1;text-align:center;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;">
+                  Untitled</div>
+                <button onclick="deleteNote()"
+                  style="min-width:60px;display:flex;justify-content:flex-end;align-items:center;background:none;border:none;cursor:pointer;color:var(--ink4);padding:0 4px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                  </svg>
+                </button>
+              </div>
+              <input id="mob-note-title-inp" class="mob-note-title-inp" type="text" placeholder="Title…"
+                oninput="noteEditorInput()" autocomplete="off" />
+              <textarea id="mob-note-content-ta" class="mob-note-content-ta" placeholder="Start writing…"
+                oninput="noteEditorInput()"></textarea>
+            </div>
+          </div>
+
+          <!-- HABITS -->
+          <div class="page" id="pg-habits" style="padding-bottom:100px;">
+            <div id="hab-list" class="hab-list-scroll"></div>
+            <div class="hab-wfoot">
+              <div class="hab-emoji-row" id="hab-emoji-row">
+                <div class="hab-emojis" id="hab-emojis"></div>
+              </div>
+              <div class="hab-input-row">
+                <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
+                  onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()" />
+                <button class="hab-add-btn" onclick="saveHabit()">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TIMER -->
+          <div class="page" id="pg-timer" style="padding-bottom:100px;">
+            <div class="tmbody">
+              <div class="tmmodes">
+                <button class="tmm on" id="tmm-0" onclick="mobSetTMode(0)">Pomodoro</button>
+                <button class="tmm" id="tmm-1" onclick="mobSetTMode(1)">Custom</button>
+              </div>
+              <div class="tmdis">
+                <div class="timer-ring" id="timer-ring-wrap" onclick="mobStartEdit()">
+                  <svg class="timer-ring-svg" viewBox="0 0 220 220">
+                    <circle class="ring-bg" cx="110" cy="110" r="98" />
+                    <circle class="ring-prog" id="ring-prog-mob" cx="110" cy="110" r="98" stroke-dasharray="615.75"
+                      stroke-dashoffset="0" />
+                  </svg>
+                  <div class="timer-inner">
+                    <div class="timer-digits" id="tmtime-mob">25:00</div>
+                    <div class="timer-mode-lbl" id="timer-mode-lbl">Pomodoro</div>
+                  </div>
+                </div>
+                <div class="tminputs" id="tminputs-mob">
+                  <input class="tm-timeinput" id="tminp-mob" type="text" inputmode="numeric" placeholder="25:00"
+                    onkeydown="if(event.key==='Enter')mobConfirmEdit();if(event.key==='Escape')mobCancelEdit();"
+                    oninput="tmInputFmt(event)" />
+                  <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
+                  <button class="tm-setbtn" onclick="mobConfirmEdit()">Set time</button>
+                </div>
+                <div class="tmctrl">
+                  <button class="tm-resetbtn" onclick="mobResetTimer()">↺</button>
+                  <button class="tm-startbtn" id="tmbtn-mob" onclick="mobTimerBtn()">Start</button>
+                </div>
+                <div class="tmsess" id="tmsess-mob">
+                  <div class="tmsd"></div>
+                  <div class="tmsd"></div>
+                  <div class="tmsd"></div>
+                  <div class="tmsd"></div>
+                </div>
+              </div>
+            </div>
+            <div class="tm-history-wrap" id="tm-history-mob" style="display:none;margin:auto 18px 16px;">
+              <div
+                style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:8px;">
+                Session History</div>
+              <div id="mob-pom-history"></div>
+            </div>
+          </div>
+
+          <!-- CALENDAR -->
+          <div class="page" id="mob-pg-calendar"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+            <!-- Mini monthly grid -->
+            <div class="mob-cal-grid-wrap">
+              <div class="mob-cal-nav">
+                <button class="mob-cal-arr" onclick="mobCalShift(-1)"><svg viewBox="0 0 10 10" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M7 2L3 5l4 3" />
+                  </svg></button>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="mob-cal-month-lbl" id="mob-cal-month-lbl">—</div>
+                  <button onclick="_mobCalOff=0;mobCalRender()"
+                    style="font-size:10px;font-weight:700;color:var(--a2);background:var(--al);border:1.5px solid var(--a2);border-radius:100px;padding:2px 8px;cursor:pointer;font-family:inherit;line-height:1.6;">Today</button>
+                </div>
+                <button class="mob-cal-arr" onclick="mobCalShift(1)"><svg viewBox="0 0 10 10" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M3 2l4 3-4 3" />
+                  </svg></button>
+              </div>
+              <div class="mob-cal-dow">
+                <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+              <div class="mob-cal-days" id="mob-cal-days"></div>
+            </div>
+            <!-- Upcoming events list -->
+            <div class="mob-cal-upcoming-hd">Today &amp; next 3 days</div>
+            <div id="sch-page"></div>
+          </div>
+
+          <!-- SETTINGS -->
+          <!-- PROJECTS PAGE -->
+          <div class="page" id="pg-projects"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+            <div class="fphdr">
+              <div class="fptit" id="mob-proj-title">Projects</div>
+              <button id="mob-proj-add-btn" onclick="mobOpenNewProject()"
+                style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--a2);padding:4px 8px;font-weight:300;line-height:1;">+</button>
+            </div>
+            <div style="padding:14px 14px 0;" id="mob-proj-list-wrap">
+              <!-- rendered by renderMobProjects() -->
+            </div>
+            <!-- Project detail view (hidden by default) -->
+            <div id="mob-proj-detail" style="display:none;padding:0 0 16px;">
+              <div id="mob-proj-detail-inner"></div>
+            </div>
+          </div>
+
+          <!-- AI PLANNER PAGE (mobile) -->
+          <div class="page" id="mob-pg-aiplanner"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">AI Planner</div>
+              <div style="min-width:60px;"></div>
+            </div>
+            <div
+              style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;">
+              <div style="font-size:52px;margin-bottom:18px;">🤖</div>
+              <div style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--ink);margin-bottom:10px;">AI
+                Daily Planner</div>
+              <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;max-width:320px;">Tell
+                Prodify what's on your plate and it'll build a realistic, prioritized schedule for your day. Coming with
+                Pro.</p>
+              <button onclick="showUpgradeModal('AI Daily Planner')"
+                style="padding:14px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;max-width:280px;">Join
+                the waitlist ✦</button>
+              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · From $3/mo</div>
+            </div>
+          </div>
+
+
+          <div class="page" id="mob-pg-profile"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">Profile</div>
+              <div style="min-width:60px;"></div>
+            </div>
+            <div style="padding:20px 18px;">
+              <!-- Banner -->
+              <div
+                style="background:var(--a);border-radius:18px;padding:22px 22px 20px;position:relative;overflow:hidden;display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
+                <div
+                  style="position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.18) 0%,transparent 65%);top:-80px;right:-50px;pointer-events:none;">
+                </div>
+                <div id="mob-pbav"
+                  style="width:64px;height:64px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;border:3px solid rgba(255,255,255,.18);position:relative;z-index:1;flex-shrink:0;overflow:hidden;">
+                </div>
+                <div style="position:relative;z-index:1;">
+                  <div id="mob-pbnm"
+                    style="font-size:20px;font-weight:800;letter-spacing:-.4px;color:#fff;line-height:1.1;"></div>
+                  <div id="mob-pbun" style="font-size:13px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:500;">
+                  </div>
+                  <div id="mob-pbjn" style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page" id="mob-pg-settings"
+            style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">Settings</div>
+              <div style="min-width:60px;"></div>
+            </div>
+            <div class="fpscroll" style="padding:22px;">
+              <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
+                <div class="setsec" id="mob-pro-upgrade-setsec">
+                  <div class="setsect">Plan</div>
+                  <div onclick="showUpgradeModal()"
+                    style="margin:0 0 2px;cursor:pointer;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--a2));padding:14px 16px;position:relative;overflow:hidden;width:100%;box-sizing:border-box;text-align:left;display:block;">
+                    <div
+                      style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-60px;right:-60px;pointer-events:none;">
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                      <span style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;">✦ Upgrade to
+                        Pro</span>
+                      <span
+                        style="font-size:10px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:3px 9px;border-radius:100px;white-space:nowrap;">from
+                        $3/mo</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                      <div
+                        style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                        <span>🤖</span>AI Daily Planner
+                      </div>
+                      <div
+                        style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                        <span>♾️</span>Unlimited habits
+                      </div>
+                      <div
+                        style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                        <span>🎨</span>Custom colors
+                      </div>
+                      <div
+                        style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
+                        <span>☁️</span>7-day backups
+                      </div>
+                    </div>
+                    <div
+                      style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:700;color:#fff;">
+                      See plans →</div>
+                  </div>
+                  <div class="pro-active-indicator set-pro-active" style="display:none;">
+                    <span class="set-pro-icon">✦</span>
+                    <div class="set-pro-body">
+                      <div class="set-pro-title">Prodify Pro — Active</div>
+                      <div class="set-pro-sub">You have access to all Pro features</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="setsec">
+                  <div class="setsect">Account</div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Display Name</div>
+                      <div class="setdsc" id="set-name-val">—</div>
+                    </div><button class="bol bsm" onclick="openSheet('sh-name')">Edit</button>
+                  </div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Email</div>
+                      <div class="setdsc" id="set-username-val">—</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="setsec">
+                  <div class="setsect">Appearance</div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Dark Mode</div>
+                      <div class="setdsc">Switch to a dark color scheme</div>
+                    </div><button class="tog" id="toggle-dark" onclick="toggleDark(this)"></button>
+                  </div>
+                  <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:14px;">
+                    <div>
+                      <div class="setlbl">Accent Color</div>
+                      <div class="setdsc">Forest, Ocean &amp; Violet are free. More colors with Pro.</div>
+                    </div>
+                    <div class="accent-picker">
+                      <div class="accent-presets">
+                        <button class="accent-swatch selected" data-key="green"
+                          style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);"
+                          onclick="setAccentGuarded('green')" title="Forest"></button>
+                        <button class="accent-swatch" data-key="blue"
+                          style="background:linear-gradient(135deg,#1E4A7C,#2563EB);" onclick="setAccentGuarded('blue')"
+                          title="Ocean"></button>
+                        <button class="accent-swatch" data-key="purple"
+                          style="background:linear-gradient(135deg,#4A2C6E,#7C3AED);"
+                          onclick="setAccentGuarded('purple')" title="Violet"></button>
+                        <button class="accent-swatch accent-swatch-pro" data-key="rose"
+                          style="background:linear-gradient(135deg,#7C1D2C,#E11D48);" onclick="setAccentGuarded('rose')"
+                          title="Rose ✦ Pro"></button>
+                        <button class="accent-swatch accent-swatch-pro" data-key="amber"
+                          style="background:linear-gradient(135deg,#7A4A00,#D97706);"
+                          onclick="setAccentGuarded('amber')" title="Amber ✦ Pro"></button>
+                        <button class="accent-swatch accent-swatch-pro" data-key="teal"
+                          style="background:linear-gradient(135deg,#0F4C4C,#0D9488);" onclick="setAccentGuarded('teal')"
+                          title="Teal ✦ Pro"></button>
+                        <button class="accent-swatch accent-swatch-pro" data-key="slate"
+                          style="background:linear-gradient(135deg,#1E293B,#475569);"
+                          onclick="setAccentGuarded('slate')" title="Slate ✦ Pro"></button>
+                      </div>
+                      <div class="accent-custom-row">
+                        <div class="accent-hex-wrap">
+                          <div class="accent-hex-preview" id="mob-accent-hex-preview"></div>
+                          <span class="accent-hex-hash">#</span>
+                          <input class="accent-hex-input" id="mob-accent-hex-input" type="text" maxlength="6"
+                            placeholder="3A7D5E" oninput="accentHexInput(this)"
+                            onkeydown="if(event.key==='Enter')accentHexConfirm()" />
+                        </div>
+                        <button class="accent-hex-btn" onclick="accentHexConfirm()">Apply <span
+                            class="accent-pro-tag">Pro</span></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="setsec">
+                  <div class="setsect">Data</div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Pomodoro History</div>
+                      <div class="setdsc">Clear all session history</div>
+                    </div><button class="bol bsm" onclick="clearPomHistory()">Clear</button>
+                  </div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Clear All Data</div>
+                      <div class="setdsc">Erase all tasks, journal entries, habits &amp; events</div>
+                    </div><button class="bol bsm" style="color:var(--red);border-color:var(--red);"
+                      onclick="clearAll()">Clear</button>
+                  </div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Cloud Backup History <span class="export-pro-badge"
+                          style="vertical-align:middle;">Pro</span></div>
+                      <div class="setdsc">Restore from up to 7 daily snapshots</div>
+                    </div><button class="bol bsm" onclick="showBackupModal()">View</button>
+                  </div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Active Devices <span class="export-pro-badge"
+                          style="vertical-align:middle;">Pro</span></div>
+                      <div class="setdsc">Manage sessions across your devices</div>
+                    </div><button class="bol bsm" onclick="showDevicesModal()">Manage</button>
+                  </div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Delete account</div>
+                      <div class="setdsc">Permanently delete your account and all data</div>
+                    </div><button class="dbtn full" onclick="deleteAccount()">Delete account</button>
+                  </div>
+                </div>
+                <div class="setsec">
+                  <div class="setsect">Export</div>
+                  <div class="setrow">
+                    <div>
+                      <div class="setlbl">Export Data</div>
+                      <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
+                    </div>
+                    <button class="bol bsm" onclick="openSheet('sh-export')">Export</button>
+                  </div>
+                </div>
+                <div class="setsec">
+                  <div class="setsect">More</div>
+                  <div class="setrow" style="cursor:pointer;" onclick="openSheet('sh-about')">
+                    <div>
+                      <div class="setlbl">About Prodify</div>
+                      <div class="setdsc">Meet the creator &amp; tech stack</div>
+                    </div><span style="color:var(--ink4);font-size:18px;">›</span>
+                  </div>
+                  <div class="setrow" style="cursor:pointer;" onclick="openSheet('sh-feedback')">
+                    <div>
+                      <div class="setlbl">Send Feedback</div>
+                      <div class="setdsc">Rate, report bugs, or suggest ideas</div>
+                    </div><span style="color:var(--ink4);font-size:18px;">›</span>
+                  </div>
+                </div>
+                <button onclick="doSignOut()"
+                  style="width:100%;margin:8px 0;padding:14px;border-radius:14px;border:1.5px solid var(--red);background:var(--rl,#FAEBEB);color:var(--red);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;"><svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>Sign out</button>
+                <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
+                  Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David N.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PWA Install Banner (Android) -->
+        <div id="pwa-install-banner"
+          style="display:none;position:fixed;bottom:88px;left:18px;right:18px;z-index:25;background:var(--a);border-radius:14px;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.2);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:#fff;">Install Prodify</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px;">Add to your home screen for quick
+              access</div>
+          </div>
+          <button onclick="pwaInstall()"
+            style="background:#fff;color:var(--a);border:none;border-radius:100px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">Install</button>
+          <button onclick="pwaDismiss()"
+            style="background:none;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1;">×</button>
+        </div>
+
+        <!-- iOS Install Hint -->
+        <div id="ios-install-banner"
+          style="display:none;position:fixed;bottom:88px;left:18px;right:18px;z-index:25;background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,.15);">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div style="font-size:22px;flex-shrink:0;">📲</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;">Install Prodify on iPhone
+              </div>
+              <div style="font-size:12px;color:var(--ink3);line-height:1.6;">
+                Tap the
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round"
+                  style="vertical-align:middle;display:inline-block;margin:0 2px;color:var(--a2)">
+                  <path d="M12 16V4M8 8l4-4 4 4" />
+                  <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                </svg>
+                <b style="color:var(--ink2);">Share</b> button below, then
+                <b style="color:var(--ink2);">Add to Home Screen</b>
+              </div>
+            </div>
+            <button onclick="iosDismiss()"
+              style="background:none;border:none;color:var(--ink4);font-size:18px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
+          </div>
+          <!-- Arrow pointing down to Safari share bar -->
+          <div
+            style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:var(--surf);border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr);transform:translateX(-50%) rotate(45deg);">
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <button class="nav-btn active" id="nav-home" onclick="goPg('home')">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 12L12 3l9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9" />
+            </svg>
+            <span>Home</span>
+          </button>
+          <button class="nav-btn" id="nav-tasks" onclick="goPg('tasks')">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            <span>Tasks</span>
+          </button>
+          <button class="nav-btn" id="nav-projects" onclick="goPg('projects')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8M12 17v4" />
+            </svg>
+            <span>Projects</span>
+          </button>
+          <button class="nav-btn" id="nav-habits" onclick="goPg('habits')">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12l3 3 5-5" />
+            </svg>
+            <span>Habits</span>
+          </button>
+          <button class="nav-btn" id="nav-calendar" onclick="goPg('calendar')">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M3 9h18M8 2v3M16 2v3" />
+            </svg>
+            <span>Calendar</span>
+          </button>
+          <div class="nav-div"></div>
+          <button class="nav-btn" id="nav-journal" onclick="goPg('journal')">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="2" width="14" height="20" rx="2" />
+              <path d="M8 7h8M8 11h8M8 15h5" />
+            </svg>
+            <span>Journal</span>
+          </button>
+          <button class="nav-btn" id="nav-notes" onclick="goPg('notes')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z" />
+              <path d="M14 2v4h4M8 13h8M8 9h8M8 17h5" />
+            </svg>
+            <span>Notes</span>
+          </button>
+          <button class="nav-btn" id="nav-timer" onclick="goPg('timer')">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l2.5 2.5M9 3h6" />
+            </svg>
+            <span>Timer</span>
+          </button>
+          <div class="nav-div"></div>
+          <button class="nav-btn" id="nav-aiplanner" onclick="openAIPlanner()" style="position:relative;">
+            <svg viewBox="0 0 24 24">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            <span>AI Planner</span>
+            <i
+              style="position:absolute;top:3px;right:3px;font-size:7px;font-weight:800;font-style:normal;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;pointer-events:none;">PRO</i>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SHEETS -->
+    <div class="sh-overlay" id="sh-overlay" onclick="closeSheets()"></div>
+    <div class="sheet" id="sh-task">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Add Task</div>
+      <div class="sh-body">
+        <span class="sh-lbl">Task Name</span>
+        <input class="sh-input" id="task-inp" type="text" placeholder="What needs doing?"
+          onkeydown="if(event.key==='Enter')saveTask()" />
+        <span class="sh-lbl">Column</span>
+        <div class="pills-row" id="task-col-pills">
+          <div class="pill active" data-v="todo" onclick="selPill(this,'task-col-pills')">To Do</div>
+          <div class="pill" data-v="inprog" onclick="selPill(this,'task-col-pills')">In Progress</div>
+          <div class="pill" data-v="done" onclick="selPill(this,'task-col-pills')">Done</div>
+        </div>
+        <span class="sh-lbl">Due Date</span>
+        <button class="sh-input" id="due-btn" onclick="openDueDatePicker()"
+          style="text-align:left;cursor:pointer;color:var(--ink3);display:flex;align-items:center;gap:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M3 9h18M8 2v3M16 2v3" />
+          </svg>
+          <span id="due-lbl">Choose due date</span>
+        </button>
+        <input type="hidden" id="task-due-val" />
+        <span class="sh-lbl">Repeat <span style="font-size:10px;color:var(--ink4);font-weight:400;">— clears due
+            date</span></span>
+        <div class="pills-row" id="task-recur-pills">
+          <div class="pill active" data-v="none" onclick="selPill(this,'task-recur-pills');onPickRepeat('none')">None
+          </div>
+          <div class="pill" data-v="daily" onclick="selPill(this,'task-recur-pills');onPickRepeat('daily')">↺ Daily
+          </div>
+          <div class="pill" data-v="weekly" onclick="selPill(this,'task-recur-pills');onPickRepeat('weekly')">↺ Weekly
+          </div>
+        </div>
+        <button class="sh-btn sh-btn-primary" style="margin-top:20px;" onclick="saveTask()">Add Task</button>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
+      </div>
+    </div>
+    <div class="sheet" id="sh-habit">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Add Habit</div>
+      <div class="sh-body">
+        <span class="sh-lbl">Name</span>
+        <input class="sh-input" id="habit-inp" type="text" placeholder="e.g. Read, Exercise…" />
+        <span class="sh-lbl">Icon</span>
+        <div class="emoji-grid">
+          <button class="emoji-btn active" data-e="💪" onclick="selEmoji(this)">💪</button>
+          <button class="emoji-btn" data-e="📚" onclick="selEmoji(this)">📚</button>
+          <button class="emoji-btn" data-e="🏃" onclick="selEmoji(this)">🏃</button>
+          <button class="emoji-btn" data-e="💧" onclick="selEmoji(this)">💧</button>
+          <button class="emoji-btn" data-e="🧘" onclick="selEmoji(this)">🧘</button>
+          <button class="emoji-btn" data-e="🥗" onclick="selEmoji(this)">🥗</button>
+          <button class="emoji-btn" data-e="😴" onclick="selEmoji(this)">😴</button>
+          <button class="emoji-btn" data-e="🎯" onclick="selEmoji(this)">🎯</button>
+          <button class="emoji-btn" data-e="✍️" onclick="selEmoji(this)">✍️</button>
+          <button class="emoji-btn" data-e="🌿" onclick="selEmoji(this)">🌿</button>
+          <button class="emoji-btn" data-e="⚡" onclick="selEmoji(this)">⚡</button>
+          <button class="emoji-btn" data-e="🎨" onclick="selEmoji(this)">🎨</button>
+        </div>
+        <button class="sh-btn sh-btn-primary" onclick="saveHabit()">Add Habit</button>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
+      </div>
+    </div>
+    <div class="sheet" id="sh-event" style="max-height:92vh;overflow-y:auto;">
+      <div class="sh-handle"></div>
+      <div class="sh-title" id="sh-event-title">Add Event</div>
+      <div class="sh-body">
+        <!-- Selected date label -->
+        <div id="mob-ev-date-lbl" style="font-size:13px;font-weight:700;color:var(--a2);margin-bottom:14px;"></div>
+
+        <!-- Existing events on this day -->
+        <div id="mob-ev-day-events" style="display:none;margin-bottom:16px;">
+          <div
+            style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:8px;">
+            Events on this day</div>
+          <div id="mob-ev-day-list"></div>
+        </div>
+
+        <span class="sh-lbl">Title</span>
+        <input class="sh-input" id="ev-inp" type="text" placeholder="Event name…"
+          onkeydown="if(event.key==='Enter')document.getElementById('ev-inp').blur()" />
+
+        <span class="sh-lbl" style="margin-top:12px;">Color</span>
+        <div class="ev-color-row" id="ev-color-row">
+          <button class="ev-cswatch active" data-color="#3A7D5E" style="background:#3A7D5E;"
+            onclick="evPickColor(this)"></button>
+          <button class="ev-cswatch" data-color="#5B8DD9" style="background:#5B8DD9;"
+            onclick="evPickColor(this)"></button>
+          <button class="ev-cswatch" data-color="#E8A838" style="background:#E8A838;"
+            onclick="evPickColor(this)"></button>
+          <button class="ev-cswatch" data-color="#D95B5B" style="background:#D95B5B;"
+            onclick="evPickColor(this)"></button>
+          <button class="ev-cswatch" data-color="#8B5BD9" style="background:#8B5BD9;"
+            onclick="evPickColor(this)"></button>
+          <button class="ev-cswatch" data-color="#0D9488" style="background:#0D9488;"
+            onclick="evPickColor(this)"></button>
+        </div>
+        <button class="sh-btn sh-btn-primary" onclick="saveEvent()">Save Event</button>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
+      </div>
+    </div>
+    <div class="sheet" id="sh-name">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Display Name</div>
+      <div class="sh-body">
+        <input class="sh-input" id="name-inp" type="text" placeholder="Your name"
+          onkeydown="if(event.key==='Enter')saveName()" />
+        <button class="sh-btn sh-btn-primary" onclick="saveName()">Save</button>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- UPGRADE MODAL -->
+    <div class="sh-overlay" id="upg-overlay" onclick="closeUpgrade()"></div>
+    <div class="sheet" id="mo-upgrade" style="border-radius:24px 24px 0 0;">
+      <div class="upg-header">
+        <div class="upg-glow"></div>
+        <span class="upg-sparkle">✦</span>
+        <div class="upg-title">Prodify Pro</div>
+        <div class="upg-sub" id="mo-upgrade-sub">Unlock everything. Stay in flow.</div>
+      </div>
+      <div class="upg-body">
+        <div class="upg-feats">
+          <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited
+              habits</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily
+              Planner</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent
+              colors</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV & PDF
+              export</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
+              backups</span></div>
+          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
+          </div>
+        </div>
+        <div class="upg-plans">
+          <div class="upg-plan">
+            <div class="upg-plan-price">$4<span>/mo</span></div>
+            <div class="upg-plan-label">Monthly</div>
+          </div>
+          <div class="upg-plan upg-plan-best">
+            <div class="upg-plan-pill">Best value</div>
+            <div class="upg-plan-price">$3<span>/mo</span></div>
+            <div class="upg-plan-label">Yearly · billed $36/yr</div>
+          </div>
+        </div>
+        <!-- Not joined -->
+        <div id="mob-upg-waitlist-join">
+          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
+          <button class="upg-waitlist-btn" id="mob-upg-join-btn" onclick="joinWaitlist()">Join the waitlist</button>
+          <div class="upg-err" id="mob-upg-waitlist-err"></div>
+        </div>
+        <!-- Already joined -->
+        <div id="mob-upg-waitlist-joined" style="display:none;">
+          <div class="upg-joined-box">
+            <div class="upg-joined-icon">🎉</div>
+            <div class="upg-joined-pos">You're <span id="mob-upg-position">#—</span> on the waitlist</div>
+            <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly,
+              locked in).</div>
+          </div>
+          <button class="upg-cta" onclick="closeUpgrade()">Got it</button>
+        </div>
+        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
+      </div>
+    </div>
+
+    <!-- EXPORT SHEET -->
+    <div class="sheet" id="sh-export">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Export Data</div>
+      <div class="sh-body">
+        <div class="export-opt" onclick="exportJSON();closeSheets()">
+          <div class="export-opt-icon"><svg viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="12" x2="12" y2="18" />
+              <line x1="9" y1="15" x2="15" y2="15" />
+            </svg></div>
+          <div class="export-opt-body">
+            <div class="export-opt-title">JSON <span class="pro-tag-inline"
+                style="background:var(--al);color:var(--a2);">Free</span></div>
+            <div class="export-opt-desc">Full export — tasks, journal, habits, projects</div>
+          </div>
+        </div>
+        <div class="export-opt export-opt-locked" onclick="exportCSV()">
+          <div class="export-opt-icon export-opt-icon-locked"><svg viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="8" y1="13" x2="16" y2="13" />
+              <line x1="8" y1="17" x2="16" y2="17" />
+            </svg></div>
+          <div class="export-opt-body">
+            <div class="export-opt-title">CSV <span class="pro-tag-inline">Pro</span></div>
+            <div class="export-opt-desc">Spreadsheet-ready export for tasks & journal</div>
+          </div>
+        </div>
+        <div class="export-opt export-opt-locked" onclick="exportPDF()">
+          <div class="export-opt-icon export-opt-icon-locked"><svg viewBox="0 0 24 24" fill="none">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg></div>
+          <div class="export-opt-body">
+            <div class="export-opt-title">PDF <span class="pro-tag-inline">Pro</span></div>
+            <div class="export-opt-desc">Beautifully formatted productivity report</div>
+          </div>
+        </div>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
+      </div>
+    </div>
+
+    <!-- DEVICES SHEET -->
+    <div class="sheet" id="sh-devices">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Active Devices</div>
+      <div class="sh-body">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Sessions from the last 7 days</div>
+        <div id="sh-devices-list"></div>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
+      </div>
+    </div>
+
+    <!-- BACKUP SHEET -->
+    <div class="sheet" id="sh-backup">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Cloud Backup History</div>
+      <div class="sh-body">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Auto-saved daily · Up to 7 snapshots</div>
+        <div id="sh-backup-list"></div>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
+      </div>
+    </div>
+
+    <!-- NEW PROJECT SHEET -->
+    <div class="sheet" id="sh-new-project"
+      style="border-radius:20px 20px 0 0;overflow:hidden;max-height:90vh;overflow-y:auto;">
+      <div id="mob-new-proj-bar"
+        style="height:4px;background:var(--a2);width:100%;transition:background .25s;flex-shrink:0;"></div>
+      <div style="padding:20px 20px 0;">
+        <input id="mob-proj-name" type="text" placeholder="Project name…" autocomplete="off" autocapitalize="words"
+          onkeydown="if(event.key==='Enter')document.getElementById('mob-proj-desc').focus()"
+          style="display:block;width:100%;font-size:20px;font-weight:800;color:var(--ink);background:transparent;border:none;border-bottom:2px solid var(--bdr);padding:6px 0 10px;outline:none;font-family:inherit;letter-spacing:-.3px;box-sizing:border-box;transition:border-color .2s;"
+          onfocus="this.style.borderBottomColor='var(--a2)'" onblur="this.style.borderBottomColor='var(--bdr)'" />
+        <input id="mob-proj-desc" type="text" placeholder="Add a description… (optional)" autocomplete="off"
+          style="display:block;width:100%;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;padding:8px 0 4px;outline:none;font-family:inherit;box-sizing:border-box;"
+          onfocus="this.style.color='var(--ink)'" onblur="this.style.color='var(--ink2)'" />
+      </div>
+
+      <div
+        style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">
+        Due Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span>
+      </div>
+      <div style="padding:0 20px;">
+        <button id="mob-proj-due-btn" onclick="openProjDueDatePicker()"
+          style="display:flex;align-items:center;gap:9px;width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:11px 14px;font-family:inherit;cursor:pointer;text-align:left;color:var(--ink3);font-size:13px;font-weight:700;box-sizing:border-box;transition:border-color .2s,background .2s;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" style="flex-shrink:0;">
+            <rect x="2" y="3" width="12" height="11" rx="2" />
+            <path d="M2 7h12M6 1v3M10 1v3" />
+          </svg>
+          <span id="mob-proj-due-lbl">Choose due date</span>
+        </button>
+        <input type="hidden" id="mob-proj-due-val" />
+      </div>
+
+      <div
+        style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">
+        Tasks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span>
+      </div>
+      <div style="padding:0 20px 8px;">
+        <div id="mob-proj-task-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="mob-proj-task-inp" type="text" placeholder="Add a task…" autocomplete="off"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();mobSubAddTask();}"
+            style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:10px 14px;font-family:inherit;font-size:13px;color:var(--ink);outline:none;transition:border-color .2s;"
+            onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'" />
+          <button onclick="mobSubAddTask()"
+            style="flex-shrink:0;padding:10px 16px;border-radius:13px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
+            + Add
+          </button>
         </div>
       </div>
 
-      <!-- TASKS -->
-      <div class="page" id="pg-tasks" style="padding-bottom:100px;">
-        <div id="task-list"></div>
-        <button class="fab" onclick="openSheet('sh-task')">
-          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <div style="display:flex;gap:10px;padding:14px 20px 32px;">
+        <button onclick="closeSheets()"
+          style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          Cancel
+        </button>
+        <button onclick="mobAddProject()"
+          style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          Create Project
         </button>
       </div>
+    </div>
 
-      <!-- JOURNAL -->
-      <div class="page" id="pg-journal" style="bottom:240px;">
-        <div class="jw-search-bar" id="jw-search-bar" style="display:none;">
-          <div class="jw-search-inner">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input class="jw-search-inp" id="jw-search-inp" type="text" placeholder="Search entries…" oninput="jwSearch(this.value)"/>
-            <button class="jw-search-clear" id="jw-search-clear" onclick="jwClearSearch()" style="display:none;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="jwlist" id="journal-list"></div>
+    <!-- ADD TASK TO PROJECT SHEET -->
+    <div class="sheet" id="sh-proj-task" style="border-radius:20px 20px 0 0;overflow:hidden;">
+      <div id="mob-ptask-bar" style="height:4px;background:var(--a2);width:100%;transition:background .25s;"></div>
+      <div style="padding:20px 20px 0;">
+        <input id="mob-ptask-name" type="text" placeholder="Task name…" autocomplete="off"
+          onkeydown="if(event.key==='Enter')mobAddProjTask()"
+          style="display:block;width:100%;font-size:20px;font-weight:800;color:var(--ink);background:transparent;border:none;border-bottom:2px solid var(--bdr);padding:6px 0 10px;outline:none;font-family:inherit;letter-spacing:-.3px;box-sizing:border-box;transition:border-color .2s;"
+          onfocus="this.style.borderBottomColor='var(--a2)'" onblur="this.style.borderBottomColor='var(--bdr)'" />
       </div>
-      <div class="jwadd hidden">
-          <div class="jwtpl-row" id="jwtpl-mob" style="display:none;">
-            <button class="jw-tpl-chip" onclick="jwUseTpl(0)" title="Morning Intention">🌅 Morning</button>
-            <button class="jw-tpl-chip" onclick="jwUseTpl(1)" title="Evening Reflection">🌙 Evening</button>
-            <button class="jw-tpl-chip" onclick="jwUseTpl(2)" title="Gratitude">🙏 Gratitude</button>
-            <button class="jw-tpl-chip" onclick="jwUseTpl(3)" title="Brain Dump">🧠 Dump</button>
+      <input type="hidden" id="mob-ptask-subjid" />
+      <div style="display:flex;gap:10px;padding:18px 20px 24px;">
+        <button onclick="closeSheets()"
+          style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          Cancel
+        </button>
+        <button onclick="mobAddProjTask()"
+          style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+          Add Task
+        </button>
+      </div>
+    </div>
+
+    <!-- ABOUT SHEET -->
+    <div class="sheet" id="sh-about">
+      <div class="sh-handle"></div>
+      <div class="sh-body" style="padding:0;overflow:hidden;">
+        <!-- Header band matching desktop -->
+        <div style="background:var(--a);padding:28px 24px 24px;text-align:center;position:relative;">
+          <div
+            style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-60px;right:-40px;pointer-events:none;">
           </div>
-          <textarea class="jwta" id="jwta-mob" rows="2" placeholder="What's on your mind today?"></textarea>
-          <div class="jwmood-row" id="jwmood-row-mob">
-            <span class="jwmood-cur-lbl">Mood:</span>
-            <button class="jwmood-cur-btn" id="jwmcur-mob" onclick="jwToggleMoodPop()">
-              😄 <span class="jwmood-cur-txt" id="jwmcurtxt-mob">Great</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div class="jwmood-pop" id="jwmpop-mob">
-              <button class="jwmpop-btn on" data-m="0" onclick="jwPickMood(0)">😄<span class="jwmpop-lbl">Great</span></button>
-              <button class="jwmpop-btn" data-m="1" onclick="jwPickMood(1)">🙂<span class="jwmpop-lbl">Good</span></button>
-              <button class="jwmpop-btn" data-m="2" onclick="jwPickMood(2)">😐<span class="jwmpop-lbl">Okay</span></button>
-              <button class="jwmpop-btn" data-m="3" onclick="jwPickMood(3)">😔<span class="jwmpop-lbl">Low</span></button>
-              <button class="jwmpop-btn" data-m="4" onclick="jwPickMood(4)">😴<span class="jwmpop-lbl">Tired</span></button>
-              <button class="jwmpop-btn" data-m="5" onclick="jwPickMood(5)">😤<span class="jwmpop-lbl">Stressed</span></button>
-              <button class="jwmpop-btn" data-m="6" onclick="jwPickMood(6)">😰<span class="jwmpop-lbl">Anxious</span></button>
-              <button class="jwmpop-btn" data-m="7" onclick="jwPickMood(7)">🔥<span class="jwmpop-lbl">Pumped</span></button>
-              <button class="jwmpop-btn" data-m="8" onclick="jwPickMood(8)">🧘<span class="jwmpop-lbl">Calm</span></button>
-              <button class="jwmpop-btn" data-m="9" onclick="jwPickMood(9)">🥰<span class="jwmpop-lbl">In Love</span></button>
+          <img src="https://avatars.githubusercontent.com/u/266276185"
+            style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 12px;background:rgba(255,255,255,.1);"
+            onerror="this.style.display='none'" />
+          <div id="mob-about-name" style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;">—</div>
+          <div id="mob-about-username"
+            style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:3px;">—</div>
+        </div>
+        <!-- Body matching desktop -->
+        <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+          <p style="font-size:13px;color:var(--ink2);line-height:1.7;margin:0;">A student developer passionate about
+            building tools that make everyday life more organized and productive. Prodify started as a personal project
+            and grew into something I hope helps you too.</p>
+          <div>
+            <div
+              style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink4);margin-bottom:8px;">
+              Built With</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <span
+                style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vanilla
+                JS</span>
+              <span
+                style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Supabase</span>
+              <span
+                style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vercel</span>
+              <span
+                style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">CSS3</span>
+              <span
+                style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">PWA</span>
             </div>
           </div>
-          <div class="jwfoot">
-            <button class="jwutil-btn" onclick="jwToggleTpl()">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              Templates
-            </button>
-            <button class="jwutil-btn" onclick="jwShufflePrompt()">✨ Prompt</button>
-            <button class="jwutil-btn" id="jw-search-toggle" onclick="jwToggleSearch()">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            </button>
-            <button class="jwsave-btn" onclick="jwSave()">Save</button>
-          </div>
-      </div>
-
-      <!-- NOTES -->
-      <div class="page" id="pg-notes" style="padding-bottom:88px;">
-        <!-- List view -->
-        <div id="mob-notes-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0;">
-          <div class="fphdr">
-            <div class="fptit">Notes</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <button id="notes-search-btn" class="jwutil-btn" onclick="notesToggleSearch()">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              </button>
-              <button id="notes-sort-btn" class="jwutil-btn" onclick="notesToggleSort()" title="Sort A–Z">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-              </button>
-              <button onclick="notesNew()" style="background:none;border:none;cursor:pointer;font-size:24px;color:var(--a2);padding:2px 6px;font-weight:300;line-height:1;">+</button>
-            </div>
-          </div>
-          <!-- Search bar (hidden by default) -->
-          <div id="notes-search-bar" class="jw-search-bar" style="display:none;">
-            <div class="jw-search-inner">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input class="jw-search-inp" id="notes-search-inp" type="text" placeholder="Search notes…" oninput="notesSearch(this.value)"/>
-              <button class="jw-search-clear" id="notes-search-clear" onclick="notesClearSearch()" style="display:none;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-          </div>
-          <div id="mob-notes-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 16px 16px;"></div>
-        </div>
-        <!-- Editor view -->
-        <div id="mob-notes-editor-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
-          <div class="fphdr">
-            <button onclick="notesBack()" class="set-back" style="min-width:60px;">
-              <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Notes
-            </button>
-            <div id="mob-note-editor-hdr" class="fptit" style="flex:1;text-align:center;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;">Untitled</div>
-            <button onclick="deleteNote()" style="min-width:60px;display:flex;justify-content:flex-end;align-items:center;background:none;border:none;cursor:pointer;color:var(--ink4);padding:0 4px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-            </button>
-          </div>
-          <input id="mob-note-title-inp" class="mob-note-title-inp" type="text" placeholder="Title…" oninput="noteEditorInput()" autocomplete="off"/>
-          <textarea id="mob-note-content-ta" class="mob-note-content-ta" placeholder="Start writing…" oninput="noteEditorInput()"></textarea>
-        </div>
-      </div>
-
-      <!-- HABITS -->
-      <div class="page" id="pg-habits" style="padding-bottom:100px;">
-        <div id="hab-list" class="hab-list-scroll"></div>
-        <div class="hab-wfoot">
-          <div class="hab-emoji-row" id="hab-emoji-row">
-            <div class="hab-emojis" id="hab-emojis"></div>
-          </div>
-          <div class="hab-input-row">
-            <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
-              onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()"/>
-            <button class="hab-add-btn" onclick="saveHabit()">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:11px;color:var(--ink4);">Prodify v1.0 · Made with ♥</span>
+            <button class="bol bsm" onclick="closeSheets()">Close</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- TIMER -->
-      <div class="page" id="pg-timer" style="padding-bottom:100px;">
-        <div class="tmbody">
-          <div class="tmmodes">
-            <button class="tmm on" id="tmm-0" onclick="mobSetTMode(0)">Pomodoro</button>
-            <button class="tmm" id="tmm-1" onclick="mobSetTMode(1)">Custom</button>
-          </div>
-          <div class="tmdis">
-            <div class="timer-ring" id="timer-ring-wrap" onclick="mobStartEdit()">
-              <svg class="timer-ring-svg" viewBox="0 0 220 220">
-                <circle class="ring-bg" cx="110" cy="110" r="98"/>
-                <circle class="ring-prog" id="ring-prog-mob" cx="110" cy="110" r="98" stroke-dasharray="615.75" stroke-dashoffset="0"/>
-              </svg>
-              <div class="timer-inner">
-                <div class="timer-digits" id="tmtime-mob">25:00</div>
-                <div class="timer-mode-lbl" id="timer-mode-lbl">Pomodoro</div>
-              </div>
-            </div>
-            <div class="tminputs" id="tminputs-mob">
-              <input class="tm-timeinput" id="tminp-mob" type="text" inputmode="numeric" placeholder="25:00"
-                onkeydown="if(event.key==='Enter')mobConfirmEdit();if(event.key==='Escape')mobCancelEdit();"
-                oninput="tmInputFmt(event)"/>
-              <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
-              <button class="tm-setbtn" onclick="mobConfirmEdit()">Set time</button>
-            </div>
-            <div class="tmctrl">
-              <button class="tm-resetbtn" onclick="mobResetTimer()">↺</button>
-              <button class="tm-startbtn" id="tmbtn-mob" onclick="mobTimerBtn()">Start</button>
-            </div>
-            <div class="tmsess" id="tmsess-mob">
-              <div class="tmsd"></div><div class="tmsd"></div><div class="tmsd"></div><div class="tmsd"></div>
-            </div>
-          </div>
+    <!-- FEEDBACK SHEET -->
+    <div class="sheet" id="sh-feedback">
+      <div class="sh-handle"></div>
+      <div class="sh-title">Send Feedback</div>
+      <div class="sh-body">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">We read every message — bugs, ideas, or just a
+          hello.</div>
+        <div id="fb-stars" style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">
+          <svg class="fbs" data-v="1" onclick="fbRate(1)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)"
+            stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="2" onclick="fbRate(2)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)"
+            stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="3" onclick="fbRate(3)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)"
+            stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="4" onclick="fbRate(4)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)"
+            stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          <svg class="fbs" data-v="5" onclick="fbRate(5)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)"
+            stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="cursor:pointer;transition:fill .15s,transform .15s;">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
         </div>
-        <div class="tm-history-wrap" id="tm-history-mob" style="display:none;margin:auto 18px 16px;">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink3);margin-bottom:8px;">Session History</div>
-          <div id="mob-pom-history"></div>
-        </div>
-      </div>
-
-      <!-- CALENDAR -->
-      <div class="page" id="mob-pg-calendar" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-        <!-- Mini monthly grid -->
-        <div class="mob-cal-grid-wrap">
-          <div class="mob-cal-nav">
-            <button class="mob-cal-arr" onclick="mobCalShift(-1)"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2L3 5l4 3"/></svg></button>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div class="mob-cal-month-lbl" id="mob-cal-month-lbl">—</div>
-              <button onclick="_mobCalOff=0;mobCalRender()" style="font-size:10px;font-weight:700;color:var(--a2);background:var(--al);border:1.5px solid var(--a2);border-radius:100px;padding:2px 8px;cursor:pointer;font-family:inherit;line-height:1.6;">Today</button>
-            </div>
-            <button class="mob-cal-arr" onclick="mobCalShift(1)"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 2l4 3-4 3"/></svg></button>
-          </div>
-          <div class="mob-cal-dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
-          <div class="mob-cal-days" id="mob-cal-days"></div>
-        </div>
-        <!-- Upcoming events list -->
-        <div class="mob-cal-upcoming-hd">Today &amp; next 3 days</div>
-        <div id="sch-page"></div>
-      </div>
-
-      <!-- SETTINGS -->
-        <!-- PROJECTS PAGE -->
-        <div class="page" id="pg-projects" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-          <div class="fphdr">
-            <div class="fptit" id="mob-proj-title">Projects</div>
-            <button id="mob-proj-add-btn" onclick="mobOpenNewProject()" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--a2);padding:4px 8px;font-weight:300;line-height:1;">+</button>
-          </div>
-          <div style="padding:14px 14px 0;" id="mob-proj-list-wrap">
-            <!-- rendered by renderMobProjects() -->
-          </div>
-          <!-- Project detail view (hidden by default) -->
-          <div id="mob-proj-detail" style="display:none;padding:0 0 16px;">
-            <div id="mob-proj-detail-inner"></div>
-          </div>
-        </div>
-
-        <!-- AI PLANNER PAGE (mobile) -->
-        <div class="page" id="mob-pg-aiplanner" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-          <div class="fphdr">
-            <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
-            <div class="fptit" style="flex:1;text-align:center;">AI Planner</div>
-            <div style="min-width:60px;"></div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;">
-            <div style="font-size:52px;margin-bottom:18px;">🤖</div>
-            <div style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--ink);margin-bottom:10px;">AI Daily Planner</div>
-            <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;max-width:320px;">Tell Prodify what's on your plate and it'll build a realistic, prioritized schedule for your day. Coming with Pro.</p>
-            <button onclick="showUpgradeModal('AI Daily Planner')" style="padding:14px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;max-width:280px;">Join the waitlist ✦</button>
-            <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · From $3/mo</div>
-          </div>
-        </div>
-
-
-        <div class="page" id="mob-pg-profile" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-          <div class="fphdr">
-            <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
-            <div class="fptit" style="flex:1;text-align:center;">Profile</div>
-            <div style="min-width:60px;"></div>
-          </div>
-          <div style="padding:20px 18px;">
-            <!-- Banner -->
-            <div style="background:var(--a);border-radius:18px;padding:22px 22px 20px;position:relative;overflow:hidden;display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
-              <div style="position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(58,125,94,.18) 0%,transparent 65%);top:-80px;right:-50px;pointer-events:none;"></div>
-              <div id="mob-pbav" style="width:64px;height:64px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;border:3px solid rgba(255,255,255,.18);position:relative;z-index:1;flex-shrink:0;overflow:hidden;"></div>
-              <div style="position:relative;z-index:1;">
-                <div id="mob-pbnm" style="font-size:20px;font-weight:800;letter-spacing:-.4px;color:#fff;line-height:1.1;"></div>
-                <div id="mob-pbun" style="font-size:13px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:500;"></div>
-                <div id="mob-pbjn" style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="page" id="mob-pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-          <div class="fphdr">
-            <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>Back</button>
-            <div class="fptit" style="flex:1;text-align:center;">Settings</div>
-            <div style="min-width:60px;"></div>
-          </div>
-          <div class="fpscroll" style="padding:22px;">
-            <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
-              <div class="setsec" id="mob-pro-upgrade-setsec">
-                <div class="setsect">Plan</div>
-                <div onclick="showUpgradeModal()"
-                  style="margin:0 0 2px;cursor:pointer;border-radius:14px;background:linear-gradient(135deg,var(--a),var(--a2));padding:14px 16px;position:relative;overflow:hidden;width:100%;box-sizing:border-box;text-align:left;display:block;">
-                  <div
-                    style="position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);top:-60px;right:-60px;pointer-events:none;">
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                    <span style="font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;">✦ Upgrade to
-                      Pro</span>
-                    <span
-                      style="font-size:10px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;padding:3px 9px;border-radius:100px;white-space:nowrap;">from
-                      $3/mo</span>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-                    <div
-                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>🤖</span>AI Daily Planner</div>
-                    <div
-                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>♾️</span>Unlimited habits</div>
-                    <div
-                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>🎨</span>Custom colors</div>
-                    <div
-                      style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,.9);font-weight:500;">
-                      <span>☁️</span>7-day backups</div>
-                  </div>
-                  <div
-                    style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:7px 16px;font-size:12px;font-weight:700;color:#fff;">
-                    See plans →</div>
-                </div>
-                <div class="pro-active-indicator set-pro-active" style="display:none;">
-                  <span class="set-pro-icon">✦</span>
-                  <div class="set-pro-body">
-                    <div class="set-pro-title">Prodify Pro — Active</div>
-                    <div class="set-pro-sub">You have access to all Pro features</div>
-                  </div>
-                </div>
-              </div>
-              <div class="setsec">
-                <div class="setsect">Account</div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Display Name</div>
-                    <div class="setdsc" id="set-name-val">—</div>
-                  </div><button class="bol bsm" onclick="openSheet('sh-name')">Edit</button>
-                </div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Email</div>
-                    <div class="setdsc" id="set-username-val">—</div>
-                  </div>
-                </div>
-              </div>
-              <div class="setsec">
-                <div class="setsect">Appearance</div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Dark Mode</div>
-                    <div class="setdsc">Switch to a dark color scheme</div>
-                  </div><button class="tog" id="toggle-dark" onclick="toggleDark(this)"></button>
-                </div>
-                <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:14px;">
-                  <div>
-                    <div class="setlbl">Accent Color</div>
-                    <div class="setdsc">Forest, Ocean &amp; Violet are free. More colors with Pro.</div>
-                  </div>
-                  <div class="accent-picker">
-                    <div class="accent-presets">
-                      <button class="accent-swatch selected" data-key="green"
-                        style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);" onclick="setAccentGuarded('green')"
-                        title="Forest"></button>
-                      <button class="accent-swatch" data-key="blue"
-                        style="background:linear-gradient(135deg,#1E4A7C,#2563EB);" onclick="setAccentGuarded('blue')"
-                        title="Ocean"></button>
-                      <button class="accent-swatch" data-key="purple"
-                        style="background:linear-gradient(135deg,#4A2C6E,#7C3AED);" onclick="setAccentGuarded('purple')"
-                        title="Violet"></button>
-                      <button class="accent-swatch accent-swatch-pro" data-key="rose"
-                        style="background:linear-gradient(135deg,#7C1D2C,#E11D48);" onclick="setAccentGuarded('rose')"
-                        title="Rose ✦ Pro"></button>
-                      <button class="accent-swatch accent-swatch-pro" data-key="amber"
-                        style="background:linear-gradient(135deg,#7A4A00,#D97706);" onclick="setAccentGuarded('amber')"
-                        title="Amber ✦ Pro"></button>
-                      <button class="accent-swatch accent-swatch-pro" data-key="teal"
-                        style="background:linear-gradient(135deg,#0F4C4C,#0D9488);" onclick="setAccentGuarded('teal')"
-                        title="Teal ✦ Pro"></button>
-                      <button class="accent-swatch accent-swatch-pro" data-key="slate"
-                        style="background:linear-gradient(135deg,#1E293B,#475569);" onclick="setAccentGuarded('slate')"
-                        title="Slate ✦ Pro"></button>
-                    </div>
-                    <div class="accent-custom-row">
-                      <div class="accent-hex-wrap">
-                        <div class="accent-hex-preview" id="mob-accent-hex-preview"></div>
-                        <span class="accent-hex-hash">#</span>
-                        <input class="accent-hex-input" id="mob-accent-hex-input" type="text" maxlength="6"
-                          placeholder="3A7D5E" oninput="accentHexInput(this)"
-                          onkeydown="if(event.key==='Enter')accentHexConfirm()" />
-                      </div>
-                      <button class="accent-hex-btn" onclick="accentHexConfirm()">Apply <span
-                          class="accent-pro-tag">Pro</span></button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="setsec">
-                <div class="setsect">Data</div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Pomodoro History</div>
-                    <div class="setdsc">Clear all session history</div>
-                  </div><button class="bol bsm" onclick="clearPomHistory()">Clear</button>
-                </div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Clear All Data</div>
-                    <div class="setdsc">Erase all tasks, journal entries, habits &amp; events</div>
-                  </div><button class="bol bsm" style="color:var(--red);border-color:var(--red);" onclick="clearAll()">Clear</button>
-                </div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Cloud Backup History <span class="export-pro-badge"
-                        style="vertical-align:middle;">Pro</span></div>
-                    <div class="setdsc">Restore from up to 7 daily snapshots</div>
-                  </div><button class="bol bsm" onclick="showBackupModal()">View</button>
-                </div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Active Devices <span class="export-pro-badge"
-                        style="vertical-align:middle;">Pro</span></div>
-                    <div class="setdsc">Manage sessions across your devices</div>
-                  </div><button class="bol bsm" onclick="showDevicesModal()">Manage</button>
-                </div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Delete account</div>
-                    <div class="setdsc">Permanently delete your account and all data</div>
-                  </div><button class="dbtn full" onclick="deleteAccount()">Delete account</button>
-                </div>
-              </div>
-              <div class="setsec">
-                <div class="setsect">Export</div>
-                <div class="setrow">
-                  <div>
-                    <div class="setlbl">Export Data</div>
-                    <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
-                  </div>
-                  <button class="bol bsm" onclick="openSheet('sh-export')">Export</button>
-                </div>
-              </div>
-              <div class="setsec">
-                <div class="setsect">More</div>
-                <div class="setrow" style="cursor:pointer;" onclick="openSheet('sh-about')">
-                  <div>
-                    <div class="setlbl">About Prodify</div>
-                    <div class="setdsc">Meet the creator &amp; tech stack</div>
-                  </div><span style="color:var(--ink4);font-size:18px;">›</span>
-                </div>
-                <div class="setrow" style="cursor:pointer;" onclick="openSheet('sh-feedback')">
-                  <div>
-                    <div class="setlbl">Send Feedback</div>
-                    <div class="setdsc">Rate, report bugs, or suggest ideas</div>
-                  </div><span style="color:var(--ink4);font-size:18px;">›</span>
-                </div>
-              </div>
-              <button onclick="doSignOut()" style="width:100%;margin:8px 0;padding:14px;border-radius:14px;border:1.5px solid var(--red);background:var(--rl,#FAEBEB);color:var(--red);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
-              <div style="text-align:center;padding:16px 0 4px;font-size:11px;color:var(--ink4);">
-                Designed &amp; built by <span style="color:var(--a2);font-weight:700;">David N.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-    </div>
-
-    <!-- PWA Install Banner (Android) -->
-    <div id="pwa-install-banner" style="display:none;position:fixed;bottom:88px;left:18px;right:18px;z-index:25;background:var(--a);border-radius:14px;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.2);">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:#fff;">Install Prodify</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px;">Add to your home screen for quick access</div>
-      </div>
-      <button onclick="pwaInstall()" style="background:#fff;color:var(--a);border:none;border-radius:100px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;">Install</button>
-      <button onclick="pwaDismiss()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1;">×</button>
-    </div>
-
-    <!-- iOS Install Hint -->
-    <div id="ios-install-banner" style="display:none;position:fixed;bottom:88px;left:18px;right:18px;z-index:25;background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,.15);">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <div style="font-size:22px;flex-shrink:0;">📲</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px;">Install Prodify on iPhone</div>
-          <div style="font-size:12px;color:var(--ink3);line-height:1.6;">
-            Tap the
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;display:inline-block;margin:0 2px;color:var(--a2)"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-            <b style="color:var(--ink2);">Share</b> button below, then
-            <b style="color:var(--ink2);">Add to Home Screen</b>
-          </div>
-        </div>
-        <button onclick="iosDismiss()" style="background:none;border:none;color:var(--ink4);font-size:18px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
-      </div>
-      <!-- Arrow pointing down to Safari share bar -->
-      <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:var(--surf);border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr);transform:translateX(-50%) rotate(45deg);"></div>
-    </div>
-
-    <div class="bottom-nav">
-      <button class="nav-btn active" id="nav-home" onclick="goPg('home')">
-        <svg viewBox="0 0 24 24"><path d="M3 12L12 3l9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9"/></svg>
-        <span>Home</span>
-      </button>
-      <button class="nav-btn" id="nav-tasks" onclick="goPg('tasks')">
-        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        <span>Tasks</span>
-      </button>
-      <button class="nav-btn" id="nav-projects" onclick="goPg('projects')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        <span>Projects</span>
-      </button>
-      <button class="nav-btn" id="nav-habits" onclick="goPg('habits')">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
-        <span>Habits</span>
-      </button>
-      <button class="nav-btn" id="nav-calendar" onclick="goPg('calendar')">
-        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
-        <span>Calendar</span>
-      </button>
-      <div class="nav-div"></div>
-      <button class="nav-btn" id="nav-journal" onclick="goPg('journal')">
-        <svg viewBox="0 0 24 24"><rect x="4" y="2" width="14" height="20" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>
-        <span>Journal</span>
-      </button>
-      <button class="nav-btn" id="nav-notes" onclick="goPg('notes')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h8l4-4V4a2 2 0 0 0-2-2z"/><path d="M14 2v4h4M8 13h8M8 9h8M8 17h5"/></svg>
-        <span>Notes</span>
-      </button>
-      <button class="nav-btn" id="nav-timer" onclick="goPg('timer')">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 3h6"/></svg>
-        <span>Timer</span>
-      </button>
-      <div class="nav-div"></div>
-      <button class="nav-btn" id="nav-aiplanner" onclick="openAIPlanner()" style="position:relative;">
-        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        <span>AI Planner</span>
-        <i style="position:absolute;top:3px;right:3px;font-size:7px;font-weight:800;font-style:normal;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;pointer-events:none;">PRO</i>
-      </button>
-
-    </div>
-  </div>
-</div>
-
-<!-- SHEETS -->
-<div class="sh-overlay" id="sh-overlay" onclick="closeSheets()"></div>
-<div class="sheet" id="sh-task">
-  <div class="sh-handle"></div><div class="sh-title">Add Task</div>
-  <div class="sh-body">
-    <span class="sh-lbl">Task Name</span>
-    <input class="sh-input" id="task-inp" type="text" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')saveTask()"/>
-    <span class="sh-lbl">Column</span>
-    <div class="pills-row" id="task-col-pills">
-      <div class="pill active" data-v="todo"   onclick="selPill(this,'task-col-pills')">To Do</div>
-      <div class="pill"        data-v="inprog"  onclick="selPill(this,'task-col-pills')">In Progress</div>
-      <div class="pill"        data-v="done"    onclick="selPill(this,'task-col-pills')">Done</div>
-    </div>
-    <span class="sh-lbl">Due Date</span>
-    <button class="sh-input" id="due-btn" onclick="openDueDatePicker()" style="text-align:left;cursor:pointer;color:var(--ink3);display:flex;align-items:center;gap:8px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>
-      <span id="due-lbl">Choose due date</span>
-    </button>
-    <input type="hidden" id="task-due-val"/>
-    <span class="sh-lbl">Repeat <span style="font-size:10px;color:var(--ink4);font-weight:400;">— clears due date</span></span>
-    <div class="pills-row" id="task-recur-pills">
-      <div class="pill active" data-v="none"   onclick="selPill(this,'task-recur-pills');onPickRepeat('none')">None</div>
-      <div class="pill"        data-v="daily"  onclick="selPill(this,'task-recur-pills');onPickRepeat('daily')">↺ Daily</div>
-      <div class="pill"        data-v="weekly" onclick="selPill(this,'task-recur-pills');onPickRepeat('weekly')">↺ Weekly</div>
-    </div>
-    <button class="sh-btn sh-btn-primary" style="margin-top:20px;" onclick="saveTask()">Add Task</button>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
-  </div>
-</div>
-<div class="sheet" id="sh-habit">
-  <div class="sh-handle"></div><div class="sh-title">Add Habit</div>
-  <div class="sh-body">
-    <span class="sh-lbl">Name</span>
-    <input class="sh-input" id="habit-inp" type="text" placeholder="e.g. Read, Exercise…"/>
-    <span class="sh-lbl">Icon</span>
-    <div class="emoji-grid">
-      <button class="emoji-btn active" data-e="💪" onclick="selEmoji(this)">💪</button>
-      <button class="emoji-btn" data-e="📚" onclick="selEmoji(this)">📚</button>
-      <button class="emoji-btn" data-e="🏃" onclick="selEmoji(this)">🏃</button>
-      <button class="emoji-btn" data-e="💧" onclick="selEmoji(this)">💧</button>
-      <button class="emoji-btn" data-e="🧘" onclick="selEmoji(this)">🧘</button>
-      <button class="emoji-btn" data-e="🥗" onclick="selEmoji(this)">🥗</button>
-      <button class="emoji-btn" data-e="😴" onclick="selEmoji(this)">😴</button>
-      <button class="emoji-btn" data-e="🎯" onclick="selEmoji(this)">🎯</button>
-      <button class="emoji-btn" data-e="✍️" onclick="selEmoji(this)">✍️</button>
-      <button class="emoji-btn" data-e="🌿" onclick="selEmoji(this)">🌿</button>
-      <button class="emoji-btn" data-e="⚡" onclick="selEmoji(this)">⚡</button>
-      <button class="emoji-btn" data-e="🎨" onclick="selEmoji(this)">🎨</button>
-    </div>
-    <button class="sh-btn sh-btn-primary" onclick="saveHabit()">Add Habit</button>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
-  </div>
-</div>
-<div class="sheet" id="sh-event" style="max-height:92vh;overflow-y:auto;">
-  <div class="sh-handle"></div>
-  <div class="sh-title" id="sh-event-title">Add Event</div>
-  <div class="sh-body">
-    <!-- Selected date label -->
-    <div id="mob-ev-date-lbl" style="font-size:13px;font-weight:700;color:var(--a2);margin-bottom:14px;"></div>
-
-    <!-- Existing events on this day -->
-    <div id="mob-ev-day-events" style="display:none;margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:8px;">Events on this day</div>
-      <div id="mob-ev-day-list"></div>
-    </div>
-
-    <span class="sh-lbl">Title</span>
-    <input class="sh-input" id="ev-inp" type="text" placeholder="Event name…" onkeydown="if(event.key==='Enter')document.getElementById('ev-inp').blur()"/>
-
-    <span class="sh-lbl" style="margin-top:12px;">Color</span>
-    <div class="ev-color-row" id="ev-color-row">
-      <button class="ev-cswatch active" data-color="#3A7D5E" style="background:#3A7D5E;" onclick="evPickColor(this)"></button>
-      <button class="ev-cswatch" data-color="#5B8DD9" style="background:#5B8DD9;" onclick="evPickColor(this)"></button>
-      <button class="ev-cswatch" data-color="#E8A838" style="background:#E8A838;" onclick="evPickColor(this)"></button>
-      <button class="ev-cswatch" data-color="#D95B5B" style="background:#D95B5B;" onclick="evPickColor(this)"></button>
-      <button class="ev-cswatch" data-color="#8B5BD9" style="background:#8B5BD9;" onclick="evPickColor(this)"></button>
-      <button class="ev-cswatch" data-color="#0D9488" style="background:#0D9488;" onclick="evPickColor(this)"></button>
-    </div>
-    <button class="sh-btn sh-btn-primary" onclick="saveEvent()">Save Event</button>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
-  </div>
-</div>
-<div class="sheet" id="sh-name">
-  <div class="sh-handle"></div><div class="sh-title">Display Name</div>
-  <div class="sh-body">
-    <input class="sh-input" id="name-inp" type="text" placeholder="Your name" onkeydown="if(event.key==='Enter')saveName()"/>
-    <button class="sh-btn sh-btn-primary" onclick="saveName()">Save</button>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
-  </div>
-</div>
-
-<!-- UPGRADE MODAL -->
-<div class="sh-overlay" id="upg-overlay" onclick="closeUpgrade()"></div>
-<div class="sheet" id="mo-upgrade" style="border-radius:24px 24px 0 0;">
-  <div class="upg-header">
-    <div class="upg-glow"></div>
-    <span class="upg-sparkle">✦</span>
-    <div class="upg-title">Prodify Pro</div>
-    <div class="upg-sub" id="mo-upgrade-sub">Unlock everything. Stay in flow.</div>
-  </div>
-  <div class="upg-body">
-    <div class="upg-feats">
-      <div class="upg-feat"><span class="upg-feat-icon">♾️</span><span class="upg-feat-label">Unlimited habits</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">🤖</span><span class="upg-feat-label">AI Daily Planner</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">🎨</span><span class="upg-feat-label">Custom accent colors</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">📊</span><span class="upg-feat-label">CSV & PDF export</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud backups</span></div>
-      <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span></div>
-    </div>
-    <div class="upg-plans">
-      <div class="upg-plan">
-        <div class="upg-plan-price">$4<span>/mo</span></div>
-        <div class="upg-plan-label">Monthly</div>
-      </div>
-      <div class="upg-plan upg-plan-best">
-        <div class="upg-plan-pill">Best value</div>
-        <div class="upg-plan-price">$3<span>/mo</span></div>
-        <div class="upg-plan-label">Yearly · billed $36/yr</div>
+        <textarea class="sh-input" id="fb-msg" rows="4" placeholder="Tell us what's on your mind…"
+          style="resize:none;font-size:13px;min-height:100px;"></textarea>
+        <button class="sh-btn sh-btn-primary" id="fb-submit" onclick="submitFeedback(false)">Send Feedback</button>
+        <div id="fb-success"
+          style="display:none;background:var(--al);border:1.5px solid var(--a2);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;color:var(--a2);text-align:center;margin-top:8px;">
+          ✓ Thanks for your feedback!</div>
+        <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
       </div>
     </div>
-    <!-- Not joined -->
-    <div id="mob-upg-waitlist-join">
-      <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-      <button class="upg-waitlist-btn" id="mob-upg-join-btn" onclick="joinWaitlist()">Join the waitlist</button>
-      <div class="upg-err" id="mob-upg-waitlist-err"></div>
-    </div>
-    <!-- Already joined -->
-    <div id="mob-upg-waitlist-joined" style="display:none;">
-      <div class="upg-joined-box">
-        <div class="upg-joined-icon">🎉</div>
-        <div class="upg-joined-pos">You're <span id="mob-upg-position">#—</span> on the waitlist</div>
-        <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly, locked in).</div>
-      </div>
-      <button class="upg-cta" onclick="closeUpgrade()">Got it</button>
-    </div>
-    <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
-  </div>
-</div>
 
-<!-- EXPORT SHEET -->
-<div class="sheet" id="sh-export">
-  <div class="sh-handle"></div>
-  <div class="sh-title">Export Data</div>
-  <div class="sh-body">
-    <div class="export-opt" onclick="exportJSON();closeSheets()">
-      <div class="export-opt-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
-      <div class="export-opt-body">
-        <div class="export-opt-title">JSON <span class="pro-tag-inline" style="background:var(--al);color:var(--a2);">Free</span></div>
-        <div class="export-opt-desc">Full export — tasks, journal, habits, projects</div>
-      </div>
-    </div>
-    <div class="export-opt export-opt-locked" onclick="exportCSV()">
-      <div class="export-opt-icon export-opt-icon-locked"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
-      <div class="export-opt-body">
-        <div class="export-opt-title">CSV <span class="pro-tag-inline">Pro</span></div>
-        <div class="export-opt-desc">Spreadsheet-ready export for tasks & journal</div>
-      </div>
-    </div>
-    <div class="export-opt export-opt-locked" onclick="exportPDF()">
-      <div class="export-opt-icon export-opt-icon-locked"><svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="export-opt-body">
-        <div class="export-opt-title">PDF <span class="pro-tag-inline">Pro</span></div>
-        <div class="export-opt-desc">Beautifully formatted productivity report</div>
-      </div>
-    </div>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
-  </div>
-</div>
 
-<!-- DEVICES SHEET -->
-<div class="sheet" id="sh-devices">
-  <div class="sh-handle"></div>
-  <div class="sh-title">Active Devices</div>
-  <div class="sh-body">
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Sessions from the last 7 days</div>
-    <div id="sh-devices-list"></div>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
-  </div>
-</div>
-
-<!-- BACKUP SHEET -->
-<div class="sheet" id="sh-backup">
-  <div class="sh-handle"></div>
-  <div class="sh-title">Cloud Backup History</div>
-  <div class="sh-body">
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Auto-saved daily · Up to 7 snapshots</div>
-    <div id="sh-backup-list"></div>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Close</button>
-  </div>
-</div>
-
-<!-- NEW PROJECT SHEET -->
-<div class="sheet" id="sh-new-project" style="border-radius:20px 20px 0 0;overflow:hidden;max-height:90vh;overflow-y:auto;">
-  <div id="mob-new-proj-bar" style="height:4px;background:var(--a2);width:100%;transition:background .25s;flex-shrink:0;"></div>
-  <div style="padding:20px 20px 0;">
-    <input id="mob-proj-name" type="text" placeholder="Project name…" autocomplete="off" autocapitalize="words"
-      onkeydown="if(event.key==='Enter')document.getElementById('mob-proj-desc').focus()"
-      style="display:block;width:100%;font-size:20px;font-weight:800;color:var(--ink);background:transparent;border:none;border-bottom:2px solid var(--bdr);padding:6px 0 10px;outline:none;font-family:inherit;letter-spacing:-.3px;box-sizing:border-box;transition:border-color .2s;"
-      onfocus="this.style.borderBottomColor='var(--a2)'" onblur="this.style.borderBottomColor='var(--bdr)'"/>
-    <input id="mob-proj-desc" type="text" placeholder="Add a description… (optional)" autocomplete="off"
-      style="display:block;width:100%;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;padding:8px 0 4px;outline:none;font-family:inherit;box-sizing:border-box;"
-      onfocus="this.style.color='var(--ink)'" onblur="this.style.color='var(--ink2)'"/>
-  </div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">Due Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span></div>
-  <div style="padding:0 20px;">
-    <button id="mob-proj-due-btn" onclick="openProjDueDatePicker()"
-      style="display:flex;align-items:center;gap:9px;width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:11px 14px;font-family:inherit;cursor:pointer;text-align:left;color:var(--ink3);font-size:13px;font-weight:700;box-sizing:border-box;transition:border-color .2s,background .2s;">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0;">
-        <rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/>
-      </svg>
-      <span id="mob-proj-due-lbl">Choose due date</span>
-    </button>
-    <input type="hidden" id="mob-proj-due-val"/>
-  </div>
-
-  <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">Tasks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span></div>
-  <div style="padding:0 20px 8px;">
-    <div id="mob-proj-task-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input id="mob-proj-task-inp" type="text" placeholder="Add a task…" autocomplete="off"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();mobSubAddTask();}"
-        style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:10px 14px;font-family:inherit;font-size:13px;color:var(--ink);outline:none;transition:border-color .2s;"
-        onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"/>
-      <button onclick="mobSubAddTask()"
-        style="flex-shrink:0;padding:10px 16px;border-radius:13px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
-        + Add
-      </button>
-    </div>
-  </div>
-
-  <div style="display:flex;gap:10px;padding:14px 20px 32px;">
-    <button onclick="closeSheets()"
-      style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Cancel
-    </button>
-    <button onclick="mobAddProject()"
-      style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Create Project
-    </button>
-  </div>
-</div>
-
-<!-- ADD TASK TO PROJECT SHEET -->
-<div class="sheet" id="sh-proj-task" style="border-radius:20px 20px 0 0;overflow:hidden;">
-  <div id="mob-ptask-bar" style="height:4px;background:var(--a2);width:100%;transition:background .25s;"></div>
-  <div style="padding:20px 20px 0;">
-    <input id="mob-ptask-name" type="text" placeholder="Task name…" autocomplete="off"
-      onkeydown="if(event.key==='Enter')mobAddProjTask()"
-      style="display:block;width:100%;font-size:20px;font-weight:800;color:var(--ink);background:transparent;border:none;border-bottom:2px solid var(--bdr);padding:6px 0 10px;outline:none;font-family:inherit;letter-spacing:-.3px;box-sizing:border-box;transition:border-color .2s;"
-      onfocus="this.style.borderBottomColor='var(--a2)'" onblur="this.style.borderBottomColor='var(--bdr)'"/>
-  </div>
-  <input type="hidden" id="mob-ptask-subjid"/>
-  <div style="display:flex;gap:10px;padding:18px 20px 24px;">
-    <button onclick="closeSheets()"
-      style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Cancel
-    </button>
-    <button onclick="mobAddProjTask()"
-      style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-      Add Task
-    </button>
-  </div>
-</div>
-
-<!-- ABOUT SHEET -->
-<div class="sheet" id="sh-about">
-  <div class="sh-handle"></div>
-  <div class="sh-body" style="padding:0;overflow:hidden;">
-    <!-- Header band matching desktop -->
-    <div style="background:var(--a);padding:28px 24px 24px;text-align:center;position:relative;">
-      <div style="position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 65%);top:-60px;right:-40px;pointer-events:none;"></div>
-      <img src="https://avatars.githubusercontent.com/u/266276185"
-        style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.2);display:block;margin:0 auto 12px;background:rgba(255,255,255,.1);"
-        onerror="this.style.display='none'" />
-      <div id="mob-about-name" style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;">—</div>
-      <div id="mob-about-username" style="font-size:12px;color:rgba(255,255,255,.55);font-weight:500;margin-top:3px;">—</div>
-    </div>
-    <!-- Body matching desktop -->
-    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
-      <p style="font-size:13px;color:var(--ink2);line-height:1.7;margin:0;">A student developer passionate about building tools that make everyday life more organized and productive. Prodify started as a personal project and grew into something I hope helps you too.</p>
-      <div>
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--ink4);margin-bottom:8px;">Built With</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vanilla JS</span>
-          <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Supabase</span>
-          <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">Vercel</span>
-          <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">CSS3</span>
-          <span style="padding:4px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:100px;font-size:11px;font-weight:600;color:var(--ink2);">PWA</span>
+    <!-- CUSTOM CONFIRM -->
+    <div id="mo-confirm">
+      <div class="confirm-box">
+        <div class="confirm-msg" id="confirm-msg">Are you sure?</div>
+        <div class="confirm-sub" id="confirm-sub"></div>
+        <div class="confirm-btns">
+          <button class="confirm-btn confirm-btn-cancel" onclick="confirmResolve(false)">Cancel</button>
+          <button class="confirm-btn confirm-btn-ok" id="confirm-ok-btn" onclick="confirmResolve(true)">Delete</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:11px;color:var(--ink4);">Prodify v1.0 · Made with ♥</span>
-        <button class="bol bsm" onclick="closeSheets()">Close</button>
-      </div>
     </div>
-  </div>
-</div>
 
-<!-- FEEDBACK SHEET -->
-<div class="sheet" id="sh-feedback">
-  <div class="sh-handle"></div>
-  <div class="sh-title">Send Feedback</div>
-  <div class="sh-body">
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">We read every message — bugs, ideas, or just a hello.</div>
-    <div id="fb-stars" style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;">
-      <svg class="fbs" data-v="1" onclick="fbRate(1)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)" stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="2" onclick="fbRate(2)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)" stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="3" onclick="fbRate(3)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)" stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="4" onclick="fbRate(4)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)" stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      <svg class="fbs" data-v="5" onclick="fbRate(5)" width="36" height="36" viewBox="0 0 24 24" fill="var(--bdr)" stroke="var(--ink4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;transition:fill .15s,transform .15s;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <div id="toast">—</div>
+
+    <div id="mob-aip-panel"
+      style="position:fixed;bottom:80px;right:12px;width:320px;height:420px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.22);z-index:41;display:none;flex-direction:column;overflow:hidden;transform:translateY(16px) scale(.98);opacity:0;transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .18s;">
+      <div id="mob-aip-body" style="display:flex;flex-direction:column;height:100%;"></div>
     </div>
-    <textarea class="sh-input" id="fb-msg" rows="4" placeholder="Tell us what's on your mind…" style="resize:none;font-size:13px;min-height:100px;"></textarea>
-    <button class="sh-btn sh-btn-primary" id="fb-submit" onclick="submitFeedback(false)">Send Feedback</button>
-    <div id="fb-success" style="display:none;background:var(--al);border:1.5px solid var(--a2);border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;color:var(--a2);text-align:center;margin-top:8px;">✓ Thanks for your feedback!</div>
-    <button class="sh-btn sh-btn-secondary" onclick="closeSheets()">Cancel</button>
-  </div>
-</div>
 
-
-<!-- CUSTOM CONFIRM -->
-<div id="mo-confirm">
-  <div class="confirm-box">
-    <div class="confirm-msg" id="confirm-msg">Are you sure?</div>
-    <div class="confirm-sub" id="confirm-sub"></div>
-    <div class="confirm-btns">
-      <button class="confirm-btn confirm-btn-cancel" onclick="confirmResolve(false)">Cancel</button>
-      <button class="confirm-btn confirm-btn-ok" id="confirm-ok-btn" onclick="confirmResolve(true)">Delete</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast">—</div>
-
-<div id="mob-aip-panel"
-  style="position:fixed;bottom:80px;right:12px;width:320px;height:420px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.22);z-index:41;display:none;flex-direction:column;overflow:hidden;transform:translateY(16px) scale(.98);opacity:0;transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .18s;">
-  <div id="mob-aip-body" style="display:flex;flex-direction:column;height:100%;"></div>
-</div>
-
-<!-- Supabase -->
+    <!-- Supabase -->
   </template>
 
   <!-- Desktop-only scroll-reveal -->
   <script>
-  if (!window.PRODIFY_IS_MOBILE) {
-    (function () {
-      function initFeatReveal() {
-        var cards = document.querySelectorAll('.sl-feat-card');
-        if (!cards.length) return;
-        if ('IntersectionObserver' in window) {
-          var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (e) {
-              if (e.isIntersecting) { e.target.classList.add('feat-visible'); io.unobserve(e.target); }
-            });
-          }, { threshold: 0.15 });
-          cards.forEach(function (c) { io.observe(c); });
-        } else {
-          cards.forEach(function (c) { c.classList.add('feat-visible'); });
-        }
-      }
+    if (!window.PRODIFY_IS_MOBILE) {
       (function () {
-        var nav = document.querySelector('.lnav');
-        if (!nav) return;
-        var sl = document.getElementById('sl');
-        if (!sl) return;
-        sl.addEventListener('scroll', function () {
-          nav.classList.toggle('scrolled', sl.scrollTop > 40);
-        });
+        function initFeatReveal() {
+          var cards = document.querySelectorAll('.sl-feat-card');
+          if (!cards.length) return;
+          if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) { e.target.classList.add('feat-visible'); io.unobserve(e.target); }
+              });
+            }, { threshold: 0.15 });
+            cards.forEach(function (c) { io.observe(c); });
+          } else {
+            cards.forEach(function (c) { c.classList.add('feat-visible'); });
+          }
+        }
+        (function () {
+          var nav = document.querySelector('.lnav');
+          if (!nav) return;
+          var sl = document.getElementById('sl');
+          if (!sl) return;
+          sl.addEventListener('scroll', function () {
+            nav.classList.toggle('scrolled', sl.scrollTop > 40);
+          });
+        })();
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initFeatReveal);
+        } else {
+          initFeatReveal();
+        }
       })();
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFeatReveal);
-      } else {
-        initFeatReveal();
-      }
-    })();
-  }
+    }
   </script>
 
 
-<!-- AI PLANNER FLOATING PANEL (desktop) -->
-<div id="aip-float-btn" onclick="toggleAipPanel()" title="AI Daily Planner"
-  style="position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--a2));box-shadow:0 4px 20px rgba(0,0,0,.2);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:8000;transition:transform .2s,box-shadow .2s;"
-  onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 6px 24px rgba(0,0,0,.28)'"
-  onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 20px rgba(0,0,0,.2)'">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-  <span id="aip-float-pro" style="position:absolute;top:-2px;right:-2px;font-size:7px;font-weight:800;background:#fff;color:var(--a2);padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;">PRO</span>
-</div>
+  <!-- AI PLANNER FLOATING PANEL (desktop) -->
+  <div id="aip-float-btn" onclick="toggleAipPanel()" title="AI Daily Planner"
+    style="position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--a2));box-shadow:0 4px 20px rgba(0,0,0,.2);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:8000;transition:transform .2s,box-shadow .2s;"
+    onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 6px 24px rgba(0,0,0,.28)'"
+    onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 20px rgba(0,0,0,.2)'">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+    <span id="aip-float-pro"
+      style="position:absolute;top:-2px;right:-2px;font-size:7px;font-weight:800;background:#fff;color:var(--a2);padding:1px 4px;border-radius:100px;letter-spacing:.3px;line-height:1.6;">PRO</span>
+  </div>
 
-<div id="aip-panel" style="position:fixed;bottom:92px;right:28px;width:380px;height:560px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:7999;display:none;flex-direction:column;overflow:hidden;transform:translateY(12px) scale(.97);opacity:0;transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .2s;">
-  <div id="aip-body" style="display:flex;flex-direction:column;height:100%;"></div>
-</div>
+  <div id="aip-panel"
+    style="position:fixed;bottom:92px;right:28px;width:380px;height:560px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:7999;display:none;flex-direction:column;overflow:hidden;transform:translateY(12px) scale(.97);opacity:0;transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .2s;">
+    <div id="aip-body" style="display:flex;flex-direction:column;height:100%;"></div>
+  </div>
 
-<!-- AI PLANNER SHEET (mobile) -->
+  <!-- AI PLANNER SHEET (mobile) -->
 
 </body>
+
 </html>
