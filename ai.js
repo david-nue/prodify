@@ -12,6 +12,7 @@ const MAX_MESSAGES    = 20;
 const LIMIT_PRO       = 40;
 
 const SB_URL          = 'https://kvezrezhicjlhycghucr.supabase.co';
+const SB_ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZXpyZXpoaWNqbGh5Y2dodWNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NzMxMTMsImV4cCI6MjA4ODQ0OTExM30.-Gb6LHePwJ0yK54e0POijp_6qVwg1gqtiAj3pN8sKF8';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ async function verifyJwt(token) {
     const res = await fetch(`${SB_URL}/auth/v1/user`, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'apikey': process.env.SUPABASE_ANON_KEY || '',
+        'apikey': SB_ANON_KEY,
       },
     });
     if (!res.ok) return null;
