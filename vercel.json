@@ -40,16 +40,7 @@
       ]
     },
     {
-      "source": "/style.css",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache"
-        }
-      ]
-    },
-    {
-      "source": "/app.js",
+      "source": "/(style|app|app-mobile).(css|js)",
       "headers": [
         {
           "key": "Cache-Control",
