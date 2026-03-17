@@ -9,7 +9,7 @@ const MAX_TOKENS      = 1500;
 const MAX_MESSAGES    = 20;
 
 // Rate limits (requests per day)
-const LIMIT_PRO       = 100;
+const LIMIT_PRO       = 40;
 
 const SB_URL          = 'https://kvezrezhicjlhycghucr.supabase.co';
 
