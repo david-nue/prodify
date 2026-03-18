@@ -3375,12 +3375,6 @@ async function aipGenerate(containerId) {
   msgs.appendChild(ty);
   msgs.scrollTop = msgs.scrollHeight;
 
-  const ty = document.createElement('div');
-  ty.className = 'aip-bubble aip-bubble-ai aip-typing';
-  ty.innerHTML = '<span></span><span></span><span></span>';
-  msgs.appendChild(ty);
-  msgs.scrollTop = msgs.scrollHeight;
-
   // Single-shot: fresh context + generate prompt
   const apiMessages = [{ role: 'user', content: _aipContext + '\n\nGenerate my plan for today.' }];
 
