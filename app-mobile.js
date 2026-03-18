@@ -3343,19 +3343,9 @@ function renderAIPlanner(containerId, isMobile) {
     + 'CALENDAR: ' + ctx.eventList + '\n'
     + 'NOTES (recent): ' + (getD().notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') + '\n'
     + 'PROJECTS: ' + ((getD().subjects||[]).slice(0,5).map(p=>p.name+(p.grade?' ('+p.grade+'%)':'')).join(', ')||'(none)') + '\n\n'
-    + 'CRITICAL: When you create tasks, complete habits, move tasks, or add events, you MUST append the corresponding action blocks at the end of your response. No exceptions.\n\n'
-    + 'RULES:\n'
-    + '- Only use IDs from the data above. Never invent IDs.\n'
-    + '- Never confirm an action you did not perform.\n'
-    + '- If asked to do something with no matching data, say so honestly.\n\n'
-    + 'ACTION FORMAT (append after your text, one per line):\n'
-    + '<<<ACTION>>>{"type":"create_task","text":"task name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"complete_habit","id":EXACT_HABIT_ID}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"move_task","id":"EXACT_TASK_ID","col":"todo|inprog|done"}<<<END>>>\n'
-    + '<<<ACTION>>>{"type":"create_event","title":"event name","date":"YYYY-MM-DD"}<<<END>>>\n\n'
-    + 'EXAMPLE: If user says "add a task to study math", end with:\n'
-    + '<<<ACTION>>>{"type":"create_task","text":"Study math","priority":"medium","dueDate":null}<<<END>>>\n\n'
-    + 'Plans format: **HH:MM – HH:MM** task name\n> tip\nEnd with **Note:** one insight.';
+    + 'Build a realistic, prioritized plan for the day based on the data above.\n'
+    + 'Format each block: **HH:MM – HH:MM** Task name\n> One practical tip\n'
+    + 'End with **Note:** one key insight. Be specific and direct. No fluff.';
 
   el.innerHTML =
     '<div class="aip-chat-wrap" id="' + containerId + '-wrap">'
@@ -3371,13 +3361,13 @@ function renderAIPlanner(containerId, isMobile) {
     + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'
     + '<div class="aip-chat-footer">'
     + '<div class="aip-suggestions" id="' + containerId + '-sugg">'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Generate my plan for today\')">⚡ Plan my day</button>'
-    + (carried ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks\')">⚠️ Catch up</button>' : '')
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">📊 Check in</button>'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today\')">⏱ Short on time</button>'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Build me a prioritized plan for today\')">⚡ Plan my day</button>'
+    + (carried ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks, help me plan today around them\')">⚠️ Catch up</button>' : '')
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'What should I focus on today and why?\')">🎯 What to focus on</button>'
+    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today, build me a realistic plan\')">⏱ Short on time</button>'
     + '</div>'
     + '<div class="aip-input-row">'
-    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Plan day, add task, mark habit done…" rows="1"'
+    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Describe your day and I’ll build your plan…" rows="1"'
     + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();aipSend(\'' + containerId + '\');}"'
     + ' oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,90)+\'px\';"></textarea>'
     + '<button class="aip-send-btn" id="' + containerId + '-sendbtn" onclick="aipSend(\'' + containerId + '\')">'
@@ -3418,10 +3408,8 @@ async function _aipDispatch(containerId, userText) {
   if (sendBtn) sendBtn.disabled = true;
   if (input)   input.disabled = true;
 
-  _aipHistory.push({ role: 'user', content: userText });
-
-  // Send full conversation history — context goes as system field
-  const apiMessages = _aipHistory.slice();
+  // Single-shot: fresh context + user message only, no history
+  const apiMessages = [{ role: 'user', content: _aipContext + '\n\nUser request: ' + userText }];
 
   try {
     const { data: { session: _aipSess } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -3429,7 +3417,7 @@ async function _aipDispatch(containerId, userText) {
     const resp = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_aipToken}` },
-      body: JSON.stringify({ system: _aipContext, messages: apiMessages })
+      body: JSON.stringify({ messages: apiMessages })
     });
     if (resp.status === 429) {
       const errData = await resp.json();
@@ -3443,13 +3431,10 @@ async function _aipDispatch(containerId, userText) {
       throw new Error('Session expired. Please sign out and back in.');
     }
     const data = await resp.json();
-    let aiText = (data.content || []).map(b => b.text || '').join('');
+    const aiText = (data.content || []).map(b => b.text || '').join('');
     if (!aiText) throw new Error(data.error?.message || 'Empty response');
 
-    // Execute actions
-    aiText = await _mobAipExecuteActions(aiText);
-
-    _aipHistory.push({ role: 'assistant', content: aiText });
+    _aipPlanGenerated = true;
     ty.remove();
 
     const ab = document.createElement('div');
@@ -3457,26 +3442,12 @@ async function _aipDispatch(containerId, userText) {
     ab.innerHTML = _aipFormat(aiText);
     msgs.appendChild(ab);
 
-    if (_aipHistory.length === 2) {
-      const fc = document.createElement('div');
-      fc.className = 'aip-followup-sugg';
-      fc.innerHTML = '<div class="aip-followup-label">Try asking:</div>'
-        + '<div class="aip-followup-chips">'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'I got distracted, help me refocus\')">Help me refocus</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'Add a task to review emails\')">Add a task</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'Mark my first habit as done\')">Mark habit done</button>'
-        + '<button onclick="aipSend(\'' + containerId + '\',\'How is my day going so far?\')">How\'s my day?</button>'
-        + '</div>';
-      msgs.appendChild(fc);
-    }
-
   } catch (err) {
     ty.remove();
-    _aipHistory.pop();
-    if (err.message === 'pro_gate') return; // upgrade modal already shown
+    if (err.message === 'pro_gate') return;
     const eb = document.createElement('div');
     eb.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
-    eb.textContent = '⚠️ ' + err.message;
+    eb.textContent = (err.message.includes('limit') || err.message.includes('expired')) ? '⚠️ ' + err.message : '⚠️ Something went wrong. Please try again.';
     msgs.appendChild(eb);
   } finally {
     if (sendBtn) sendBtn.disabled = false;
