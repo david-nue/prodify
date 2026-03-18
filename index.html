@@ -1765,26 +1765,26 @@
           </div>
         </div>
 
-        <!-- WAITLIST STATE: not joined -->
-        <div id="dsk-upg-waitlist-join">
-          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-          <button class="upg-waitlist-btn" id="dsk-upg-join-btn" style="width:100%;" onclick="joinWaitlist()">Join the
-            waitlist</button>
-          <p class="upg-note" id="dsk-upg-waitlist-err" style="color:var(--red);display:none;margin-top:8px;"></p>
-        </div>
-
-        <!-- WAITLIST STATE: already joined -->
-        <div id="dsk-upg-waitlist-joined" style="display:none;">
-          <div class="upg-joined-box">
-            <div class="upg-joined-icon">🎉</div>
-            <div class="upg-joined-pos">You're <span id="dsk-upg-position">#—</span> on the waitlist</div>
-            <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly,
-              locked in as long as you're subscribed).</div>
+        <!-- CHECKOUT STATE: not yet pro -->
+        <div id="dsk-upg-checkout">
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+            <button class="upg-cta" id="dsk-upg-btn-yearly" onclick="_lsCheckout('checkout_yearly')" style="background:linear-gradient(135deg,var(--a),var(--a2));">Get Yearly · Best value</button>
+            <button class="upg-cta" id="dsk-upg-btn-monthly" onclick="_lsCheckout('checkout_monthly')" style="background:var(--surf2);color:var(--ink);border:1.5px solid var(--bdr);">Get Monthly</button>
           </div>
-          <button class="upg-cta" onclick="closeMo('dsk-mo-upgrade')">Got it</button>
+          <p class="upg-note" id="dsk-upg-err" style="color:var(--red);display:none;margin-top:4px;"></p>
         </div>
 
-        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
+        <!-- MANAGED STATE: already pro -->
+        <div id="dsk-upg-managed" style="display:none;">
+          <div class="upg-joined-box">
+            <div class="upg-joined-icon">✦</div>
+            <div class="upg-joined-pos" style="color:var(--a2);font-weight:800;">You're on Pro!</div>
+            <div class="upg-joined-sub">All Pro features are active on your account.</div>
+          </div>
+          <button class="upg-cta" id="dsk-upg-portal-btn" onclick="openCustomerPortal()" style="margin-top:8px;background:var(--surf2);color:var(--ink);border:1.5px solid var(--bdr);">Manage subscription</button>
+        </div>
+
+        <p class="upg-note">Secure checkout via Lemon Squeezy · Cancel anytime</p>
       </div>
     </div>
   </div>
@@ -3013,23 +3013,24 @@
             <div class="upg-plan-label">Yearly · billed $36/yr</div>
           </div>
         </div>
-        <!-- Not joined -->
-        <div id="mob-upg-waitlist-join">
-          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-          <button class="upg-waitlist-btn" id="mob-upg-join-btn" onclick="joinWaitlist()">Join the waitlist</button>
-          <div class="upg-err" id="mob-upg-waitlist-err"></div>
-        </div>
-        <!-- Already joined -->
-        <div id="mob-upg-waitlist-joined" style="display:none;">
-          <div class="upg-joined-box">
-            <div class="upg-joined-icon">🎉</div>
-            <div class="upg-joined-pos">You're <span id="mob-upg-position">#—</span> on the waitlist</div>
-            <div class="upg-joined-sub">We'll email you when Pro launches with your founding member rate ($3/mo yearly,
-              locked in).</div>
+        <!-- CHECKOUT STATE: not yet pro -->
+        <div id="mob-upg-checkout">
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+            <button class="upg-cta" id="mob-upg-btn-yearly" onclick="mobLsCheckout('checkout_yearly')" style="background:linear-gradient(135deg,var(--a),var(--a2));">Get Yearly · Best value</button>
+            <button class="upg-cta" id="mob-upg-btn-monthly" onclick="mobLsCheckout('checkout_monthly')" style="background:var(--surf2);color:var(--ink);border:1.5px solid var(--bdr);">Get Monthly</button>
           </div>
-          <button class="upg-cta" onclick="closeUpgrade()">Got it</button>
+          <div class="upg-err" id="mob-upg-err"></div>
         </div>
-        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
+        <!-- MANAGED STATE: already pro -->
+        <div id="mob-upg-managed" style="display:none;">
+          <div class="upg-joined-box">
+            <div class="upg-joined-icon">✦</div>
+            <div class="upg-joined-pos" style="color:var(--a2);font-weight:800;">You're on Pro!</div>
+            <div class="upg-joined-sub">All Pro features are active on your account.</div>
+          </div>
+          <button class="upg-cta" onclick="mobOpenPortal()" style="margin-top:8px;background:var(--surf2);color:var(--ink);border:1.5px solid var(--bdr);">Manage subscription</button>
+        </div>
+        <p class="upg-note">Secure checkout via Lemon Squeezy · Cancel anytime</p>
       </div>
     </div>
 

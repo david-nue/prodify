@@ -5179,117 +5179,173 @@ function formatPlan(text) { return formatAipMessage(text); }
 // ═══════════════════════════════════════
 function isPro() { return !!(prefs.pro); }
 
-// ═══════════════════════════════════════
-// WAITLIST SYSTEM
-// ═══════════════════════════════════════
-let _waitlistChecked = false;
-let _onWaitlist = false;
-let _waitlistPos = null;
-
+// Sync is_pro from Supabase into prefs.pro on every launch
 async function checkWaitlist() {
-  if (!sbReady || !cu) return;
   try {
-    const userRow = await dbGetUser(cu);
-    const email = userRow?.email || '';
-    if (!email) { _waitlistChecked = true; return; }
-    const { data, error } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
-    if (data && !error) {
-      _onWaitlist = true;
-      _waitlistPos = data.position;
+    if (!sbReady || !cu) return;
+    const { data: row } = await sb.from('users').select('is_pro').eq('username', cu).single();
+    if (!row) return;
+    const serverPro = !!(row.is_pro);
+    if (serverPro !== !!(prefs.pro)) {
+      prefs.pro = serverPro;
+      if (acc[cu]) acc[cu].prefs = prefs;
+      LS.s('pd1_acc', acc);
+      renderProBadge();
+      _syncUpgradeUI();
+      _syncMobUpgradeUI();
     }
-  } catch(e) {}
-  _waitlistChecked = true;
+    // Check if user returned from checkout (?pro=1)
+    if (new URLSearchParams(window.location.search).get('pro') === '1') {
+      window.history.replaceState({}, '', window.location.pathname);
+      if (serverPro) gTip('✦ Welcome to Pro! All features are now unlocked.');
+    }
+  } catch(e) { /* silent */ }
 }
 
-async function joinWaitlist() {
-  const errEl = document.getElementById('dsk-upg-waitlist-err');
-  const btn = document.getElementById('dsk-upg-join-btn');
-
-  if (errEl) errEl.style.display = 'none';
-  if (btn) { btn.textContent = 'Joining…'; btn.disabled = true; }
-
+// ── Mobile Lemon Squeezy Checkout ──────────────────────────────────────────
+async function mobLsCheckout(action) {
+  const btnMonthly = document.getElementById('mob-upg-btn-monthly');
+  const btnYearly  = document.getElementById('mob-upg-btn-yearly');
+  const errEl      = document.getElementById('mob-upg-err');
+  const activeBtn  = action === 'checkout_yearly' ? btnYearly : btnMonthly;
+  if (errEl) errEl.textContent = '';
+  if (activeBtn) { activeBtn.textContent = 'Loading...'; activeBtn.disabled = true; }
   try {
-    if (!sbReady) throw new Error('offline');
     if (!cu) throw new Error('not_logged_in');
-
-    // Always pull email from their Prodify account
-    const userRow = await dbGetUser(cu);
-    const email = userRow?.email || '';
-    if (!email) throw new Error('no_email');
-
-    // Check if already on waitlist
-    const { data: existing } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
-    if (existing) {
-      _onWaitlist = true;
-      _waitlistPos = existing.position;
-      if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
-      _showWaitlistJoined();
-      return;
-    }
-
-    // Insert — position assigned server-side by DB trigger
-    const { data: inserted, error } = await sb.from('waitlist').insert({
-      email,
-      username: cu,
-      joined_at: new Date().toISOString()
-    }).select('id, position').single();
-
-    if (error) {
-      // Unique constraint: handle race condition
-      if (error.code === '23505') {
-        const { data: raceWin } = await sb.from('waitlist').select('id, position').eq('email', email).maybeSingle();
-        if (raceWin) {
-          _onWaitlist = true;
-          _waitlistPos = raceWin.position;
-          if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
-          _showWaitlistJoined();
-          return;
-        }
-      }
-      throw error;
-    }
-
-    _onWaitlist = true;
-    _waitlistPos = inserted?.position || null;
-
-    if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
-    _showWaitlistJoined();
-
+    const token = (await sb.auth.getSession())?.data?.session?.access_token;
+    if (!token) throw new Error('not_logged_in');
+    const res = await fetch('/api/lemonsqueezy/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not create checkout');
+    window.open(data.url, '_blank');
   } catch(e) {
-    if (btn) { btn.textContent = 'Join the waitlist'; btn.disabled = false; }
-    if (errEl) {
-      const msg = e.message === 'offline'       ? 'No connection. Try again shortly.'
-                : e.message === 'not_logged_in' ? 'Sign in to join the waitlist.'
-                : e.message === 'no_email'      ? 'No email on your account. Contact support.'
-                : 'Something went wrong. Please try again.';
-      errEl.textContent = msg;
-      errEl.style.display = 'block';
-    }
+    if (errEl) errEl.textContent = e.message === 'not_logged_in' ? 'Sign in to upgrade.' : (e.message || 'Something went wrong.');
+  } finally {
+    if (btnMonthly) { btnMonthly.textContent = 'Get Monthly'; btnMonthly.disabled = false; }
+    if (btnYearly)  { btnYearly.textContent  = 'Get Yearly · Best value'; btnYearly.disabled = false; }
   }
 }
 
-function _showWaitlistJoined() {
-  const joinEl = document.getElementById('dsk-upg-waitlist-join');
-  const joinedEl = document.getElementById('dsk-upg-waitlist-joined');
-  const posEl = document.getElementById('dsk-upg-position');
-  if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
-  if (joinEl) joinEl.style.display = 'none';
-  if (joinedEl) joinedEl.style.display = 'block';
+async function mobOpenPortal() {
+  const errEl = document.getElementById('mob-upg-err');
+  if (errEl) errEl.textContent = '';
+  try {
+    const token = (await sb.auth.getSession())?.data?.session?.access_token;
+    if (!token) throw new Error('not_logged_in');
+    const res = await fetch('/api/lemonsqueezy/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action: 'portal' }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not open portal');
+    window.open(data.url, '_blank');
+  } catch(e) {
+    if (errEl) errEl.textContent = e.message || 'Something went wrong.';
+  }
 }
 
-function _syncWaitlistUI() {
-  const joinEl = document.getElementById('dsk-upg-waitlist-join');
-  const joinedEl = document.getElementById('dsk-upg-waitlist-joined');
-  if (!joinEl || !joinedEl) return;
-  if (_onWaitlist) {
-    const posEl = document.getElementById('dsk-upg-position');
-    if (posEl) posEl.textContent = '#' + (_waitlistPos || '—');
-    joinEl.style.display = 'none';
-    joinedEl.style.display = 'block';
+function _syncMobUpgradeUI() {
+  const checkoutEl = document.getElementById('mob-upg-checkout');
+  const managedEl  = document.getElementById('mob-upg-managed');
+  if (!checkoutEl || !managedEl) return;
+  if (isPro()) {
+    checkoutEl.style.display = 'none';
+    managedEl.style.display  = 'block';
   } else {
-    joinEl.style.display = 'block';
-    joinedEl.style.display = 'none';
-    // No email input to pre-fill — email is pulled from account automatically
+    checkoutEl.style.display = 'block';
+    managedEl.style.display  = 'none';
+  }
+}
+
+// ═══════════════════════════════════════
+// WAITLIST SYSTEM (landing page only)
+// ═══════════════════════════════════════
+// ── Lemon Squeezy Checkout ─────────────────────────────────────────────────
+
+async function _lsCheckout(action) {
+  const btnMonthly = document.getElementById('dsk-upg-btn-monthly');
+  const btnYearly  = document.getElementById('dsk-upg-btn-yearly');
+  const errEl      = document.getElementById('dsk-upg-err');
+  const activeBtn  = action === 'checkout_yearly' ? btnYearly : btnMonthly;
+
+  if (errEl) errEl.style.display = 'none';
+  if (activeBtn) { activeBtn.textContent = 'Loading…'; activeBtn.disabled = true; }
+
+  try {
+    if (!cu) throw new Error('not_logged_in');
+    const token = (await sb.auth.getSession())?.data?.session?.access_token;
+    if (!token) throw new Error('not_logged_in');
+
+    const res = await fetch('/api/lemonsqueezy/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not create checkout');
+
+    // Open Lemon Squeezy checkout in a new tab
+    window.open(data.url, '_blank');
+
+  } catch(e) {
+    if (errEl) {
+      const msg = e.message === 'not_logged_in' ? 'Sign in to upgrade.'
+                : e.message || 'Something went wrong. Please try again.';
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+  } finally {
+    if (btnMonthly) { btnMonthly.textContent = 'Get Monthly'; btnMonthly.disabled = false; }
+    if (btnYearly)  { btnYearly.textContent  = 'Get Yearly · Best value'; btnYearly.disabled = false; }
+  }
+}
+
+async function openCustomerPortal() {
+  const btn   = document.getElementById('dsk-upg-portal-btn');
+  const errEl = document.getElementById('dsk-upg-err');
+  if (errEl) errEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+
+  try {
+    const token = (await sb.auth.getSession())?.data?.session?.access_token;
+    if (!token) throw new Error('not_logged_in');
+
+    const res = await fetch('/api/lemonsqueezy/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action: 'portal' }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Could not open portal');
+    window.open(data.url, '_blank');
+
+  } catch(e) {
+    if (errEl) {
+      errEl.textContent = e.message || 'Something went wrong.';
+      errEl.style.display = 'block';
+    }
+  } finally {
+    if (btn) { btn.textContent = 'Manage subscription'; btn.disabled = false; }
+  }
+}
+
+function _syncUpgradeUI() {
+  const checkoutEl = document.getElementById('dsk-upg-checkout');
+  const managedEl  = document.getElementById('dsk-upg-managed');
+  if (!checkoutEl || !managedEl) return;
+  if (isPro()) {
+    checkoutEl.style.display = 'none';
+    managedEl.style.display  = 'block';
+  } else {
+    checkoutEl.style.display = 'block';
+    managedEl.style.display  = 'none';
   }
 }
 
@@ -5323,11 +5379,9 @@ function showUpgradeModal(featureName) {
     el.style.fontWeight = isMatch ? '700' : '';
   });
 
-  _syncWaitlistUI();
+  _syncUpgradeUI();
+  _syncMobUpgradeUI();
   openMo('dsk-mo-upgrade');
-  if (!_waitlistChecked) {
-    checkWaitlist().then(() => _syncWaitlistUI());
-  }
 }
 
 function proGate(featureName, fn) {
