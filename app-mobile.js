@@ -722,6 +722,7 @@ function clearAll(){
 // ══════════════════════════════════════════════
 const SUB_PAGES=['settings'];
 function goPg(id){
+  _track('page_view', { page: id });
   // Close AI planner panel when navigating
   const aipPanel = document.getElementById('mob-aip-panel');
   if(aipPanel && aipPanel.style.display === 'flex'){
@@ -2420,6 +2421,7 @@ async function joinWaitlist(){
 
 // ── Mobile Lemon Squeezy checkout ──────────────────────────────────────────
 async function mobLsCheckout(action){
+  _track('checkout_started', { plan: action });
   const btnMonthly=document.getElementById('mob-upg-btn-monthly');
   const btnYearly=document.getElementById('mob-upg-btn-yearly');
   const errEl=document.getElementById('mob-upg-err');
@@ -3237,7 +3239,7 @@ let _pwaPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   _pwaPrompt=e;
-  if(!sessionStorage.getItem('pwa-dismissed')){
+  if(!localStorage.getItem('pwa-dismissed')){
     const banner=document.getElementById('pwa-install-banner');
     if(banner) banner.style.display='flex';
   }
@@ -3262,14 +3264,14 @@ function pwaInstall(){
 function pwaDismiss(){
   const banner=document.getElementById('pwa-install-banner');
   if(banner) banner.style.display='none';
-  sessionStorage.setItem('pwa-dismissed','1');
+  localStorage.setItem('pwa-dismissed','1');
 }
 
 // iOS install hint — show once per session on Safari iOS if not installed
 const _isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 const _isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 const _isStandalone=window.navigator.standalone===true;
-if(_isIOS && _isSafari && !_isStandalone && !sessionStorage.getItem('ios-hint-dismissed')){
+if(_isIOS && _isSafari && !_isStandalone && !localStorage.getItem('ios-hint-dismissed')){
   // Delay slightly so app loads first
   setTimeout(()=>{
     const hint=document.getElementById('ios-install-banner');
@@ -3279,7 +3281,7 @@ if(_isIOS && _isSafari && !_isStandalone && !sessionStorage.getItem('ios-hint-di
 function iosDismiss(){
   const hint=document.getElementById('ios-install-banner');
   if(hint) hint.style.display='none';
-  sessionStorage.setItem('ios-hint-dismissed','1');
+  localStorage.setItem('ios-hint-dismissed','1');
 }
 
 // ═══════════════════════════════════════
@@ -3359,7 +3361,15 @@ function renderAIPlanner(containerId, isMobile) {
     + '<button class="aip-reset-btn" onclick="openAIPlanner()" style="padding:4px 8px;">✕</button>'    + '</div>'    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'    + '<div class="aip-chat-footer" style="padding:12px 14px;">'    + '<button class="aip-generate-btn" id="' + containerId + '-genbtn" onclick="aipGenerate(\'' + containerId + '\')">⚡ Generate my plan</button>'    + '</div></div>';
 }
 
-async function aipGenerate(containerId) {
+async function _track(event, data) {
+  try {
+    if (typeof window.umami !== 'undefined') {
+      window.umami.track(event, data);
+    }
+  } catch(e) {}
+}
+
+function aipGenerate(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
   const msgs   = document.getElementById(containerId + '-msgs');
   const genBtn = document.getElementById(containerId + '-genbtn');
@@ -3368,6 +3378,7 @@ async function aipGenerate(containerId) {
   msgs.innerHTML = '';
   genBtn.disabled = true;
   genBtn.textContent = 'Generating…';
+  _track('ai_plan_generated');
 
   const ty = document.createElement('div');
   ty.className = 'aip-bubble aip-bubble-ai aip-typing';

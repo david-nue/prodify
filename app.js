@@ -2033,6 +2033,7 @@ function bringToFront(id) {
 }
 
 function addW(type,opts={}) {
+  _track('widget_added', { type: type });
   // Single-instance rule: only notes can have multiples
   if(type!=='note'){
     const existing=widgets.find(w=>w.type===type);
@@ -5284,6 +5285,7 @@ function _syncMobUpgradeUI() {
 // ── Lemon Squeezy Checkout ─────────────────────────────────────────────────
 
 async function _lsCheckout(action) {
+  _track('checkout_started', { plan: action });
   const btnMonthly = document.getElementById('dsk-upg-btn-monthly');
   const btnYearly  = document.getElementById('dsk-upg-btn-yearly');
   const errEl      = document.getElementById('dsk-upg-err');
@@ -5423,7 +5425,16 @@ function renderProBadge() {
 }
 
 // Hook into existing habitShowProGate to use the new modal
+function _track(event, data) {
+  try {
+    if (typeof window.umami !== 'undefined') {
+      window.umami.track(event, data);
+    }
+  } catch(e) {}
+}
+
 function habitShowProGate() {
+  _track('upgrade_modal_shown', { feature: 'Unlimited Habits' });
   showUpgradeModal('Unlimited Habits');
 }
 
