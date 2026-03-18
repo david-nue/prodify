@@ -600,7 +600,8 @@ function launch(){
   showScreen('app');
   goPg('home');
   if(isPro()) backupSnapshotToday();
-  checkWaitlist().then(()=>_syncWaitlistUI());
+  checkWaitlist();
+  renderMobileProBadge();
   // Start cloud sync
   if(cu){
     startRealtimeSync(cu);
@@ -1574,9 +1575,9 @@ function renderHabitFooter(){
   const d=getD(); const p=d.prefs||{}; const habits=p.habits||[];
   const atLimit=!isPro()&&habits.length>=3;
   const nearLimit=!isPro()&&habits.length===2;
-  const counterHtml=!isPro()?`<div style="font-size:11px;font-weight:700;color:${atLimit?'var(--red)':nearLimit?'var(--ink3)':'var(--ink4)'};text-align:right;margin-bottom:6px;">${habits.length}/3 habits used${atLimit?' · <span style="color:var(--a2);cursor:pointer;" onclick="showUpgradeModal(&quot;Unlimited Habits&quot;)">Upgrade for unlimited ✦</span>':''}</div>`:'';
+  const counterHtml=!isPro()?`<div style="font-size:11px;font-weight:700;color:${atLimit?'var(--red)':nearLimit?'var(--ink3)':'var(--ink4)'};text-align:right;margin-bottom:6px;padding:6px 14px 0;">${habits.length}/3 habits used${atLimit?' · <span style="color:var(--a2);cursor:pointer;" onclick="showUpgradeModal(&quot;Unlimited Habits&quot;)">Upgrade for unlimited ✦</span>':''}</div>`:'';
   if(atLimit){
-    footer.innerHTML=counterHtml+`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:12px 14px;gap:10px;">
+    footer.innerHTML=counterHtml+`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 14px;gap:10px;">
       <div style="font-size:13px;color:var(--ink3);line-height:1.4;">You've reached the free limit of 3 habits.</div>
       <button onclick="showUpgradeModal('Unlimited Habits')" style="background:var(--a2);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;">Upgrade ✦</button>
     </div>`;
@@ -2377,7 +2378,8 @@ async function checkWaitlist(){
     // Handle ?pro=1 redirect after checkout
     if(new URLSearchParams(window.location.search).get('pro')=='1'){
       window.history.replaceState({},'',window.location.pathname);
-      if(serverPro) toast('✦ Welcome to Pro! All features unlocked.');
+      if(serverPro){ toast('✦ Welcome to Pro! All features unlocked.'); showMobileConfetti(); }
+    renderMobileProBadge();
     }
   }catch(e){}
 }
@@ -2611,7 +2613,49 @@ function renderSettingsPage(){
   document.querySelectorAll('.acc-sw').forEach(s=>{
     s.classList.toggle('active', s.id==='sw-'+ak);
   });
+  renderMobileProBadge();
 }
+// ── Pro badge + ring on mobile avatar ──
+function renderMobileProBadge(){
+  const pro=isPro();
+  const p=getP();
+  const accentKey=p.accentColor||p.accentKey||'green';
+  // Derive accent colors
+  const ACCENT_MAP={green:{a:'#2A5C44',a2:'#3A7D5E',al:'rgba(58,125,94,.12)'},blue:{a:'#1E4A7C',a2:'#2563EB',al:'rgba(37,99,235,.12)'},purple:{a:'#4A2C6E',a2:'#7C3AED',al:'rgba(124,58,237,.12)'},rose:{a:'#7C1D2C',a2:'#E11D48',al:'rgba(225,29,72,.12)'},amber:{a:'#7A4A00',a2:'#D97706',al:'rgba(217,119,6,.12)'},teal:{a:'#0F4C4C',a2:'#0D9488',al:'rgba(13,148,136,.12)'},slate:{a:'#1E293B',a2:'#475569',al:'rgba(71,85,105,.12)'}};
+  const colors=ACCENT_MAP[accentKey]||ACCENT_MAP.green;
+  const a2=p.accentHex||colors.a2;
+  const al=colors.al;
+
+  // Inject pro ring keyframe
+  let styleEl=document.getElementById('mob-pro-ring-style');
+  if(!styleEl){ styleEl=document.createElement('style'); styleEl.id='mob-pro-ring-style'; document.head.appendChild(styleEl); }
+  styleEl.textContent=`@keyframes mob-pro-ring-pulse{0%{box-shadow:0 0 0 2.5px ${a2},0 0 8px 2px ${al};}50%{box-shadow:0 0 0 3px ${a2},0 0 16px 5px ${al};}100%{box-shadow:0 0 0 2.5px ${a2},0 0 8px 2px ${al};}}`;
+
+  // Apply ring to mobile avatar
+  const avatar=document.getElementById('tb-avatar');
+  if(avatar){
+    if(pro){ avatar.style.animation='mob-pro-ring-pulse 2.5s ease-in-out infinite'; avatar.style.borderRadius='50%'; }
+    else { avatar.style.animation=''; }
+  }
+
+  // Show/hide ✦ Pro badge in nav
+  let proBadge=document.getElementById('mob-nav-pro-badge');
+  if(pro && !proBadge){
+    const aiBtn=document.getElementById('nav-aiplanner');
+    if(aiBtn){
+      // Replace PRO label with ✦ badge
+      const existing=aiBtn.querySelector('i');
+      if(existing){ existing.style.background=`linear-gradient(135deg,${colors.a},${a2})`; }
+    }
+  }
+
+  // Show/hide pro badge in profile/settings
+  document.querySelectorAll('.pro-badge').forEach(el=>{
+    el.style.display=pro?'inline-flex':'none';
+    if(pro){ el.style.background=`linear-gradient(135deg,${colors.a},${a2})`; }
+  });
+}
+
 // ── Accent hex input (mirrors desktop) ──
 function accentHexInput(inp){
   const hex=inp.value.replace(/[^0-9a-fA-F]/g,'').slice(0,6);
@@ -3450,4 +3494,26 @@ function _aipFormat(text) {
     .replace(/\n/g, '<br>')
     .replace(/^/, '<p>')
     .replace(/$/, '</p>');
+}
+
+// ═══════════════════════════════════════
+// PRO WELCOME — confetti on upgrade
+// ═══════════════════════════════════════
+function showMobileConfetti(){
+  const colors=['#3A7D5E','#4A9D74','#F5B800','#fff','#2A5C44'];
+  for(let i=0;i<60;i++){
+    const el=document.createElement('div');
+    const size=Math.random()*8+4;
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    const startX=Math.random()*window.innerWidth;
+    const delay=Math.random()*600;
+    const duration=Math.random()*1200+800;
+    el.style.cssText=`position:fixed;top:-10px;left:${startX}px;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random()>0.5?'50%':'2px'};z-index:99998;pointer-events:none;`;
+    document.body.appendChild(el);
+    el.animate([
+      {transform:`translateY(0) rotate(0deg)`,opacity:1},
+      {transform:`translateY(${window.innerHeight+20}px) rotate(${Math.random()*720}deg)`,opacity:0}
+    ],{duration,delay,easing:'cubic-bezier(.25,.46,.45,.94)',fill:'forwards'})
+      .onfinish=()=>el.remove();
+  }
 }

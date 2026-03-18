@@ -2212,13 +2212,13 @@ function buildHabitW(body,w){
   addBtn.onclick=function(){habitWSubmit(wid);};
 
   const inputRow=document.createElement('div');
-  inputRow.style.cssText='display:flex;align-items:center;gap:8px;padding:0 12px;height:40px;border-top:1px solid var(--bdr);flex-shrink:0;';
+  inputRow.id='hinput-row-'+wid;
+  inputRow.style.cssText='display:flex;align-items:center;gap:8px;padding:0 12px;height:40px;flex-shrink:0;';
   inputRow.appendChild(inp);inputRow.appendChild(addBtn);
 
   const footer=document.createElement('div');
+  footer.id='hfooter-'+wid;
   footer.style.cssText='flex-shrink:0;border-top:1px solid var(--bdr);';
-  // remove border from inputRow since footer has it
-  inputRow.style.borderTop='none';
   footer.appendChild(emojiWrap);
   footer.appendChild(inputRow);
 
@@ -2263,6 +2263,39 @@ function renderHabitW(wid){
         <button onclick="habitDeleteW(${h.id},'${wid}')" style="background:none;border:none;color:transparent;cursor:pointer;font-size:10px;padding:2px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='transparent'">✕</button>
       </div>`;
     }).join('')}`;
+  _updateHabitWFooter(wid);
+}
+
+function _updateHabitWFooter(wid){
+  const footer=document.getElementById('hfooter-'+wid);
+  const inputRow=document.getElementById('hinput-row-'+wid);
+  if(!footer||!inputRow) return;
+  const habitCount=(prefs.habits||[]).length;
+  const atLimit=!isPro()&&habitCount>=HABIT_MAX_FREE;
+  const nearLimit=!isPro()&&habitCount===HABIT_MAX_FREE-1;
+  const oldCounter=document.getElementById('hcounter-'+wid);
+  if(oldCounter) oldCounter.remove();
+  if(!isPro()){
+    const counter=document.createElement('div');
+    counter.id='hcounter-'+wid;
+    counter.style.cssText='font-size:10px;font-weight:700;text-align:right;padding:5px 12px 0;color:'+(atLimit?'var(--red)':nearLimit?'var(--ink3)':'var(--ink4)');
+    counter.innerHTML=habitCount+'/'+HABIT_MAX_FREE+' used'+(atLimit?' &middot; <span style="color:var(--a2);cursor:pointer;" onclick="habitShowProGate()">Upgrade ✶</span>':'');
+    footer.insertBefore(counter,footer.firstChild);
+  }
+  let limitMsg=document.getElementById('hlimit-'+wid);
+  if(atLimit){
+    inputRow.style.display='none';
+    if(!limitMsg){
+      limitMsg=document.createElement('div');
+      limitMsg.id='hlimit-'+wid;
+      limitMsg.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 12px 10px;gap:8px;';
+      limitMsg.innerHTML='<span style="font-size:11px;color:var(--ink3);">Free limit reached</span><button onclick="habitShowProGate()" style="background:var(--a2);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Upgrade ✶</button>';
+      footer.appendChild(limitMsg);
+    }
+  } else {
+    inputRow.style.display='flex';
+    if(limitMsg) limitMsg.remove();
+  }
 }
 
 function habitToggleW(id, wid){
@@ -5223,7 +5256,7 @@ async function checkWaitlist() {
     // Check if user returned from checkout (?pro=1)
     if (new URLSearchParams(window.location.search).get('pro') === '1') {
       window.history.replaceState({}, '', window.location.pathname);
-      if (serverPro) gTip('✦ Welcome to Pro! All features are now unlocked.');
+      if (serverPro) { showProWelcome(); }
     }
   } catch(e) { /* silent */ }
 }
@@ -6110,3 +6143,39 @@ function lwShowSuccess(email, position) {
   if (emailEl) emailEl.textContent = email;
 }
 
+
+// ═══════════════════════════════════════
+// PRO WELCOME — confetti + toast on upgrade
+// ═══════════════════════════════════════
+function showProWelcome() {
+  // Toast
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;padding:14px 28px;border-radius:100px;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:99999;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .3s;';
+  toast.textContent = '✦ Welcome to Pro! All features are now unlocked.';
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  });
+
+  // Confetti
+  const colors = ['#3A7D5E','#4A9D74','#F5B800','#fff','#2A5C44'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    const size = Math.random() * 8 + 4;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const startX = Math.random() * window.innerWidth;
+    const delay = Math.random() * 800;
+    const duration = Math.random() * 1500 + 1000;
+    el.style.cssText = `position:fixed;top:-10px;left:${startX}px;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random()>0.5?'50%':'2px'};z-index:99998;pointer-events:none;opacity:1;`;
+    document.body.appendChild(el);
+    el.animate([
+      { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+      { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+    ], { duration, delay, easing: 'cubic-bezier(.25,.46,.45,.94)', fill: 'forwards' })
+      .onfinish = () => el.remove();
+  }
+}
