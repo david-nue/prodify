@@ -3339,7 +3339,9 @@ function renderAIPlanner(containerId, isMobile) {
     + 'PENDING TASKS:\n' + taskListWithIds + '\n'
     + (carried ? 'OVERDUE FROM YESTERDAY: ' + ctx.carriedTasks.map(t=>'[id:'+t.id+'] '+(t.title||t.text)).join(', ') + '\n' : '')
     + 'HABITS TO DO:\n' + habitListWithIds + (ctx.doneHabitCount>0?' | ALREADY DONE: '+ctx.doneHabitCount:'') + '\n'
-    + 'CALENDAR: ' + ctx.eventList + '\n\n'
+    + 'CALENDAR: ' + ctx.eventList + '\n'
+    + 'NOTES (recent): ' + (getD().notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') + '\n'
+    + 'PROJECTS: ' + ((getD().subjects||[]).slice(0,5).map(p=>p.name+(p.grade?' ('+p.grade+'%)':'')).join(', ')||'(none)') + '\n\n'
     + 'IMPORTANT RULES:\n'
     + '- Only use IDs from the data above. Never make up IDs.\n'
     + '- If the user asks to do something with no matching data (e.g. mark a habit when there are none), tell them honestly.\n'
@@ -3414,15 +3416,8 @@ async function _aipDispatch(containerId, userText) {
 
   _aipHistory.push({ role: 'user', content: userText });
 
-  let apiMessages;
-  if (_aipHistory.length === 1) {
-    apiMessages = [{ role: 'user', content: _aipContext + '\n\nUser: ' + userText }];
-  } else {
-    apiMessages = [
-      { role: 'user', content: _aipContext + '\n\nUser: ' + _aipHistory[0].content },
-      ..._aipHistory.slice(1)
-    ];
-  }
+  // Send full conversation history — context goes as system field
+  const apiMessages = _aipHistory.slice();
 
   try {
     const { data: { session: _aipSess } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -3430,7 +3425,7 @@ async function _aipDispatch(containerId, userText) {
     const resp = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_aipToken}` },
-      body: JSON.stringify({ messages: apiMessages })
+      body: JSON.stringify({ system: _aipContext, messages: apiMessages })
     });
     if (resp.status === 429) {
       const errData = await resp.json();

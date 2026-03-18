@@ -5030,7 +5030,11 @@ function renderAIPlanner(containerId, isMobileParam) {
 
     + 'HABITS TO DO:\n' + habitListWithIds + (ctx.doneHabitCount>0?' | ALREADY DONE TODAY: '+ctx.doneHabitCount:'') + '\n'
 
-    + 'CALENDAR: ' + ctx.eventList + '\n\n'
+    + 'CALENDAR: ' + ctx.eventList + '\n'
+
+    + 'NOTES (recent): ' + (notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') + '\n'
+
+    + 'PROJECTS: ' + projectSummary + '\n\n'
 
     + 'IMPORTANT RULES:\n'
 
@@ -5190,7 +5194,7 @@ async function aipSendMessage(containerId, userText) {
     if (err.message === 'pro_gate') return; // upgrade modal already shown
     const errBubble = document.createElement('div');
     errBubble.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
-    errBubble.textContent = '⚠️ ' + err.message;
+    errBubble.textContent = (err.message.includes('limit') || err.message.includes('expired')) ? '⚠️ ' + err.message : '⚠️ Something went wrong. Please try again.';
     msgs.appendChild(errBubble);
   } finally {
     if (sendBtn) sendBtn.disabled = false;
