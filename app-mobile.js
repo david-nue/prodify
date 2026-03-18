@@ -2300,33 +2300,47 @@ function showUpgradeModal(featureName){
     el.style.background=match?'var(--al)':'';
     el.style.borderColor=match?'var(--a2)':'';
   });
-  _syncWaitlistUI();
+  _syncMobUpgradeUI();
   document.getElementById('upg-overlay').classList.add('open');
   document.getElementById('mo-upgrade').classList.add('open');
-  if(!_waitlistChecked) checkWaitlist().then(()=>_syncWaitlistUI());
+  // Sync pro status in background
+  checkWaitlist();
 }
 function closeUpgrade(){
   document.getElementById('upg-overlay').classList.remove('open');
   document.getElementById('mo-upgrade').classList.remove('open');
 }
-function _syncWaitlistUI(){
-  const join=document.getElementById('mob-upg-waitlist-join');
-  const joined=document.getElementById('mob-upg-waitlist-joined');
-  if(!join||!joined) return;
-  if(_onWaitlist){
-    const pos=document.getElementById('mob-upg-position'); if(pos) pos.textContent='#'+(_waitlistPos||'—');
-    join.style.display='none'; joined.style.display='block';
-  } else { join.style.display='block'; joined.style.display='none'; }
+function _syncMobUpgradeUI(){
+  const checkoutEl=document.getElementById('mob-upg-checkout');
+  const managedEl=document.getElementById('mob-upg-managed');
+  if(!checkoutEl||!managedEl) return;
+  if(isPro()){
+    checkoutEl.style.display='none';
+    managedEl.style.display='block';
+  } else {
+    checkoutEl.style.display='block';
+    managedEl.style.display='none';
+  }
 }
 async function checkWaitlist(){
   if(!sbReady||!cu) return;
   try{
-    const {data:user}=await sb.from('users').select('email').eq('username',cu).maybeSingle();
-    const email=user?.email||''; if(!email){_waitlistChecked=true;return;}
-    const {data,error}=await sb.from('waitlist').select('id,position').eq('email',email).maybeSingle();
-    if(data&&!error){_onWaitlist=true;_waitlistPos=data.position;}
+    const {data:row}=await sb.from('users').select('is_pro').eq('username',cu).maybeSingle();
+    if(!row) return;
+    const p=getP();
+    const serverPro=!!(row.is_pro);
+    if(serverPro !== !!(p.pro)){
+      p.pro=serverPro;
+      if(cu){ acc[cu].prefs=p; saveAll(); }
+      _syncMobUpgradeUI();
+      if(typeof renderSettingsPage==="function") renderSettingsPage();
+    }
+    // Handle ?pro=1 redirect after checkout
+    if(new URLSearchParams(window.location.search).get('pro')=='1'){
+      window.history.replaceState({},'',window.location.pathname);
+      if(serverPro) toast('✦ Welcome to Pro! All features unlocked.');
+    }
   }catch(e){}
-  _waitlistChecked=true;
 }
 async function joinWaitlist(){
   const errEl=document.getElementById('mob-upg-waitlist-err');
@@ -2350,6 +2364,52 @@ async function joinWaitlist(){
     if(btn){btn.textContent='Join the waitlist';btn.disabled=false;}
     const msg=e.message==='offline'?'No connection. Try again.':e.message==='not_logged_in'?'Sign in first.':e.message==='no_email'?'No email on account. Contact support.':'Something went wrong.';
     if(errEl){errEl.textContent=msg;errEl.style.display='block';}
+  }
+}
+
+// ── Mobile Lemon Squeezy checkout ──────────────────────────────────────────
+async function mobLsCheckout(action){
+  const btnMonthly=document.getElementById('mob-upg-btn-monthly');
+  const btnYearly=document.getElementById('mob-upg-btn-yearly');
+  const errEl=document.getElementById('mob-upg-err');
+  const activeBtn=action==='checkout_yearly'?btnYearly:btnMonthly;
+  if(errEl) errEl.textContent='';
+  if(activeBtn){activeBtn.textContent='Loading…';activeBtn.disabled=true;}
+  try{
+    if(!cu) throw new Error('not_logged_in');
+    const token=(await sb.auth.getSession())?.data?.session?.access_token;
+    if(!token) throw new Error('not_logged_in');
+    const res=await fetch('/api/lemonsqueezy/checkout',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({action}),
+    });
+    const data=await res.json();
+    if(!res.ok||!data.url) throw new Error(data.error||'Could not create checkout');
+    window.open(data.url,'_blank');
+  }catch(e){
+    if(errEl) errEl.textContent=e.message==='not_logged_in'?'Sign in to upgrade.':(e.message||'Something went wrong.');
+  }finally{
+    if(btnMonthly){btnMonthly.textContent='Get Monthly';btnMonthly.disabled=false;}
+    if(btnYearly){btnYearly.textContent='Get Yearly · Best value';btnYearly.disabled=false;}
+  }
+}
+async function mobOpenPortal(){
+  const errEl=document.getElementById('mob-upg-err');
+  if(errEl) errEl.textContent='';
+  try{
+    const token=(await sb.auth.getSession())?.data?.session?.access_token;
+    if(!token) throw new Error('not_logged_in');
+    const res=await fetch('/api/lemonsqueezy/checkout',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({action:'portal'}),
+    });
+    const data=await res.json();
+    if(!res.ok||!data.url) throw new Error(data.error||'Could not open portal');
+    window.open(data.url,'_blank');
+  }catch(e){
+    if(errEl) errEl.textContent=e.message||'Something went wrong.';
   }
 }
 
