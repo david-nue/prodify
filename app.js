@@ -5047,64 +5047,19 @@ function renderAIPlanner(containerId, isMobileParam) {
   const closeBtn = isMobileParam ? '' : '<button class="aip-reset-btn" onclick="toggleAipPanel()" title="Close" style="padding:4px 8px;">✕</button>';
 
   el.innerHTML =
-    '<div class="aip-chat-wrap" id="' + containerId + '-wrap" style="height:100%;">'
-    + '<div class="aip-chat-header">'
-    + '<div class="aip-chat-header-left">'
-    + '<div class="aip-chat-avatar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'
-    + '<div>'
-    + '<div class="aip-chat-name">AI Planner <span style="font-size:9px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 6px;border-radius:100px;vertical-align:middle;margin-left:4px;">PRO</span></div>'
-    + '<div class="aip-chat-status"><span class="aip-status-dot"></span>' + ctx.pendingCount + ' tasks · ' + ctx.habitCount + ' habits · ' + ctx.eventCount + ' events' + (carried ? ' · <span style=\"color:#dc2626;\">' + carried + ' overdue</span>' : '') + '</div>'
-    + '</div>'
-    + '</div>'
-    + '<div style="display:flex;gap:6px;align-items:center;">'
-    + '<button class="aip-reset-btn" onclick="_aipHistory=[];_aipPlanGenerated=false;document.getElementById(\'' + containerId + '-msgs\').innerHTML=\'\';document.getElementById(\'' + containerId + '-sugg\').style.display=\'flex\';" title="Reset"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-4.7L1 10"/></svg></button>'
-    + closeBtn
-    + '</div>'
-    + '</div>'
-    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'
-    + '<div class="aip-chat-footer">'
-    + '<div class="aip-suggestions" id="' + containerId + '-sugg">'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'Build me a prioritized plan for today\')">⚡ Plan my day</button>'
-    + (carried ? '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I have ' + carried + ' overdue tasks, help me plan today around them\')">⚠️ Catch up</button>' : '')
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'What should I focus on today and why?\')">🎯 What to focus on</button>'
-    + '<button class="aip-sugg-btn" onclick="aipSend(\'' + containerId + '\',\'I only have 2 hours today, build me a realistic plan\')">⏱ Short on time</button>'
-    + '</div>'
-    + '<div class="aip-input-row">'
-    + '<textarea class="aip-input" id="' + containerId + '-input" placeholder="Describe your day and I’ll build your plan…" rows="1"'
-    + ' onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();aipSend(\'' + containerId + '\');}"'
-    + ' oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\';"></textarea>'
-    + '<button class="aip-send-btn" id="' + containerId + '-sendbtn" onclick="aipSend(\'' + containerId + '\')">'
-    + '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
-    + '</button>'
-    + '</div>'
-    + '</div>'
-    + '</div>';
+    '<div class="aip-chat-wrap" id="' + containerId + '-wrap" style="height:100%;">'    + '<div class="aip-chat-header">'    + '<div class="aip-chat-header-left">'    + '<div class="aip-chat-avatar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'    + '<div>'    + '<div class="aip-chat-name">AI Planner <span style="font-size:9px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 6px;border-radius:100px;vertical-align:middle;margin-left:4px;">PRO</span></div>'    + '<div class="aip-chat-status"><span class="aip-status-dot"></span>' + ctx.pendingCount + ' tasks · ' + ctx.habitCount + ' habits · ' + ctx.eventCount + ' events' + (carried ? ' · <span style=\"color:#dc2626;\">' + carried + ' overdue</span>' : '') + '</div>'    + '</div>'    + '</div>'    + '<div style="display:flex;gap:6px;align-items:center;">'    + closeBtn    + '</div>'    + '</div>'    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'    + '<div class="aip-chat-footer" style="padding:12px 14px;">'    + '<button class="aip-generate-btn" id="' + containerId + '-genbtn" onclick="aipGenerate(\'' + containerId + '\')">⚡ Generate my plan</button>'    + '</div>'    + '</div>';
 }
 
-function aipSend(containerId, presetText) {
-  const input = document.getElementById(containerId + '-input');
-  const text = presetText || (input && input.value.trim());
-  if (!text) return;
-  if (input && !presetText) { input.value = ''; input.style.height = 'auto'; }
-  aipSendMessage(containerId, text);
-}
-
-async function aipSendMessage(containerId, userText) {
+function aipGenerate(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
+  const msgs   = document.getElementById(containerId + '-msgs');
+  const genBtn = document.getElementById(containerId + '-genbtn');
+  if (!msgs || !genBtn) return;
 
-  const msgs    = document.getElementById(containerId + '-msgs');
-  const sugg    = document.getElementById(containerId + '-sugg');
-  const sendBtn = document.getElementById(containerId + '-sendbtn');
-  const input   = document.getElementById(containerId + '-input');
-  if (!msgs) return;
-
-  if (sugg) sugg.style.display = 'none';
-
-  // Show user message
-  const userBubble = document.createElement('div');
-  userBubble.className = 'aip-bubble aip-bubble-user';
-  userBubble.textContent = userText;
-  msgs.appendChild(userBubble);
+  // Clear previous plan
+  msgs.innerHTML = '';
+  genBtn.disabled = true;
+  genBtn.textContent = 'Generating…';
 
   // Show typing indicator
   const typingEl = document.createElement('div');
@@ -5113,11 +5068,7 @@ async function aipSendMessage(containerId, userText) {
   msgs.appendChild(typingEl);
   msgs.scrollTop = msgs.scrollHeight;
 
-  if (sendBtn) sendBtn.disabled = true;
-  if (input)   input.disabled = true;
-
-  // Single-shot: always fresh request with context + user message only
-  const apiMessages = [{ role: 'user', content: _aipContext + '\n\nUser request: ' + userText }];
+  const apiMessages = [{ role: 'user', content: _aipContext + '\n\nGenerate my plan for today.' }];
 
   try {
     const { data: { session: _aipSess } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
@@ -5140,7 +5091,7 @@ async function aipSendMessage(containerId, userText) {
     }
     const data = await response.json();
     const aiText = (data.content || []).map(b => b.text || '').join('');
-    if (!aiText) throw new Error(data.error?.message || 'Empty response');
+    if (!aiText) throw new Error(data.error?.message || data.error || 'Empty response');
 
     _aipPlanGenerated = true;
     typingEl.remove();
@@ -5150,19 +5101,8 @@ async function aipSendMessage(containerId, userText) {
     aiBubble.innerHTML = formatAipMessage(aiText);
     msgs.appendChild(aiBubble);
 
-    // Hide input, show "New plan" button
-    const inputRow = document.querySelector('#' + containerId + '-wrap .aip-input-row');
-    if (inputRow) inputRow.style.display = 'none';
-    const newPlanBtn = document.createElement('div');
-    newPlanBtn.className = 'aip-newplan-row';
-    newPlanBtn.innerHTML = '<button class="aip-newplan-btn" onclick="'
-      + '_aipPlanGenerated=false;'
-      + 'document.getElementById(\'' + containerId + '-msgs\').innerHTML=\'\';'
-      + 'document.getElementById(\'' + containerId + '-sugg\').style.display=\'flex\';'
-      + 'this.parentElement.remove();'
-      + 'const ir=document.querySelector(\'#' + containerId + '-wrap .aip-input-row\');if(ir)ir.style.display=\'\';'
-      + '">↺ Generate new plan</button>';
-    msgs.parentElement.appendChild(newPlanBtn);
+    // Change button to "Generate another plan"
+    if (genBtn) { genBtn.disabled = false; genBtn.textContent = '↺ Generate another plan'; }
 
   } catch(err) {
     typingEl.remove();
@@ -5171,9 +5111,8 @@ async function aipSendMessage(containerId, userText) {
     errBubble.className = 'aip-bubble aip-bubble-ai aip-bubble-err';
     errBubble.textContent = (err.message.includes('limit') || err.message.includes('expired')) ? '⚠️ ' + err.message : '⚠️ Something went wrong. Please try again.';
     msgs.appendChild(errBubble);
+    if (genBtn) { genBtn.disabled = false; genBtn.textContent = '⚡ Generate my plan'; }
   } finally {
-    if (sendBtn) sendBtn.disabled = false;
-    if (input)   { input.disabled = false; input.focus(); }
     msgs.scrollTop = msgs.scrollHeight;
   }
 }
