@@ -5050,7 +5050,7 @@ function renderAIPlanner(containerId, isMobileParam) {
     '<div class="aip-chat-wrap" id="' + containerId + '-wrap" style="height:100%;">'    + '<div class="aip-chat-header">'    + '<div class="aip-chat-header-left">'    + '<div class="aip-chat-avatar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>'    + '<div>'    + '<div class="aip-chat-name">AI Planner <span style="font-size:9px;font-weight:700;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;padding:1px 6px;border-radius:100px;vertical-align:middle;margin-left:4px;">PRO</span></div>'    + '<div class="aip-chat-status"><span class="aip-status-dot"></span>' + ctx.pendingCount + ' tasks · ' + ctx.habitCount + ' habits · ' + ctx.eventCount + ' events' + (carried ? ' · <span style=\"color:#dc2626;\">' + carried + ' overdue</span>' : '') + '</div>'    + '</div>'    + '</div>'    + '<div style="display:flex;gap:6px;align-items:center;">'    + closeBtn    + '</div>'    + '</div>'    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'    + '<div class="aip-chat-footer" style="padding:12px 14px;">'    + '<button class="aip-generate-btn" id="' + containerId + '-genbtn" onclick="aipGenerate(\'' + containerId + '\')">⚡ Generate my plan</button>'    + '</div>'    + '</div>';
 }
 
-function aipGenerate(containerId) {
+async function aipGenerate(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
   const msgs   = document.getElementById(containerId + '-msgs');
   const genBtn = document.getElementById(containerId + '-genbtn');

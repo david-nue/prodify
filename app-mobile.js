@@ -3359,7 +3359,7 @@ function renderAIPlanner(containerId, isMobile) {
     + '<button class="aip-reset-btn" onclick="openAIPlanner()" style="padding:4px 8px;">✕</button>'    + '</div>'    + '<div class="aip-chat-msgs" id="' + containerId + '-msgs"></div>'    + '<div class="aip-chat-footer" style="padding:12px 14px;">'    + '<button class="aip-generate-btn" id="' + containerId + '-genbtn" onclick="aipGenerate(\'' + containerId + '\')">⚡ Generate my plan</button>'    + '</div></div>';
 }
 
-function aipGenerate(containerId) {
+async function aipGenerate(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
   const msgs   = document.getElementById(containerId + '-msgs');
   const genBtn = document.getElementById(containerId + '-genbtn');
