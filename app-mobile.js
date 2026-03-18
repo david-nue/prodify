@@ -1546,6 +1546,7 @@ function renderHabitsList(){
         <button class="hab-del-btn" onclick="deleteHabit('${h.id}')">✕</button>
       </div>`;
     }).join('')}`;
+  renderHabitFooter();
 }
 function habStreak(id){
   id=+id; // always compare as number
@@ -1567,11 +1568,34 @@ function habitToggle(id){
     d.prefs=p; if(cu) acc[cu]=d; saveAll(); renderHabitsList(); renderHome();
   },120);
 }
+function renderHabitFooter(){
+  const footer=document.getElementById('hab-wfoot-inner');
+  if(!footer) return;
+  const d=getD(); const p=d.prefs||{}; const habits=p.habits||[];
+  const atLimit=!isPro()&&habits.length>=3;
+  const nearLimit=!isPro()&&habits.length===2;
+  const counterHtml=!isPro()?`<div style="font-size:11px;font-weight:700;color:${atLimit?'var(--red)':nearLimit?'var(--ink3)':'var(--ink4)'};text-align:right;margin-bottom:6px;">${habits.length}/3 habits used${atLimit?' · <span style="color:var(--a2);cursor:pointer;" onclick="showUpgradeModal('Unlimited Habits')">Upgrade for unlimited ✦</span>':''}</div>`:'';
+  if(atLimit){
+    footer.innerHTML=counterHtml+`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:12px 14px;gap:10px;">
+      <div style="font-size:13px;color:var(--ink3);line-height:1.4;">You've reached the free limit of 3 habits.</div>
+      <button onclick="showUpgradeModal('Unlimited Habits')" style="background:var(--a2);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;">Upgrade ✦</button>
+    </div>`;
+  } else {
+    footer.innerHTML=counterHtml+`<div class="hab-input-row">
+      <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
+        onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()" />
+      <button class="hab-add-btn" onclick="saveHabit()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>`;
+  }
+}
+
 function saveHabit(){
   const inp=document.getElementById('hab-inp'); if(!inp) return;
   const name=inp.value.trim(); if(!name) return;
   const d=getD(); const p=d.prefs||{}; if(!p.habits) p.habits=[];
-  if(!isPro() && p.habits.length>=3){ showUpgradeModal('Unlimited habits'); return; }
+  if(!isPro() && p.habits.length>=3){ showUpgradeModal('Unlimited Habits'); return; }
   p.habits.push({id:Date.now(),name,emoji:_habSelEmoji,created:toDay()});
   d.prefs=p; if(cu) acc[cu]=d; saveAll(); renderHabitsList(); renderHome();
   inp.value=''; inp.blur(); toast('Habit added!');

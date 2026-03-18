@@ -4679,21 +4679,31 @@ function renderHabitAddForm(containerId){
   const atLimit=habits.length>=HABIT_MAX_FREE;
 
   const isPage=containerId.includes('page');
+  const habitCount = habits.length;
+  const nearLimit = !isPro() && habitCount >= HABIT_MAX_FREE - 1;
+
   el.innerHTML=`<div style="${isPage?'':'border-top:1px solid var(--bdr);'}padding-top:${isPage?'0':'12px'};margin-top:4px;">
-    <div style="font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Add a new habit</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.6px;">Add a new habit</div>
+      ${!isPro() ? `<div style="font-size:11px;font-weight:700;color:${atLimit?'var(--red)':nearLimit?'var(--ink3)':'var(--ink4)'};">${habitCount}/${HABIT_MAX_FREE} used${atLimit?' · <span style="color:var(--a2);cursor:pointer;" onclick="habitShowProGate()">Upgrade for unlimited ✦</span>':''}</div>` : ''}
+    </div>
     <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:10px;">
       ${HABIT_EMOJIS.map(e=>`<button onclick="habitSelectEmoji(this,'${containerId}')" data-emoji="${e}" style="aspect-ratio:1;width:100%;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);cursor:pointer;font-size:clamp(12px,3.5vw,18px);transition:all .13s;" title="${e}">${e}</button>`).join('')}
     </div>
-    <div style="display:flex;gap:8px;">
-      <input id="${containerId}-inp" type="text" placeholder="e.g. Read 20 mins, Drink water…" maxlength="40"
-        style="flex:1;background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--ink);outline:none;font-family:inherit;"
-        onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
-        onkeydown="if(event.key==='Enter')habitSubmit('${containerId}')"/>
-      <button onclick="habitSubmit('${containerId}')" style="background:${atLimit?'var(--bdr)':'var(--a2)'};color:${atLimit?'var(--ink3)':'#fff'};border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
-        ${atLimit?'🔒 Limit reached':'+ Add Habit'}
-      </button>
-    </div>
-    ${atLimit?`<div style="font-size:11px;color:var(--ink3);margin-top:8px;text-align:center;">Free plan allows <b>${HABIT_MAX_FREE} habits</b> · <span style="color:var(--a2);font-weight:700;cursor:pointer;" onclick="habitShowProGate()">Upgrade to Pro for unlimited</span></div>`:'<div style="font-size:11px;color:var(--ink4);margin-top:6px;">Tap the circle on a habit card each day to mark it done and build your streak.</div>'}
+    ${atLimit
+      ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:10px;padding:10px 14px;">
+          <div style="font-size:13px;color:var(--ink3);">You've reached the free limit of ${HABIT_MAX_FREE} habits.</div>
+          <button onclick="habitShowProGate()" style="background:var(--a2);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;margin-left:10px;">Upgrade ✦</button>
+        </div>`
+      : `<div style="display:flex;gap:8px;">
+          <input id="${containerId}-inp" type="text" placeholder="e.g. Read 20 mins, Drink water…" maxlength="40"
+            style="flex:1;background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--ink);outline:none;font-family:inherit;"
+            onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"
+            onkeydown="if(event.key==='Enter')habitSubmit('${containerId}')"/>
+          <button onclick="habitSubmit('${containerId}')" style="background:var(--a2);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Add Habit</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:6px;">Tap the circle on a habit card each day to mark it done and build your streak.</div>`
+    }
   </div>`;
 
   const firstBtn=el.querySelector('[data-emoji]');

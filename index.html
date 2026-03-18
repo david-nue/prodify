@@ -2385,15 +2385,17 @@
               <div class="hab-emoji-row" id="hab-emoji-row">
                 <div class="hab-emojis" id="hab-emojis"></div>
               </div>
-              <div class="hab-input-row">
-                <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
-                  onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()" />
-                <button class="hab-add-btn" onclick="saveHabit()">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </button>
+              <div id="hab-wfoot-inner">
+                <div class="hab-input-row">
+                  <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
+                    onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()" />
+                  <button class="hab-add-btn" onclick="saveHabit()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
