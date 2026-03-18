@@ -213,8 +213,7 @@ function showScreen(id){
   const el=document.getElementById('screen-'+id);
   if(el){ el.style.animation='none'; el.classList.add('active'); void el.offsetWidth; el.style.animation=''; }
   // Always dismiss loading screen once a real screen is shown
-  const loadEl=document.getElementById('screen-loading');
-  if(loadEl) loadEl.classList.remove('active');
+  // (loading screen removed — transition is now instant)
 }
 
 // ══════════════════════════════════════════════
@@ -312,6 +311,9 @@ async function handleGoogleCallback(){
       if(!acc[u].displayName||acc[u].displayName.trim()===''){
         startOnboarding(googleName);
       } else {
+        // Device check before launching
+        const deviceAllowed = await checkAndRegisterDevice(u);
+        if(!deviceAllowed){ showMobMultiDeviceBlock(); return true; }
         launch();
       }
     } else {
@@ -485,16 +487,14 @@ function startOnboarding(prefillName=''){
 }
 
 function obApplyAccent(key){
-  const c=ACCENTS[key]||ACCENTS.green;
-  document.documentElement.style.setProperty('--a',c[0]);
-  document.documentElement.style.setProperty('--a2',c[1]);
-  document.documentElement.style.setProperty('--al',c[2]);
+  // Use same logic as applyAccentCSS
+  applyAccentCSS(key);
 }
 
 function obSetProgress(step){
   const fill=document.getElementById('ob-fill');
   const lbl=document.getElementById('ob-prog-lbl');
-  const steps=4;
+  const steps=5;
   if(fill) fill.style.width=((step+1)/steps*100)+'%';
   if(lbl) lbl.textContent='Step '+(step+1)+' of '+steps;
 }
@@ -503,10 +503,10 @@ function obGo(step){
   document.querySelectorAll('.ob-panel').forEach(p=>p.classList.remove('active'));
   const next=document.getElementById('mob-ob-'+step);
   if(next){ next.classList.add('active'); const inp=next.querySelector('input'); if(inp) setTimeout(()=>inp.focus(),80); }
-  obSetProgress(Math.min(step,3));
+  obSetProgress(Math.min(step,4));
   // Hide progress on last step
   const prog=document.querySelector('.ob-progress');
-  if(prog) prog.style.opacity=step>=4?'0':'1';
+  if(prog) prog.style.opacity=step>=5?'0':'1';
 }
 
 function obPickUC(btn,key){
@@ -543,6 +543,8 @@ function obNext(step){
   } else if(step===3){
     if(cu){ if(!acc[cu].prefs) acc[cu].prefs={}; acc[cu].prefs.dark=(_obTheme==='dark'); saveAll(); }
     obGo(4);
+  } else if(step===4){
+    obGo(5);
   }
 }
 
@@ -1521,6 +1523,7 @@ function renderHabitsList(){
   const total=habits.length, doneCount=habits.filter(h=>(log[today]||[]).map(Number).includes(+h.id)).length;
   if(!total){
     list.innerHTML=`<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/><path d="M8 12l3 3 5-5"/></svg></div><div class="mob-es-title">No habits yet</div><div class="mob-es-sub">Build your routine — type a habit below.</div></div>`;
+    renderHabitFooter();
     return;
   }
   const pct=Math.round(doneCount/total*100);
@@ -2349,6 +2352,9 @@ function showUpgradeModal(featureName){
 function closeUpgrade(){
   document.getElementById('upg-overlay').classList.remove('open');
   document.getElementById('mo-upgrade').classList.remove('open');
+  // Restore device block screen if it was hidden to show upgrade
+  const block = document.getElementById('mob-multidevice-block');
+  if(block && block.style.display === 'none') block.style.display = '';
 }
 function _syncMobUpgradeUI(){
   const checkoutEl=document.getElementById('mob-upg-checkout');
@@ -2382,6 +2388,10 @@ async function checkWaitlist(){
     renderMobileProBadge();
     }
   }catch(e){}
+}
+function _syncWaitlistUI(){
+  // Legacy stub — mobile upgrade modal now uses _syncMobUpgradeUI
+  _syncMobUpgradeUI();
 }
 async function joinWaitlist(){
   const errEl=document.getElementById('mob-upg-waitlist-err');
@@ -3081,6 +3091,41 @@ function mobAddProjTask(){
 // ══════════════════════════════════════════════
 // DEVICE MANAGEMENT (matches desktop)
 // ══════════════════════════════════════════════
+// ── Device enforcement ─────────────────────────────────────────────────────
+async function checkAndRegisterDevice(username){
+  try{
+    if(!sbReady) return true;
+    const myId=getOrCreateDeviceId();
+    const {data:row,error}=await sb.from('users').select('active_device_id,is_pro,bypass_device_check').eq('username',username).single();
+    if(error) return true;
+    if(row?.bypass_device_check) return true;
+    if(row?.is_pro){
+      await sb.from('users').update({active_device_id:myId}).eq('username',username);
+      return true;
+    }
+    const activeId=row?.active_device_id||null;
+    if(activeId&&activeId!==myId) return false;
+    await sb.from('users').update({active_device_id:myId}).eq('username',username);
+    return true;
+  }catch(e){ return true; }
+}
+
+function showMobMultiDeviceBlock(){
+  const existing=document.getElementById('mob-multidevice-block');
+  if(existing) return;
+  const el=document.createElement('div');
+  el.id='mob-multidevice-block';
+  el.style.cssText='position:fixed;inset:0;z-index:99999;background:var(--surf);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;';
+  el.innerHTML=`
+    <div style="font-size:52px;margin-bottom:18px;">📱</div>
+    <div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:10px;">Device limit reached</div>
+    <div style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:28px;">Free plan supports <strong>1 active device</strong>.<br/>Sign out on your other device first, then try again.</div>
+    <button onclick="document.getElementById('mob-multidevice-block').style.display='none';showUpgradeModal('Multi-Device Sync');" style="width:100%;max-width:280px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">✦ Upgrade to Pro</button>
+    <button onclick="document.getElementById('mob-multidevice-block').remove();doSignOut();" style="width:100%;max-width:280px;padding:12px;border-radius:14px;border:1.5px solid var(--bdr);background:transparent;color:var(--ink3);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Sign out</button>
+  `;
+  document.body.appendChild(el);
+}
+
 const _DEVICE_KEY = 'pd1_device_id';
 function getOrCreateDeviceId(){ let id=localStorage.getItem(_DEVICE_KEY); if(!id){id='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem(_DEVICE_KEY,id);} return id; }
 function getDeviceName(){ const ua=navigator.userAgent; if(/iPhone/i.test(ua))return'iPhone'; if(/iPad/i.test(ua))return'iPad'; if(/Android.*Mobile/i.test(ua))return'Android Phone'; if(/Android/i.test(ua))return'Android Tablet'; if(/Mac/i.test(ua))return'Mac'; if(/Windows/i.test(ua))return'Windows PC'; return'Browser'; }
@@ -3119,9 +3164,8 @@ async function unregisterDevice(username){
 
 
 (async ()=>{
-  // Show a neutral loading state while we resolve auth — prevents login flash
-  const loadEl = document.getElementById('screen-loading');
-  if(loadEl) loadEl.classList.add('active');
+  // Hide all screens initially to prevent flash
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
   // Restore persisted _lastSaveTs so trustLocal guard works across reloads
   try{ _lastSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; }catch(e){}
@@ -3144,6 +3188,11 @@ async function unregisterDevice(username){
   }
   // Check for existing local session — but still pull cloud to stay in sync
   if(cu && acc[cu]){
+    // Device check before launching (skip if offline)
+    if(sbReady){
+      const deviceAllowed = await checkAndRegisterDevice(cu);
+      if(!deviceAllowed){ showScreen('login'); showMobMultiDeviceBlock(); return; }
+    }
     // Launch from local immediately for speed, then sync cloud in background
     launch();
     // Pull cloud data after launch — updates UI if cloud is newer

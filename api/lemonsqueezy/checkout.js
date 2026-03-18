@@ -1,4 +1,30 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '8kb', // checkout requests are tiny
+    },
+  },
+};
+
 const ALLOWED_ORIGINS     = ['https://prodify.cc', 'https://www.prodify.cc'];
+
+// Simple in-memory rate limit: max 10 checkout attempts per user per hour
+// (Vercel functions are stateless so this resets on cold start — good enough to block basic abuse)
+const _checkoutAttempts = new Map();
+function checkoutRateLimit(authId) {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 hour
+  const max = 10;
+  const key = authId;
+  const entry = _checkoutAttempts.get(key);
+  if (!entry || now - entry.ts > windowMs) {
+    _checkoutAttempts.set(key, { ts: now, count: 1 });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
 const SB_URL              = 'https://kvezrezhicjlhycghucr.supabase.co';
 const SB_ANON_KEY         = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZXpyZXpoaWNqbGh5Y2dodWNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NzMxMTMsImV4cCI6MjA4ODQ0OTExM30.-Gb6LHePwJ0yK54e0POijp_6qVwg1gqtiAj3pN8sKF8';
 
@@ -117,6 +143,11 @@ export default async function handler(req, res) {
 
   const authUser = await verifyJwt(token);
   if (!authUser) return res.status(401).json({ error: 'Invalid session' });
+
+  // Rate limit checkout creation
+  if (!checkoutRateLimit(authUser.id)) {
+    return res.status(429).json({ error: 'Too many checkout attempts. Please wait an hour before trying again.' });
+  }
 
   const userRow = await getUserRow(authUser.id);
   if (!userRow) return res.status(404).json({ error: 'User not found' });

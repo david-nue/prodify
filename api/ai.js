@@ -1,5 +1,9 @@
 export const config = {
-  api: { bodyParser: true },
+  api: {
+    bodyParser: {
+      sizeLimit: '32kb', // AI messages should never be large
+    },
+  },
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -168,7 +172,7 @@ export default async function handler(req, res) {
 
     const data = await upstream.json();
     // Attach remaining count so client can show it
-    data._usage = { used: todayCount + 1, limit, is_pro: isPro };
+    data._usage = { used: todayCount + 1, limit: LIMIT_PRO, is_pro: isPro };
     return res.status(upstream.status).json(data);
 
   } catch (err) {

@@ -94,6 +94,12 @@
     }
   </script>
 
+  <!-- Prevent modal flash before CSS loads -->
+  <script>
+    if (window.PRODIFY_IS_MOBILE) {
+      document.write('<style id="mob-ov-hide">.ov{display:none!important;}</style>');
+    }
+  </script>
 </head>
 
 <body>
@@ -184,7 +190,7 @@
         <!-- Video -->
         <div style="border-radius:0 0 14px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-top:none;box-shadow:0 32px 80px rgba(0,0,0,.5);">
           <video
-            src="/demo.mp4"
+            src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1773822290/demo_osxvdn.mp4"
             autoplay
             muted
             loop
@@ -269,6 +275,20 @@
           <div class="sl-feat-desc">Place any tool anywhere on the canvas. Resize it, move it, stack it. Your layout is
             saved automatically — every time.</div>
         </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <path d="M4 2h9l4 4v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+              <path d="M13 2v4h4M7 9h6M7 13h6M7 17h4" />
+            </svg></div>
+          <div class="sl-feat-name">Notes</div>
+          <div class="sl-feat-desc">Quick notes that live right inside your workspace. Jot down ideas, meeting notes, or anything you need to capture fast — no separate app needed.</div>
+        </div>
+        <div class="sl-feat-card" style="border-style:dashed;opacity:.5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;">
+          <div style="font-size:22px;">✦</div>
+          <div class="sl-feat-name" style="font-size:14px;">More coming soon</div>
+          <div class="sl-feat-desc" style="font-size:12px;">New features are in the works. Stay tuned.</div>
+        </div>
       </div>
     </section>
 
@@ -312,7 +332,7 @@
     <!-- AI PLANNER TEASER -->
     <section class="laip">
       <div class="sl-feat-header">
-        <div class="laip-eyebrow"><span class="laip-dot"></span> Coming with Pro</div>
+        <div class="laip-eyebrow"><span class="laip-dot"></span> Pro feature</div>
         <h2 class="sl-feat-h2">Plan your day in seconds<br />with AI.</h2>
         <p class="sl-feat-sub">No more staring at a task list wondering where to start. Tell Prodify what's on your
           plate — it figures out the rest.</p>
@@ -363,8 +383,8 @@
         </div>
       </div>
       <div class="laip-cta">
-        <button class="btn ba lbtn-cta" onclick="openLandingWaitlist()">Join the waitlist ✦</button>
-        <div class="laip-cta-note">No payment now · Founding member rate locked in at $3/mo</div>
+        <button class="btn ba lbtn-cta" onclick="showAuth()">Get started free →</button>
+        <div class="laip-cta-note">Free to start · AI Planner available with Pro from $3/mo</div>
       </div>
     </section>
 
@@ -401,12 +421,14 @@
           <div class="lfvp-item">
             <div class="lfvp-check">✓</div>JSON export
           </div>
+          <div class="lfvp-item">
+            <div class="lfvp-check">✓</div>1 device
+          </div>
         </div>
         <div class="lfvp-card lfvp-pro">
-          <div class="lfvp-label">Pro — Coming soon</div>
+          <div class="lfvp-label">Pro ✦</div>
           <div class="lfvp-price">$3<span>/mo</span></div>
-          <div class="lfvp-desc">From $3/mo yearly · $4/mo monthly · Founding member rate locked in as long as you're
-            subscribed.</div>
+          <div class="lfvp-desc">From $3/mo yearly · $4/mo monthly</div>
           <div class="lfvp-divider"></div>
           <div class="lfvp-item">
             <div class="lfvp-check">✓</div>Everything in Free
@@ -427,7 +449,7 @@
             <div class="lfvp-check lfvp-star">✦</div>7-day cloud backups
           </div>
           <div class="lfvp-item">
-            <div class="lfvp-check lfvp-star">✦</div>Priority support
+            <div class="lfvp-check lfvp-star">✦</div>Multi-device sync
           </div>
         </div>
       </div>
@@ -444,13 +466,10 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="lfooter">
+    <footer class="lfooter" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
       <div class="logo" style="color:#fff;font-size:16px;">Pro<b>dify</b></div>
-      <p style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:8px;">
-        <a href="/blog/" style="color:rgba(255,255,255,.4);font-weight:600;text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,.7)'" onmouseout="this.style.color='rgba(255,255,255,.4)'">Blog</a>
-      </p>
-      <p style="font-size:11px;color:rgba(255,255,255,.18);">© 2026 Designed &amp; built by <span
-          style="color:rgba(255,255,255,.3);font-weight:600;">David N.</span></p>
+      <a href="/blog/" style="color:rgba(255,255,255,.45);font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.45)'">Blog</a>
+      <p style="font-size:11px;color:rgba(255,255,255,.18);text-align:right;">© 2026 Designed &amp; built by <span style="color:rgba(255,255,255,.3);font-weight:600;">David N.</span></p>
     </footer>
 
   </div>
@@ -517,7 +536,7 @@
         Continue with Google
       </button>
       <p class="auth-note">Free to start · No credit card needed</p>
-      <div class="auth-providers-note">More sign-in options coming soon</div>
+
     </div>
   </div>
 
@@ -533,10 +552,11 @@
           <div class="ob-left-feats">
             <div class="ob-lf"><span class="ob-lf-icon">📋</span><span>Tasks & projects</span></div>
             <div class="ob-lf"><span class="ob-lf-icon">📓</span><span>Daily journal</span></div>
-            <div class="ob-lf"><span class="ob-lf-icon">⏱️</span><span>Pomodoro timer</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">⏱️</span><span>Focus timer</span></div>
             <div class="ob-lf"><span class="ob-lf-icon">💪</span><span>Habit tracker</span></div>
             <div class="ob-lf"><span class="ob-lf-icon">📅</span><span>Calendar</span></div>
-            <div class="ob-lf"><span class="ob-lf-icon">🗂️</span><span>Canvas dashboard</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">📝</span><span>Notes</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon">🗂️</span><span>Widget canvas</span></div>
           </div>
           <div class="ob-left-badge">Free to start · Pro unlocks everything</div>
         </div>
@@ -716,6 +736,14 @@
                   <div style="font-size:12px;color:var(--ink3,#888);">Make it yours, take your data anywhere</div>
                 </div>
               </div>
+              <div
+                style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">📱</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Multi-device sync</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Use Prodify on all your devices seamlessly</div>
+                </div>
+              </div>
             </div>
 
             <button class="ob-btn ob-btn-launch" onclick="obNext(4)">
@@ -747,6 +775,8 @@
                   reflect and grow</span></div>
               <div class="ob-af"><span class="ob-af-icon">⏱️</span><span class="ob-af-text"><b>Focus timer</b> — deep
                   work made easy</span></div>
+              <div class="ob-af"><span class="ob-af-icon">📝</span><span class="ob-af-text"><b>Notes</b> — quick
+                  capture, always at hand</span></div>
               <div class="ob-af"><span class="ob-af-icon">🗂️</span><span class="ob-af-text"><b>Widget canvas</b> — your
                   layout, your way</span></div>
             </div>
@@ -1016,12 +1046,10 @@
                 Daily Planner</div>
               <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Tell Prodify what's on
                 your plate and it'll build a realistic, prioritized schedule around your tasks, energy level, and
-                available time. Coming with Pro.</p>
+                available time. Available with Pro.</p>
               <button onclick="showUpgradeModal('AI Daily Planner')"
-                style="padding:13px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Join
-                the waitlist ✦</button>
-              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · Founding member rate from
-                $3/mo</div>
+                style="padding:13px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Upgrade to Pro ✦</button>
+              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">From $3/mo · Cancel anytime</div>
             </div>
           </div>
         </div>
@@ -1544,6 +1572,13 @@
       inset: 0;
       z-index: 99999;
       overflow: hidden;
+      opacity: 0;
+      background: var(--bg, #f8f7f4);
+    }
+
+    html.is-mobile #mobile-app-root.ready {
+      opacity: 1;
+      transition: opacity 0.15s ease;
     }
   </style>
 
@@ -1560,10 +1595,23 @@
         tmp.appendChild(frag.cloneNode(true));
         root.innerHTML = tmp.innerHTML;
 
-        // Load mobile CSS
+        // Load mobile CSS — reveal root only after CSS is loaded to prevent flash
         var link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = '/app-mobile.css';
+        link.onload = function() {
+          setTimeout(function() {
+            root.classList.add('ready');
+            // Remove the pre-load .ov hider — mobile uses sheets, not .ov
+            var hider = document.getElementById('mob-ov-hide');
+            if (hider) hider.remove();
+          }, 20);
+        };
+        link.onerror = function() {
+          root.classList.add('ready');
+          var hider = document.getElementById('mob-ov-hide');
+          if (hider) hider.remove();
+        };
         document.head.appendChild(link);
 
         // Disable google button until JS is ready (prevents "not defined" if tapped early)
@@ -1754,8 +1802,8 @@
               export</span></div>
           <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
               backups</span></div>
-          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
-          </div>
+          <div class="upg-feat"><span class="upg-feat-icon">📱</span><span class="upg-feat-label">Multi-device
+              sync</span></div>
         </div>
         <div class="upg-plans">
           <div class="upg-plan">
@@ -1814,8 +1862,8 @@
               export</span></div>
           <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
               backups</span></div>
-          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
-          </div>
+          <div class="upg-feat"><span class="upg-feat-icon">📱</span><span class="upg-feat-label">Multi-device
+              sync</span></div>
         </div>
         <div class="upg-plans">
           <div class="upg-plan">
@@ -1829,31 +1877,11 @@
           </div>
         </div>
 
-        <!-- State: input email -->
-        <div id="lw-join-state">
-          <p class="upg-waitlist-label">Join the waitlist — get the <b>founding member rate</b> when Pro launches.</p>
-          <div class="lw-email-wrap">
-            <input type="email" id="lw-email-input" class="lw-email-input" placeholder="your@email.com"
-              oninput="lwClearErr()" onkeydown="if(event.key==='Enter')lwSubmit()" />
-          </div>
-          <p class="lw-err" id="lw-err" style="display:none;"></p>
-          <button class="upg-cta" id="lw-submit-btn" onclick="lwSubmit()" style="margin-top:12px;">Join the
-            waitlist</button>
+        <!-- Sign up CTA for non-logged-in visitors -->
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+          <button class="upg-cta" onclick="closeMo('mo-landing-waitlist');showAuth()">Get started free →</button>
         </div>
-
-        <!-- State: success -->
-        <div id="lw-joined-state" style="display:none;">
-          <div class="upg-joined-box">
-            <div class="upg-joined-icon">🎉</div>
-            <div class="upg-joined-pos">You're <span id="lw-position">#—</span> on the waitlist</div>
-            <div class="upg-joined-sub">We'll email <span id="lw-joined-email"
-                style="font-weight:700;color:var(--a2);"></span> when Pro launches with your founding member rate ($3/mo
-              yearly, locked in as long as you're subscribed).</div>
-          </div>
-          <button class="upg-cta" onclick="closeMo('mo-landing-waitlist')" style="margin-top:12px;">Got it</button>
-        </div>
-
-        <p class="upg-note">No payment now · Founding member rate locked in as long as you're subscribed</p>
+        <p class="upg-note">Free to start · No credit card needed · Pro from $3/mo</p>
       </div>
     </div>
   </div>
@@ -1916,14 +1944,6 @@
 
   <template id="mob-html-tpl">
 
-    <!-- ══ LOADING SCREEN ══ -->
-    <div class="screen" id="screen-loading">
-      <div class="mob-loading-wrap">
-        <div class="mob-loading-logo">Pro<b>dify</b></div>
-        <div class="mob-loading-spinner"></div>
-      </div>
-    </div>
-
     <!-- ══ LOGIN SCREEN ══ -->
     <div class="screen" id="screen-login">
       <!-- Animated orbs matching desktop -->
@@ -1958,7 +1978,7 @@
           ⚡ No connection — check your internet and try again
         </div>
         <div class="login-err" id="login-err"></div>
-        <div class="login-note">Free to start · No credit card needed<br />More sign-in options coming soon</div>
+        <div class="login-note">Free to start · No credit card needed</div>
       </div>
 
       <!-- Feature list in dark zone -->
@@ -1971,17 +1991,17 @@
           </div>
         </div>
         <div class="login-feat">
-          <div class="login-feat-icon">💪</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Habit Tracker</div>
-            <div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div>
-          </div>
-        </div>
-        <div class="login-feat">
           <div class="login-feat-icon">⏱️</div>
           <div class="login-feat-body">
             <div class="login-feat-title">Focus Timer</div>
             <div class="login-feat-desc">Pomodoro sessions — 25 min focus, 5 min breaks. Track your output.</div>
+          </div>
+        </div>
+        <div class="login-feat">
+          <div class="login-feat-icon">💪</div>
+          <div class="login-feat-body">
+            <div class="login-feat-title">Habit Tracker</div>
+            <div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div>
           </div>
         </div>
         <div class="login-feat">
@@ -1992,10 +2012,10 @@
           </div>
         </div>
         <div class="login-feat">
-          <div class="login-feat-icon">📅</div>
+          <div class="login-feat-icon">📝</div>
           <div class="login-feat-body">
-            <div class="login-feat-title">Calendar</div>
-            <div class="login-feat-desc">Schedule view — your upcoming events in a clean vertical list.</div>
+            <div class="login-feat-title">Notes</div>
+            <div class="login-feat-desc">Quick notes inside your workspace — no extra app needed.</div>
           </div>
         </div>
         <div class="login-feat">
@@ -2007,6 +2027,11 @@
           <div class="login-feat-badge">Pro</div>
         </div>
       </div>
+
+      <!-- Pro pricing hint -->
+      <div style="text-align:center;padding:20px 24px 32px;font-size:12px;color:rgba(255,255,255,.3);">
+        Pro from <span style="color:rgba(255,255,255,.5);font-weight:600;">$3/mo</span> · Unlimited habits, AI Planner &amp; more · Cancel anytime
+      </div>
     </div>
 
     <!-- ══ ONBOARDING SCREEN ══ -->
@@ -2014,9 +2039,9 @@
       <div class="ob-wrap">
         <div class="ob-progress">
           <div class="ob-prog-track">
-            <div class="ob-prog-fill" id="ob-fill" style="width:25%"></div>
+            <div class="ob-prog-fill" id="ob-fill" style="width:20%"></div>
           </div>
-          <div class="ob-prog-lbl" id="ob-prog-lbl">Step 1 of 4</div>
+          <div class="ob-prog-lbl" id="ob-prog-lbl">Step 1 of 5</div>
         </div>
 
         <!-- Step 0: Name -->
@@ -2104,6 +2129,47 @@
 
         <!-- Step 4: All set -->
         <div class="ob-panel" id="mob-ob-4">
+            <div class="ob-panel-icon">✦</div>
+            <h2 class="ob-title">One more thing</h2>
+            <p class="ob-sub">Everything you need is free. When you're ready, Pro unlocks the extras.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;width:100%;">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">🤖</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">AI Daily Planner</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Plan your day with AI in seconds</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">♾️</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Unlimited habits</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Track as many habits as you want</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">🎨</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Custom colors + CSV &amp; PDF export</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Make it yours, take your data anywhere</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--al,rgba(58,125,94,.08));border:1.5px solid var(--a2,rgba(58,125,94,.25));border-radius:14px;">
+                <span style="font-size:18px;">📱</span>
+                <div>
+                  <div style="font-size:13px;font-weight:700;color:var(--ink,#111);">Multi-device sync</div>
+                  <div style="font-size:12px;color:var(--ink3,#888);">Use Prodify on all your devices seamlessly</div>
+                </div>
+              </div>
+            </div>
+            <button class="ob-btn ob-btn-launch" onclick="obNext(4)" style="width:100%;">
+              <span>Continue with Free</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </button>
+            <p class="ob-plan-footnote" style="margin-top:10px;">From $3/mo · No credit card now</p>
+          </div>
+
+        <div class="ob-panel" id="mob-ob-5">
           <div class="ob-allset">
             <div class="ob-allset-icon"><svg viewBox="0 0 24 24">
                 <path d="M20 6L9 17l-5-5" />
@@ -2126,6 +2192,10 @@
               <div class="ob-allset-feat">
                 <div class="ob-allset-feat-icon">💪</div>
                 <div class="ob-allset-feat-text"><b>Habits</b> — build streaks that stick</div>
+              </div>
+              <div class="ob-allset-feat">
+                <div class="ob-allset-feat-icon">📝</div>
+                <div class="ob-allset-feat-text"><b>Notes</b> — quick capture, always at hand</div>
               </div>
             </div>
             <button class="ob-btn" style="width:100%;" onclick="obFinish()">Open my workspace →</button>
@@ -2514,12 +2584,11 @@
               <div style="font-size:20px;font-weight:800;letter-spacing:-.3px;color:var(--ink);margin-bottom:10px;">AI
                 Daily Planner</div>
               <p style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:24px;max-width:320px;">Tell
-                Prodify what's on your plate and it'll build a realistic, prioritized schedule for your day. Coming with
+                Prodify what's on your plate and it'll build a realistic, prioritized schedule for your day. Available with
                 Pro.</p>
               <button onclick="showUpgradeModal('AI Daily Planner')"
-                style="padding:14px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;max-width:280px;">Join
-                the waitlist ✦</button>
-              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">No payment now · From $3/mo</div>
+                style="padding:14px 28px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;max-width:280px;">Upgrade to Pro ✦</button>
+              <div style="font-size:11px;color:var(--ink4);margin-top:12px;">From $3/mo · Cancel anytime</div>
             </div>
           </div>
 
@@ -3005,8 +3074,8 @@
               export</span></div>
           <div class="upg-feat"><span class="upg-feat-icon">☁️</span><span class="upg-feat-label">7-day cloud
               backups</span></div>
-          <div class="upg-feat"><span class="upg-feat-icon">⭐</span><span class="upg-feat-label">Priority support</span>
-          </div>
+          <div class="upg-feat"><span class="upg-feat-icon">📱</span><span class="upg-feat-label">Multi-device
+              sync</span></div>
         </div>
         <div class="upg-plans">
           <div class="upg-plan">

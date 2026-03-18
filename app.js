@@ -850,7 +850,7 @@ async function doSI(){
   }
   else {
     checkAndRegisterDevice(u).then(allowed => {
-      if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+      if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
       launch();
     });
   }
@@ -992,7 +992,7 @@ async function handleGoogleCallback(passedSession = null) {
         show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
       } else {
         checkAndRegisterDevice(u).then(allowed => {
-          if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+          if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
           launch();
         });
       }
@@ -1158,7 +1158,7 @@ async function submitMigrateEmail(){
     if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);}
     else {
       checkAndRegisterDevice(u).then(allowed=>{
-        if(!allowed){showMultiDeviceBlock();doSO();return;}
+        if(!allowed){showMultiDeviceBlock();_silentSignOut();return;}
         launch();
       });
     }
@@ -1329,7 +1329,7 @@ function obFinish() {
   // Send welcome email — fire and forget, don't block launch
   sendWelcomeEmail(acc[cu].displayName);
   checkAndRegisterDevice(cu).then(allowed => {
-    if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
+    if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
     launch();
   });
 }
@@ -1411,6 +1411,18 @@ function stopAlarm(){
   if(_alarmIv){clearInterval(_alarmIv);_alarmIv=null;}
   if(_alarmTimeout){clearTimeout(_alarmTimeout);_alarmTimeout=null;}
   if(_alarmCtx){try{_alarmCtx.close();}catch(e){}_alarmCtx=null;}
+}
+
+// Silent sign out — used by device block, no confirmation dialog
+async function _silentSignOut() {
+  try {
+    if (cu) await unregisterDevice(cu);
+    if (sbReady) await sb.auth.signOut().catch(()=>{});
+  } catch(e) {}
+  // Clear local state
+  try { localStorage.removeItem('pd1_cur'); } catch(e) {}
+  cu = null;
+  show('sl');
 }
 
 async function doSO(){
@@ -3104,13 +3116,29 @@ function _renderNoteW(body, w){
   const open = notes.find(n=>n.id===w._noteOpen);
   if(!open){ buildNoteW(body, w); return; }
 
-  // Sort by most recently updated for the list
-  const sorted = notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  // Filter + sort
+  const q = _noteSearchQ.toLowerCase().trim();
+  const filtered = notes.filter(n => !q || (n.title||'').toLowerCase().includes(q) || (n.content||'').toLowerCase().includes(q));
+  const sorted = filtered.slice().sort((a,b) =>
+    _noteSortMode === 'title' ? (a.title||'').localeCompare(b.title||'') : (b.updated||0)-(a.updated||0)
+  );
 
   body.innerHTML=`
     <div class="nw-wrap">
       <div class="nw-list" id="nwl-${w.id}">
-        ${sorted.map(n=>`
+        <div style="display:flex;align-items:center;gap:5px;padding:7px 8px 5px;border-bottom:1px solid var(--bdr);">
+          <input id="nw-search-${w.id}" type="text" placeholder="Search…" value="${esc(_noteSearchQ)}"
+            oninput="_noteSearchQ=this.value;const wb=document.getElementById('wb-${w.id}');const ww=widgets.find(x=>x.id==='${w.id}');if(wb&&ww){wb.innerHTML='';_renderNoteW(wb,ww);}"
+            style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:7px;padding:4px 8px;font-size:11px;color:var(--ink);outline:none;font-family:inherit;min-width:0;"
+            onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"/>
+          <button onclick="_noteSortMode=_noteSortMode==='updated'?'title':'updated';const wb=document.getElementById('wb-${w.id}');const ww=widgets.find(x=>x.id==='${w.id}');if(wb&&ww){wb.innerHTML='';_renderNoteW(wb,ww);}"
+            title="${_noteSortMode==='updated'?'Sort A–Z':'Sort by recent'}"
+            style="background:${_noteSortMode==='title'?'var(--al)':'var(--surf2)'};border:1.5px solid ${_noteSortMode==='title'?'var(--a2)':'var(--bdr)'};border-radius:7px;padding:4px 6px;cursor:pointer;color:var(--ink4);display:flex;align-items:center;flex-shrink:0;transition:all .15s;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+          </button>
+        </div>
+        ${sorted.length === 0 ? `<div style="padding:14px 10px;font-size:11px;color:var(--ink4);text-align:center;">${q?'No notes match':'No notes yet'}</div>` :
+        sorted.map(n=>`
           <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${w.id}','${n.id}')">
             <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
             <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
@@ -3166,6 +3194,8 @@ async function noteWDel(wid, nid){
 }
 
 let _noteTimer=null;
+let _noteSearchQ='';
+let _noteSortMode='updated'; // 'updated' | 'title'
 function saveNoteField(wid, nid, field, val){
   const n=notes.find(x=>x.id===nid); if(!n) return;
   n[field]=val;
@@ -3175,8 +3205,10 @@ function saveNoteField(wid, nid, field, val){
   if(list){
     const w=widgets.find(x=>x.id===wid);
     if(w){
-      const sorted=notes.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
-      list.innerHTML=sorted.map(n2=>`
+      const q2=_noteSearchQ.toLowerCase().trim();
+      const fil2=notes.filter(n=>!q2||(n.title||'').toLowerCase().includes(q2)||(n.content||'').toLowerCase().includes(q2));
+      const sorted2=fil2.slice().sort((a,b)=>_noteSortMode==='title'?(a.title||'').localeCompare(b.title||''):(b.updated||0)-(a.updated||0));
+      list.innerHTML=sorted2.map(n2=>`
         <div class="nw-list-item${n2.id===w._noteOpen?' active':''}" onclick="noteWOpen('${wid}','${n2.id}')">
           <div class="nw-list-title">${esc(n2.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
           <div class="nw-list-preview">${esc((n2.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
@@ -5415,7 +5447,7 @@ const _featureDescriptions = {
   'CSV Export': 'Export your tasks and journal as a spreadsheet — ready for any tool.',
   'PDF Export': 'Download a beautifully formatted report of your productivity.',
   'Cloud Backup History': 'Restore your workspace from any of the last 7 daily snapshots.',
-  'Multi-Device Sync': 'Use Prodify on all your devices at the same time, seamlessly.',
+  'Multi-Device Sync': 'Use Prodify on all your devices at the same time, seamlessly. Free plan is limited to 1 device.',
 };
 
 function showUpgradeModal(featureName) {
@@ -5924,17 +5956,34 @@ function getDeviceName() {
 }
 
 // Check cloud active_device_id — returns true if this device can proceed
+// Pro users bypass the 1-device limit entirely
 async function checkAndRegisterDevice(username) {
-  return true; // DISABLED: multi-device enforcement not yet live
   try {
+    if (!sbReady) return true; // offline — fail open
     const myId = getOrCreateDeviceId();
-    const { data, error } = await sb.rpc('get_active_device', { p_username: username });
+
+    const { data: row, error } = await sb.from('users')
+      .select('active_device_id, is_pro, bypass_device_check')
+      .eq('username', username)
+      .single();
+
     if (error) return true; // fail open — don't block if DB unreachable
-    const activeId = data || null;
+
+    // Bypass flag — for dev/test accounts
+    if (row?.bypass_device_check) return true;
+
+    // Pro users always allowed — no device limit
+    if (row?.is_pro) {
+      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      return true;
+    }
+
+    const activeId = row?.active_device_id || null;
     if (activeId && activeId !== myId) {
-      // Another device is registered
+      // Another device is registered — block this one
       return false;
     }
+
     // Register this device
     await sb.from('users').update({ active_device_id: myId }).eq('username', username);
     return true;
@@ -5971,8 +6020,8 @@ function showMultiDeviceBlock() {
         'Free plan supports <strong style="color:var(--ink);">1 active device</strong>.<br>' +
         'Sign out on your other device first, then try again.' +
       '</div>' +
-      '<button class="btn" style="width:100%;padding:13px;font-size:14px;margin-bottom:10px;" onclick="showUpgradeModal(\'Multi-Device Sync\')">✦ Upgrade to Pro</button>' +
-      '<button class="bol" style="width:100%;padding:11px;font-size:13px;" onclick="document.getElementById(\'mo-multidevice\').remove();">Back to login</button>' +
+      '<button class="btn" style="width:100%;padding:13px;font-size:14px;margin-bottom:10px;" onclick="document.getElementById(\'mo-multidevice\').style.display=\'none\';showUpgradeModal(\'Multi-Device Sync\');document.getElementById(\'dsk-mo-upgrade\').addEventListener(\'click\',function h(e){if(e.target===this){const b=document.getElementById(\'mo-multidevice\');if(b)b.style.display=\'\';this.removeEventListener(\'click\',h);}},{once:true})">✦ Upgrade to Pro</button>' +
+      '<button class="bol" style="width:100%;padding:11px;font-size:13px;" onclick="document.getElementById(\'mo-multidevice\').remove();show(\'sl\')">Back to login</button>' +
     '</div>';
   document.body.appendChild(ov);
 }

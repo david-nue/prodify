@@ -21,7 +21,16 @@ function serviceHeaders() {
 async function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', chunk => { data += chunk; });
+    let size = 0;
+    const MAX_SIZE = 1024 * 1024; // 1MB cap
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_SIZE) {
+        reject(new Error('Payload too large'));
+        return;
+      }
+      data += chunk;
+    });
     req.on('end', () => resolve(data));
     req.on('error', reject);
   });
@@ -80,7 +89,12 @@ export default async function handler(req, res) {
   if (!secret) return res.status(500).json({ error: 'Webhook secret not configured' });
 
   // Read raw body for signature verification
-  const rawBody = await getRawBody(req);
+  let rawBody;
+  try {
+    rawBody = await getRawBody(req);
+  } catch (e) {
+    return res.status(413).json({ error: 'Payload too large' });
+  }
   const signature = req.headers['x-signature'] || '';
 
   if (!verifySignature(rawBody, signature, secret)) {
