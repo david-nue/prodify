@@ -571,8 +571,23 @@ async function obFinish(){
         try{ localStorage.setItem('pd1_lastSaveTs',String(_lastSaveTs)); }catch(e){}
       }catch(e){}
     }
+    // Send welcome email — fire and forget
+    sendWelcomeEmail(d.displayName);
   }
   launch();
+}
+
+async function sendWelcomeEmail(name){
+  try{
+    if(typeof emailjs==='undefined') return;
+    const {data}=await sb.auth.getUser();
+    const email=data?.user?.email||'';
+    if(!email) return;
+    emailjs.send('service_4y11evv','template_bdxskqn',{
+      name:name||'there',
+      to_email:email,
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 // ══════════════════════════════════════════════

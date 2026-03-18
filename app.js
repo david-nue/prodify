@@ -1326,10 +1326,26 @@ function obFinish() {
   _obSyncGlobals();
   LS.s('pd1_acc', acc);
   if (sbReady) dbSaveUser(cu, acc[cu]);
+  // Send welcome email — fire and forget, don't block launch
+  sendWelcomeEmail(acc[cu].displayName);
   checkAndRegisterDevice(cu).then(allowed => {
     if (!allowed) { showMultiDeviceBlock(); doSO(); return; }
     launch();
   });
+}
+
+async function sendWelcomeEmail(name) {
+  try {
+    if (typeof emailjs === 'undefined') return;
+    // Get email from Supabase auth session
+    const { data } = await sb.auth.getUser();
+    const email = data?.user?.email || '';
+    if (!email) return;
+    emailjs.send('service_4y11evv', 'template_bdxskqn', {
+      name: name || 'there',
+      to_email: email,
+    }).catch(() => {}); // silent fail — never block the user
+  } catch(e) {}
 }
 
 // Legacy — keep for any stray calls
