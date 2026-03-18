@@ -5025,7 +5025,8 @@ function renderAIPlanner(containerId, isMobileParam) {
   const notesSummary = (notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') || '(none)';
   const projectSummary = (subjects||[]).slice(0,5).map(p=>p.name+(p.grade?' ('+p.grade+'%)':'')).join(', ') || '(none)';
 
-  _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '.\n'
+  const currentYear = new Date().getFullYear();
+  _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '. Current year: ' + currentYear + '. All dates must use year ' + currentYear + ' or later.\n'
 
     + 'PENDING TASKS:\n' + taskListWithIds + '\n'
 
@@ -5039,25 +5040,23 @@ function renderAIPlanner(containerId, isMobileParam) {
 
     + 'PROJECTS: ' + projectSummary + '\n\n'
 
-    + 'IMPORTANT RULES:\n'
+    + 'CRITICAL: When you create tasks, complete habits, move tasks, or add events, you MUST append the corresponding action blocks at the end of your response. No exceptions — if you say you created something, the action block must be there.\n\n'
 
-    + '- Only perform actions using IDs from the data above. Never make up IDs.\n'
+    + 'RULES:\n'
+    + '- Only use IDs from the data above. Never invent IDs.\n'
+    + '- Never confirm an action you did not perform.\n'
+    + '- If asked to do something with no matching data, say so honestly.\n\n'
 
-    + '- If the user asks to do something that has no matching data (e.g. mark a habit done when there are no habits), tell them honestly instead of pretending.\n'
+    + 'ACTION FORMAT (append after your text, one per line):\n'
+    + '<<<ACTION>>>{"type":"create_task","text":"task name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"complete_habit","id":EXACT_HABIT_ID}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"move_task","id":"EXACT_TASK_ID","col":"todo|inprog|done"}<<<END>>>\n'
+    + '<<<ACTION>>>{"type":"create_event","title":"event name","date":"YYYY-MM-DD"}<<<END>>>\n\n'
 
-    + '- Never confirm an action you did not actually perform.\n\n'
+    + 'EXAMPLE: If user says "add a task to study math", your response must end with:\n'
+    + '<<<ACTION>>>{"type":"create_task","text":"Study math","priority":"medium","dueDate":null}<<<END>>>\n\n'
 
-    + 'Actions — append JSON after your text:\n'
-
-    + '<<<ACTION>>>{"type":"create_task","text":"name","priority":"high|medium|low","dueDate":"YYYY-MM-DD or null"}<<<END>>>\n'
-
-    + '<<<ACTION>>>{"type":"complete_habit","id":EXACT_ID_FROM_ABOVE}<<<END>>>\n'
-
-    + '<<<ACTION>>>{"type":"move_task","id":"EXACT_ID_FROM_ABOVE","col":"todo|inprog|done"}<<<END>>>\n'
-
-    + '<<<ACTION>>>{"type":"create_event","title":"name","date":"YYYY-MM-DD"}<<<END>>>\n'
-
-    + 'Plans: **HH:MM \u2013 HH:MM** task then > tip. End with **Note:** one line.';
+    + 'Plans format: **HH:MM – HH:MM** task name\n> tip\nEnd with **Note:** one insight.';
 
   const closeBtn = isMobileParam ? '' : '<button class="aip-reset-btn" onclick="toggleAipPanel()" title="Close" style="padding:4px 8px;">✕</button>';
 
@@ -5223,8 +5222,15 @@ async function _aipExecuteActions(text) {
   for (const action of actions) {
     try {
       if (action.type === 'create_task') {
+        // Validate and fix dueDate — reject dates in the past
+        let safeDate = action.dueDate || null;
+        if (safeDate) {
+          const d = new Date(safeDate + 'T00:00:00');
+          const today = new Date(); today.setHours(0,0,0,0);
+          if (isNaN(d.getTime()) || d < today) safeDate = null; // clear invalid/past dates
+        }
         tasks.unshift({ id: String(Date.now() + Math.random()), text: action.text, title: action.text,
-          col: 'todo', dueDate: action.dueDate || null, priority: action.priority || 'medium',
+          col: 'todo', dueDate: safeDate, priority: action.priority || 'medium',
           recurring: 'none', date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}), created: Date.now() });
         changed = true;
       } else if (action.type === 'complete_habit') {
