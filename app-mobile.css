@@ -900,3 +900,6 @@ button,input,select,textarea{font-family:inherit;}
   display:flex;
   flex-direction:column;
 }
+
+.aip-newplan-row{padding:12px 14px 4px;display:flex;justify-content:center;}
+.aip-newplan-btn{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:100px;padding:10px 22px;font-size:13px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;}

@@ -3442,6 +3442,20 @@ async function _aipDispatch(containerId, userText) {
     ab.innerHTML = _aipFormat(aiText);
     msgs.appendChild(ab);
 
+    // Hide input, show "New plan" button
+    const inputRow = document.querySelector('#' + containerId + '-wrap .aip-input-row');
+    if (inputRow) inputRow.style.display = 'none';
+    const newPlanBtn = document.createElement('div');
+    newPlanBtn.className = 'aip-newplan-row';
+    newPlanBtn.innerHTML = '<button class="aip-newplan-btn" onclick="'
+      + '_aipPlanGenerated=false;'
+      + 'document.getElementById(\'' + containerId + '-msgs\').innerHTML=\'\';'
+      + 'document.getElementById(\'' + containerId + '-sugg\').style.display=\'flex\';'
+      + 'this.parentElement.remove();'
+      + 'const ir=document.querySelector(\'#' + containerId + '-wrap .aip-input-row\');if(ir)ir.style.display=\'\';'
+      + '">↺ Generate new plan</button>';
+    msgs.parentElement.appendChild(newPlanBtn);
+
   } catch (err) {
     ty.remove();
     if (err.message === 'pro_gate') return;
