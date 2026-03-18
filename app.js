@@ -5022,6 +5022,9 @@ function renderAIPlanner(containerId, isMobileParam) {
     ? ctx.pendingTasks.map(t => '• [id:' + t.id + '] ' + (t.text||t.title) + (t.priority?' ['+t.priority+']':'') + (t.dueDate?' due '+t.dueDate:'')).join('\n')
     : '(none)';
 
+  const notesSummary = (notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') || '(none)';
+  const projectSummary = (subjects||[]).slice(0,5).map(p=>p.name+(p.grade?' ('+p.grade+'%)':'')).join(', ') || '(none)';
+
   _aipContext = 'You are a sharp productivity coach in Prodify. Today is ' + ctx.dateStr + ', ' + ctx.timeStr + '.\n'
 
     + 'PENDING TASKS:\n' + taskListWithIds + '\n'
@@ -5032,7 +5035,7 @@ function renderAIPlanner(containerId, isMobileParam) {
 
     + 'CALENDAR: ' + ctx.eventList + '\n'
 
-    + 'NOTES (recent): ' + (notes||[]).slice(0,5).map(n=>(n.title||'Untitled')+(n.content?' — '+n.content.slice(0,80):'')).join('; ') + '\n'
+    + 'NOTES (recent): ' + notesSummary + '\n'
 
     + 'PROJECTS: ' + projectSummary + '\n\n'
 
