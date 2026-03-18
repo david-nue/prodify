@@ -219,6 +219,41 @@ function showScreen(id){
 // ══════════════════════════════════════════════
 // GOOGLE AUTH — matches desktop doGoogleAuth()
 // ══════════════════════════════════════════════
+async function doMobMagicLink(){
+  const emailEl = document.getElementById('mob-magic-email');
+  const errEl   = document.getElementById('mob-magic-err');
+  const btn     = document.getElementById('mob-magic-btn');
+  const email   = emailEl?.value.trim() || '';
+
+  if(errEl){ errEl.style.display='none'; errEl.textContent=''; }
+
+  if(!email || !email.includes('@')){
+    if(errEl){ errEl.textContent='Please enter a valid email address.'; errEl.style.display='block'; }
+    return;
+  }
+
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+
+  try{
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: 'https://prodify.cc' }
+    });
+    if(error) throw error;
+
+    // Show success state
+    document.getElementById('mob-magic-form').style.display='none';
+    const sentEl = document.getElementById('mob-magic-sent');
+    const sentEmail = document.getElementById('mob-magic-sent-email');
+    if(sentEl) sentEl.style.display='block';
+    if(sentEmail) sentEmail.textContent=email;
+
+  }catch(err){
+    if(errEl){ errEl.textContent=err.message||'Could not send link. Please try again.'; errEl.style.display='block'; }
+    if(btn){ btn.disabled=false; btn.textContent='Continue with Email'; }
+  }
+}
+
 async function doGoogleAuth(){
   const btn=document.getElementById('btn-google');
   const err=document.getElementById('login-err');

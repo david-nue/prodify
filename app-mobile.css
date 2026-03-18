@@ -907,3 +907,7 @@ button,input,select,textarea{font-family:inherit;}
 .aip-generate-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;}
 .aip-generate-btn:hover{opacity:.88;}
 .aip-generate-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Magic link auth divider mobile */
+.mob-auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:rgba(255,255,255,.25);font-size:12px;}
+.mob-auth-divider::before,.mob-auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.12);}
