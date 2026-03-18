@@ -163,19 +163,33 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model:      MODEL,       // always hardcoded — client cannot override
         max_tokens: MAX_TOKENS,  // always hardcoded — client cannot override
+        system:     body.system || undefined, // optional system prompt from client
         messages:   safeMessages,
       }),
     });
 
-    // Increment usage count after a successful call
-    await incrementRequestCount(authId, todayCount, userRow?.ai_requests_reset_at);
+    // Read full response body first before doing anything else
+    const rawText = await upstream.text();
 
-    const data = await upstream.json();
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error('[Prodify AI] Failed to parse Anthropic response:', rawText.slice(0, 200));
+      return res.status(502).json({ error: 'Invalid response from AI service. Please try again.' });
+    }
+
+    // Only increment usage count on a successful response
+    if (upstream.ok) {
+      incrementRequestCount(authId, todayCount, userRow?.ai_requests_reset_at).catch(() => {});
+    }
+
     // Attach remaining count so client can show it
     data._usage = { used: todayCount + 1, limit: LIMIT_PRO, is_pro: isPro };
     return res.status(upstream.status).json(data);
 
   } catch (err) {
-    return res.status(500).json({ error: 'Upstream error' });
+    console.error('[Prodify AI] Upstream error:', err);
+    return res.status(500).json({ error: 'Could not reach AI service. Please try again.' });
   }
 }
