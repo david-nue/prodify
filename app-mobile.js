@@ -3369,7 +3369,7 @@ async function _track(event, data) {
   } catch(e) {}
 }
 
-function aipGenerate(containerId) {
+async function aipGenerate(containerId) {
   if (!isPro()) { showUpgradeModal('AI Daily Planner'); return; }
   const msgs   = document.getElementById(containerId + '-msgs');
   const genBtn = document.getElementById(containerId + '-genbtn');
