@@ -392,16 +392,16 @@ to{opacity:1;transform:translateY(0);}
   border-radius:999px;
   padding:6px 10px;
   box-shadow:var(--sh3);
-  transition:padding .3s cubic-bezier(.25,.46,.45,.94),background .35s cubic-bezier(.25,.46,.45,.94),border-color .35s cubic-bezier(.25,.46,.45,.94);
-}
-.fltbar:hover .fltlbl{
-  max-width:80px;opacity:1;margin-left:5px;
+  transition:background .35s cubic-bezier(.25,.46,.45,.94),border-color .35s cubic-bezier(.25,.46,.45,.94);
 }
 .fltlbl{
   font-size:11px;font-weight:700;white-space:nowrap;
   max-width:0;opacity:0;margin-left:0;overflow:hidden;
-  transition:max-width .3s cubic-bezier(.25,.46,.45,.94),opacity .25s cubic-bezier(.25,.46,.45,.94),margin-left .3s cubic-bezier(.25,.46,.45,.94);
+  transition:max-width .25s cubic-bezier(.25,.46,.45,.94),opacity .2s cubic-bezier(.25,.46,.45,.94),margin-left .25s cubic-bezier(.25,.46,.45,.94);
   pointer-events:none;
+}
+.sbb:hover .fltlbl{
+  max-width:80px;opacity:1;margin-left:5px;
 }
 .flt-div{width:1px;height:22px;background:var(--bdr);margin:0 6px;flex-shrink:0;}
 .sb-logo{display:none;}
@@ -1850,7 +1850,6 @@ to{opacity:1;transform:translateY(0);}
 /* desktop: dim sidebar/topbar/wtray in focus mode */
 body.in-focus .fltbar{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(20px);transition:opacity .3s cubic-bezier(.25,.46,.45,.94),transform .3s cubic-bezier(.25,.46,.45,.94);}
 body.in-focus .wtray{opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(.25,.46,.45,.94);}
-
 /* mobile exit btn */
 /* focus mode label — hidden normally, shown in focus mode */
 .fcs-mob-label{
@@ -1872,17 +1871,6 @@ body.in-focus-mob .fcs-mob-inline-exit{display:flex;}
 #fcs-mob-exit{display:none!important;}
 
 /* exit btn inside overlay */
-#fcs-exit-overlay{
-  display:none;position:fixed;top:18px;right:18px;z-index:99999;
-  align-items:center;gap:6px;
-  background:var(--surf);border:1.5px solid var(--bdr);
-  color:var(--ink);border-radius:100px;
-  padding:8px 16px 8px 12px;font-size:12px;font-weight:700;
-  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:.1px;
-  box-shadow:var(--sh2);transition:background .2s cubic-bezier(.25,.46,.45,.94);
-}
-body.in-focus #fcs-exit-overlay{display:flex;}
-#fcs-exit-overlay svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;}
 
 /* ═══════════════════════════════════════
    PRO BADGE RING & GLOW

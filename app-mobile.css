@@ -83,7 +83,8 @@ button,input,select,textarea{font-family:inherit;}
 .ob-uc-card{display:flex;align-items:center;gap:14px;padding:16px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);border-radius:16px;cursor:pointer;text-align:left;transition:border-color .2s,transform .2s;}
 .ob-uc-card.active{border-color:var(--a2);box-shadow:0 0 0 3px rgba(74,157,116,.15);}
 .ob-uc-card:active{transform:scale(.98);}
-.ob-uc-icon{font-size:24px;flex-shrink:0;}
+.ob-uc-icon{font-size:24px;flex-shrink:0;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;}
+.ob-uc-icon svg{stroke:rgba(255,255,255,.85);}
 .ob-uc-label{font-size:14px;font-weight:700;color:#fff;display:block;margin-bottom:2px;}
 .ob-uc-desc{font-size:12px;color:rgba(255,255,255,.4);}
 /* Color picker */
@@ -93,6 +94,9 @@ button,input,select,textarea{font-family:inherit;}
 .ob-color-btn:active{transform:scale(.96);}
 .ob-color-swatch{width:48px;height:48px;border-radius:14px;}
 .ob-color-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);}
+.ob-color-locked{border-radius:16px;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px 12px;background:rgba(255,255,255,.03);border:3px solid transparent;opacity:.4;cursor:not-allowed;pointer-events:none;}
+.ob-color-lock-badge{position:absolute;top:6px;right:5px;background:rgba(255,200,80,.85);color:#000;font-size:8px;font-weight:800;padding:2px 5px;border-radius:6px;letter-spacing:.3px;}
+.ob-color-pro-note{font-size:11px;color:rgba(255,255,255,.3);margin-bottom:16px;text-align:center;}
 /* Theme picker */
 .ob-theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;}
 .ob-theme-card{border:2px solid rgba(255,255,255,.1);border-radius:16px;cursor:pointer;padding:14px;background:rgba(255,255,255,.05);transition:border-color .2s,transform .2s;display:flex;flex-direction:column;align-items:center;gap:10px;}
@@ -113,7 +117,8 @@ button,input,select,textarea{font-family:inherit;}
 .ob-allset-icon svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
 .ob-allset-feats{margin:24px 0 32px;width:100%;display:flex;flex-direction:column;gap:10px;}
 .ob-allset-feat{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.06);border-radius:12px;}
-.ob-allset-feat-icon{font-size:18px;}
+.ob-allset-feat-icon{font-size:18px;width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,.85);}
+.ob-allset-feat-icon svg{stroke:rgba(255,255,255,.85);width:16px;height:16px;}
 .ob-allset-feat-text{font-size:13px;color:rgba(255,255,255,.75);font-weight:500;}
 
 /* ══════════════════════════════════════
@@ -231,7 +236,7 @@ button,input,select,textarea{font-family:inherit;}
 .fpill.active{background:var(--a2);border-color:var(--a2);color:#fff;}
 .task-list{padding:14px 18px 16px;}
 .task-item{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;margin-bottom:8px;overflow:hidden;position:relative;}
-.task-behind{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden;}
+.task-behind{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden;visibility:hidden;}
 .swipe-l{background:var(--a2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:72px;color:#fff;font-size:10px;font-weight:700;}
 .swipe-l svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
 .swipe-r{background:var(--red);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:72px;color:#fff;font-size:10px;font-weight:700;margin-left:auto;}
@@ -264,10 +269,11 @@ button,input,select,textarea{font-family:inherit;}
 
 /* Task cards */
 .task-item{margin-bottom:7px;overflow:hidden;position:relative;border-radius:14px;}
-.task-behind{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden;}
+.task-behind{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden;visibility:hidden;}
 .swipe-l{background:var(--a2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:72px;color:#fff;font-size:10px;font-weight:700;}
 .swipe-l svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
-.swipe-l-disabled{background:var(--bdr)!important;}
+.swipe-l-disabled{display:none!important;}
+.swipe-r-disabled{display:none!important;}
 .swipe-r{background:var(--red);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;min-width:72px;color:#fff;font-size:10px;font-weight:700;margin-left:auto;}
 .swipe-r svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
 .task-front{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;position:relative;z-index:2;background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;transition:transform .25s cubic-bezier(.16,1,.3,1);}
@@ -920,3 +926,22 @@ button,input,select,textarea{font-family:inherit;}
 .etp-ampm-radio.sel{background:var(--a2);border-color:var(--a2);color:#fff;}
 .etp-arrow-btn{background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:34px;height:30px;cursor:pointer;color:var(--ink3);font-size:12px;display:flex;align-items:center;justify-content:center;}
 .etp-arrow-btn:hover{background:var(--surf2);border-color:var(--ink4);}
+
+/* ── Task delete X button ── */
+.task-front{position:relative;}
+/* ── X delete button — top-right, no bg, stacked with date ── */
+.task-front{overflow:hidden;}
+.task-del-btn{position:absolute;right:10px;top:10px;width:20px;height:20px;border:none;background:none;color:var(--ink4);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;}
+.task-del-btn:active{color:#dc2626;}
+.task-front .tbody{padding-right:28px;}
+.tdate{display:block;text-align:right;position:absolute;right:10px;top:32px;font-size:10px;color:var(--ink4);}
+
+.swipe-r-back{background:var(--a2);color:#fff;}
+.swipe-r-back svg{stroke:#fff;}
+
+/* ── FAB on notes and projects — hidden by default, shown via JS ── */
+#notes-fab,#proj-fab{display:none;}
+
+/* ── Mobile accent swatch Pro overlay ── */
+.accent-swatch-pro{position:relative;opacity:.55;}
+.accent-swatch-pro::before{content:'✦';position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;pointer-events:none;background:rgba(0,0,0,.3);}

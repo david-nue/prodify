@@ -725,7 +725,13 @@ function applyAccentCSS(k){
   document.querySelectorAll('.acc-sw').forEach(s=>s.classList.remove('active'));
   const sw=document.getElementById('sw-'+k); if(sw) sw.classList.add('active');
 }
-function setAccent(k){ const p=getP(); p.accentKey=k; p.accentColor=k; if(cu) acc[cu].prefs=p; saveAll(); applyAccentCSS(k); }
+function setAccent(k){
+  const p=getP(); p.accentKey=k; p.accentColor=k; if(cu) acc[cu].prefs=p; saveAll(); applyAccentCSS(k);
+  // Update selected state on swatches immediately
+  document.querySelectorAll('#mob-accent-presets .accent-swatch').forEach(s=>{
+    s.classList.toggle('selected', s.dataset.key===k);
+  });
+}
 function toggleDark(el){
   el.classList.toggle('on');
   const on=el.classList.contains('on');
@@ -787,6 +793,11 @@ function goPg(id){
   if(id==='timer'){ mobSetTMode(_mobTMode); }
   if(id==='settings') renderSettingsPage();
   if(id==='profile') renderMobProfile();
+  // Show FAB on notes and projects pages
+  const notesFab=document.getElementById('notes-fab');
+  const projFab=document.getElementById('proj-fab');
+  if(notesFab) notesFab.style.display=(id==='notes')?'flex':'none';
+  if(projFab) projFab.style.display=(id==='projects')?'flex':'none';
   // Show/hide journal compose box with the page transition
   const jwadd=document.querySelector('.jwadd');
   if(jwadd){
@@ -1045,7 +1056,7 @@ function renderTasks(){
     return;
   }
   // show swipe hint once
-  const hint=`<div class="swipe-hint">← swipe to delete &nbsp;·&nbsp; swipe to advance →</div>`;
+  const hint=`<div class="swipe-hint">swipe left to go back &nbsp;·&nbsp; swipe right to advance</div>`;
   const groups=[
     {key:'todo',   label:'To Do',       dot:'#E8A838', tasks:sortTasks(tasks.filter(t=>t.col==='todo'&&!t.subjectId))},
     {key:'inprog', label:'In Progress',  dot:'#5B8DD9', tasks:sortTasks(tasks.filter(t=>t.col==='inprog'&&!t.subjectId))},
@@ -1076,17 +1087,24 @@ function taskCardHTML(t){
   const dueTag=due?`<span class="ttag ${due.cls}">${due.label}</span>`:'';
   const recurTag=recur?`<span class="ttag ttag-recur">↺ ${t.recurring}</span>`:'';
   const addedDate=t.date?`<span class="tdate">${t.date}</span>`:'';
-  const hasMeta=dueTag||recurTag||addedDate;
+  const hasMeta=dueTag||recurTag;
   // swipe-right label: done tasks can't advance; in-progress shows Done+check; todo shows just check
+  // swipe right = advance (disabled if done), swipe left = go back (disabled if todo)
+  const isTodo=t.col==='todo';
   const swipeRightHTML=isDone
     ? ''
     : isInProg
       ? `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>Done`
       : `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M20 6L9 17l-5-5"/></svg>`;
+  const swipeLeftHTML=isTodo
+    ? ''
+    : isInProg
+      ? `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>To Do`
+      : `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>In Progress`;
   return `<div class="task-item" id="ti-${t.id}">
     <div class="task-behind">
       ${!isDone?`<div class="swipe-l">${swipeRightHTML}</div>`:'<div class="swipe-l swipe-l-disabled"></div>'}
-      <div class="swipe-r"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Delete</div>
+      ${!isTodo?`<div class="swipe-r swipe-r-back">${swipeLeftHTML}</div>`:'<div class="swipe-r swipe-r-disabled"></div>'}
     </div>
     <div class="task-front${due?.urgent?' overdue':''}" id="tf-${t.id}">
       <div class="tcheck${isDone?' done':''}">
@@ -1094,8 +1112,12 @@ function taskCardHTML(t){
       </div>
       <div class="tbody">
         <div class="tname${isDone?' done':''}">${title}</div>
-        ${hasMeta?`<div class="tmeta">${dueTag}${recurTag}${addedDate}</div>`:''}
+        ${hasMeta?'<div class="tmeta">'+dueTag+recurTag+'</div>':''}
+        ${addedDate}
       </div>
+      <button class="task-del-btn" onclick="event.stopPropagation();deleteTaskDirect('${t.id}')" aria-label="Delete">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
     </div>
   </div>`;
 }
@@ -1106,25 +1128,48 @@ function initSwipe(id){
   const el=document.getElementById('tf-'+id); if(!el) return;
   let sx=0,cx=0,sw=false,moved=false;
 
-  function onStart(clientX){ sx=clientX; sw=true; cx=0; moved=false; }
+  function onStart(clientX){
+    sx=clientX; sw=true; cx=0; moved=false;
+    // Reveal the behind layer only while actively swiping
+    const behind=el.closest('.task-item')?.querySelector('.task-behind');
+    if(behind) behind.style.visibility='visible';
+  }
   function onMove(clientX){
     if(!sw) return; moved=true;
-    cx=Math.max(-82,Math.min(82,clientX-sx));
+    const d=getD();
+    const t=(d.tasks||[]).find(x=>String(x.id)===String(id));
+    const _isDone=t&&t.col==='done';
+    const _isTodo=t&&t.col==='todo';
+    // Only allow swipe in directions that are valid for this task state
+    const raw=clientX-sx;
+    const minX=_isDone?-82:(_isTodo?0:-82);  // no right-swipe if done, no left-swipe if todo
+    const maxX=_isDone?0:82;                  // no right-swipe (advance) if done
+    cx=Math.max(minX,Math.min(maxX,raw));
     el.style.transform=`translateX(${cx}px)`;
   }
   function onEnd(){
     if(!sw) return; sw=false;
-    const isDone=el.closest('.task-item')?.querySelector('.tcheck.done')!==null;
-    if(cx>60 && !isDone){ el.style.transform=''; cycleTask(id); }
-    else if(cx<-60){
-      el.style.transition='opacity .2s,transform .2s';
-      el.style.opacity='0'; el.style.transform='translateX(-100%)';
-      setTimeout(()=>{
-        const d=getD(); d.tasks=(d.tasks||[]).filter(t=>String(t.id)!==String(id));
-        _selTaskId=null; if(cu) acc[cu]=d; saveAll(); renderTasks(); renderHome();
-      },200);
+    const d=getD();
+    const t=(d.tasks||[]).find(x=>String(x.id)===String(id));
+    if(!t){ el.style.transform=''; cx=0; return; }
+    const isDone=t.col==='done';
+    const isTodo=t.col==='todo';
+    if(cx>60 && !isDone){
+      // Advance: todo→inprog→done
+      el.style.transform='';
+      cycleTask(id);
+    } else if(cx<-60 && !isTodo){
+      // Go back: done→inprog→todo
+      el.style.transform='';
+      const cols=['todo','inprog','done'];
+      const prev=cols[Math.max(0,cols.indexOf(t.col)-1)];
+      t.col=prev;
+      _selTaskId=null; if(cu) acc[cu]=d; saveAll(); renderTasks(); renderHome();
     } else { el.style.transform=''; }
     cx=0;
+    // Hide behind layer again after swipe settles
+    const behind=el.closest('.task-item')?.querySelector('.task-behind');
+    if(behind) behind.style.visibility='hidden';
   }
 
   // touch
@@ -1181,7 +1226,7 @@ function initProjTaskSwipe(taskId, subjId){
 
 function saveTask(){
   const title=document.getElementById('task-inp')?.value?.trim(); if(!title) return;
-  const col=getActivePill('task-col-pills')||'todo';
+  const col='todo';
   const dueDate=document.getElementById('task-due-val')?.value||null;
   const recurring=getActivePill('task-recur-pills')||'none';
   const d=getD(); d.tasks=d.tasks||[];
@@ -1198,15 +1243,25 @@ function saveTask(){
   const dv=document.getElementById('task-due-val'); if(dv) dv.value='';
   const dl=document.getElementById('due-lbl'); if(dl){dl.textContent='Choose due date';dl.parentElement.style.color='';}
   const rp=document.querySelector('#task-recur-pills .pill[data-v="none"]'); if(rp) selPill(rp,'task-recur-pills');
+  const recurPills=document.getElementById('task-recur-pills');
+  if(recurPills){recurPills.style.opacity='';recurPills.style.pointerEvents='';}
+  const dBtn=document.getElementById('due-btn');
+  if(dBtn){dBtn.style.opacity='';dBtn.style.pointerEvents='';}
   toast('Task added!');
 }
 
 function onPickRepeat(val){
+  const dv=document.getElementById('task-due-val');
+  const dl=document.getElementById('due-lbl');
+  const dBtn=document.getElementById('due-btn');
   if(val && val!=='none'){
-    // Clear due date
-    const dv=document.getElementById('task-due-val'); if(dv) dv.value='';
-    const dl=document.getElementById('due-lbl');
+    // Clear and disable due date
+    if(dv) dv.value='';
     if(dl){dl.textContent='Choose due date';dl.parentElement.style.color='';}
+    if(dBtn){dBtn.style.opacity='.35';dBtn.style.pointerEvents='none';}
+  } else {
+    // Re-enable due date
+    if(dBtn){dBtn.style.opacity='';dBtn.style.pointerEvents='';}
   }
 }
 
@@ -1240,6 +1295,13 @@ function deleteTask(id){
     _selTaskId=null; if(cu) acc[cu]=d; saveAll(); renderTasks(); renderHome();
   });
 }
+function deleteTaskDirect(id){
+  appConfirm('Delete this task?','This cannot be undone.','Delete').then(ok=>{
+    if(!ok) return;
+    const d=getD(); d.tasks=(d.tasks||[]).filter(t=>String(t.id)!==String(id));
+    _selTaskId=null; if(cu) acc[cu]=d; saveAll(); renderTasks(); renderHome();
+  });
+}
 async function clearDoneTasks(){
   const done=getTasks().filter(t=>t.col==='done');
   if(!done.length) return;
@@ -1255,16 +1317,21 @@ function openDueDatePicker(){
   _dpOpenWith(document.getElementById('task-due-val')?.value||'', function(val){
     const dv=document.getElementById('task-due-val'); if(dv) dv.value=val||'';
     const dl=document.getElementById('due-lbl');
+    const recurPills=document.getElementById('task-recur-pills');
     if(dl){
       if(val){
         const [y,m,d]=val.split('-').map(Number);
         dl.textContent=new Date(y,m-1,d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
         dl.parentElement.style.color='var(--a2)';
+        // Reset repeat to none and disable repeat pills
         const rp=document.querySelector('#task-recur-pills .pill[data-v="none"]');
         if(rp) selPill(rp,'task-recur-pills');
+        if(recurPills){recurPills.style.opacity='.35';recurPills.style.pointerEvents='none';}
       } else {
         dl.textContent='Choose due date';
         dl.parentElement.style.color='';
+        // Re-enable repeat pills
+        if(recurPills){recurPills.style.opacity='';recurPills.style.pointerEvents='';}
       }
     }
   });
@@ -2253,6 +2320,8 @@ function notesToggleSort(){
 }
 
 function openNote(id){
+  const notesFab=document.getElementById('notes-fab');
+  if(notesFab) notesFab.style.display='none';
   const notes = getNotes();
   const note = notes.find(n=>n.id===id);
   if(!note) return;
@@ -2271,15 +2340,34 @@ function openNote(id){
 }
 
 function notesBack(){
+  // Flush any pending debounced save before navigating away
+  if(_notesOpenId){
+    clearTimeout(_notesSaveTimer);
+    const titleInp = document.getElementById('mob-note-title-inp');
+    const contentTa = document.getElementById('mob-note-content-ta');
+    const title = titleInp ? titleInp.value : '';
+    const content = contentTa ? contentTa.value : '';
+    const notes = getNotes();
+    const n = notes.find(x=>x.id===_notesOpenId);
+    if(n){
+      n.title = title;
+      n.content = content;
+      n.updated = Date.now();
+      saveNotes(notes);
+    }
+  }
   _notesView = 'list';
   _notesOpenId = null;
   const listView = document.getElementById('mob-notes-list-view');
   const editorView = document.getElementById('mob-notes-editor-view');
   if(listView) listView.style.display='flex';
   if(editorView) editorView.style.display='none';
+  const notesFab=document.getElementById('notes-fab');
+  if(notesFab) notesFab.style.display='flex';
   renderNotesList();
 }
 
+function mobNewNote(){ notesNew(); }
 function notesNew(){
   const notes = getNotes();
   const n = {id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:'', content:'', updated:Date.now()};
@@ -2702,11 +2790,24 @@ function renderSettingsPage(){
   const p=getP();
   const tog=document.getElementById('toggle-dark');
   if(tog) tog.className='toggle'+(p.dark?' on':'');
-  // Sync accent swatch active state
+  // Sync accent swatch selected state by data-key
   const ak=p.accentColor||p.accentKey||'green';
-  document.querySelectorAll('.acc-sw').forEach(s=>{
-    s.classList.toggle('active', s.id==='sw-'+ak);
+  document.querySelectorAll('#mob-accent-presets .accent-swatch').forEach(s=>{
+    s.classList.toggle('selected', s.dataset.key===ak);
   });
+  // Disable Apply hex button for non-pro users
+  const applyBtn=document.getElementById('mob-accent-apply-btn');
+  if(applyBtn){
+    if(!isPro()){
+      applyBtn.style.opacity='0.4';
+      applyBtn.style.pointerEvents='none';
+      applyBtn.title='Upgrade to Pro to use custom hex colors';
+    } else {
+      applyBtn.style.opacity='';
+      applyBtn.style.pointerEvents='';
+      applyBtn.title='';
+    }
+  }
   renderMobileProBadge();
 }
 // ── Pro badge + ring on mobile avatar ──
@@ -2821,7 +2922,9 @@ function renderMobProjects(){
   if(titleEl) titleEl.textContent='Projects';
   wrap.style.display='';
   if(detail) detail.style.display='none';
-  // Show header on list view
+  // Show FAB and header on list view
+  const projFab=document.getElementById('proj-fab');
+  if(projFab) projFab.style.display='flex';
   const fphdr=document.querySelector('#pg-projects .fphdr');
   if(fphdr) fphdr.style.display='';
 
@@ -2921,7 +3024,9 @@ function renderMobProjDetail(s){
   detail.style.display='';
   if(titleEl) titleEl.textContent=s.name;
   if(addBtn){ addBtn.style.display='none'; }
-  // Hide header — detail has its own colored header
+  // Hide FAB and header — detail has its own colored header
+  const projFab=document.getElementById('proj-fab');
+  if(projFab) projFab.style.display='none';
   const fphdr=document.querySelector('#pg-projects .fphdr');
   if(fphdr) fphdr.style.display='none';
 

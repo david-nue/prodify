@@ -2079,7 +2079,7 @@ const WD={
   subjects:{w:300,h:260,title:'Project Progress'},
   quote:{w:280,h:160,title:'Quote'},
   calendar:{w:540,h:290,title:'Calendar'},
-  habits:{w:300,h:340,title:'Daily Habits'},
+  habits:{w:340,h:380,title:'Daily Habits'},
 };
 
 function bringToFront(id) {
@@ -2208,11 +2208,11 @@ function buildWidgetEl(w){
     </div>`;
   canvas.appendChild(el);
   // drag handle
-  el.querySelector('.whead').addEventListener('mousedown',e=>{
+  el.querySelector('.whead').addEventListener('pointerdown',e=>{
     if(e.target.classList.contains('wclose'))return;
     startDrag(e,w.id);
   });
-  el.addEventListener('mousedown',()=>bringToFront(w.id),true);
+  el.addEventListener('pointerdown',()=>bringToFront(w.id),true);
   // fill body
   fillWBody(w);
 }
@@ -2408,16 +2408,38 @@ function startDrag(e,id){
   e.preventDefault();
   const el=$(id);if(!el)return;
   const w=widgets.find(x=>x.id===id);if(!w)return;
-  // Lift widget to top immediately so it renders above everything while dragging
   bringToFront(id);
   el.classList.add('wdrag');
   document.querySelectorAll('.widget').forEach(wd=>{if(wd.id!==id)wd.style.pointerEvents='none';});
   const scale=window._canvasScale||1;
-  try{if(e.pointerId!=null)el.setPointerCapture(e.pointerId);}catch(_){}
+  // Release any existing pointer capture on the element before re-capturing,
+  // avoids stale capture state from a previous interrupted drag
+  try{if(e.pointerId!=null&&el.hasPointerCapture&&el.hasPointerCapture(e.pointerId))el.releasePointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX/scale-w.x;
   const startY=e.clientY/scale-w.y;
   let rafId=null, pendingX=w.x, pendingY=w.y;
+  let active=true;
+
+  const cleanup=()=>{
+    if(!active)return;
+    active=false;
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+    // Flush final position
+    w.x=pendingX;w.y=pendingY;
+    el.style.left=w.x+'px';el.style.top=w.y+'px';
+    el.classList.remove('wdrag');
+    document.querySelectorAll('.widget').forEach(wd=>wd.style.pointerEvents='');
+    // Remove cursor override on document
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    persist();
+    document.removeEventListener('pointermove',mm);
+    document.removeEventListener('pointerup',mu);
+    document.removeEventListener('pointercancel',mu);
+  };
+
   const mm=e=>{
+    if(!active)return;
     pendingX=Math.max(0,e.clientX/scale-startX);
     pendingY=Math.max(0,e.clientY/scale-startY);
     if(rafId)return;
@@ -2427,16 +2449,16 @@ function startDrag(e,id){
       rafId=null;
     });
   };
-  const mu=()=>{
-    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-    el.classList.remove('wdrag');
-    document.querySelectorAll('.widget').forEach(wd=>wd.style.pointerEvents='');
-    persist();
-    el.removeEventListener('pointermove',mm);
-    el.removeEventListener('pointerup',mu);
-  };
-  el.addEventListener('pointermove',mm);
-  el.addEventListener('pointerup',mu);
+
+  const mu=()=>cleanup();
+
+  // Attach to document — not el — so fast mouse movement can never escape
+  document.addEventListener('pointermove',mm);
+  document.addEventListener('pointerup',mu);
+  document.addEventListener('pointercancel',mu);
+  // Lock cursor globally during drag
+  document.body.style.cursor='grabbing';
+  document.body.style.userSelect='none';
 }
 
 // RESIZE
@@ -2446,7 +2468,6 @@ function startResize(e,id){
   const w=widgets.find(x=>x.id===id);if(!w)return;
   el.classList.add('wresize');
   const scale=window._canvasScale||1;
-  try{if(e.pointerId!=null)e.target.setPointerCapture(e.pointerId);}catch(_){}
   const startX=e.clientX/scale,startY=e.clientY/scale,startW=w.w,startH=w.h;
   const WMIN={
     timer:  {w:260, h:400},
@@ -2463,7 +2484,25 @@ function startResize(e,id){
   const minW=wm.w,maxW=99999;
   const minH=wm.h,maxH=99999;
   let rafId=null,pendingW=w.w,pendingH=w.h;
+  let active=true;
+
+  const cleanup=()=>{
+    if(!active)return;
+    active=false;
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+    w.w=pendingW;w.h=pendingH;
+    el.style.width=w.w+'px';el.style.height=w.h+'px';
+    el.classList.remove('wresize');
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+    persist();
+    document.removeEventListener('pointermove',mm);
+    document.removeEventListener('pointerup',mu);
+    document.removeEventListener('pointercancel',mu);
+  };
+
   const mm=e=>{
+    if(!active)return;
     pendingW=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
     pendingH=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
     if(rafId)return;
@@ -2473,13 +2512,15 @@ function startResize(e,id){
       rafId=null;
     });
   };
-  const mu=()=>{
-    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-    el.classList.remove('wresize');persist();
-    e.target.releasePointerCapture&&e.target.releasePointerCapture(e.pointerId);
-    el.removeEventListener('pointermove',mm);el.removeEventListener('pointerup',mu);
-  };
-  el.addEventListener('pointermove',mm);el.addEventListener('pointerup',mu);
+
+  const mu=()=>cleanup();
+
+  // Attach to document so fast resize never loses the pointer
+  document.addEventListener('pointermove',mm);
+  document.addEventListener('pointerup',mu);
+  document.addEventListener('pointercancel',mu);
+  document.body.style.cursor='se-resize';
+  document.body.style.userSelect='none';
 }
 
 // ═══════════════════════════════════════
@@ -2497,8 +2538,8 @@ function buildTaskW(body,w){
         <span class="tw-recur-dd-lbl" id="twrdl-${w.id}">↺</span>
         <div class="tw-recur-dd-menu" id="twrdm-${w.id}">
           <div class="tw-recur-opt" data-v="none" onclick="setRecurDd('${w.id}','none',event)">No repeat</div>
-          <div class="tw-recur-opt" data-v="daily" onclick="setRecurDd('${w.id}','daily',event)">↺ Daily</div>
-          <div class="tw-recur-opt" data-v="weekly" onclick="setRecurDd('${w.id}','weekly',event)">↺ Weekly</div>
+          <div class="tw-recur-opt" data-v="daily" onclick="setRecurDd('${w.id}','daily',event)">Daily</div>
+          <div class="tw-recur-opt" data-v="weekly" onclick="setRecurDd('${w.id}','weekly',event)">Weekly</div>
         </div>
       </div>
       <button id="twdb-${w.id}" onclick="openDskDuePicker('${w.id}')" style="flex-shrink:0;display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit;white-space:nowrap;">
@@ -4962,7 +5003,7 @@ function setRecurDd(wid, val, e) {
   const lbl = $('twrdl-'+wid);
   const menu = $('twrdm-'+wid);
   if (dd) dd.setAttribute('data-val', val);
-  if (lbl) lbl.textContent = val === 'none' ? '↺' : (val === 'daily' ? '↺ Daily' : '↺ Weekly');
+  if (lbl) lbl.textContent = val === 'none' ? '↺' : (val === 'daily' ? 'Daily' : 'Weekly');
   if (dd) dd.classList.toggle('tw-recur-active', val !== 'none');
   if (menu) menu.classList.remove('open');
   // Mutual exclusion: recurring clears due date
