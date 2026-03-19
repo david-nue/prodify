@@ -1747,14 +1747,33 @@ async function submitFeedback(isDesktop=false){
   if(!acc[u]){acc[u]={tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{dark:false},displayName:'',passHash:''};}
   // Wait for Supabase device check before launching — prevents bypass
   try{
-    if(!sbReady){launch();return;} // offline — skip device check
+    if(!sbReady){
+      // Offline — still run device check (grace period logic inside)
+      const deviceAllowed = await checkAndRegisterDevice(cu);
+      if (!deviceAllowed) {
+        LS.d('pd1_cur'); cu = null;
+        document.documentElement.setAttribute('data-dark','');
+        const _r=document.documentElement;_r.style.removeProperty('--a');_r.style.removeProperty('--a2');_r.style.removeProperty('--al');
+        document.body.classList.remove('in-app');
+        show('sl'); showMultiDeviceBlock(); return;
+      }
+      launch(); return;
+    }
     const {data:{session}} = await sb.auth.getSession();
     if(!session){
       // No session in memory — try refreshing from stored token
       const {data:refreshed,error:refreshErr} = await sb.auth.refreshSession();
       if(refreshErr||!refreshed?.session){
-        // Session expired — launch from local data without device check
-        console.warn('[Prodify] Session expired, launching from local data');
+        // Session expired — check device grace period before launching
+        console.warn('[Prodify] Session expired, checking device grace period');
+        const deviceAllowed = await checkAndRegisterDevice(cu);
+        if (!deviceAllowed) {
+          LS.d('pd1_cur'); cu = null;
+          document.documentElement.setAttribute('data-dark','');
+          const _r=document.documentElement;_r.style.removeProperty('--a');_r.style.removeProperty('--a2');_r.style.removeProperty('--al');
+          document.body.classList.remove('in-app');
+          show('sl'); showMultiDeviceBlock(); return;
+        }
         launch(); return;
       }
     }
@@ -6025,17 +6044,35 @@ function getDeviceName() {
 
 // Check cloud active_device_id — returns true if this device can proceed
 // Pro users bypass the 1-device limit entirely
-async function checkAndRegisterDevice(username) {
-  try {
-    if (!sbReady) return true; // offline — fail open
-    const myId = getOrCreateDeviceId();
+const _DEVICE_REGISTERED_KEY = 'pd1_device_registered_at';
+const _DEVICE_GRACE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+async function checkAndRegisterDevice(username) {
+  const myId = getOrCreateDeviceId();
+
+  // Offline fallback — only allow if this device was successfully registered
+  // within the last 7 days. Prevents bypassing by going offline.
+  if (!sbReady) {
+    const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
+    const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
+    console.warn('[Prodify] Offline device check — grace period:', withinGrace);
+    return withinGrace;
+  }
+
+  try {
     const { data: row, error } = await sb.from('users')
       .select('active_device_id, is_pro, bypass_device_check')
       .eq('username', username)
       .single();
 
-    if (error) return true; // fail open — don't block if DB unreachable
+    // DB error — fail closed. Don't allow unknown state to grant access.
+    if (error) {
+      console.warn('[Prodify] Device check DB error — blocking', error.message);
+      // Still allow if this device was recently registered (within grace period)
+      const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
+      const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
+      return withinGrace;
+    }
 
     // Bypass flag — for dev/test accounts
     if (row?.bypass_device_check) return true;
@@ -6043,26 +6080,34 @@ async function checkAndRegisterDevice(username) {
     // Pro users always allowed — no device limit
     if (row?.is_pro) {
       await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
       return true;
     }
 
     const activeId = row?.active_device_id || null;
     if (activeId && activeId !== myId) {
       // Another device is registered — block this one
+      localStorage.removeItem(_DEVICE_REGISTERED_KEY);
       return false;
     }
 
-    // Register this device
+    // Register this device and stamp the local timestamp
     await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+    localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
     return true;
   } catch(e) {
-    console.warn('[Prodify] Device check failed, allowing access', e);
-    return true; // fail open
+    console.warn('[Prodify] Device check exception — blocking', e);
+    // Exception path — same grace period logic, fail closed otherwise
+    const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
+    const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
+    return withinGrace;
   }
 }
 
 // Clear active_device_id on sign out
 async function unregisterDevice(username) {
+  // Always clear the local registration timestamp so grace period doesn't apply after sign-out
+  localStorage.removeItem(_DEVICE_REGISTERED_KEY);
   if (!sbReady || !username) return;
   try {
     const myId = getOrCreateDeviceId();
