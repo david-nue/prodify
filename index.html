@@ -417,9 +417,6 @@
             <div class="lfvp-check">✓</div>3 accent colors
           </div>
           <div class="lfvp-item">
-            <div class="lfvp-check">✓</div>JSON export
-          </div>
-          <div class="lfvp-item">
             <div class="lfvp-check">✓</div>1 device
           </div>
         </div>
@@ -1191,8 +1188,8 @@
                 <div class="setsect">Export</div>
                 <div class="setrow">
                   <div>
-                    <div class="setlbl">Export Data</div>
-                    <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
+                    <div class="setlbl">Export Data <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div>
+                    <div class="setdsc">Download your data as CSV or PDF</div>
                   </div>
                   <button class="bol bsm" onclick="showExportModal()">Export</button>
                 </div>
@@ -1723,26 +1720,6 @@
       <div class="mh">Export Data</div>
       <div class="ms" style="font-size:12px;color:var(--ink3);margin-bottom:14px;margin-top:-8px;">Download a copy of
         your Prodify data.</div>
-
-      <!-- JSON export — free -->
-      <div class="export-opt" onclick="exportJSON();closeMo('mo-export')">
-        <div class="export-opt-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="12" y1="12" x2="12" y2="18" />
-            <line x1="9" y1="15" x2="15" y2="15" />
-          </svg>
-        </div>
-        <div class="export-opt-body">
-          <div class="export-opt-title">JSON <span class="export-free-badge">Free</span></div>
-          <div class="export-opt-desc">Full data export — tasks, journal, habits, projects</div>
-        </div>
-        <svg class="export-opt-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round">
-          <path d="M12 17V7M7 12l5-5 5 5" />
-        </svg>
-      </div>
 
       <!-- CSV — Pro -->
       <div class="export-opt" onclick="exportCSV()">
@@ -2833,10 +2810,10 @@
                   <div class="setsect">Export</div>
                   <div class="setrow">
                     <div>
-                      <div class="setlbl">Export Data</div>
-                      <div class="setdsc">Download all your tasks, journal, habits &amp; projects</div>
+                      <div class="setlbl">Export Data <span class="export-pro-badge" style="vertical-align:middle;">Pro</span></div>
+                      <div class="setdsc">Download your data as CSV or PDF</div>
                     </div>
-                    <button class="bol bsm" onclick="openSheet('sh-export')">Export</button>
+                    <button class="bol bsm" onclick="if(!isPro()){showUpgradeModal('CSV &amp; PDF Export');}else{openSheet('sh-export');}">Export</button>
                   </div>
                 </div>
                 <div class="setsec">
@@ -3182,19 +3159,6 @@
       <div class="sh-handle"></div>
       <div class="sh-title">Export Data</div>
       <div class="sh-body">
-        <div class="export-opt" onclick="exportJSON();closeSheets()">
-          <div class="export-opt-icon"><svg viewBox="0 0 24 24" fill="none">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="12" y1="12" x2="12" y2="18" />
-              <line x1="9" y1="15" x2="15" y2="15" />
-            </svg></div>
-          <div class="export-opt-body">
-            <div class="export-opt-title">JSON <span class="pro-tag-inline"
-                style="background:var(--al);color:var(--a2);">Free</span></div>
-            <div class="export-opt-desc">Full export — tasks, journal, habits, projects</div>
-          </div>
-        </div>
         <div class="export-opt export-opt-locked" onclick="exportCSV()">
           <div class="export-opt-icon export-opt-icon-locked"><svg viewBox="0 0 24 24" fill="none">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

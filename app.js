@@ -5782,6 +5782,7 @@ ${subjects.length ? `<h2>Projects</h2>${projRows}`:''}
 }
 
 function showExportModal() {
+  if (!isPro()) { showUpgradeModal('CSV & PDF Export'); return; }
   openMo('mo-export');
 }
 
@@ -6124,9 +6125,27 @@ async function checkAndRegisterDevice(username) {
 
     const activeId = row?.active_device_id || null;
 
+    // Helper: update active_device_id, try by auth_id first (more RLS-friendly), fall back to username
+    async function _setDeviceId(val) {
+      // Try via auth_id (matches RLS policy auth.uid() = auth_id)
+      const { data: { session } } = await sb.auth.getSession().catch(()=>({data:{session:null}}));
+      if (session?.user?.id) {
+        const { error, count } = await sb.from('users')
+          .update({ active_device_id: val })
+          .eq('auth_id', session.user.id)
+          .select('active_device_id');
+        if (!error) return true;
+        console.warn('[Prodify] device update via auth_id failed:', error.message);
+      }
+      // Fallback: username-based update
+      const { error } = await sb.from('users').update({ active_device_id: val }).eq('username', username);
+      if (error) console.warn('[Prodify] device update via username failed:', error.message);
+      return !error;
+    }
+
     // CASE 1: Slot is free — claim it
     if (!activeId) {
-      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      await _setDeviceId(myId);
       localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
       return true;
     }
@@ -6143,7 +6162,7 @@ async function checkAndRegisterDevice(username) {
     // Reclaim the slot rather than blocking the legitimate user on their own browser.
     if (wasPreviouslyRegistered) {
       console.warn('[Prodify] Reclaiming device slot — sign-out likely failed to clear DB');
-      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      await _setDeviceId(myId);
       localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
       return true;
     }
@@ -6168,8 +6187,18 @@ async function unregisterDevice(username) {
     // The SELECT was unreliable because RLS can return empty rows (not an error)
     // when the JWT is mid-teardown, causing the conditional UPDATE to never fire.
     // It's safe to always clear here because unregisterDevice is only called on sign-out.
-    const { error } = await sb.from('users').update({ active_device_id: null }).eq('username', username);
-    if (error) console.warn('[Prodify] unregisterDevice update failed:', error.message);
+    // Try auth_id-based update first (more RLS-friendly), fall back to username
+    const { data: { session } } = await sb.auth.getSession().catch(()=>({data:{session:null}}));
+    let cleared = false;
+    if (session?.user?.id) {
+      const { error } = await sb.from('users').update({ active_device_id: null }).eq('auth_id', session.user.id);
+      if (!error) cleared = true;
+      else console.warn('[Prodify] unregisterDevice via auth_id failed:', error.message);
+    }
+    if (!cleared) {
+      const { error } = await sb.from('users').update({ active_device_id: null }).eq('username', username);
+      if (error) console.warn('[Prodify] unregisterDevice via username failed:', error.message);
+    }
   } catch(e) { console.warn('[Prodify] unregisterDevice failed', e); }
 }
 
