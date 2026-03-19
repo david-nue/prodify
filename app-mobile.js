@@ -3281,7 +3281,11 @@ async function forceRemoveOtherDevice(){
 async function unregisterDevice(username){
   localStorage.removeItem(_DEVICE_REGISTERED_KEY);
   if(!sbReady||!username)return;
-  try{ const myId=getOrCreateDeviceId(); const {data}=await sb.from('users').select('active_device_id').eq('username',username).single(); if(data&&data.active_device_id===myId) await sb.from('users').update({active_device_id:null}).eq('username',username); }catch(e){}
+  try{
+    // Skip SELECT check — unconditionally clear the slot to avoid RLS silent-fail race condition
+    const {error}=await sb.from('users').update({active_device_id:null}).eq('username',username);
+    if(error) console.warn('[Prodify] unregisterDevice update failed:',error.message);
+  }catch(e){ console.warn('[Prodify] unregisterDevice failed',e); }
 }
 
 

@@ -6123,12 +6123,12 @@ async function unregisterDevice(username) {
   localStorage.removeItem(_DEVICE_REGISTERED_KEY);
   if (!sbReady || !username) return;
   try {
-    const myId = getOrCreateDeviceId();
-    // Only clear if WE are the registered device
-    const { data } = await sb.from('users').select('active_device_id').eq('username', username).single();
-    if (data && data.active_device_id === myId) {
-      await sb.from('users').update({ active_device_id: null }).eq('username', username);
-    }
+    // Skip the SELECT check — just unconditionally clear the slot.
+    // The SELECT was unreliable because RLS can return empty rows (not an error)
+    // when the JWT is mid-teardown, causing the conditional UPDATE to never fire.
+    // It's safe to always clear here because unregisterDevice is only called on sign-out.
+    const { error } = await sb.from('users').update({ active_device_id: null }).eq('username', username);
+    if (error) console.warn('[Prodify] unregisterDevice update failed:', error.message);
   } catch(e) { console.warn('[Prodify] unregisterDevice failed', e); }
 }
 
