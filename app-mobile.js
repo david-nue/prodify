@@ -3177,21 +3177,37 @@ function mobAddProjTask(){
 // ══════════════════════════════════════════════
 // ── Device enforcement ─────────────────────────────────────────────────────
 async function checkAndRegisterDevice(username){
+  const myId=getOrCreateDeviceId();
+  if(!sbReady){
+    const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
+    const withinGrace=registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+    console.warn('[Prodify] Offline device check — grace:',withinGrace);
+    return withinGrace;
+  }
   try{
-    if(!sbReady) return true;
-    const myId=getOrCreateDeviceId();
     const {data:row,error}=await sb.from('users').select('active_device_id,is_pro,bypass_device_check').eq('username',username).single();
-    if(error) return true;
+    if(error){
+      const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
+      return registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+    }
     if(row?.bypass_device_check) return true;
     if(row?.is_pro){
       await sb.from('users').update({active_device_id:myId}).eq('username',username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
       return true;
     }
     const activeId=row?.active_device_id||null;
-    if(activeId&&activeId!==myId) return false;
+    if(activeId&&activeId!==myId){
+      localStorage.removeItem(_DEVICE_REGISTERED_KEY);
+      return false;
+    }
     await sb.from('users').update({active_device_id:myId}).eq('username',username);
+    localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
     return true;
-  }catch(e){ return true; }
+  }catch(e){
+    const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
+    return registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+  }
 }
 
 function showMobMultiDeviceBlock(){
@@ -3211,6 +3227,8 @@ function showMobMultiDeviceBlock(){
 }
 
 const _DEVICE_KEY = 'pd1_device_id';
+const _DEVICE_REGISTERED_KEY = 'pd1_device_registered_at';
+const _DEVICE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 function getOrCreateDeviceId(){ let id=localStorage.getItem(_DEVICE_KEY); if(!id){id='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem(_DEVICE_KEY,id);} return id; }
 function getDeviceName(){ const ua=navigator.userAgent; if(/iPhone/i.test(ua))return'iPhone'; if(/iPad/i.test(ua))return'iPad'; if(/Android.*Mobile/i.test(ua))return'Android Phone'; if(/Android/i.test(ua))return'Android Tablet'; if(/Mac/i.test(ua))return'Mac'; if(/Windows/i.test(ua))return'Windows PC'; return'Browser'; }
 function getDeviceIcon(n){ return /iPhone|Android Phone/i.test(n)?'📱':/iPad|Tablet/i.test(n)?'📟':/Mac/i.test(n)?'💻':/Windows/i.test(n)?'🖥️':'💻'; }
@@ -3241,6 +3259,7 @@ async function forceRemoveOtherDevice(){
   renderDevicesList(); toast('Device removed');
 }
 async function unregisterDevice(username){
+  localStorage.removeItem(_DEVICE_REGISTERED_KEY);
   if(!sbReady||!username)return;
   try{ const myId=getOrCreateDeviceId(); const {data}=await sb.from('users').select('active_device_id').eq('username',username).single(); if(data&&data.active_device_id===myId) await sb.from('users').update({active_device_id:null}).eq('username',username); }catch(e){}
 }
@@ -3272,11 +3291,9 @@ async function unregisterDevice(username){
   }
   // Check for existing local session — but still pull cloud to stay in sync
   if(cu && acc[cu]){
-    // Device check before launching (skip if offline)
-    if(sbReady){
-      const deviceAllowed = await checkAndRegisterDevice(cu);
-      if(!deviceAllowed){ showScreen('login'); showMobMultiDeviceBlock(); return; }
-    }
+    // Device check before launching — always run (grace period handles offline)
+    const deviceAllowed = await checkAndRegisterDevice(cu);
+    if(!deviceAllowed){ showScreen('login'); showMobMultiDeviceBlock(); return; }
     // Launch from local immediately for speed, then sync cloud in background
     launch();
     // Pull cloud data after launch — updates UI if cloud is newer
