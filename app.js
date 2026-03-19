@@ -1482,7 +1482,7 @@ async function doSO(){
   }
   await unregisterDevice(_cu);
   stopRealtimeSync();
-  if(sbReady) sbSignOut().catch(()=>{});
+  if(sbReady) await sbSignOut().catch(()=>{});  // must await — unregisterDevice needs JWT active
   LS.d('pd1_cur'); cu = null; closeDD();
   // Always reset to light mode + default green accent on landing/auth screens
   document.documentElement.setAttribute('data-dark','');
@@ -6049,14 +6049,14 @@ const _DEVICE_GRACE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 async function checkAndRegisterDevice(username) {
   const myId = getOrCreateDeviceId();
+  const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
+  const wasPreviouslyRegistered = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
 
   // Offline fallback — only allow if this device was successfully registered
   // within the last 7 days. Prevents bypassing by going offline.
   if (!sbReady) {
-    const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
-    const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
-    console.warn('[Prodify] Offline device check — grace period:', withinGrace);
-    return withinGrace;
+    console.warn('[Prodify] Offline device check — grace period:', wasPreviouslyRegistered);
+    return wasPreviouslyRegistered;
   }
 
   try {
@@ -6065,13 +6065,10 @@ async function checkAndRegisterDevice(username) {
       .eq('username', username)
       .single();
 
-    // DB error — fail closed. Don't allow unknown state to grant access.
+    // DB error — fail closed. Grace period still applies.
     if (error) {
       console.warn('[Prodify] Device check DB error — blocking', error.message);
-      // Still allow if this device was recently registered (within grace period)
-      const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
-      const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
-      return withinGrace;
+      return wasPreviouslyRegistered;
     }
 
     // Bypass flag — for dev/test accounts
@@ -6085,22 +6082,38 @@ async function checkAndRegisterDevice(username) {
     }
 
     const activeId = row?.active_device_id || null;
-    if (activeId && activeId !== myId) {
-      // Another device is registered — block this one
-      localStorage.removeItem(_DEVICE_REGISTERED_KEY);
-      return false;
+
+    // CASE 1: Slot is free — claim it
+    if (!activeId) {
+      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
+      return true;
     }
 
-    // Register this device and stamp the local timestamp
-    await sb.from('users').update({ active_device_id: myId }).eq('username', username);
-    localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
-    return true;
+    // CASE 2: We are already the registered device — refresh stamp and allow
+    if (activeId === myId) {
+      localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
+      return true;
+    }
+
+    // CASE 3: A different device is registered.
+    // BUT — if this browser was previously registered within the grace period,
+    // it means the sign-out failed to clear the DB (race condition / RLS timing).
+    // Reclaim the slot rather than blocking the legitimate user on their own browser.
+    if (wasPreviouslyRegistered) {
+      console.warn('[Prodify] Reclaiming device slot — sign-out likely failed to clear DB');
+      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY, Date.now().toString());
+      return true;
+    }
+
+    // CASE 4: Genuinely a different device with no prior registration — block it
+    localStorage.removeItem(_DEVICE_REGISTERED_KEY);
+    return false;
+
   } catch(e) {
     console.warn('[Prodify] Device check exception — blocking', e);
-    // Exception path — same grace period logic, fail closed otherwise
-    const registeredAt = parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY) || '0', 10);
-    const withinGrace = registeredAt > 0 && (Date.now() - registeredAt) < _DEVICE_GRACE_MS;
-    return withinGrace;
+    return wasPreviouslyRegistered;
   }
 }
 

@@ -3178,17 +3178,18 @@ function mobAddProjTask(){
 // ── Device enforcement ─────────────────────────────────────────────────────
 async function checkAndRegisterDevice(username){
   const myId=getOrCreateDeviceId();
+  const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
+  const wasPreviouslyRegistered=registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+
   if(!sbReady){
-    const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
-    const withinGrace=registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
-    console.warn('[Prodify] Offline device check — grace:',withinGrace);
-    return withinGrace;
+    console.warn('[Prodify] Offline device check — grace:',wasPreviouslyRegistered);
+    return wasPreviouslyRegistered;
   }
   try{
     const {data:row,error}=await sb.from('users').select('active_device_id,is_pro,bypass_device_check').eq('username',username).single();
     if(error){
-      const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
-      return registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+      console.warn('[Prodify] Device check DB error',error.message);
+      return wasPreviouslyRegistered;
     }
     if(row?.bypass_device_check) return true;
     if(row?.is_pro){
@@ -3197,16 +3198,35 @@ async function checkAndRegisterDevice(username){
       return true;
     }
     const activeId=row?.active_device_id||null;
-    if(activeId&&activeId!==myId){
-      localStorage.removeItem(_DEVICE_REGISTERED_KEY);
-      return false;
+
+    // Slot is free — claim it
+    if(!activeId){
+      await sb.from('users').update({active_device_id:myId}).eq('username',username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
+      return true;
     }
-    await sb.from('users').update({active_device_id:myId}).eq('username',username);
-    localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
-    return true;
+
+    // We are already the registered device — refresh and allow
+    if(activeId===myId){
+      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
+      return true;
+    }
+
+    // Different device ID in DB — but if this browser was previously registered,
+    // the sign-out failed to clear it (RLS/timing race). Reclaim the slot.
+    if(wasPreviouslyRegistered){
+      console.warn('[Prodify] Reclaiming device slot — sign-out likely failed to clear DB');
+      await sb.from('users').update({active_device_id:myId}).eq('username',username);
+      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
+      return true;
+    }
+
+    // Genuinely a different device — block it
+    localStorage.removeItem(_DEVICE_REGISTERED_KEY);
+    return false;
   }catch(e){
-    const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
-    return registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
+    console.warn('[Prodify] Device check exception',e);
+    return wasPreviouslyRegistered;
   }
 }
 
