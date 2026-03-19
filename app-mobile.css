@@ -911,3 +911,12 @@ button,input,select,textarea{font-family:inherit;}
 /* Magic link auth divider mobile */
 .mob-auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:rgba(255,255,255,.25);font-size:12px;}
 .mob-auth-divider::before,.mob-auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.12);}
+
+/* Custom time picker */
+.ev-time-btn{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--ink4);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center;}
+.ev-time-btn.filled{color:var(--a2);border-color:var(--a2);background:var(--al);}
+.ev-time-btn:hover{border-color:var(--ink4);}
+.etp-ampm-radio{padding:7px 12px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--surf);color:var(--ink3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;}
+.etp-ampm-radio.sel{background:var(--a2);border-color:var(--a2);color:#fff;}
+.etp-arrow-btn{background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:34px;height:30px;cursor:pointer;color:var(--ink3);font-size:12px;display:flex;align-items:center;justify-content:center;}
+.etp-arrow-btn:hover{background:var(--surf2);border-color:var(--ink4);}

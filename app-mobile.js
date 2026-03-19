@@ -931,7 +931,7 @@ function renderHome(){
           <div class="gc-dot" style="background:${e.color||'var(--a2)'}"></div>
           <div class="gc-item-body">
             <div class="gc-item-title">${esc(e.title)}</div>
-            <div class="gc-item-sub">${dLbl}</div>
+            <div class="gc-item-sub">${dLbl}${e.timeStart?' · '+fmtTime(e.timeStart)+(e.timeEnd?' – '+fmtTime(e.timeEnd):''):''}</div>
           </div>
         </div>`;
       }).join('')}${upcomingEvs.length>3?`<div class="gc-more">+${upcomingEvs.length-3} more</div>`:''}</div>
@@ -1920,6 +1920,7 @@ function renderSchedule(){
       <div class="sev-bar" style="background:${ev.color||'var(--a2)'}"></div>
       <div class="sev-body" style="flex:1;min-width:0;">
         <div class="sev-title">${esc(ev.title)}</div>
+        ${ev.timeStart ? `<div class="sev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' – '+fmtTime(ev.timeEnd):''}</div>` : ''}
       </div>
       <button class="sev-del" onclick="mobDelEvent('${ev.id}')">✕</button>
     </div>`;
@@ -1943,7 +1944,10 @@ function mobDelEvent(id){
         dayList.innerHTML=dayEvs.map(e=>`
           <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surf2);border-radius:10px;margin-bottom:6px;">
             <div style="width:10px;height:10px;border-radius:50%;background:${e.color||'var(--a2)'};flex-shrink:0;"></div>
-            <div style="flex:1;font-size:13px;font-weight:600;color:var(--ink);">${esc(e.title)}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--ink);">${esc(e.title)}</div>
+              ${e.timeStart?`<div style="font-size:11px;color:var(--ink3);">${fmtTime(e.timeStart)}${e.timeEnd?' – '+fmtTime(e.timeEnd):''}</div>`:''}
+            </div>
             <button onclick="closeSheets();setTimeout(()=>openEvSheet('${e.id}','${ds}'),120);" style="font-size:11px;font-weight:700;color:var(--a2);background:none;border:none;cursor:pointer;">Edit</button>
             <button onclick="mobDelEvent('${e.id}')" style="font-size:11px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;">Del</button>
           </div>`).join('');
@@ -1981,12 +1985,23 @@ function openEvSheet(editId, preDate){
     const ev=getCalEvs().find(e=>String(e.id)===String(editId));
     if(titleEl) titleEl.textContent='Edit Event';
     if(inpEl) inpEl.value=ev?ev.title:'';
+    // pre-fill time
+    _evTimeStart=ev?.timeStart||null; _evTimeEnd=ev?.timeEnd||null;
+    const tsb=document.getElementById('mob-ev-time-start');if(tsb){tsb.textContent=ev?.timeStart?fmtTime(ev.timeStart):'— Start';tsb.classList.toggle('filled',!!ev?.timeStart);}
+    const teb=document.getElementById('mob-ev-time-end');if(teb){teb.textContent=ev?.timeEnd?fmtTime(ev.timeEnd):'— End';teb.classList.toggle('filled',!!ev?.timeEnd);}
+    const clr=document.getElementById('mob-ev-time-clear');if(clr)clr.style.display=(ev?.timeStart||ev?.timeEnd)?'':'none';
+    const tp=document.getElementById('mob-ev-timepick');if(tp)tp.style.display='none';
     // set matching color swatch
     const col=ev?ev.color:'#3A7D5E';
     document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.toggle('active',s.dataset.color===col));
   } else {
     if(titleEl) titleEl.textContent='Add Event';
     if(inpEl) inpEl.value='';
+    _evTimeStart=null; _evTimeEnd=null;
+    const tsI=document.getElementById('mob-ev-time-start');if(tsI){tsI.textContent='— Start';tsI.classList.remove('filled');}
+    const teI=document.getElementById('mob-ev-time-end');if(teI){teI.textContent='— End';teI.classList.remove('filled');}
+    const clrI=document.getElementById('mob-ev-time-clear');if(clrI)clrI.style.display='none';
+    const tpI=document.getElementById('mob-ev-timepick');if(tpI)tpI.style.display='none';
     document.querySelectorAll('.ev-cswatch').forEach((s,i)=>s.classList.toggle('active',i===0));
   }
 
@@ -2002,7 +2017,10 @@ function openEvSheet(editId, preDate){
       dayList.innerHTML=dayEvs.map(e=>`
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--bdr);">
           <div style="width:10px;height:10px;border-radius:50%;background:${e.color||'var(--a2)'};flex-shrink:0;"></div>
-          <div style="flex:1;font-size:13px;font-weight:600;color:var(--ink);">${esc(e.title)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);">${esc(e.title)}</div>
+            ${e.timeStart?`<div style="font-size:11px;color:var(--ink3);">${fmtTime(e.timeStart)}${e.timeEnd?' – '+fmtTime(e.timeEnd):''}</div>`:''}
+          </div>
           <button onclick="closeSheets();setTimeout(()=>openEvSheet('${e.id}','${ds}'),120);" style="font-size:11px;font-weight:700;color:var(--a2);background:none;border:none;cursor:pointer;">Edit</button>
           <button onclick="mobDelEvent('${e.id}')" style="font-size:11px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;">Del</button>
         </div>`).join('');
@@ -2032,27 +2050,36 @@ function evCalRender(){
   }
   document.getElementById('ev-cal-grid').innerHTML=html;
 }
-function evCalPick(ds){ _evSelDate=ds; evCalRender(); }
+function evCalPick(ds){
+  _evSelDate=ds;
+  evCalRender();
+  // Reset time when date changes
+  _evTimeStart=null; _evTimeEnd=null;
+  const ts=document.getElementById('mob-ev-time-start');if(ts){ts.textContent='— Start';ts.classList.remove('filled');}
+  const te=document.getElementById('mob-ev-time-end');if(te){te.textContent='— End';te.classList.remove('filled');}
+  const clr=document.getElementById('mob-ev-time-clear');if(clr)clr.style.display='none';
+  const tp=document.getElementById('mob-ev-timepick');if(tp)tp.style.display='none';
+}
 
 let _etpH=12, _etpM=0, _etpAmpm='AM';
 function evTimeOpen(mode){
   _evTimeMode=mode;
-  document.getElementById('ev-timepick-label').textContent=mode==='start'?'Start time':'End time';
-  document.getElementById('ev-timepick').style.display='block';
+  document.getElementById('mob-ev-timepick-label').textContent=mode==='start'?'Start time':'End time';
+  document.getElementById('mob-ev-timepick').style.display='block';
   // restore existing or default to 9:00 AM
   const existing=mode==='start'?_evTimeStart:_evTimeEnd;
   if(existing){
     const h24=+existing.split(':')[0], m=+existing.split(':')[1];
     _etpAmpm=h24>=12?'PM':'AM';
     _etpH=h24%12||12; _etpM=m;
-  } else { _etpH=9; _etpM=0; _etpAmpm='AM'; }
+  } else { _etpH=12; _etpM=0; _etpAmpm='AM'; }
   etpRender();
 }
 function etpRender(){
-  document.getElementById('etp-h-val').textContent=String(_etpH).padStart(2,'0');
-  document.getElementById('etp-m-val').textContent=String(_etpM).padStart(2,'0');
-  document.getElementById('etp-radio-am').className='etp-ampm-radio'+(_etpAmpm==='AM'?' sel':'');
-  document.getElementById('etp-radio-pm').className='etp-ampm-radio'+(_etpAmpm==='PM'?' sel':'');
+  document.getElementById('mob-etp-h-val').textContent=String(_etpH).padStart(2,'0');
+  document.getElementById('mob-etp-m-val').textContent=String(_etpM).padStart(2,'0');
+  document.getElementById('mob-etp-radio-am').className='etp-ampm-radio'+(_etpAmpm==='AM'?' sel':'');
+  document.getElementById('mob-etp-radio-pm').className='etp-ampm-radio'+(_etpAmpm==='PM'?' sel':'');
 }
 function etpStep(type, dir){
   if(type==='h'){ _etpH+=dir; if(_etpH>12)_etpH=1; if(_etpH<1)_etpH=12; }
@@ -2063,19 +2090,39 @@ function etpSetAmpm(v){ _etpAmpm=v; etpRender(); }
 function evTimeDone(){
   let h=_etpH;
   if(_etpAmpm==='AM'){ h=h===12?0:h; } else { h=h===12?12:h+12; }
-  const timeStr=`${String(h).padStart(2,'0')}:${String(_etpM).padStart(2,'0')}`;
-  if(_evTimeMode==='start'){ _evTimeStart=timeStr; const el=document.getElementById('ev-time-start'); el.textContent=fmtTime(timeStr); el.classList.add('filled'); }
-  else { _evTimeEnd=timeStr; const el=document.getElementById('ev-time-end'); el.textContent=fmtTime(timeStr); el.classList.add('filled'); }
-  document.getElementById('ev-timepick').style.display='none';
-  document.getElementById('ev-time-clear').style.display=(_evTimeStart||_evTimeEnd)?'':'none';
+  const timeStr=String(h).padStart(2,'0')+':'+String(_etpM).padStart(2,'0');
+  // Prevent end time before or equal to start
+  if(_evTimeMode==='end' && _evTimeStart && timeStr<=_evTimeStart){
+    const lbl=document.getElementById('mob-ev-timepick-label');
+    if(lbl){lbl.textContent='End must be after start';lbl.style.color='#dc2626';}
+    setTimeout(()=>{if(lbl){lbl.textContent='End time';lbl.style.color='';}},1500);
+    return;
+  }
+  if(_evTimeMode==='start'){
+    _evTimeStart=timeStr;
+    // Clear end if now invalid
+    if(_evTimeEnd && _evTimeEnd<=timeStr){
+      _evTimeEnd=null;
+      const eel=document.getElementById('mob-ev-time-end');
+      if(eel){eel.textContent='— End';eel.classList.remove('filled');}
+    }
+    const el=document.getElementById('mob-ev-time-start');
+    if(el){el.textContent=fmtTime(timeStr);el.classList.add('filled');}
+  } else {
+    _evTimeEnd=timeStr;
+    const el=document.getElementById('mob-ev-time-end');
+    if(el){el.textContent=fmtTime(timeStr);el.classList.add('filled');}
+  }
+  document.getElementById('mob-ev-timepick').style.display='none';
+  document.getElementById('mob-ev-time-clear').style.display=(_evTimeStart||_evTimeEnd)?'':'none';
 }
-function evTimeClear(){ _evTimeStart=null; _evTimeEnd=null; document.getElementById('ev-time-start').textContent='—'; document.getElementById('ev-time-start').classList.remove('filled'); document.getElementById('ev-time-end').textContent='—'; document.getElementById('ev-time-end').classList.remove('filled'); document.getElementById('ev-time-clear').style.display='none'; document.getElementById('ev-timepick').style.display='none'; }
+function evTimeClear(){ _evTimeStart=null; _evTimeEnd=null; const ts=document.getElementById('mob-ev-time-start');if(ts){ts.textContent='— Start';ts.classList.remove('filled');} const te=document.getElementById('mob-ev-time-end');if(te){te.textContent='— End';te.classList.remove('filled');} const clr=document.getElementById('mob-ev-time-clear');if(clr)clr.style.display='none'; const tp=document.getElementById('mob-ev-timepick');if(tp)tp.style.display='none'; }
 function evPickColor(btn){ document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.remove('active')); btn.classList.add('active'); }
 
 function saveEvent(){
   const title=document.getElementById('ev-inp').value.trim(); if(!title) return;
   const color=document.querySelector('.ev-cswatch.active')?.dataset.color||'#3A7D5E';
-  const ev={id:_evEditId||uid(),title,date:_evSelDate,color};
+  const ev={id:_evEditId||uid(),title,date:_evSelDate,color,timeStart:_evTimeStart||null,timeEnd:_evTimeEnd||null};
   const d=getD(); d.calEvs=d.calEvs||[];
   if(_evEditId) d.calEvs=d.calEvs.map(e=>e.id===_evEditId?ev:e);
   else d.calEvs.push(ev);

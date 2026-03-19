@@ -1366,6 +1366,36 @@
         </button>
       </div>
 
+      <div class="ev-row-lbl">Time <span style="font-size:10px;font-weight:500;color:var(--ink4);">(optional)</span></div>
+      <div style="display:flex;gap:8px;align-items:center;padding:0 22px;margin-bottom:4px;">
+        <button id="ev-time-start" class="ev-time-btn" onclick="dskEvTimeOpen('start')">— Start</button>
+        <span style="font-size:12px;color:var(--ink4);">to</span>
+        <button id="ev-time-end" class="ev-time-btn" onclick="dskEvTimeOpen('end')">— End</button>
+        <button id="ev-time-clear" onclick="dskEvTimeClear()" style="display:none;background:none;border:none;color:var(--ink4);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+      </div>
+      <!-- Desktop custom time picker -->
+      <div id="ev-timepick" style="display:none;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:14px 22px;margin:0 22px 8px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:10px;" id="ev-timepick-label">Start time</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <button onclick="dskEtpStep('h',1)" class="etp-arrow-btn">▲</button>
+            <div id="etp-h-val" style="font-size:26px;font-weight:800;color:var(--ink);min-width:40px;text-align:center;">12</div>
+            <button onclick="dskEtpStep('h',-1)" class="etp-arrow-btn">▼</button>
+          </div>
+          <div style="font-size:22px;font-weight:800;color:var(--ink3);margin-bottom:2px;">:</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <button onclick="dskEtpStep('m',1)" class="etp-arrow-btn">▲</button>
+            <div id="etp-m-val" style="font-size:26px;font-weight:800;color:var(--ink);min-width:40px;text-align:center;">00</div>
+            <button onclick="dskEtpStep('m',-1)" class="etp-arrow-btn">▼</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <button id="etp-radio-am" class="etp-ampm-radio" onclick="dskEtpSetAmpm('AM')">AM</button>
+            <button id="etp-radio-pm" class="etp-ampm-radio" onclick="dskEtpSetAmpm('PM')">PM</button>
+          </div>
+        </div>
+        <button onclick="dskEvTimeDone()" style="width:100%;padding:9px;border-radius:8px;border:none;background:var(--a2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Set Time</button>
+      </div>
+
       <div class="ev-row-lbl">Color</div>
       <div class="ev-color-row" id="ev-color-swatches">
         <div class="ev-cswatch sel" data-color="#3A7D5E" style="background:#3A7D5E;" onclick="evPickColor(this)"></div>
@@ -3068,6 +3098,36 @@
         <span class="sh-lbl">Title</span>
         <input class="sh-input" id="ev-inp" type="text" placeholder="Event name…"
           onkeydown="if(event.key==='Enter')document.getElementById('ev-inp').blur()" />
+
+        <span class="sh-lbl" style="margin-top:12px;">Time <span style="font-size:10px;font-weight:500;color:var(--ink4);">(optional)</span></span>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+          <button id="mob-ev-time-start" class="ev-time-btn" onclick="evTimeOpen('start')">— Start</button>
+          <span style="font-size:12px;color:var(--ink4);">to</span>
+          <button id="mob-ev-time-end" class="ev-time-btn" onclick="evTimeOpen('end')">— End</button>
+          <button id="mob-ev-time-clear" onclick="evTimeClear()" style="display:none;background:none;border:none;color:var(--ink4);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+        </div>
+        <!-- Custom time picker -->
+        <div id="mob-ev-timepick" style="display:none;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:16px;padding:16px;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink4);margin-bottom:12px;" id="mob-ev-timepick-label">Start time</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <button onclick="etpStep('h',1)" style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:36px;height:32px;cursor:pointer;color:var(--ink3);font-size:14px;display:flex;align-items:center;justify-content:center;">▲</button>
+              <div id="mob-etp-h-val" style="font-size:28px;font-weight:800;color:var(--ink);min-width:44px;text-align:center;line-height:1.2;">12</div>
+              <button onclick="etpStep('h',-1)" style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:36px;height:32px;cursor:pointer;color:var(--ink3);font-size:14px;display:flex;align-items:center;justify-content:center;">▼</button>
+            </div>
+            <div style="font-size:24px;font-weight:800;color:var(--ink3);">:</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <button onclick="etpStep('m',1)" style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:36px;height:32px;cursor:pointer;color:var(--ink3);font-size:14px;display:flex;align-items:center;justify-content:center;">▲</button>
+              <div id="mob-etp-m-val" style="font-size:28px;font-weight:800;color:var(--ink);min-width:44px;text-align:center;line-height:1.2;">00</div>
+              <button onclick="etpStep('m',-1)" style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:8px;width:36px;height:32px;cursor:pointer;color:var(--ink3);font-size:14px;display:flex;align-items:center;justify-content:center;">▼</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button id="mob-etp-radio-am" class="etp-ampm-radio" onclick="etpSetAmpm('AM')">AM</button>
+              <button id="mob-etp-radio-pm" class="etp-ampm-radio" onclick="etpSetAmpm('PM')">PM</button>
+            </div>
+          </div>
+          <button onclick="evTimeDone()" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--a2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Set Time</button>
+        </div>
 
         <span class="sh-lbl" style="margin-top:12px;">Color</span>
         <div class="ev-color-row" id="ev-color-row">
