@@ -3060,11 +3060,12 @@ function onJwSearch(wid,val){
 function renderJournalW(wid){
   const el=$('jwl-'+wid);if(!el)return;
   const q=_jwSearch[wid]||'';
-  const filtered=q?journal.filter(j=>((j.text||j.content||'').toLowerCase().includes(q))||(j.date||'').toLowerCase().includes(q)):journal;
+  const filtered=q?journal.filter(j=>(j.text||j.content||'').toLowerCase().includes(q)):journal;
   if(!journal.length){el.innerHTML='<div class="es"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6M8 15h4"/></svg></div><div class="es-title">No journal entries yet</div><div class="es-hint">Write your first entry below.</div></div>';return;}
   if(!filtered.length){el.innerHTML='<div class="jwempty">No entries match your search.</div>';return;}
   const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
-  const hl=(txt)=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
+  const escQ=q?esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'';
+  const hl=(txt)=>escQ?txt.replace(new RegExp('('+escQ+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
   el.innerHTML=hdr+filtered.map(j=>{
     const m=MLAB[j.mood]||MLAB[0];
     const _jtext=j.text||j.content||'';
@@ -3105,10 +3106,35 @@ function buildTimerW(body,w){
       <div class="tmdis">
         <div class="tmtime${canEdit?' tmtime-edit':''}" id="tmtime-${w.id}" onclick="tmStartEdit('${w.id}')">${fmtSec(ts.sec)}</div>
         <div class="tminputs" id="tminputs-${w.id}">
-          <input class="tm-timeinput" id="tminp-${w.id}" type="text" inputmode="numeric" placeholder="25:00"
-            onkeydown="tmInputKey(event,'${w.id}')" oninput="tmInputFmt(event)"/>
-          <div class="tm-inputhint">1:00:00 &nbsp;·&nbsp; MM:SS &nbsp;·&nbsp; Enter to set</div>
-          <button class="tm-setbtn" onclick="tmConfirmEdit('${w.id}')">Set time</button>
+<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-hr-${w.id}" type="text" inputmode="numeric" min="0" max="23" placeholder="0"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,2)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();tmConfirmEdit(\'${w.id}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">HR</span>
+            </div>
+            <span style="font-size:24px;font-weight:800;color:var(--ink3);padding-bottom:16px;">:</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-min-${w.id}" type="text" inputmode="numeric" min="0" placeholder="00"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,4)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();tmConfirmEdit(\'${w.id}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">MIN</span>
+            </div>
+            <span style="font-size:24px;font-weight:800;color:var(--ink3);padding-bottom:16px;">:</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-sec-${w.id}" type="text" inputmode="numeric" min="0" placeholder="00"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,4)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();tmConfirmEdit(\'${w.id}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">SEC</span>
+            </div>
+          </div>
+          <button class="tm-setbtn" onclick="tmConfirmEdit(\'${w.id}\')">Set time</button>
         </div>
       </div>
       <div class="tmctrl">
@@ -3135,13 +3161,13 @@ function tmStartEdit(wid){
   if(TMODES[ts.mode]?.locked||ts.running)return;
   const timeEl=$('tmtime-'+wid);
   const inpEl=$('tminputs-'+wid);
-  const inp=$('tminp-'+wid);
-  if(!timeEl||!inpEl||!inp)return;
-  // Pre-fill with current time in H:MM:SS or MM:SS
-  inp.value=fmtSec(ts.sec);
+  if(!timeEl||!inpEl)return;
+  const _h=Math.floor(ts.sec/3600),_m=Math.floor((ts.sec%3600)/60),_s=ts.sec%60;
+  const _hi=$('tminp-hr-'+wid),_mi=$('tminp-min-'+wid),_si=$('tminp-sec-'+wid);
+  if(_hi)_hi.value=_h||''; if(_mi)_mi.value=_m||''; if(_si)_si.value=_s||'';
   timeEl.classList.add('hide');
   inpEl.classList.add('show');
-  setTimeout(()=>{inp.focus();inp.select();},50);
+  setTimeout(()=>{if(_hi)_hi.focus();},50);
 }
 function tmInputFmt(e){
   let v = e.target.value.replace(/[^0-9:]/g, '');
@@ -3160,9 +3186,10 @@ function tmInputKey(e,wid){
 }
 function tmConfirmEdit(wid){
   const ts=TMS[wid];if(!ts)return;
-  const inp=$('tminp-'+wid);
-  if(!inp)return;
-  const total=parseTimeInput(inp.value.trim());
+  const h=parseInt($('tminp-hr-'+wid)?.value)||0;
+  const m=parseInt($('tminp-min-'+wid)?.value)||0;
+  const s=parseInt($('tminp-sec-'+wid)?.value)||0;
+  const total=Math.min(h*3600+m*60+s,86399);
   if(total<1)return;
   ts.custom[ts.mode]=total;
   ts.sec=total;
@@ -3276,29 +3303,31 @@ function _renderNoteW(body, w){
 
   body.innerHTML=`
     <div class="nw-wrap">
-      <div class="nw-list" id="nwl-${w.id}">
+      <div class="nw-list">
         <div style="display:flex;align-items:center;gap:5px;padding:7px 8px 5px;border-bottom:1px solid var(--bdr);">
           <input id="nw-search-${w.id}" type="text" placeholder="Search…" value="${esc(_noteSearchQ)}"
-            oninput="_noteSearchQ=this.value;const wb=document.getElementById('wb-${w.id}');const ww=widgets.find(x=>x.id==='${w.id}');if(wb&&ww){wb.innerHTML='';_renderNoteW(wb,ww);}"
+            oninput="_noteSearchQ=this.value;_renderNoteList('${w.id}')"
             style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:7px;padding:4px 8px;font-size:11px;color:var(--ink);outline:none;font-family:inherit;min-width:0;"
             onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'"/>
-          <button onclick="_noteSortMode=_noteSortMode==='updated'?'title':'updated';const wb=document.getElementById('wb-${w.id}');const ww=widgets.find(x=>x.id==='${w.id}');if(wb&&ww){wb.innerHTML='';_renderNoteW(wb,ww);}"
+          <button onclick="_noteSortMode=_noteSortMode==='updated'?'title':'updated';_renderNoteList('${w.id}')"
             title="${_noteSortMode==='updated'?'Sort A–Z':'Sort by recent'}"
             style="background:${_noteSortMode==='title'?'var(--al)':'var(--surf2)'};border:1.5px solid ${_noteSortMode==='title'?'var(--a2)':'var(--bdr)'};border-radius:7px;padding:4px 6px;cursor:pointer;color:var(--ink4);display:flex;align-items:center;flex-shrink:0;transition:all .15s;">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
           </button>
         </div>
-        ${sorted.length === 0 ? `<div style="padding:14px 10px;font-size:11px;color:var(--ink4);text-align:center;">${q?'No notes match':'No notes yet'}</div>` :
-        sorted.map(n=>`
-          <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${w.id}','${n.id}')">
-            <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
-            <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
-          </div>
-        `).join('')}
-        <button class="nw-add-btn" onclick="noteWAdd('${w.id}')">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          New note
-        </button>
+        <div id="nwl-${w.id}">
+          ${sorted.length === 0 ? `<div style="padding:14px 10px;font-size:11px;color:var(--ink4);text-align:center;">${q?'No notes match':'No notes yet'}</div>` :
+          sorted.map(n=>`
+            <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${w.id}','${n.id}')">
+              <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
+              <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
+            </div>
+          `).join('')}
+          <button class="nw-add-btn" onclick="noteWAdd('${w.id}')">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New note
+          </button>
+        </div>
       </div>
       <div class="nw-editor" id="nwe-${w.id}">
         <div class="nw-editor-head">
@@ -3347,26 +3376,26 @@ async function noteWDel(wid, nid){
 let _noteTimer=null;
 let _noteSearchQ='';
 let _noteSortMode='updated'; // 'updated' | 'title'
+function _renderNoteList(wid){
+  const list=document.getElementById('nwl-'+wid); if(!list) return;
+  const w=widgets.find(x=>x.id===wid); if(!w) return;
+  const q=_noteSearchQ.toLowerCase().trim();
+  const fil=notes.filter(n=>!q||(n.title||'').toLowerCase().includes(q)||(n.content||'').toLowerCase().includes(q));
+  const sorted=fil.slice().sort((a,b)=>_noteSortMode==='title'?(a.title||'').localeCompare(b.title||''):(b.updated||0)-(a.updated||0));
+  list.innerHTML=(sorted.length===0
+    ? `<div style="padding:14px 10px;font-size:11px;color:var(--ink4);text-align:center;">${q?'No notes match':'No notes yet'}</div>`
+    : sorted.map(n=>`
+        <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${wid}','${n.id}')">
+          <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
+          <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
+        </div>`).join('')
+  )+`<button class="nw-add-btn" onclick="noteWAdd('${wid}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New note</button>`;
+}
 function saveNoteField(wid, nid, field, val){
   const n=notes.find(x=>x.id===nid); if(!n) return;
   n[field]=val;
   n.updated=Date.now();
-  // Re-render the list panel to show updated preview/title without losing focus
-  const list=document.getElementById('nwl-'+wid);
-  if(list){
-    const w=widgets.find(x=>x.id===wid);
-    if(w){
-      const q2=_noteSearchQ.toLowerCase().trim();
-      const fil2=notes.filter(n=>!q2||(n.title||'').toLowerCase().includes(q2)||(n.content||'').toLowerCase().includes(q2));
-      const sorted2=fil2.slice().sort((a,b)=>_noteSortMode==='title'?(a.title||'').localeCompare(b.title||''):(b.updated||0)-(a.updated||0));
-      list.innerHTML=sorted2.map(n2=>`
-        <div class="nw-list-item${n2.id===w._noteOpen?' active':''}" onclick="noteWOpen('${wid}','${n2.id}')">
-          <div class="nw-list-title">${esc(n2.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
-          <div class="nw-list-preview">${esc((n2.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
-        </div>
-      `).join('')+`<button class="nw-add-btn" onclick="noteWAdd('${wid}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New note</button>`;
-    }
-  }
+  _renderNoteList(wid);
   clearTimeout(_noteTimer);
   _noteTimer=setTimeout(()=>persistSilent(),800);
 }
@@ -3456,8 +3485,14 @@ function buildCalW(body,w){
       <button class="cw-nav-btn" onclick="shiftCalW(-1,'${w.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:4px;border-radius:6px;display:flex;align-items:center;">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
       </button>
-      <div style="flex:1;text-align:center;">
-        <div class="cwlbl" id="cw-monthlbl-${w.id}"></div>
+      <div style="flex:1;text-align:center;position:relative;">
+        <button class="cwlbl" id="cw-monthlbl-${w.id}" onclick="calWYearPickerToggle('${w.id}')"
+          style="background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:6px;transition:background .15s;"
+          onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'">
+          <span id="cw-monthlbl-text-${w.id}"></span>
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div id="cw-year-picker-${w.id}" style="display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--surf);border:1.5px solid var(--bdr);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:999;padding:6px;min-width:150px;"></div>
       </div>
       <button class="cw-nav-btn" onclick="shiftCalW(1,'${w.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:4px;border-radius:6px;display:flex;align-items:center;">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 3l5 5-5 5"/></svg>
@@ -3466,6 +3501,38 @@ function buildCalW(body,w){
     <div class="cw-grid-wrap" id="cwgrid-${w.id}" style="flex:1;overflow-y:auto;padding:0 10px 10px;"></div>`;
   renderCalW(w.id);
 }
+function calWYearPickerToggle(wid){
+  const pop=document.getElementById('cw-year-picker-'+wid);
+  if(!pop) return;
+  if(pop.style.display!=='none'){ pop.style.display='none'; return; }
+  const now=new Date();
+  const curYr=new Date(now.getFullYear(),now.getMonth()+calOff,1).getFullYear();
+  const thisYr=now.getFullYear();
+  const years=Array.from({length:6},(_,i)=>thisYr+i);
+  pop.innerHTML=years.map(y=>`
+    <button onclick="calWYearPickerSelect(${y},'${wid}')"
+      style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:6px 12px;background:${y===curYr?'var(--a2)':'none'};color:${y===curYr?'#fff':'var(--ink)'};border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .12s;"
+      onmouseover="if(this.style.background!=='var(--a2)')this.style.background='var(--surf2)'"
+      onmouseout="if(this.style.background!=='var(--a2)')this.style.background='none'">
+      <span>${y}</span>
+      ${y===thisYr?`<span style="font-size:10px;font-weight:700;color:${y===curYr?'rgba(255,255,255,.65)':'var(--ink4)'};letter-spacing:.3px;">THIS YEAR</span>`:''}
+    </button>`).join('');
+  pop.style.display='block';
+  setTimeout(()=>document.addEventListener('click', function _close(e){
+    if(!pop.contains(e.target)&&!document.getElementById('cw-monthlbl-'+wid)?.contains(e.target)){
+      pop.style.display='none'; document.removeEventListener('click',_close);
+    }
+  }),50);
+}
+function calWYearPickerSelect(yr,wid){
+  const now=new Date();
+  const curBase=new Date(now.getFullYear(),now.getMonth()+calOff,1);
+  const targetDate=new Date(yr,curBase.getMonth(),1);
+  calOff=(targetDate.getFullYear()-now.getFullYear())*12+(targetDate.getMonth()-now.getMonth());
+  document.getElementById('cw-year-picker-'+wid).style.display='none';
+  widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
+}
+
 function shiftCalW(dir,wid){calOff+=dir;widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});}
 function renderCalW(wid){
   const lbl=document.getElementById('cw-monthlbl-'+wid);
@@ -3475,7 +3542,10 @@ function renderCalW(wid){
   const base=new Date(now.getFullYear(),now.getMonth()+calOff,1);
   const yr=base.getFullYear(), mo=base.getMonth();
   const tok=fdk(new Date());
-  if(lbl) lbl.textContent=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  if(lbl){
+    const span=document.getElementById('cw-monthlbl-text-'+wid);
+    if(span) span.textContent=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  }
   const firstDay=(new Date(yr,mo,1).getDay()+6)%7;
   const daysInMonth=new Date(yr,mo+1,0).getDate();
   const dn=['M','T','W','T','F','S','S'];
@@ -3486,7 +3556,7 @@ function renderCalW(wid){
   for(let d=1;d<=daysInMonth;d++){
     const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isToday=ds===tok;
-    const dayEvs=calEvs.filter(e=>(e.date||'')===ds);
+    const dayEvs=calEvs.filter(e=>e.yearly ? e.date.slice(5)===ds.slice(5) : (e.date||'')===ds);
     html+=`<div class="cw-day${isToday?' cw-today':''}" onclick="calDayClick('${ds}');openMo('mo-ev')">
       <div class="cw-day-num${isToday?' cw-today-num':''}">${d}</div>
       <div class="cw-day-dots">${dayEvs.slice(0,2).map(e=>`<div class="cw-ev-dot2" style="background:${e.color||'var(--a2)'};" title="${esc(e.title)}"></div>`).join('')}${dayEvs.length>2?`<div class="cw-ev-dot2 cw-ev-more">+${dayEvs.length-2}</div>`:''}</div>
@@ -3496,7 +3566,12 @@ function renderCalW(wid){
   // Upcoming events this month
   const monthStart=`${yr}-${String(mo+1).padStart(2,'0')}-01`;
   const monthEnd=`${yr}-${String(mo+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
-  const monthEvs=calEvs.filter(e=>e.date>=monthStart&&e.date<=monthEnd).sort((a,b)=>a.date>b.date?1:-1);
+  const mmS=monthStart.slice(5),mmE=monthEnd.slice(5);
+  const monthEvs=calEvs.filter(e=>{
+    if(e.yearly){ const mm=e.date.slice(5); return mm>=mmS&&mm<=mmE; }
+    return e.date>=monthStart&&e.date<=monthEnd;
+  }).map(e=>e.yearly?{...e,date:`${yr}-${e.date.slice(5)}`}:e)
+    .sort((a,b)=>a.date>b.date?1:-1);
   if(monthEvs.length){
     html+='<div class="cw-ev-list" style="margin-top:8px;">';
     monthEvs.forEach(ev=>{
@@ -3508,7 +3583,7 @@ function renderCalW(wid){
       html+=`<div class="cw-ev-item" onclick="calEvClick('${ev.id}')">
         <div class="cw-ev-dot" style="background:${col};"></div>
         <div class="cw-ev-body">
-          <div class="cw-ev-title">${esc(ev.title)}</div>
+          <div class="cw-ev-title">${esc(ev.title)}${ev.yearly?'<span style="font-size:10px;margin-left:4px;">📌</span>':''}</div>
           <div class="cw-ev-meta">${lbl2}${timeLbl?' · '+timeLbl:''}</div>
         </div>
         <button onclick="event.stopPropagation();delEv('${ev.id}')" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Delete">×</button>
@@ -4197,6 +4272,7 @@ function _resetEvModal(){
   const first=document.querySelector('.ev-cswatch');if(first)first.classList.add('sel');
   const bar=document.getElementById('ev-mod-bar');if(bar)bar.style.background=_evColor;
   const dr=document.getElementById('ev-del-row');if(dr)dr.style.display='none';
+  _dskEvYearly=false; _dskEvSetYearly(false);
   const dar=document.getElementById('ev-del-all-row');if(dar)dar.style.display='none';
   updateEvSubSel();
 }
@@ -4239,6 +4315,7 @@ function openCalEdit(id){
   // color
   document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.toggle('sel',s.dataset.color===_evColor));
   const bar=document.getElementById('ev-mod-bar');if(bar)bar.style.background=_evColor;
+  _dskEvYearly=!!ev.yearly; _dskEvSetYearly(!!ev.yearly);
   // project
   const ss=document.getElementById('ev-s');if(ss)ss.value=subjects.find(s=>s.name===ev.subName)?.id||'';
   // delete row
@@ -4272,40 +4349,61 @@ function saveEvEdit(){
   ev.title=t;ev.date=_evDate||calFmt(calToday());
   ev.color=_evColor;ev.note=document.getElementById('ev-note').value.trim();
   ev.subName=sub?sub.name:'';ev.subColor=sub?sub.color:'';
-  ev.timeStart=_dskEvTimeStart||null;ev.timeEnd=_dskEvTimeEnd||null;
+  ev.timeStart=_dskEvTimeStart||null;ev.timeEnd=_dskEvTimeEnd||null;ev.yearly=_dskEvYearly||false;
   persist();renderFullCal();
   widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
   closeMo('mo-ev');
 }
-let _dskEvTimeStart=null, _dskEvTimeEnd=null, _dskEvTimeMode=null, _dskEtpH=12, _dskEtpM=0, _dskEtpAmpm='AM';
+let _dskEvTimeStart=null, _dskEvTimeEnd=null, _dskEvTimeMode=null;
 
+// Parse "9:30 AM", "14:00", "930", "9" etc → "HH:MM" or null
+function _parseTimeInput(val){
+  val=val.trim();
+  if(!val) return null;
+  const ampm=val.match(/([ap]m?)$/i);
+  const isPM=ampm&&ampm[1].toLowerCase().startsWith('p');
+  const isAM=ampm&&ampm[1].toLowerCase().startsWith('a');
+  const nums=val.replace(/[^0-9:]/g,'');
+  let h,m;
+  if(nums.includes(':')){
+    [h,m]=nums.split(':').map(Number);
+  } else if(nums.length<=2){
+    h=Number(nums); m=0;
+  } else if(nums.length===3){
+    h=Number(nums[0]); m=Number(nums.slice(1));
+  } else {
+    h=Number(nums.slice(0,2)); m=Number(nums.slice(2,4));
+  }
+  if(isNaN(h)||isNaN(m)) return null;
+  if(isPM&&h<12) h+=12;
+  if(isAM&&h===12) h=0;
+  if(h>23||m>59) return null;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function dskEtpFormatInput(el){
+  // live-format: auto-insert colon after 2 digits
+  let v=el.value.replace(/[^0-9apmAPM: ]/g,'');
+  el.value=v;
+}
 function dskEvTimeOpen(mode){
   _dskEvTimeMode=mode;
   document.getElementById('ev-timepick-label').textContent=mode==='start'?'Start time':'End time';
   document.getElementById('ev-timepick').style.display='block';
   const existing=mode==='start'?_dskEvTimeStart:_dskEvTimeEnd;
-  if(existing){
-    const h24=+existing.split(':')[0], m=+existing.split(':')[1];
-    _dskEtpAmpm=h24>=12?'PM':'AM'; _dskEtpH=h24%12||12; _dskEtpM=m;
-  } else { _dskEtpH=12; _dskEtpM=0; _dskEtpAmpm='AM'; }
-  dskEtpRender();
+  const inp=document.getElementById('etp-time-inp');
+  if(inp){
+    inp.value=existing?_fmtTime(existing):'';
+    setTimeout(()=>{inp.focus();inp.select();},50);
+  }
 }
-function dskEtpRender(){
-  document.getElementById('etp-h-val').textContent=String(_dskEtpH).padStart(2,'0');
-  document.getElementById('etp-m-val').textContent=String(_dskEtpM).padStart(2,'0');
-  document.getElementById('etp-radio-am').className='etp-ampm-radio'+(_dskEtpAmpm==='AM'?' sel':'');
-  document.getElementById('etp-radio-pm').className='etp-ampm-radio'+(_dskEtpAmpm==='PM'?' sel':'');
-}
-function dskEtpStep(type,dir){
-  if(type==='h'){ _dskEtpH+=dir; if(_dskEtpH>12)_dskEtpH=1; if(_dskEtpH<1)_dskEtpH=12; }
-  else { _dskEtpM+=dir*5; if(_dskEtpM>=60)_dskEtpM=0; if(_dskEtpM<0)_dskEtpM=55; }
-  dskEtpRender();
-}
-function dskEtpSetAmpm(v){ _dskEtpAmpm=v; dskEtpRender(); }
 function dskEvTimeDone(){
-  let h=_dskEtpH;
-  if(_dskEtpAmpm==='AM'){h=h===12?0:h;} else {h=h===12?12:h+12;}
-  const timeStr=String(h).padStart(2,'0')+':'+String(_dskEtpM).padStart(2,'0');
+  const inp=document.getElementById('etp-time-inp');
+  const timeStr=inp?_parseTimeInput(inp.value):null;
+  if(!timeStr&&inp&&inp.value.trim()){
+    inp.style.borderColor='var(--red)';
+    setTimeout(()=>inp.style.borderColor='var(--bdr)',1200);
+    return;
+  }
   // Prevent end time being before or equal to start time
   if(_dskEvTimeMode==='end' && _dskEvTimeStart && timeStr<=_dskEvTimeStart){
     const tp=document.getElementById('ev-timepick');
@@ -4344,7 +4442,7 @@ function _fmtTime(t){ if(!t)return ''; const [h,m]=t.split(':').map(Number); con
 
 function addEv(){
   const t=document.getElementById('ev-t').value.trim();if(!t||!_evDate)return;
-  calEvs.push({id:String(Date.now()),title:t,date:_evDate,color:_evColor,timeStart:_dskEvTimeStart||null,timeEnd:_dskEvTimeEnd||null});
+  calEvs.push({id:String(Date.now()),title:t,date:_evDate,color:_evColor,timeStart:_dskEvTimeStart||null,timeEnd:_dskEvTimeEnd||null,yearly:_dskEvYearly||false});
   persist();renderFullCal();widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
   closeMo('mo-ev');
 }
@@ -5904,11 +6002,35 @@ function _fcsBuild(wid, body) {
         style="font-size:clamp(52px,11vw,84px);letter-spacing:-3px;cursor:pointer;"
         onclick="_fcsEditTime('${wid}')">${fmtSec(ts.sec)}</div>
       <div class="tminputs" id="fcs-inputs">
-        <input class="tm-timeinput" id="fcs-inp" type="text" inputmode="numeric"
-          placeholder="25:00" style="font-size:28px;text-align:center;"
-          onkeydown="_fcsInpKey(event,'${wid}')" oninput="tmInputFmt(event)"/>
-        <div class="tm-inputhint">MM:SS or H:MM:SS · Enter to set</div>
-        <button class="tm-setbtn" onclick="_fcsConfirm('${wid}')">Set time</button>
+<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:10px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-hr-fcs" type="text" inputmode="numeric" min="0" max="23" placeholder="0"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,2)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();_fcsConfirm(\'${wid}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">HR</span>
+            </div>
+            <span style="font-size:24px;font-weight:800;color:var(--ink3);padding-bottom:16px;">:</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-min-fcs" type="text" inputmode="numeric" min="0" placeholder="00"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,4)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();_fcsConfirm(\'${wid}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">MIN</span>
+            </div>
+            <span style="font-size:24px;font-weight:800;color:var(--ink3);padding-bottom:16px;">:</span>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <input id="tminp-sec-fcs" type="text" inputmode="numeric" min="0" placeholder="00"
+                style="width:56px;font-size:24px;font-weight:800;text-align:center;border:2px solid var(--bdr);border-radius:10px;padding:6px 4px;background:var(--surf2);color:var(--ink);outline:none;font-family:inherit;"
+                oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,4)"
+                onfocus="this.select();this.style.borderColor=\'var(--a2)\'" onblur="this.style.borderColor=\'var(--bdr)\'"
+                onkeydown="if(event.key===\'Enter\'){event.preventDefault();_fcsConfirm(\'${wid}\');}"/>
+              <span style="font-size:9px;font-weight:700;color:var(--ink4);letter-spacing:.5px;">SEC</span>
+            </div>
+          </div>
+        <button class="tm-setbtn" onclick="_fcsConfirm(\'${wid}\')">Set time</button>
       </div>
     </div>
     <div class="tmctrl" style="margin-bottom:14px;">
@@ -5965,15 +6087,18 @@ function _fcsEditTime(wid) {
   const ts=TMS[wid]; if(!ts||TMODES[ts.mode]?.locked||ts.running) return;
   const t=document.getElementById('fcs-time');
   const inp=document.getElementById('fcs-inputs');
-  const i=document.getElementById('fcs-inp');
-  if(!t||!inp||!i) return;
-  i.value=fmtSec(ts.sec);
+  if(!t||!inp) return;
+  const _fh=Math.floor(ts.sec/3600),_fm=Math.floor((ts.sec%3600)/60),_fs=ts.sec%60;
+  const _fhi=document.getElementById('tminp-hr-fcs'),_fmi=document.getElementById('tminp-min-fcs'),_fsi=document.getElementById('tminp-sec-fcs');
+  if(_fhi)_fhi.value=_fh||''; if(_fmi)_fmi.value=_fm||''; if(_fsi)_fsi.value=_fs||'';
   t.classList.add('hide'); inp.classList.add('show');
-  setTimeout(()=>{i.focus();i.select();},50);
+  setTimeout(()=>{if(_fhi)_fhi.focus();},50);
 }
 function _fcsConfirm(wid) {
-  const i=document.getElementById('fcs-inp'); if(!i) return;
-  const total=parseTimeInput(i.value.trim()); if(total<1) return;
+  const _cfh=parseInt(document.getElementById('tminp-hr-fcs')?.value)||0;
+  const _cfm=parseInt(document.getElementById('tminp-min-fcs')?.value)||0;
+  const _cfs=parseInt(document.getElementById('tminp-sec-fcs')?.value)||0;
+  const total=Math.min(_cfh*3600+_cfm*60+_cfs,86399); if(total<1) return;
   const ts=TMS[wid]; if(!ts) return;
   ts.custom[ts.mode]=total; ts.sec=total;
   const b=document.getElementById('fcs-body'); if(b)_fcsBuild(wid,b);

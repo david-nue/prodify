@@ -1477,8 +1477,10 @@ function renderJournalList(){
     return;
   }
   const q=_jwSearchQ;
-  const filtered=q?entries.filter(j=>((j.content||j.text||'').toLowerCase().includes(q)||(j.date||'').toLowerCase().includes(q))):entries;
-  const hl=txt=>q?txt.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
+  const filtered=q?entries.filter(j=>(j.content||j.text||'').toLowerCase().includes(q)):entries;
+  // hl must run on already-escaped text, using the escaped query to match correctly
+  const escQ=q?esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'';
+  const hl=txt=>escQ?txt.replace(new RegExp('('+escQ+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
   const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 8px;"><span style="font-size:10px;color:var(--ink4);">${filtered.length} of ${entries.length} entr${entries.length>1?'ies':'y'}</span><button onclick="jwClearAll()" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
   if(!filtered.length){ list.innerHTML=hdr+`<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6M8 15h4"/></svg></div><div class="mob-es-title">No results</div><div class="mob-es-sub">No entries match your search.</div></div>`; return; }
   list.innerHTML=hdr+filtered.map(j=>{
@@ -1732,23 +1734,18 @@ function fmtSec(s){
 }
 function parseTimeInput(raw){
   raw = raw.trim();
-  // No colon: treat as pure seconds (e.g. "30" = 30s, "90" = 90s)
+  const MAX = 5999; // cap at 99:59
   if(!raw.includes(':')){
+    // Treat as minutes if ≤99, otherwise seconds
     const n = parseInt(raw) || 0;
-    return Math.min(Math.max(n, 0), 359999); // cap at 99:59:59
+    const secs = n <= 99 ? n * 60 : n;
+    return Math.min(Math.max(secs, 1), MAX);
   }
   const parts = raw.split(':');
-  if(parts.length === 3){
-    // H:MM:SS
-    const h = Math.min(parseInt(parts[0])||0, 99);
-    const m = Math.min(parseInt(parts[1])||0, 59);
-    const s = Math.min(parseInt(parts[2])||0, 59);
-    return h*3600 + m*60 + s;
-  }
   // MM:SS
   const m = Math.min(parseInt(parts[0])||0, 99);
   const s = Math.min(parseInt(parts[1])||0, 59);
-  return m*60 + s;
+  return Math.min(m*60 + s, MAX);
 }
 const RING_CIRC=615.75;
 function mobUpdateDisp(){
@@ -1789,20 +1786,34 @@ function mobStartEdit(){
   if(MOB_TMODES[_mobTMode].locked||_mobRunning) return;
   const ring=document.getElementById('timer-ring-wrap');
   const inpEl=document.getElementById('tminputs-mob');
-  const inp=document.getElementById('tminp-mob');
-  if(!ring||!inpEl||!inp) return;
-  inp.value=fmtSec(_mobSec);
+  if(!ring||!inpEl) return;
+  // Pre-fill H/M/S from current time
+  const h=Math.floor(_mobSec/3600);
+  const m=Math.floor((_mobSec%3600)/60);
+  const s=_mobSec%60;
+  const hrInp=document.getElementById('tminp-hr');
+  const minInp=document.getElementById('tminp-min');
+  const secInp=document.getElementById('tminp-sec');
+  if(hrInp) hrInp.value=h||'';
+  if(minInp) minInp.value=m?String(m):'';
+  if(secInp) secInp.value=s?String(s):'';
   ring.classList.add('hide');
   inpEl.classList.add('show');
-  setTimeout(()=>{inp.focus();inp.select();},50);
+  setTimeout(()=>{if(hrInp) hrInp.focus();},50);
 }
 function mobCancelEdit(){
   document.getElementById('timer-ring-wrap')?.classList.remove('hide');
   document.getElementById('tminputs-mob')?.classList.remove('show');
 }
 function mobConfirmEdit(){
-  const inp=document.getElementById('tminp-mob'); if(!inp) return;
-  const total=parseTimeInput(inp.value.trim()); if(total<1){mobCancelEdit();return;}
+  const h=parseInt(document.getElementById('tminp-hr')?.value)||0;
+  const m=parseInt(document.getElementById('tminp-min')?.value)||0;
+  const s=parseInt(document.getElementById('tminp-sec')?.value)||0;
+  // Roll over: excess seconds into minutes, excess minutes into hours
+  let total=h*3600+m*60+s;
+  if(total<1){mobCancelEdit();return;}
+  // Clamp to 23:59:59
+  total=Math.min(total,86399);
   _mobCustomSec[_mobTMode]=total; _mobSec=total; _mobTotal=total;
   mobCancelEdit(); mobUpdateDisp();
 }
@@ -1908,35 +1919,72 @@ mobUpdateDisp(); mobRenderSessions();
 let calOff=0;
 let _mobCalOff=0;
 
-function mobCalShift(d){ _mobCalOff+=d; mobCalRender(); }
+function mobCalShift(d){ _mobCalOff+=d; renderSchedule(); }
 
 function mobCalRender(){
   const now=new Date();
   const base=new Date(now.getFullYear(), now.getMonth()+_mobCalOff, 1);
   const yr=base.getFullYear(), mo=base.getMonth();
   const lbl=document.getElementById('mob-cal-month-lbl');
-  if(lbl) lbl.textContent=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const firstDay=new Date(yr,mo,1).getDay(); // 0=Sun
+  const monthStr=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  if(lbl) lbl.innerHTML=monthStr+' <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:10px;height:6px;flex-shrink:0;"><path d="M1 1l4 4 4-4"/></svg>';
+  const firstDay=new Date(yr,mo,1).getDay();
   const dim=new Date(yr,mo+1,0).getDate();
   const today=toDay();
   const allEvs=getCalEvs();
-  // Build MM-DD strings for year-agnostic matching
-  const evMmDds=allEvs.map(e=>({mmdd:(e.date||'').slice(5), color:e.color}));
+  // Match events: exact date OR yearly events matching MM-DD
+  const evDates={};
+  allEvs.forEach(e=>{
+    if(!e.date) return;
+    const key=e.yearly ? `${yr}-${e.date.slice(5)}` : e.date;
+    (evDates[key]=evDates[key]||[]).push(e.color||'var(--a2)');
+  });
   let html='';
   for(let i=0;i<firstDay;i++) html+=`<div class="mob-cal-cell empty"></div>`;
   for(let d=1;d<=dim;d++){
     const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const mmdd=ds.slice(5);
     const isToday=ds===today;
-    const dayEvs=evMmDds.filter(e=>e.mmdd===mmdd);
-    const hasEvs=dayEvs.length>0;
+    const colors=evDates[ds]||[];
     html+=`<div class="mob-cal-cell${isToday?' today':''}" onclick="mobCalDayClick('${ds}')">
       <div class="mob-cal-num${isToday?' today':''}">${d}</div>
-      ${hasEvs?`<div class="mob-cal-dot-row">${dayEvs.slice(0,3).map(e=>`<div class="mob-cal-dot" style="background:${e.color||'var(--a2)'}"></div>`).join('')}</div>`:'<div class="mob-cal-dot-row"></div>'}
+      <div class="mob-cal-dot-row">${colors.slice(0,3).map(c=>`<div class="mob-cal-dot" style="background:${c}"></div>`).join('')}</div>
     </div>`;
   }
   const grid=document.getElementById('mob-cal-days');
   if(grid) grid.innerHTML=html;
+}
+
+function mobYearPickerToggle(){
+  const pop=document.getElementById('mob-year-picker');
+  if(!pop) return;
+  if(pop.style.display!=='none'){ pop.style.display='none'; return; }
+  const now=new Date();
+  const curYr=new Date(now.getFullYear(), now.getMonth()+_mobCalOff, 1).getFullYear();
+  const thisYr=now.getFullYear();
+  // Only current year and future years (no past years)
+  const years=Array.from({length:6},(_,i)=>thisYr+i);
+  pop.innerHTML=years.map(y=>`
+    <button onclick="mobYearPickerSelect(${y})"
+      style="display:block;width:100%;padding:8px 16px;background:${y===curYr?'var(--a2)':'none'};color:${y===curYr?'#fff':'var(--ink)'};border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;justify-content:space-between;transition:background .15s;">
+      <span>${y}</span>
+      ${y===thisYr?`<span style="font-size:10px;font-weight:700;color:${y===curYr?'rgba(255,255,255,.65)':'var(--ink4)'};letter-spacing:.3px;">THIS YEAR</span>`:''}
+    </button>`).join('');
+  pop.style.display='block';
+  setTimeout(()=>document.addEventListener('click', function _close(e){
+    if(!pop.contains(e.target)&&!document.getElementById('mob-cal-month-lbl').contains(e.target)){
+      pop.style.display='none'; document.removeEventListener('click',_close);
+    }
+  }),50);
+}
+
+function mobYearPickerSelect(yr){
+  const now=new Date();
+  const curBase=new Date(now.getFullYear(), now.getMonth()+_mobCalOff, 1);
+  const targetDate=new Date(yr, curBase.getMonth(), 1);
+  _mobCalOff=(targetDate.getFullYear()-now.getFullYear())*12+(targetDate.getMonth()-now.getMonth());
+  document.getElementById('mob-year-picker').style.display='none';
+  mobCalRender();
+  renderSchedule();
 }
 
 function mobCalDayClick(ds){
@@ -1968,7 +2016,12 @@ function renderSchedule(){
   const monthStart=`${yr}-${String(mo+1).padStart(2,'0')}-01`;
   const monthEnd=`${yr}-${String(mo+1).padStart(2,'0')}-${String(new Date(yr,mo+1,0).getDate()).padStart(2,'0')}`;
   const allEvs=getCalEvs().sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:0);
-  const monthEvs=allEvs.filter(e=>e.date>=monthStart&&e.date<=monthEnd);
+  const mmStart=monthStart.slice(5), mmEnd=monthEnd.slice(5);
+  const monthEvs=allEvs.filter(e=>{
+    if(e.yearly){ const mm=e.date.slice(5); return mm>=mmStart&&mm<=mmEnd; }
+    return e.date>=monthStart&&e.date<=monthEnd;
+  }).map(e=>e.yearly?{...e,date:`${yr}-${e.date.slice(5)}`}:e)
+    .sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:0);
 
   if(!monthEvs.length){
     page.innerHTML=`<div class="mob-es" style="padding:28px 0 12px;"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg></div><div class="mob-es-title">No events this month</div><div class="mob-es-sub">Tap any day to add an event</div></div>`;
@@ -1989,7 +2042,7 @@ function renderSchedule(){
       </div>
       <div class="sev-bar" style="background:${ev.color||'var(--a2)'}"></div>
       <div class="sev-body" style="flex:1;min-width:0;">
-        <div class="sev-title">${esc(ev.title)}</div>
+        <div class="sev-title">${esc(ev.title)}${ev.yearly?'<span style="font-size:10px;margin-left:5px;">📌</span>':''}</div>
         ${ev.timeStart?`<div class="sev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' – '+fmtTime(ev.timeEnd):''}</div>`:''}
       </div>
       <button class="sev-del" onclick="mobDelEvent('${ev.id}')">✕</button>
@@ -2037,12 +2090,12 @@ function deleteEvent(id){
 }
 
 // ── custom date picker state ──
-let _evCalOff=0, _evSelDate=toDay(), _evTimeMode=null, _evTimeStart=null, _evTimeEnd=null, _evEditId=null;
+let _evCalOff=0, _evSelDate=toDay(), _evTimeMode=null, _evTimeStart=null, _evTimeEnd=null, _evEditId=null, _evYearly=false;
 
 function openEvSheet(editId, preDate){
   _evEditId=editId||null;
   _evSelDate=preDate||toDay();
-  _evTimeStart=null; _evTimeEnd=null; _evTimeMode=null;
+  _evTimeStart=null; _evTimeEnd=null; _evTimeMode=null; _evYearly=false; _mobEvSetYearly(false);
 
   const ds=_evSelDate;
   const dateLabel=new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -2131,36 +2184,44 @@ function evCalPick(ds){
   const tp=document.getElementById('mob-ev-timepick');if(tp)tp.style.display='none';
 }
 
-let _etpH=12, _etpM=0, _etpAmpm='AM';
+function _mobParseTime(val){
+  val=(val||'').trim();
+  if(!val) return null;
+  const isPM=/p/i.test(val); const isAM=/a/i.test(val);
+  const nums=val.replace(/[^0-9:]/g,'');
+  let h,m;
+  if(nums.includes(':')){[h,m]=nums.split(':').map(Number);}
+  else if(nums.length<=2){h=Number(nums);m=0;}
+  else if(nums.length===3){h=Number(nums[0]);m=Number(nums.slice(1));}
+  else{h=Number(nums.slice(0,2));m=Number(nums.slice(2,4));}
+  if(isNaN(h)||isNaN(m)) return null;
+  if(isPM&&h<12) h+=12;
+  if(isAM&&h===12) h=0;
+  if(h>23||m>59) return null;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function mobEtpFormatInput(el){
+  el.value=el.value.replace(/[^0-9apmAPM: :]/g,'');
+}
 function evTimeOpen(mode){
   _evTimeMode=mode;
   document.getElementById('mob-ev-timepick-label').textContent=mode==='start'?'Start time':'End time';
   document.getElementById('mob-ev-timepick').style.display='block';
-  // restore existing or default to 9:00 AM
   const existing=mode==='start'?_evTimeStart:_evTimeEnd;
-  if(existing){
-    const h24=+existing.split(':')[0], m=+existing.split(':')[1];
-    _etpAmpm=h24>=12?'PM':'AM';
-    _etpH=h24%12||12; _etpM=m;
-  } else { _etpH=12; _etpM=0; _etpAmpm='AM'; }
-  etpRender();
+  const inp=document.getElementById('mob-etp-time-inp');
+  if(inp){
+    inp.value=existing?fmtTime(existing):'';
+    setTimeout(()=>{inp.focus();inp.select();},50);
+  }
 }
-function etpRender(){
-  document.getElementById('mob-etp-h-val').textContent=String(_etpH).padStart(2,'0');
-  document.getElementById('mob-etp-m-val').textContent=String(_etpM).padStart(2,'0');
-  document.getElementById('mob-etp-radio-am').className='etp-ampm-radio'+(_etpAmpm==='AM'?' sel':'');
-  document.getElementById('mob-etp-radio-pm').className='etp-ampm-radio'+(_etpAmpm==='PM'?' sel':'');
-}
-function etpStep(type, dir){
-  if(type==='h'){ _etpH+=dir; if(_etpH>12)_etpH=1; if(_etpH<1)_etpH=12; }
-  else { _etpM+=dir*5; if(_etpM>=60)_etpM=0; if(_etpM<0)_etpM=55; }
-  etpRender();
-}
-function etpSetAmpm(v){ _etpAmpm=v; etpRender(); }
 function evTimeDone(){
-  let h=_etpH;
-  if(_etpAmpm==='AM'){ h=h===12?0:h; } else { h=h===12?12:h+12; }
-  const timeStr=String(h).padStart(2,'0')+':'+String(_etpM).padStart(2,'0');
+  const inp=document.getElementById('mob-etp-time-inp');
+  const timeStr=inp?_mobParseTime(inp.value):null;
+  if(!timeStr&&inp&&inp.value.trim()){
+    inp.style.borderColor='#dc2626';
+    setTimeout(()=>inp.style.borderColor='var(--bdr)',1200);
+    return;
+  }
   // Prevent end time before or equal to start
   if(_evTimeMode==='end' && _evTimeStart && timeStr<=_evTimeStart){
     const lbl=document.getElementById('mob-ev-timepick-label');
@@ -2187,12 +2248,24 @@ function evTimeDone(){
   document.getElementById('mob-ev-time-clear').style.display=(_evTimeStart||_evTimeEnd)?'':'none';
 }
 function evTimeClear(){ _evTimeStart=null; _evTimeEnd=null; const ts=document.getElementById('mob-ev-time-start');if(ts){ts.textContent='— Start';ts.classList.remove('filled');} const te=document.getElementById('mob-ev-time-end');if(te){te.textContent='— End';te.classList.remove('filled');} const clr=document.getElementById('mob-ev-time-clear');if(clr)clr.style.display='none'; const tp=document.getElementById('mob-ev-timepick');if(tp)tp.style.display='none'; }
+function _mobEvSetYearly(on){
+  const btn=document.getElementById('mob-ev-yearly-btn');
+  const knob=document.getElementById('mob-ev-yearly-knob');
+  if(btn) btn.style.background=on?'var(--a2)':'var(--bdr)';
+  if(knob) knob.style.transform=on?'translateX(18px)':'translateX(0)';
+}
+function mobEvToggleYearly(){
+  _evYearly=!_evYearly;
+  _mobEvSetYearly(_evYearly);
+}
+
+
 function evPickColor(btn){ document.querySelectorAll('.ev-cswatch').forEach(s=>s.classList.remove('active')); btn.classList.add('active'); }
 
 function saveEvent(){
   const title=document.getElementById('ev-inp').value.trim(); if(!title) return;
   const color=document.querySelector('.ev-cswatch.active')?.dataset.color||'#3A7D5E';
-  const ev={id:_evEditId||uid(),title,date:_evSelDate,color,timeStart:_evTimeStart||null,timeEnd:_evTimeEnd||null};
+  const ev={id:_evEditId||uid(),title,date:_evSelDate,color,timeStart:_evTimeStart||null,timeEnd:_evTimeEnd||null,yearly:_evYearly||false};
   const d=getD(); d.calEvs=d.calEvs||[];
   if(_evEditId) d.calEvs=d.calEvs.map(e=>e.id===_evEditId?ev:e);
   else d.calEvs.push(ev);
