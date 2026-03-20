@@ -89,7 +89,7 @@
   <!-- style.css only for desktop — mobile uses app-mobile.css loaded dynamically -->
   <script>
     if (!window.PRODIFY_IS_MOBILE) {
-      document.write('<link rel="stylesheet" href="style.css?v=190" />');
+      document.write('<link rel="stylesheet" href="style.css?v=191" />');
     }
   </script>
 
@@ -189,7 +189,7 @@
         <!-- Video -->
         <div style="border-radius:0 0 14px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-top:none;box-shadow:0 32px 80px rgba(0,0,0,.5);">
           <video
-            src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1773822290/demo_osxvdn.mp4"
+            src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1774006649/prodifydemo-1774006495067_oqxfcg.mp4"
             autoplay
             muted
             loop
@@ -1467,7 +1467,7 @@
       // Load app.js after Supabase is ready
       _s1.onload = function () {
         var _sa = document.createElement('script');
-        _sa.src = 'app.js?v=190';
+        _sa.src = 'app.js?v=191';
         _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
         document.body.appendChild(_sa);
       };
@@ -1513,7 +1513,7 @@
         // Load mobile CSS — reveal root only after CSS is loaded to prevent flash
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/app-mobile.css?v=190';
+        link.href = '/app-mobile.css?v=191';
         link.onload = function() {
           setTimeout(function() {
             root.classList.add('ready');
@@ -1542,7 +1542,7 @@
           ejsScript.onload = function () {
             if (typeof emailjs !== 'undefined') emailjs.init('JKf5GRjODyTBor1xn');
             var mjs = document.createElement('script');
-            mjs.src = '/app-mobile.js?v=190';
+            mjs.src = '/app-mobile.js?v=191';
             mjs.onload = function () {
               // Re-enable google button once JS is fully loaded
               var gBtn2 = document.getElementById('btn-google');
@@ -1553,7 +1553,7 @@
           ejsScript.onerror = function () {
             // EmailJS failed to load — proceed without it (feedback will use Supabase only)
             var mjs = document.createElement('script');
-            mjs.src = '/app-mobile.js?v=190';
+            mjs.src = '/app-mobile.js?v=191';
             mjs.onload = function () {
               var gBtn2 = document.getElementById('btn-google');
               if (gBtn2) gBtn2.disabled = false;
@@ -1859,7 +1859,7 @@
             <span class="mob-lvideo-dot"></span><span class="mob-lvideo-dot"></span><span class="mob-lvideo-dot"></span>
             <span class="mob-lvideo-url">prodify.cc</span>
           </div>
-          <video src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1773822290/demo_osxvdn.mp4"
+          <video src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1774006649/prodifydemo-1774006495067_oqxfcg.mp4"
             autoplay muted loop playsinline preload="metadata" style="width:100%;display:block;"></video>
         </div>
       </div>
