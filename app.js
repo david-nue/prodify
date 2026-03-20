@@ -4385,6 +4385,17 @@ function dskEtpFormatInput(el){
   let v=el.value.replace(/[^0-9apmAPM: ]/g,'');
   el.value=v;
 }
+function _dskEvSetYearly(on){
+  const btn=document.getElementById('dsk-ev-yearly-btn');
+  const knob=document.getElementById('dsk-ev-yearly-knob');
+  if(btn) btn.style.background=on?'var(--a2)':'var(--bdr)';
+  if(knob) knob.style.transform=on?'translateX(17px)':'translateX(0)';
+}
+function dskEvToggleYearly(){
+  _dskEvYearly=!_dskEvYearly;
+  _dskEvSetYearly(_dskEvYearly);
+}
+
 function dskEvTimeOpen(mode){
   _dskEvTimeMode=mode;
   document.getElementById('ev-timepick-label').textContent=mode==='start'?'Start time':'End time';
@@ -5537,8 +5548,6 @@ function formatAipMessage(text) {
     .replace(/$/, '</p>');
 }
 
-function generatePlan(containerId) { aipSendMessage(containerId, 'Generate my plan for today'); }
-function formatPlan(text) { return formatAipMessage(text); }
 
 // ═══════════════════════════════════════
 // SESSION 9 — PRO SYSTEM
