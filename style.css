@@ -299,7 +299,8 @@ to{opacity:1;transform:translateY(0);}
 .ob-btn-allset{background:linear-gradient(135deg,var(--a),var(--a2)) !important;box-shadow:0 6px 24px rgba(var(--a-rgb),.4) !important;}
 /* Light mode all set */
 .ob-right-light .ob-allset-feats{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.08);}
-.ob-right-light .ob-af-icon{background:rgba(0,0,0,.05);}
+.ob-right-light .ob-af-icon{background:rgba(0,0,0,.05);color:rgba(0,0,0,.7);}
+.ob-right-light .ob-af-icon svg{stroke:rgba(0,0,0,.7);}
 .ob-right-light .ob-af-text{color:rgba(0,0,0,.55);}
 .ob-right-light .ob-af-text b{color:rgba(0,0,0,.85);}
 /* mobile */

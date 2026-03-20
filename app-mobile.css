@@ -97,8 +97,10 @@ button,input,select,textarea{font-family:inherit;}
 .ob-allset-icon svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
 .ob-allset-feats{margin:24px 0 32px;width:100%;display:flex;flex-direction:column;gap:10px;}
 .ob-allset-feat{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.06);border-radius:12px;}
-.ob-allset-feat-icon{font-size:18px;width:36px;height:36px;background:rgba(255,255,255,.08);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(255,255,255,.85);}
-.ob-allset-feat-icon svg{stroke:rgba(255,255,255,.85);width:16px;height:16px;}
+.ob-allset-feat-icon{font-size:18px;width:36px;height:36px;background:rgba(0,0,0,.05);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:rgba(0,0,0,.65);}
+.ob-allset-feat-icon svg{stroke:rgba(0,0,0,.65);width:16px;height:16px;}
+[data-dark="1"] .ob-allset-feat-icon{background:rgba(255,255,255,.08)!important;color:rgba(255,255,255,.85)!important;}
+[data-dark="1"] .ob-allset-feat-icon svg{stroke:rgba(255,255,255,.85)!important;}
 .ob-allset-feat-text{font-size:13px;color:rgba(255,255,255,.75);font-weight:500;}
 
 /* ══════════════════════════════════════
