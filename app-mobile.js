@@ -751,7 +751,7 @@ function exportData(){
 function clearAll(){
   appConfirm('Clear all data?','This will erase all your tasks, journal entries, habits and events. This cannot be undone.','Clear').then(ok=>{
     if(!ok) return;
-    if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
+    if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; d.notes=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
     acc[cu]=d; saveAll(); }
     renderAll(); toast('All data cleared');
   });

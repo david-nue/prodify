@@ -565,7 +565,7 @@ function pomGetWeekData(){
 }
 async function clearAllData(){
   if(!await appConfirm('Clear all data?','This will erase all your tasks, journal entries, habits and calendar events. This cannot be undone.','Clear')) return;
-  tasks=[]; journal=[]; subjects=[]; calEvs=[];
+  tasks=[]; journal=[]; subjects=[]; calEvs=[]; notes=[];
   if(prefs){ prefs.habits=[]; prefs.habitLog={}; prefs.pomHistory={}; }
   persist();
   renderAllTaskW(); renderAllJournalW(); renderAllSubW();
