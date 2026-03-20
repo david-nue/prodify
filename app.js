@@ -569,8 +569,16 @@ async function clearAllData(){
   if(prefs){ prefs.habits=[]; prefs.habitLog={}; prefs.pomHistory={}; }
   persist();
   renderAllTaskW(); renderAllJournalW(); renderAllSubW();
-  // Re-render habit widgets on canvas (renderAllHabitsW doesn't exist — iterate directly)
+  // Reset journal textareas
+  widgets.filter(w=>w.type==='journal').forEach(w=>{
+    const ta=$('jwta-'+w.id); if(ta){ta.value='';ta.style.height='';}
+  });
+  // Re-render habit widgets
   widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
+  // Re-render note widgets
+  widgets.filter(w=>w.type==='note').forEach(w=>fillWBody(w));
+  // Re-render calendar widgets
+  widgets.filter(w=>w.type==='calendar').forEach(w=>fillWBody(w));
   if(typeof renderFullCal==='function') renderFullCal();
   updateAllStatsW(); updateFixedStats();
 }

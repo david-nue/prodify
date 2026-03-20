@@ -753,7 +753,14 @@ function clearAll(){
     if(!ok) return;
     if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; d.notes=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
     acc[cu]=d; saveAll(); }
-    renderAll(); toast('All data cleared');
+    // Small delay ensures acc is fully written before re-rendering
+    setTimeout(()=>{
+      renderAll();
+      // Reset journal textarea
+      const ta=document.getElementById('jwta-mob'); if(ta){ta.value='';ta.style.height='';}
+      _jwEditId=null;
+    }, 50);
+    toast('All data cleared');
   });
 }
 
