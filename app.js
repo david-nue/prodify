@@ -4354,7 +4354,7 @@ function saveEvEdit(){
   widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});
   closeMo('mo-ev');
 }
-let _dskEvTimeStart=null, _dskEvTimeEnd=null, _dskEvTimeMode=null;
+let _dskEvTimeStart=null, _dskEvTimeEnd=null, _dskEvTimeMode=null, _dskEvYearly=false;
 
 // Parse "9:30 AM", "14:00", "930", "9" etc → "HH:MM" or null
 function _parseTimeInput(val){
