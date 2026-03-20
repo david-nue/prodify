@@ -15,7 +15,7 @@
   <meta name="description"
     content="Stop juggling apps. Prodify is your free all-in-one productivity workspace — tasks, journal, focus timer, habits & calendar in one place." />
   <meta name="keywords"
-    content="productivity app, free productivity workspace, task manager, habit tracker, focus timer, pomodoro timer, daily journal, project tracker, all in one productivity, prodify" />
+    content="productivity app, free productivity workspace, task manager, habit tracker, focus timer, pomodoro timer, daily journal, all in one productivity, prodify" />
 
   <link rel="canonical" href="https://prodify.cc" />
   <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
@@ -43,7 +43,6 @@
       "Focus Timer",
       "Habit Tracker",
       "Calendar",
-      "Project Tracker",
       "Widget Canvas"
     ],
     "screenshot": "https://prodify.cc/og-preview.png",
@@ -90,7 +89,7 @@
   <!-- style.css only for desktop — mobile uses app-mobile.css loaded dynamically -->
   <script>
     if (!window.PRODIFY_IS_MOBILE) {
-      document.write('<link rel="stylesheet" href="style.css" />');
+      document.write('<link rel="stylesheet" href="style.css?v=168" />');
     }
   </script>
 
@@ -220,8 +219,7 @@
               <path d="M13 12l2 2 4-4" />
             </svg></div>
           <div class="sl-feat-name">Task Board</div>
-          <div class="sl-feat-desc">Three columns — To Do, In Progress, Done. Drag tasks, set priorities, filter by
-            project. See exactly what needs your attention today.</div>
+          <div class="sl-feat-desc">Three columns — To Do, In Progress, Done. Drag tasks, set priorities, and see exactly what needs your attention today.</div>
         </div>
         <div class="sl-feat-card">
           <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -233,16 +231,7 @@
           <div class="sl-feat-desc">Set a timer, block out distractions, and track how many sessions you complete each
             day. Simple but surprisingly effective.</div>
         </div>
-        <div class="sl-feat-card">
-          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
-              stroke-linecap="round">
-              <rect x="3" y="5" width="6" height="13" rx="1.5" />
-              <rect x="11" y="2" width="6" height="16" rx="1.5" />
-            </svg></div>
-          <div class="sl-feat-name">Project Tracker</div>
-          <div class="sl-feat-desc">Track every project with progress bars, task lists, and a grade score. Know at a
-            glance what needs attention and what's nearly done.</div>
-        </div>
+
         <div class="sl-feat-card">
           <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
               stroke-linecap="round">
@@ -260,8 +249,7 @@
               <path d="M2 9h16M7 2v4M13 2v4" />
             </svg></div>
           <div class="sl-feat-name">Calendar</div>
-          <div class="sl-feat-desc">A clean weekly view with your events and project deadlines in one place. Plan your
-            week without hopping between apps.</div>
+          <div class="sl-feat-desc">A clean weekly view with your events and task deadlines in one place. Plan your week without hopping between apps.</div>
         </div>
         <div class="sl-feat-card">
           <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
@@ -378,7 +366,7 @@
         <div class="laip-benefit">
           <div class="laip-benefit-icon">🔗</div>
           <div class="laip-benefit-title">Syncs with your workspace</div>
-          <div class="laip-benefit-desc">Pulls from your tasks and projects — no double entry.</div>
+          <div class="laip-benefit-desc">Pulls from your tasks and calendar — no double entry.</div>
         </div>
       </div>
       <div class="laip-cta">
@@ -408,7 +396,7 @@
             <div class="lfvp-check">✓</div>Focus timer
           </div>
           <div class="lfvp-item">
-            <div class="lfvp-check">✓</div>Calendar &amp; projects
+            <div class="lfvp-check">✓</div>Calendar
           </div>
           <div class="lfvp-item">
             <div class="lfvp-check">✓</div>3 habits
@@ -568,7 +556,7 @@
           <div class="ob-brand" style="display:flex;align-items:center;"><img src="/icons/logo.png" style="width:34px;height:34px;" alt="Prodify"></div>
           <div class="ob-tagline">Your personal<br />productivity hub.</div>
           <div class="ob-left-feats">
-            <div class="ob-lf"><span class="ob-lf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></span><span>Tasks & projects</span></div>
+            <div class="ob-lf"><span class="ob-lf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></span><span>Tasks</span></div>
             <div class="ob-lf"><span class="ob-lf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span>Daily journal</span></div>
             <div class="ob-lf"><span class="ob-lf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span>Focus timer</span></div>
             <div class="ob-lf"><span class="ob-lf-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/><path d="M8 12l3 3 5-5"/></svg></span><span>Habit tracker</span></div>
@@ -617,7 +605,7 @@
               <button class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
                 <span class="ob-uc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
                 <span class="ob-uc-label">Work</span>
-                <span class="ob-uc-desc">Projects, meetings &amp; team goals</span>
+                <span class="ob-uc-desc">Tasks, meetings &amp; team goals</span>
               </button>
               <button class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
                 <span class="ob-uc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
@@ -757,7 +745,7 @@
               <p class="ob-sub" id="ob-done-sub">Your workspace is ready. Time to get things done.</p>
             </div>
             <div class="ob-allset-feats">
-              <div class="ob-af"><span class="ob-af-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></span><span class="ob-af-text"><b>Tasks &amp; projects</b> — stay on top of everything.</span></div>
+              <div class="ob-af"><span class="ob-af-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></span><span class="ob-af-text"><b>Tasks</b> — stay on top of everything.</span></div>
               <div class="ob-af"><span class="ob-af-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="ob-af-text"><b>Daily journal</b> — reflect and grow.</span></div>
               <div class="ob-af"><span class="ob-af-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="ob-af-text"><b>Focus timer</b> — deep work made easy.</span></div>
               <div class="ob-af"><span class="ob-af-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="ob-af-text"><b>Notes</b> — quick capture, always at hand.</span></div>
@@ -774,71 +762,42 @@
   <div class="screen off" id="app">
     <!-- FLOATING BOTTOM TOOLBAR -->
     <div class="fltbar" id="sb">
-      <button class="sbb act" data-p="canvas" onclick="goPg('canvas',this)">
-        <svg viewBox="0 0 16 16">
-          <rect x="2" y="2" width="5" height="5" rx="1.2" />
-          <rect x="9" y="2" width="5" height="5" rx="1.2" />
-          <rect x="2" y="9" width="5" height="5" rx="1.2" />
-          <rect x="9" y="9" width="5" height="5" rx="1.2" />
+      <!-- Widget toggle buttons — click to add/focus each widget -->
+      <button class="sbb" onclick="toggleW('tasks')" id="wtb-tasks">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5h10M3 8h6M3 11h8"/><path d="M11 9.5l1.5 1.5L15 8.5" style="stroke-width:1.6"/>
         </svg>
-        <span class="fltlbl">Dashboard</span>
+        <span class="fltlbl">Tasks</span>
       </button>
-      <button class="sbb" data-p="subjects" onclick="goPg('subjects',this)">
-        <svg viewBox="0 0 16 16">
-          <path d="M3 5h10M3 8.5h7M3 12h8" />
+      <button class="sbb" onclick="toggleW('habits')" id="wtb-habits">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="6"/><path d="M5.5 8l2 2 3.5-3.5"/>
         </svg>
-        <span class="fltlbl">Projects</span>
+        <span class="fltlbl">Habits</span>
       </button>
-      <button class="sbb" data-p="calendar" onclick="goPg('calendar',this)">
-        <svg viewBox="0 0 16 16">
-          <rect x="2" y="3" width="12" height="11" rx="2" />
-          <path d="M2 7h12M6 2v2M10 2v2" />
+      <button class="sbb" onclick="toggleW('timer')" id="wtb-timer">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="9" r="5"/><path d="M8 6.5V9l2 1.5M6 1h4"/>
+        </svg>
+        <span class="fltlbl">Timer</span>
+      </button>
+      <button class="sbb" onclick="toggleW('journal')" id="wtb-journal">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/>
+        </svg>
+        <span class="fltlbl">Journal</span>
+      </button>
+      <button class="sbb" onclick="toggleW('calendar')" id="wtb-calendar">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 2v2M10 2v2"/>
         </svg>
         <span class="fltlbl">Calendar</span>
       </button>
-
-
-      <div class="flt-div" id="wkp-sep"></div>
-      <!-- Widget picker -->
-      <div class="wkpicker" id="wkpicker">
-        <div class="wkp-grid">
-          <button class="wkp-btn" onclick="addW('tasks');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <path d="M2 4h10M2 7h6M2 10h8" />
-              <path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6" />
-            </svg><span>Tasks</span></button>
-          <button class="wkp-btn" onclick="addW('journal');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <rect x="2" y="1" width="10" height="12" rx="1.5" />
-              <path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3" />
-            </svg><span>Journal</span></button>
-          <button class="wkp-btn" onclick="addW('timer');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <circle cx="7" cy="8" r="5" />
-              <path d="M7 5.5V8l2 1.5M5 1h4" />
-            </svg><span>Timer</span></button>
-          <button class="wkp-btn" onclick="addW('note');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
-              <path d="M12 11H9v2" />
-            </svg><span>Note</span></button>
-          <button class="wkp-btn" onclick="addW('subjects');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <path d="M2 4h10M2 7h7M2 10h8" />
-            </svg><span>Projects</span></button>
-          <button class="wkp-btn" onclick="addW('calendar');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <rect x="1" y="2" width="12" height="11" rx="1.5" />
-              <path d="M1 6h12M5 1v2M9 1v2" />
-            </svg><span>Calendar</span></button>
-          <button class="wkp-btn" onclick="addW('habits');closeWkPicker()"><svg viewBox="0 0 14 14">
-              <circle cx="7" cy="7" r="5.5" />
-              <path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6" />
-            </svg><span>Habits</span></button>
-          <button class="wkp-btn wkp-clr" onclick="clearCanvas();closeWkPicker()"><svg viewBox="0 0 14 14">
-              <path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4" />
-            </svg><span>Clear</span></button>
-        </div>
-      </div>
-      <button class="sbb wkp-toggle" id="wkp-toggle" onclick="toggleWkPicker()" title="Add widget">
-        <svg viewBox="0 0 16 16">
-          <path d="M8 3v10M3 8h10" />
+      <button class="sbb" onclick="toggleW('note')" id="wtb-note">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 2h8a1 1 0 0 1 1 1v8l-3 2H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M13 11h-3v2"/>
         </svg>
-        <span class="fltlbl">Add widget</span>
+        <span class="fltlbl">Notes</span>
       </button>
       <div class="flt-div"></div>
       <div class="sbav" id="sbav" onclick="toggleDD()">
@@ -881,45 +840,14 @@
 
         <!-- CANVAS / DASHBOARD -->
         <div class="pg" id="pg-canvas">
-          <!-- vertical widget tray -->
-          <div class="wtray" id="wtray">
 
-            <div class="wtdiv"></div>
-            <button class="wb" onclick="addW('tasks')" data-tip="Tasks"><svg viewBox="0 0 14 14">
-                <path d="M2 4h10M2 7h6M2 10h8" />
-                <path d="M10 8l1.5 1.5L14 7" style="stroke-width:1.6" />
-              </svg><span class="wbtip">Task Board</span></button>
-            <button class="wb" onclick="addW('journal')" data-tip="Journal"><svg viewBox="0 0 14 14">
-                <rect x="2" y="1" width="10" height="12" rx="1.5" />
-                <path d="M4.5 4.5h5M4.5 7h5M4.5 9.5h3" />
-              </svg><span class="wbtip">Journal</span></button>
-            <button class="wb" onclick="addW('timer')" data-tip="Timer"><svg viewBox="0 0 14 14">
-                <circle cx="7" cy="8" r="5" />
-                <path d="M7 5.5V8l2 1.5M5 1h4" />
-              </svg><span class="wbtip">Focus Timer</span></button>
-            <button class="wb" onclick="addW('note')" data-tip="Note"><svg viewBox="0 0 14 14">
-                <path d="M3 2h8a1 1 0 0 1 1 1v8l-3 2H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
-                <path d="M12 11H9v2" />
-              </svg><span class="wbtip">Note</span></button>
-            <button class="wb" onclick="addW('subjects')" data-tip="Projects"><svg viewBox="0 0 14 14">
-                <path d="M2 4h10M2 7h7M2 10h8" />
-              </svg><span class="wbtip">Projects</span></button>
-            <button class="wb" onclick="addW('calendar')" data-tip="Calendar"><svg viewBox="0 0 14 14">
-                <rect x="1" y="2" width="12" height="11" rx="1.5" />
-                <path d="M1 6h12M5 1v2M9 1v2" />
-              </svg><span class="wbtip">Calendar</span></button>
-            <button class="wb" onclick="addW('habits')" data-tip="Habits"><svg viewBox="0 0 14 14">
-                <circle cx="7" cy="7" r="5.5" />
-                <path d="M4.5 7l2 2 3.5-3.5" style="stroke-width:1.6" />
-              </svg><span class="wbtip">Habits</span></button>
-            <div class="wtdiv"></div>
-            <button class="wb wt-clr" onclick="clearCanvas()" data-tip="Clear all"><svg viewBox="0 0 14 14">
-                <path d="M2 4h10l-1 8H3L2 4zM1 4h12M5 2h4" />
-              </svg><span class="wbtip">Clear canvas</span></button>
-          </div>
           <!-- scrollable canvas -->
           <div class="canvas-wrap">
             <div class="canvas-scroll" id="canvas-scroll">
+              <!-- Logo — top-right fixed on canvas -->
+              <div style="position:fixed;top:16px;right:18px;z-index:10;pointer-events:none;user-select:none;display:flex;align-items:center;">
+                <img src="/icons/logo.png" style="width:28px;height:28px;opacity:.35;" alt="Prodify">
+              </div>
               <div
                 style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">
                 Built by <span style="color:var(--ink3);">David N.</span></div>
@@ -950,39 +878,15 @@
         </div>
 
         <!-- CALENDAR PAGE -->
-        <div class="pg off fullpg" id="pg-calendar">
-          <div class="fphdr pg-hdr-full">
-            <div class="pg-hdr-inner" style="position:relative;">
-              <div class="fptit">Calendar</div>
-              <div
-                style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:3px;">
-                <button class="cwib" data-tip="Previous month" onclick="shiftW(-1)"><svg viewBox="0 0 10 10">
-                    <path d="M7 2L3 5l4 3" />
-                  </svg></button>
-                <span id="calwlbl"
-                  style="font-size:12px;font-weight:600;color:var(--ink2);min-width:148px;text-align:center;"></span>
-                <button class="cwib" data-tip="Next month" onclick="shiftW(1)"><svg viewBox="0 0 10 10">
-                    <path d="M3 2l4 3-4 3" />
-                  </svg></button>
-              </div>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <button class="bol bsm" data-tip="Jump to current month"
-                  onclick="calOff=0;renderFullCal()">Today</button>
-                <button class="btn ba bsm" data-tip="Add a new event" onclick="openCalAdd()">+ Add Event</button>
-              </div>
-            </div>
-          </div>
-          <div class="fpscroll" style="padding:18px 22px 100px;overflow-y:auto;">
-            <div id="planner-grid"></div>
-          </div>
-        </div>
 
-
-
-        <!-- PROFILE PAGE -->
         <div class="pg off fullpg" id="pg-profile">
-          <div class="fphdr">
-            <div class="fptit">Profile</div>
+          <div class="fphdr" style="padding:0;position:relative;">
+            <div style="position:absolute;top:50%;transform:translateY(-50%);left:calc((100% - min(640px,100%))/2);display:flex;align-items:center;">
+              <button onclick="goPg('canvas',null)" class="fp-back-arrow">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+              </button>
+            </div>
+            <div class="fptit" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;">Profile</div>
           </div>
           <div class="fpscroll" style="padding:22px;">
             <div style="width:min(640px,100%);margin:0 auto;">
@@ -1033,8 +937,13 @@
 
 
         <div class="pg off fullpg" id="pg-settings" style="overflow-y:auto;-webkit-overflow-scrolling:touch;">
-          <div class="fphdr">
-            <div class="fptit">Settings</div>
+          <div class="fphdr" style="padding:0;position:relative;">
+            <div style="position:absolute;top:50%;transform:translateY(-50%);left:calc((100% - min(640px,100%))/2);display:flex;align-items:center;">
+              <button onclick="goPg('canvas',null)" class="fp-back-arrow">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+              </button>
+            </div>
+            <div class="fptit" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;">Settings</div>
           </div>
           <div class="fpscroll" style="padding:22px;">
             <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
@@ -1559,7 +1468,7 @@
       // Load app.js after Supabase is ready
       _s1.onload = function () {
         var _sa = document.createElement('script');
-        _sa.src = 'app.js';
+        _sa.src = 'app.js?v=168';
         _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
         document.body.appendChild(_sa);
       };
@@ -1605,7 +1514,7 @@
         // Load mobile CSS — reveal root only after CSS is loaded to prevent flash
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/app-mobile.css';
+        link.href = '/app-mobile.css?v=168';
         link.onload = function() {
           setTimeout(function() {
             root.classList.add('ready');
@@ -1634,7 +1543,7 @@
           ejsScript.onload = function () {
             if (typeof emailjs !== 'undefined') emailjs.init('JKf5GRjODyTBor1xn');
             var mjs = document.createElement('script');
-            mjs.src = '/app-mobile.js';
+            mjs.src = '/app-mobile.js?v=168';
             mjs.onload = function () {
               // Re-enable google button once JS is fully loaded
               var gBtn2 = document.getElementById('btn-google');
@@ -1645,7 +1554,7 @@
           ejsScript.onerror = function () {
             // EmailJS failed to load — proceed without it (feedback will use Supabase only)
             var mjs = document.createElement('script');
-            mjs.src = '/app-mobile.js';
+            mjs.src = '/app-mobile.js?v=168';
             mjs.onload = function () {
               var gBtn2 = document.getElementById('btn-google');
               if (gBtn2) gBtn2.disabled = false;
@@ -1930,113 +1839,183 @@
 
     <!-- ══ LOGIN SCREEN ══ -->
     <div class="screen" id="screen-login">
-      <!-- Animated orbs matching desktop -->
       <div class="login-orb1"></div>
       <div class="login-orb2"></div>
 
-      <!-- Top: dark branding section -->
-      <div class="login-top">
-        <div class="login-tag">All-in-one productivity workspace</div>
-        <div class="login-logo" style="display:flex;align-items:center;"><img src="/icons/logo.png" style="width:36px;height:36px;" alt="Prodify"></div>
-        <h1 class="login-headline">The workspace that<br />works <em>around you</em></h1>
-        <p class="login-sub">Tasks, journal, focus timer,<br />habits & calendar — all in one place.</p>
+      <!-- NAV -->
+      <div class="mob-lnav">
+        <div style="display:flex;align-items:center;"><img src="/icons/logo.png" style="width:28px;height:28px;" alt="Prodify"></div>
+        <button class="mob-lnav-cta" onclick="document.getElementById('mob-cta-anchor').scrollIntoView({behavior:'smooth'})">Get started</button>
       </div>
 
-      <!-- CTA: borderless, centered -->
-      <div class="login-card">
+      <!-- HERO -->
+      <div class="mob-lhero">
+        <div class="mob-ltag">All-in-one productivity workspace</div>
+        <h1 class="mob-lh1">The workspace that<br/>works <em>around you</em></h1>
+        <p class="mob-lsub">One place for your tasks, journal, focus timer, habit tracker, and calendar. No switching. No clutter.</p>
+
+        <!-- Video preview -->
+        <div class="mob-lvideo-wrap">
+          <div class="mob-lvideo-chrome">
+            <span class="mob-lvideo-dot"></span><span class="mob-lvideo-dot"></span><span class="mob-lvideo-dot"></span>
+            <span class="mob-lvideo-url">prodify.cc</span>
+          </div>
+          <video src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1773822290/demo_osxvdn.mp4"
+            autoplay muted loop playsinline preload="metadata" style="width:100%;display:block;"></video>
+        </div>
+      </div>
+
+      <!-- FEATURES -->
+      <div class="mob-lsec">
+        <div class="mob-leyebrow">What's inside</div>
+        <h2 class="mob-lh2">One space. Every tool you need.</h2>
+        <p class="mob-lsub2">Stop switching between apps. Prodify brings everything into one flexible workspace.</p>
+        <div class="mob-lfeat-grid">
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h14M3 10h8M3 15h10"/><path d="M13 12l2 2 4-4"/></svg></div>
+            <div class="mob-lfeat-name">Task Board</div>
+            <div class="mob-lfeat-desc">To Do, In Progress, Done. Swipe to advance.</div>
+          </div>
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="11" r="7"/><path d="M10 7v4l2.5 2M7 1.5h6"/></svg></div>
+            <div class="mob-lfeat-name">Focus Timer</div>
+            <div class="mob-lfeat-desc">Pomodoro sessions. Block distractions, track output.</div>
+          </div>
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2z"/><path d="M7 10l2 2 4-4"/></svg></div>
+            <div class="mob-lfeat-name">Habit Tracker</div>
+            <div class="mob-lfeat-desc">Daily check-ins with streaks. Build routines that stick.</div>
+          </div>
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 7h6M7 11h6M7 15h4"/></svg></div>
+            <div class="mob-lfeat-name">Daily Journal</div>
+            <div class="mob-lfeat-desc">Write freely, pick a mood, build a reflection habit.</div>
+          </div>
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M2 9h16M7 2v4M13 2v4"/></svg></div>
+            <div class="mob-lfeat-name">Calendar</div>
+            <div class="mob-lfeat-desc">Weekly view with events and task deadlines.</div>
+          </div>
+          <div class="mob-lfeat-card">
+            <div class="mob-lfeat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 2h9l4 4v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M13 2v4h4M7 9h6M7 13h6M7 17h4"/></svg></div>
+            <div class="mob-lfeat-name">Notes</div>
+            <div class="mob-lfeat-desc">Quick notes inside your workspace. Always at hand.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div class="mob-lsec">
+        <div class="mob-leyebrow">How it works</div>
+        <h2 class="mob-lh2">Built for how you actually work.</h2>
+        <div class="mob-lhow">
+          <div class="mob-lhow-step">
+            <div class="mob-lhow-num">01</div>
+            <div>
+              <div class="mob-lhow-title">Sign up in seconds</div>
+              <div class="mob-lhow-desc">No credit card. No setup. Sign in with your email and you're in.</div>
+            </div>
+          </div>
+          <div class="mob-lhow-line"></div>
+          <div class="mob-lhow-step">
+            <div class="mob-lhow-num">02</div>
+            <div>
+              <div class="mob-lhow-title">Set up your workspace</div>
+              <div class="mob-lhow-desc">Add tasks, habits, and your first journal entry. Takes two minutes.</div>
+            </div>
+          </div>
+          <div class="mob-lhow-line"></div>
+          <div class="mob-lhow-step">
+            <div class="mob-lhow-num">03</div>
+            <div>
+              <div class="mob-lhow-title">Work smarter every day</div>
+              <div class="mob-lhow-desc">Open Prodify each morning. Build a routine that actually sticks.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRICING -->
+      <div class="mob-lsec">
+        <div class="mob-leyebrow">Pricing</div>
+        <h2 class="mob-lh2">Start for free.</h2>
+        <div class="mob-lprice-grid">
+          <div class="mob-lprice-card">
+            <div class="mob-lprice-label">Free</div>
+            <div class="mob-lprice-amount">$0<span>/mo</span></div>
+            <div class="mob-lprice-items">
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>Unlimited tasks</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>Daily journal</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>Focus timer</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>Calendar</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>3 habits · 1 device</div>
+            </div>
+          </div>
+          <div class="mob-lprice-card mob-lprice-pro">
+            <div class="mob-lprice-label">Pro ✦</div>
+            <div class="mob-lprice-amount">$3<span>/mo</span></div>
+            <div class="mob-lprice-desc">Billed $36/yr · or $4/mo monthly</div>
+            <div class="mob-lprice-items">
+              <div class="mob-lprice-item"><span class="mob-lprice-check mob-lprice-star">✦</span>Unlimited habits</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check mob-lprice-star">✦</span>AI Daily Planner</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check mob-lprice-star">✦</span>CSV &amp; PDF export</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check mob-lprice-star">✦</span>Multi-device sync</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check mob-lprice-star">✦</span>7-day cloud backups</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA (anchor) -->
+      <div class="mob-lcta" id="mob-cta-anchor">
+        <h2 class="mob-lcta-h2">Your most productive day starts here.</h2>
         <button class="btn-google" id="btn-google" onclick="doGoogleAuth()">
           <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#EA4335"
-              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-            <path fill="#4285F4"
-              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-            <path fill="#FBBC05"
-              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-            <path fill="#34A853"
-              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z" />
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/>
           </svg>
           Continue with Google
         </button>
-
         <div class="mob-auth-divider"><span>or</span></div>
-
         <div id="mob-magic-form">
           <input type="email" id="mob-magic-email" placeholder="Enter your email address"
             autocomplete="email" onkeydown="if(event.key==='Enter')doMobMagicLink()"
-            style="width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px;"
+            style="width:100%;padding:13px 14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:15px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:10px;"
             onfocus="this.style.borderColor='rgba(74,157,116,.6)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'" />
           <div id="mob-magic-err" style="display:none;font-size:12px;color:#f87171;margin-bottom:8px;text-align:center;"></div>
           <button id="mob-magic-btn" onclick="doMobMagicLink()"
-            style="width:100%;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
+            style="width:100%;padding:14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
             Continue with Email
           </button>
         </div>
         <div id="mob-magic-sent" style="display:none;text-align:center;padding:8px 0 4px;">
-          <div style="font-size:20px;margin-bottom:6px;">📬</div>
-          <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">Check your inbox</div>
+          <div style="font-size:24px;margin-bottom:8px;">📬</div>
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">Check your inbox</div>
           <div style="font-size:12px;color:rgba(255,255,255,.5);">Sign-in link sent to <span id="mob-magic-sent-email" style="color:rgba(74,157,116,.9);font-weight:600;"></span></div>
           <button onclick="document.getElementById('mob-magic-sent').style.display='none';document.getElementById('mob-magic-form').style.display='block';"
             style="margin-top:10px;background:none;border:none;font-size:12px;color:rgba(255,255,255,.35);cursor:pointer;font-family:inherit;">Use a different email</button>
         </div>
-
-        <div id="offline-banner"
-          style="display:none;margin-top:10px;padding:9px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,100,100,.35);border-radius:10px;font-size:12px;font-weight:600;color:rgba(255,180,180,.9);text-align:center;">
+        <div id="offline-banner" style="display:none;margin-top:10px;padding:9px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,100,100,.35);border-radius:10px;font-size:12px;font-weight:600;color:rgba(255,180,180,.9);text-align:center;">
           ⚡ No connection — check your internet and try again
         </div>
         <div class="login-err" id="login-err"></div>
         <div class="login-note">Free to start · No credit card needed</div>
       </div>
 
-      <!-- Feature list in dark zone -->
-      <div class="login-features">
-        <div class="login-feat">
-          <div class="login-feat-icon">📋</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Task Board</div>
-            <div class="login-feat-desc">Kanban-style — To Do, In Progress, Done. Swipe to complete.</div>
-          </div>
+      <!-- FOOTER -->
+      <div class="mob-lfooter">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:14px;">
+          <img src="/icons/logo.png" style="width:22px;height:22px;" alt="Prodify">
+          <span style="font-size:14px;font-weight:800;color:rgba(255,255,255,.5);">Prodify</span>
         </div>
-        <div class="login-feat">
-          <div class="login-feat-icon">⏱️</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Focus Timer</div>
-            <div class="login-feat-desc">Pomodoro sessions — 25 min focus, 5 min breaks. Track your output.</div>
-          </div>
+        <div style="display:flex;gap:20px;justify-content:center;margin-bottom:12px;">
+          <a href="/blog/" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.3);text-decoration:none;">Blog</a>
+          <a href="/privacy.html" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.3);text-decoration:none;">Privacy</a>
+          <a href="/terms.html" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.3);text-decoration:none;">Terms</a>
         </div>
-        <div class="login-feat">
-          <div class="login-feat-icon">💪</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Habit Tracker</div>
-            <div class="login-feat-desc">Daily check-ins with streaks. Build routines that actually stick.</div>
-          </div>
-        </div>
-        <div class="login-feat">
-          <div class="login-feat-icon">📓</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Daily Journal</div>
-            <div class="login-feat-desc">Write freely, pick a mood, and build a daily reflection habit.</div>
-          </div>
-        </div>
-        <div class="login-feat">
-          <div class="login-feat-icon">📝</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">Notes</div>
-            <div class="login-feat-desc">Quick notes inside your workspace — no extra app needed.</div>
-          </div>
-        </div>
-        <div class="login-feat">
-          <div class="login-feat-icon">🤖</div>
-          <div class="login-feat-body">
-            <div class="login-feat-title">AI Daily Planner</div>
-            <div class="login-feat-desc">Let AI build your day around your tasks and energy.</div>
-          </div>
-          <div class="login-feat-badge">Pro</div>
-        </div>
-      </div>
-
-      <!-- Pro pricing hint -->
-      <div style="text-align:center;padding:20px 24px 32px;font-size:12px;color:rgba(255,255,255,.3);">
-        Pro from <span style="color:rgba(255,255,255,.5);font-weight:600;">$3/mo</span> · Unlimited habits, AI Planner &amp; more · Cancel anytime
+        <div style="font-size:11px;color:rgba(255,255,255,.15);text-align:center;">© 2026 Designed &amp; built by David N.</div>
       </div>
     </div>
 
@@ -2073,7 +2052,7 @@
             </div>
             <div class="ob-uc-card" data-uc="work" onclick="obPickUC(this,'work')">
               <div class="ob-uc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
-              <div><span class="ob-uc-label">Work</span><span class="ob-uc-desc">Projects, meetings & team goals</span>
+              <div><span class="ob-uc-label">Work</span><span class="ob-uc-desc">Tasks, meetings & team goals</span>
               </div>
             </div>
             <div class="ob-uc-card" data-uc="personal" onclick="obPickUC(this,'personal')">
@@ -2281,26 +2260,67 @@
           <!-- HOME -->
           <div class="page active" id="pg-home"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:100px;">
+
+            <!-- Header -->
             <div class="home-header">
               <div class="home-greet" id="home-greet">Good morning!</div>
               <div class="home-date" id="home-date">—</div>
-              <div class="home-quote">
-                <div class="home-quote-text" id="hqt">—</div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-                  <div class="home-quote-author" id="hqa">—</div>
-                  <button onclick="shuffleQuote()"
-                    style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;transition:color .15s;"
-                    onmouseover="this.style.color='rgba(255,255,255,.8)'"
-                    onmouseout="this.style.color='rgba(255,255,255,.4)'">↻</button>
-                </div>
-              </div>
             </div>
-            <div class="home-section" style="margin-top:18px;">
+
+            <!-- Momentum strip -->
+            <div class="home-section" style="margin-top:2px;">
+              <div id="home-momentum"></div>
+            </div>
+
+            <!-- Habit rings -->
+            <div class="home-section">
               <div class="home-sh">
-                <div class="home-sh-title">Today at a glance</div>
+                <div class="home-sh-title">Habits</div>
+                <div id="home-habit-meta" class="home-sh-meta"></div>
               </div>
-              <div id="home-glance"></div>
+              <div id="home-habit-rings" class="home-habit-rings"></div>
             </div>
+
+            <!-- Journal prompt (hidden when entry exists) -->
+            <div class="home-section" id="home-journal-prompt"></div>
+
+            <!-- Stats row -->
+            <div class="home-stats-row">
+              <div class="home-stat-card" onclick="goPg('tasks')">
+                <div class="home-stat-num" id="hstat-tasks">0</div>
+                <div class="home-stat-lbl">tasks left</div>
+              </div>
+              <div class="home-stat-card" onclick="goPg('calendar')">
+                <div class="home-stat-num" id="hstat-events">0</div>
+                <div class="home-stat-lbl">events today</div>
+              </div>
+              <div class="home-stat-card" onclick="goPg('timer')">
+                <div class="home-stat-num" id="hstat-sessions">0</div>
+                <div class="home-stat-lbl">sessions</div>
+              </div>
+              <div class="home-stat-card" onclick="goPg('journal')">
+                <div class="home-stat-num" id="hstat-streak">0</div>
+                <div class="home-stat-lbl">day streak</div>
+              </div>
+            </div>
+
+            <!-- Upcoming tasks -->
+            <div class="home-section">
+              <div class="home-sh">
+                <div class="home-sh-title">Tasks</div>
+              </div>
+              <div id="home-upcoming-tasks"></div>
+            </div>
+
+            <!-- Upcoming events -->
+            <div class="home-section">
+              <div class="home-sh">
+                <div class="home-sh-title">Calendar</div>
+              </div>
+              <div id="home-events"></div>
+            </div>
+
+
           </div>
 
           <!-- TASKS -->
@@ -2568,7 +2588,7 @@
               <div class="mob-cal-days" id="mob-cal-days"></div>
             </div>
             <!-- Upcoming events list -->
-            <div class="mob-cal-upcoming-hd">Today &amp; next 3 days</div>
+            <div class="mob-cal-upcoming-hd">Events this month</div>
             <div id="sch-page"></div>
           </div>
 
@@ -2904,14 +2924,7 @@
             </svg>
             <span>Tasks</span>
           </button>
-          <button class="nav-btn" id="nav-projects" onclick="goPg('projects')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <path d="M8 21h8M12 17v4" />
-            </svg>
-            <span>Projects</span>
-          </button>
+
           <button class="nav-btn" id="nav-habits" onclick="goPg('habits')">
             <svg viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" />
@@ -3208,68 +3221,7 @@
     </div>
 
     <!-- NEW PROJECT SHEET -->
-    <div class="sheet" id="sh-new-project"
-      style="border-radius:20px 20px 0 0;overflow:hidden;max-height:90vh;overflow-y:auto;">
-      <div id="mob-new-proj-bar"
-        style="height:4px;background:var(--a2);width:100%;transition:background .25s;flex-shrink:0;"></div>
-      <div style="padding:20px 20px 0;">
-        <input id="mob-proj-name" type="text" placeholder="Project name…" autocomplete="off" autocapitalize="words"
-          onkeydown="if(event.key==='Enter')document.getElementById('mob-proj-desc').focus()"
-          style="display:block;width:100%;font-size:20px;font-weight:800;color:var(--ink);background:transparent;border:none;border-bottom:2px solid var(--bdr);padding:6px 0 10px;outline:none;font-family:inherit;letter-spacing:-.3px;box-sizing:border-box;transition:border-color .2s;"
-          onfocus="this.style.borderBottomColor='var(--a2)'" onblur="this.style.borderBottomColor='var(--bdr)'" />
-        <input id="mob-proj-desc" type="text" placeholder="Add a description… (optional)" autocomplete="off"
-          style="display:block;width:100%;font-size:13px;font-weight:500;color:var(--ink2);background:transparent;border:none;padding:8px 0 4px;outline:none;font-family:inherit;box-sizing:border-box;"
-          onfocus="this.style.color='var(--ink)'" onblur="this.style.color='var(--ink2)'" />
-      </div>
 
-      <div
-        style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">
-        Due Date <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span>
-      </div>
-      <div style="padding:0 20px;">
-        <button id="mob-proj-due-btn" onclick="openProjDueDatePicker()"
-          style="display:flex;align-items:center;gap:9px;width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:11px 14px;font-family:inherit;cursor:pointer;text-align:left;color:var(--ink3);font-size:13px;font-weight:700;box-sizing:border-box;transition:border-color .2s,background .2s;">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
-            stroke-linecap="round" style="flex-shrink:0;">
-            <rect x="2" y="3" width="12" height="11" rx="2" />
-            <path d="M2 7h12M6 1v3M10 1v3" />
-          </svg>
-          <span id="mob-proj-due-lbl">Choose due date</span>
-        </button>
-        <input type="hidden" id="mob-proj-due-val" />
-      </div>
-
-      <div
-        style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 6px;">
-        Tasks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink4);">(optional)</span>
-      </div>
-      <div style="padding:0 20px 8px;">
-        <div id="mob-proj-task-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input id="mob-proj-task-inp" type="text" placeholder="Add a task…" autocomplete="off"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();mobSubAddTask();}"
-            style="flex:1;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:13px;padding:10px 14px;font-family:inherit;font-size:13px;color:var(--ink);outline:none;transition:border-color .2s;"
-            onfocus="this.style.borderColor='var(--a2)'" onblur="this.style.borderColor='var(--bdr)'" />
-          <button onclick="mobSubAddTask()"
-            style="flex-shrink:0;padding:10px 16px;border-radius:13px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
-            + Add
-          </button>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;padding:14px 20px 32px;">
-        <button onclick="closeSheets()"
-          style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--bdr);background:var(--surf2);color:var(--ink3);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-          Cancel
-        </button>
-        <button onclick="mobAddProject()"
-          style="flex:2;padding:13px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">
-          Create Project
-        </button>
-      </div>
-    </div>
-
-    <!-- ADD TASK TO PROJECT SHEET -->
     <div class="sheet" id="sh-proj-task" style="border-radius:20px 20px 0 0;overflow:hidden;">
       <div id="mob-ptask-bar" style="height:4px;background:var(--a2);width:100%;transition:background .25s;"></div>
       <div style="padding:20px 20px 0;">

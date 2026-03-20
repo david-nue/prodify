@@ -682,11 +682,7 @@ function show(id){
 
 function goPg(id,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
-  document.querySelectorAll('.sbb').forEach(b=>b.classList.toggle('act',b.dataset&&b.dataset.p===id));
-  // only show + widget button on canvas
-  const wkpToggle=$('wkp-toggle'),wkpSep=$('wkp-sep');
-  if(wkpToggle)wkpToggle.style.display=id==='canvas'?'':'none';
-  if(wkpSep)wkpSep.style.display=id==='canvas'?'':'none';
+
   closeWkPicker();
   if(id==='canvas'){renderCanvasGreeting();}
   if(id==='profile')renderProfile();
@@ -1362,6 +1358,25 @@ function obNext(step) {
 function obFinish() {
   acc[cu].onboarded = true;
   _obSyncGlobals();
+
+  // Seed pre-built canvas for new users if they have no widgets
+  if (!acc[cu].widgets || !acc[cu].widgets.length) {
+    const ts = Date.now();
+    acc[cu].widgets = [
+      // Row 1: Task board | Habits | Journal
+      { id:'w-default-tasks',    type:'tasks',    title:'Task Board',   x:24,  y:24,  w:560, h:400, z:10 },
+      { id:'w-default-habits',   type:'habits',   title:'Daily Habits', x:604, y:24,  w:340, h:400, z:11 },
+      { id:'w-default-journal',  type:'journal',  title:'Journal',      x:964, y:24,  w:420, h:400, z:12 },
+      // Row 2: Calendar | Timer | Notes
+      { id:'w-default-calendar', type:'calendar', title:'Calendar',     x:24,  y:444, w:560, h:420, z:13 },
+      { id:'w-default-timer',    type:'timer',    title:'Focus Timer',  x:604, y:444, w:340, h:400, z:14 },
+      { id:'w-default-note',     type:'note',     title:'Notes',        x:964, y:444, w:300, h:400, z:15 },
+    ];
+    widgets = acc[cu].widgets;
+    acc[cu].hasAddedWidget = true;
+    acc[cu]._newUser = true; // flag for first-time canvas hint
+  }
+
   LS.s('pd1_acc', acc);
   if (sbReady) dbSaveUser(cu, acc[cu]);
   // Send welcome email — fire and forget, don't block launch
@@ -1483,7 +1498,7 @@ async function doSO(){
   await unregisterDevice(_cu);
   stopRealtimeSync();
   if(sbReady) await sbSignOut().catch(()=>{});  // must await — unregisterDevice needs JWT active
-  LS.d('pd1_cur'); cu = null; closeDD();
+  LS.d('pd1_cur'); LS.d('pd1_pg'); cu = null; closeDD();
   // Always reset to light mode + default green accent on landing/auth screens
   document.documentElement.setAttribute('data-dark','');
   const root = document.documentElement;
@@ -1620,9 +1635,22 @@ function launch(){
   const snEl = document.getElementById('sn');
   const appEl = document.getElementById('app');
   // Run all renders while app is still hidden
-  goPg(LS.g('pd1_pg','canvas'),null);
+  goPg('canvas',null); // always start on dashboard
   renderCanvas();
   renderCanvasGreeting();
+  // Show first-time canvas hint for new users
+  if(acc[cu]&&acc[cu]._newUser){
+    delete acc[cu]._newUser;
+    setTimeout(()=>{
+      const hint=document.createElement('div');
+      hint.id='canvas-first-hint';
+      hint.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:999;animation:fadeIn .4s ease;';
+      hint.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:10px 18px;box-shadow:var(--sh2);font-size:12px;color:var(--ink3);font-weight:500;white-space:nowrap;">Drag to rearrange · Resize from any corner</div>'
+        +'<svg width="12" height="8" viewBox="0 0 12 8" fill="none" style="color:var(--bdr);"><path d="M6 8L0 0h12L6 8z" fill="currentColor"/></svg>';
+      document.body.appendChild(hint);
+      setTimeout(()=>{ hint.style.transition='opacity .6s'; hint.style.opacity='0'; setTimeout(()=>hint.remove(),600); },4000);
+    },800);
+  }
   updateFixedStats();
   if (snEl && appEl) {
     // Stage app: visible in DOM but fully transparent, no transform
@@ -1917,20 +1945,8 @@ document.addEventListener('click',e=>{
 });
 
 // Widget picker
-function toggleWkPicker(){
-  const p=$('wkpicker'),t=$('wkp-toggle');
-  const isOpen=p.classList.contains('open');
-  if(isOpen){closeWkPicker();}
-  else{p.classList.add('open');t.classList.add('active');closeDD();}
-}
-function closeWkPicker(){
-  const p=$('wkpicker'),t=$('wkp-toggle');
-  if(p)p.classList.remove('open');
-  if(t)t.classList.remove('active');
-}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('#wkpicker')&&!e.target.closest('#wkp-toggle')) closeWkPicker();
-});
+function toggleWkPicker(){}
+function closeWkPicker(){}
 
 // ═══════════════════════════════════════
 // MODALS
@@ -1965,7 +1981,7 @@ function applyTheme(){
     const acc = deriveAccent(accentKey);
     root.style.setProperty('--a', acc.a);
     root.style.setProperty('--a2', acc.a2);
-    root.style.setProperty('--al', acc.al);
+    root.style.setProperty('--al', (prefs.dark && cu && acc.ald) ? acc.ald : acc.al);
     if(acc.a2Rgb) root.style.setProperty('--a2-rgb', acc.a2Rgb);
   } else if(accentKey === 'green') {
     root.style.removeProperty('--a');
@@ -2005,13 +2021,13 @@ function hexToHsl(hex){
 function hslStr(h,s,l){return `hsl(${h},${s}%,${l}%)`;}
 function deriveAccent(key){
   const presets={
-    green:{a:'#2A5C44',a2:'#3A7D5E',al:'#EBF4EF',a2Rgb:'58,125,94'},
-    blue:{a:'#1E4A7C',a2:'#2563EB',al:'#EBF0FC',a2Rgb:'37,99,235'},
-    purple:{a:'#4A2C6E',a2:'#7C3AED',al:'#F0EBFD',a2Rgb:'124,58,237'},
-    rose:{a:'#7C1D2C',a2:'#E11D48',al:'#FDEEF1',a2Rgb:'225,29,72'},
-    amber:{a:'#7A4A00',a2:'#D97706',al:'#FEF3C7',a2Rgb:'217,119,6'},
-    teal:{a:'#0F4C4C',a2:'#0D9488',al:'#EBFAFA',a2Rgb:'13,148,136'},
-    slate:{a:'#2A3548',a2:'#475569',al:'#EEF0F4',a2Rgb:'71,85,105'},
+    green:{a:'#2A5C44',a2:'#3A7D5E',al:'#EBF4EF',ald:'#172A20',a2Rgb:'58,125,94'},
+    blue:{a:'#1E4A7C',a2:'#2563EB',al:'#EBF0FC',ald:'#0F1E3A',a2Rgb:'37,99,235'},
+    purple:{a:'#4A2C6E',a2:'#7C3AED',al:'#F0EBFD',ald:'#1E1030',a2Rgb:'124,58,237'},
+    rose:{a:'#7C1D2C',a2:'#E11D48',al:'#FDEEF1',ald:'#2A0A10',a2Rgb:'225,29,72'},
+    amber:{a:'#7A4A00',a2:'#D97706',al:'#FEF3C7',ald:'#281900',a2Rgb:'217,119,6'},
+    teal:{a:'#0F4C4C',a2:'#0D9488',al:'#EBFAFA',ald:'#061E1E',a2Rgb:'13,148,136'},
+    slate:{a:'#2A3548',a2:'#475569',al:'#EEF0F4',ald:'#131820',a2Rgb:'71,85,105'},
   };
   if(presets[key]) return presets[key];
   // custom hex
@@ -2020,7 +2036,7 @@ function deriveAccent(key){
     const a2=hslStr(h,s,l);
     // convert a2 hex to rgb for rgba() usage
     const r=parseInt(a2.slice(1,3),16),g=parseInt(a2.slice(3,5),16),b=parseInt(a2.slice(5,7),16);
-    return {a:hslStr(h,Math.max(s-10,20),Math.max(l-15,20)),a2,al:hslStr(h,Math.min(s,60),93),a2Rgb:r+','+g+','+b};
+    return {a:hslStr(h,Math.max(s-10,20),Math.max(l-15,20)),a2,al:hslStr(h,Math.min(s,60),93),ald:hslStr(h,Math.min(s,80),12),a2Rgb:r+','+g+','+b};
   }
   return presets.green;
 }
@@ -2072,13 +2088,12 @@ function updateFixedStats(){
 // ═══════════════════════════════════════
 const WD={
   tasks:{w:580,h:340,title:'Task Board'},
-  journal:{w:420,h:320,title:'Journal'},
+  journal:{w:420,h:340,title:'Journal'},
   timer:{w:320,h:400,title:'Focus Timer'},
   note:{w:340,h:240,title:'Notes'},
   stats:{w:320,h:200,title:'Stats'},
-  subjects:{w:300,h:260,title:'Project Progress'},
   quote:{w:280,h:160,title:'Quote'},
-  calendar:{w:540,h:290,title:'Calendar'},
+  calendar:{w:540,h:420,title:'Calendar'},
   habits:{w:340,h:380,title:'Daily Habits'},
 };
 
@@ -2092,10 +2107,36 @@ function bringToFront(id) {
   persist();
 }
 
+// Toggle widget — if on canvas: scroll to & highlight it. If not: add it.
+function toggleW(type) {
+  const existing = widgets.find(w => w.type === type);
+  if (existing) {
+    const el = $(existing.id);
+    if (el) {
+      bringToFront(existing.id);
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.outline = '2px solid var(--a2)';
+      setTimeout(() => el.style.outline = '', 900);
+    }
+  } else {
+    addW(type);
+  }
+  updateWToggleStates();
+}
+
+// Update active state on nav toggle buttons
+function updateWToggleStates() {
+  // No persistent active state — widget toggles only react on hover
+  ['tasks','habits','timer','journal','calendar','note'].forEach(type => {
+    const btn = document.getElementById('wtb-' + type);
+    if (btn) btn.classList.remove('act');
+  });
+}
+
 function addW(type,opts={}) {
   _track('widget_added', { type: type });
-  // Single-instance rule: only notes can have multiples
-  if(type!=='note'){
+  // Single-instance rule — all widgets are single instance
+  if(true){
     const existing=widgets.find(w=>w.type===type);
     if(existing){
       // Flash/focus the existing widget
@@ -2150,6 +2191,7 @@ async function removeW(id){
     delete TMS[id];
   }
   persist();
+  updateWToggleStates();
 }
 
 async function clearCanvas(){
@@ -2162,23 +2204,29 @@ async function clearCanvas(){
 function renderCanvas(){
   $('canvas').innerHTML='';
   if(!widgets.length){
-    // Reset nextZ cleanly when canvas is empty
     nextZ=10;
-    const isNew=acc[cu]&&!acc[cu].hasAddedWidget;
-    if(isNew){
+    return;
+  }
+  // Show subtle canvas hint for first few sessions
+  const _hintShown=parseInt(LS.g('pd1_canvas_hint_count','0')||'0',10);
+  if(_hintShown<4){
+    LS.s('pd1_canvas_hint_count',String(_hintShown+1));
+    setTimeout(()=>{
+      if(document.getElementById('canvas-hint')) return;
       const div=document.createElement('div');
       div.id='canvas-hint';
-      div.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;';
-      div.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:10px 16px;box-shadow:var(--sh2);font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap;">Press <b style="color:var(--ink);">+</b> to add your first widget</div>'
+      div.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:50;animation:fadeIn .4s ease both;';
+      div.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:9px 16px;box-shadow:var(--sh2);font-size:11px;color:var(--ink3);font-weight:600;white-space:nowrap;">Drag to rearrange · Resize from any corner</div>'
         +'<svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--bdr);"><path d="M6 8L0 0h12L6 8z" fill="currentColor"/></svg>';
-      $('canvas').appendChild(div);
-    }
-    return;
+      const canvas=$('canvas'); if(canvas) canvas.appendChild(div);
+      setTimeout(()=>{ const h=document.getElementById('canvas-hint'); if(h){h.style.transition='opacity .5s';h.style.opacity='0';setTimeout(()=>h.remove(),500);} },4000);
+    },600);
   }
   // Always sync nextZ from the actual highest stored z — prevents new widgets spawning behind existing ones
   const mz=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
   nextZ=mz+1;
   widgets.forEach(w=>buildWidgetEl(w));
+  updateWToggleStates();
 }
 
 function buildWidgetEl(w){
@@ -2198,7 +2246,7 @@ function buildWidgetEl(w){
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
   el.innerHTML=`
     <div class="whead" id="wh-${w.id}">
-      <span class="whtit">${esc(w.title)}</span>
+      <span class="whtit">${esc(w.title&&w.title!=='undefined'?w.title:(WD[w.type]?.title||w.type))}</span>
       ${w.type==='journal'?`<button class="whead-search-btn" id="jwsib-${w.id}" onclick="jwToggleSearch('${w.id}')" data-tip="Search"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>`:''}
       <button class="wclose" onclick="removeW('${w.id}')" data-tip="Remove"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button>
     </div>
@@ -2225,7 +2273,6 @@ function fillWBody(w){
   else if(w.type==='timer')buildTimerW(body,w);
   else if(w.type==='note')buildNoteW(body,w);
   else if(w.type==='stats')buildStatsW(body,w);
-  else if(w.type==='subjects')buildSubjectsW(body,w);
   else if(w.type==='quote')buildQuoteW(body,w);
   else if(w.type==='calendar')buildCalW(body,w);
   else if(w.type==='habits')buildHabitW(body,w);
@@ -2476,7 +2523,7 @@ function startResize(e,id){
     journal:{w:420, h:320},
     stats:  {w:260, h:180},
     subjects:{w:240,h:220},
-    calendar:{w:400,h:240},
+    calendar:{w:380,h:420},
     quote:  {w:200, h:130},
     note:   {w:280, h:180},
   };
@@ -2738,7 +2785,7 @@ function sortByDueLegacy(arr){return sortByDue(arr);} // alias
 function renderTaskCols(wid){
   if(!$('col-todo-'+wid))return;
   const cols={todo:[],inprog:[],done:[]};
-  tasks.filter(t=>!t.subjectId).forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
+  tasks.forEach(t=>{if(cols[t.col])cols[t.col].push(t);});
   Object.keys(cols).forEach(k=>{cols[k]=sortByDue(cols[k]);});
   ['todo','inprog','done'].forEach(c=>{
     const el=$('col-'+c+'-'+wid);if(!el)return;
@@ -2757,9 +2804,11 @@ function renderTaskCols(wid){
       const dueTag=due?`<span class="tag tl" style="background:${due.bg};color:${due.color};border:1px solid ${due.border};">${due.label}</span>`:'';
       const isOverdue=due?.label==='Overdue';
       const recurTag=t.recurring&&t.recurring!=='none'?`<span class="tc-recur-tag">${t.recurring==='daily'?'Daily':'Weekly'}</span>`:'';
+      const proj=t.subjectId?subjects.find(s=>String(s.id)===String(t.subjectId)):null;
+      const projTag=proj?`<span class="tc-proj-tag" style="background:rgba(58,125,94,.1);color:var(--a2);border:1px solid rgba(58,125,94,.2);border-radius:5px;font-size:9px;font-weight:700;padding:1px 6px;white-space:nowrap;">${esc(proj.name)}</span>`:'';
       return `<div class="tc${String(_selTask)===String(t.id)?' tc-selected':''}${isOverdue?' tc-overdue':''}" id="tc-${t.id}" draggable="true" ondragstart="dstart(event,'${t.id}')" ondragend="dend()" onclick="selTask(event,'${t.id}')" ontouchstart="tcTouchStart(event,'${t.id}')">
       <button class="tcdel" onclick="event.stopPropagation();delTask('${t.id}')">&times;</button>
-      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text||t.title||'')}</div><div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
+      <div class="tct" style="${t.col==='done'?'text-decoration:line-through;opacity:.45;':''}">${esc(t.text||t.title||'')}</div><div class="tcf" style="${t.col==='done'?'opacity:.45;':''}">${projTag}${recurTag}${dueTag}<span class="tcd">${t.date}</span></div>
     </div>`;
     }).join('');
   });
@@ -3358,11 +3407,7 @@ function buildSubjectsW(body,w){
   renderSubW(w.id);
 }
 function renderAllSubW(){widgets.filter(w=>w.type==='subjects').forEach(w=>renderSubW(w.id));}
-function goToProject(id){
-  _activeSubId=id;
-  const btn=document.querySelector('[data-p="subjects"]');
-  goPg('subjects',btn);
-}
+function goToProject(id){ /* projects page removed */ }
 function gradeC(g){return g>=90?'#2A5C44':g>=75?'#9A6818':g>=60?'#B87333':'#B83030';}
 function gradeL(g){return g>=90?'A':g>=80?'B':g>=70?'C':g>=60?'D':'F';}
 // ── NEW DESKTOP PROJECT WIDGET ──
@@ -3405,64 +3450,75 @@ function renderSubW(wid){
 }
 
 function buildCalW(body,w){
-  body.style.display='flex';body.style.flexDirection='column';
+  body.style.display='flex';body.style.flexDirection='column';body.style.overflow='hidden';
   body.innerHTML=`
     <div class="cwhead">
-      <div>
-        <div class="cwlbl">Upcoming</div>
-        <div class="cw-sublbl" id="cw-sublbl-${w.id}"></div>
+      <button class="cw-nav-btn" onclick="shiftCalW(-1,'${w.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:4px;border-radius:6px;display:flex;align-items:center;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+      </button>
+      <div style="flex:1;text-align:center;">
+        <div class="cwlbl" id="cw-monthlbl-${w.id}"></div>
       </div>
-      <button class="cw-open-btn" onclick="goPg('calendar',document.querySelector('[data-p=calendar]'))" data-tip="Open full planner">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+      <button class="cw-nav-btn" onclick="shiftCalW(1,'${w.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);padding:4px;border-radius:6px;display:flex;align-items:center;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 3l5 5-5 5"/></svg>
       </button>
     </div>
-    <div class="cw-ev-list" id="cwlist-${w.id}"></div>`;
+    <div class="cw-grid-wrap" id="cwgrid-${w.id}" style="flex:1;overflow-y:auto;padding:0 10px 10px;"></div>`;
   renderCalW(w.id);
 }
-function shiftCalW(dir,wid){calOff+=dir;widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});renderFullCal();}
+function shiftCalW(dir,wid){calOff+=dir;widgets.forEach(w=>{if(w.type==='calendar')fillWBody(w);});}
 function renderCalW(wid){
-  const el=$('cwlist-'+wid);if(!el)return;
-  const now=new Date();now.setHours(0,0,0,0);
-  const days=[];
-  for(let i=0;i<14;i++){
-    const d=new Date(now);d.setDate(now.getDate()+i);
-    const k=calFmt(d);
-    const evs=calEvs.filter(e=>e.date===k).sort((a,b)=>(a.timeStart||'').localeCompare(b.timeStart||''));
-    if(evs.length) days.push({d,k,evs});
+  const lbl=document.getElementById('cw-monthlbl-'+wid);
+  const grid=document.getElementById('cwgrid-'+wid);
+  if(!grid) return;
+  const now=new Date();
+  const base=new Date(now.getFullYear(),now.getMonth()+calOff,1);
+  const yr=base.getFullYear(), mo=base.getMonth();
+  const tok=fdk(new Date());
+  if(lbl) lbl.textContent=base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const firstDay=(new Date(yr,mo,1).getDay()+6)%7;
+  const daysInMonth=new Date(yr,mo+1,0).getDate();
+  const dn=['M','T','W','T','F','S','S'];
+  let html='<div class="cw-month-grid">';
+  html+='<div class="cw-month-hd-row">'+dn.map(d=>`<div class="cw-month-hd">${d}</div>`).join('')+'</div>';
+  html+='<div class="cw-month-body">';
+  for(let i=0;i<firstDay;i++) html+='<div class="cw-day empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=ds===tok;
+    const dayEvs=calEvs.filter(e=>(e.date||'')===ds);
+    html+=`<div class="cw-day${isToday?' cw-today':''}" onclick="calDayClick('${ds}');openMo('mo-ev')">
+      <div class="cw-day-num${isToday?' cw-today-num':''}">${d}</div>
+      <div class="cw-day-dots">${dayEvs.slice(0,2).map(e=>`<div class="cw-ev-dot2" style="background:${e.color||'var(--a2)'};" title="${esc(e.title)}"></div>`).join('')}${dayEvs.length>2?`<div class="cw-ev-dot2 cw-ev-more">+${dayEvs.length-2}</div>`:''}</div>
+    </div>`;
   }
-  // update subtitle
-  const sub=$('cw-sublbl-'+wid);
-  const totalEvs=days.reduce((a,x)=>a+x.evs.length,0);
-  if(sub)sub.textContent=totalEvs?`${totalEvs} event${totalEvs>1?'s':''} this fortnight`:'Next 14 days';
-  if(!days.length){
-    el.innerHTML=`<div class="cw-empty"><div class="cw-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg></div><div>No upcoming events</div><div style="font-size:11px;margin-top:4px;color:var(--ink4);">Open the planner to add some</div></div>`;
-    return;
-  }
-  const todayKey=calFmt(new Date());
-  let html='';
-  days.forEach(({d,k,evs,due})=>{
-    const isToday=k===todayKey;
-    const isTomorrow=calFmt(new Date(new Date().setDate(new Date().getDate()+1)))===k;
-    let dayLbl=isToday?'Today':isTomorrow?'Tomorrow':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    html+=`<div class="cw-day-group">
-      <div class="cw-day-hd${isToday?' cw-today-hd':''}">
-        <span class="cw-day-dot${isToday?' cw-today-dot':''}"></span>${dayLbl}
-      </div>`;
-    evs.forEach(ev=>{
-      const col=ev.color||ev.subColor||'var(--a2)';
-      const timeLbl=ev.timeStart?fmtTime(ev.timeStart)+(ev.timeEnd?'\u2013'+fmtTime(ev.timeEnd):''):'';
-      html+=`<div class="cw-ev-item" onclick="goPg('calendar',document.querySelector('[data-p=calendar]'))">
+  html+='</div></div>';
+  // Upcoming events this month
+  const monthStart=`${yr}-${String(mo+1).padStart(2,'0')}-01`;
+  const monthEnd=`${yr}-${String(mo+1).padStart(2,'0')}-${String(daysInMonth).padStart(2,'0')}`;
+  const monthEvs=calEvs.filter(e=>e.date>=monthStart&&e.date<=monthEnd).sort((a,b)=>a.date>b.date?1:-1);
+  if(monthEvs.length){
+    html+='<div class="cw-ev-list" style="margin-top:8px;">';
+    monthEvs.forEach(ev=>{
+      const d=new Date(ev.date+'T12:00:00');
+      const isToday=ev.date===tok;
+      const lbl2=isToday?'Today':d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const col=ev.color||'var(--a2)';
+      const timeLbl=ev.timeStart?fmtTime(ev.timeStart)+(ev.timeEnd?'–'+fmtTime(ev.timeEnd):''):'';
+      html+=`<div class="cw-ev-item" onclick="calEvClick('${ev.id}')">
         <div class="cw-ev-dot" style="background:${col};"></div>
         <div class="cw-ev-body">
           <div class="cw-ev-title">${esc(ev.title)}</div>
-          ${(timeLbl||ev.note)?`<div class="cw-ev-meta">${timeLbl}${timeLbl&&ev.note?' · ':''}${ev.note?esc(ev.note):''}</div>`:''}
+          <div class="cw-ev-meta">${lbl2}${timeLbl?' · '+timeLbl:''}</div>
         </div>
+        <button onclick="event.stopPropagation();delEv('${ev.id}')" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Delete">×</button>
       </div>`;
     });
-
-    html+=`</div>`;
-  });
-  el.innerHTML=html;
+    html+='</div>';
+  } else {
+    html+=`<div class="cw-empty" style="padding:16px;"><div style="font-size:11px;color:var(--ink4);text-align:center;">No events this month · Click a day to add</div></div>`;
+  }
+  grid.innerHTML=html;
 }
 
 // ═══════════════════════════════════════
@@ -4669,6 +4725,9 @@ function renderSettings(){
   }
   const nmInput=$('nm-i');if(nmInput)nmInput.value=d.displayName||'';
   const togDk=$('tog-dk'); if(togDk) togDk.className='tog'+(prefs.dark?' on':'');
+  // Hide custom hex row for free users — Apply button only needed for Pro hex input
+  const hexRow=document.querySelector('.accent-custom-row');
+  if(hexRow) hexRow.style.display=isPro()?'flex':'none';
 }
 function copySql(){
   const sql=$('sb-sql');if(!sql)return;

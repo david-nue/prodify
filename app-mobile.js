@@ -717,7 +717,7 @@ function applySettings(){
 }
 function applyAccentCSS(k){
   const entry=ACCENTS[k]||ACCENTS.green;
-  const isDark=document.body.getAttribute('data-dark')==='1';
+  const isDark=document.documentElement.getAttribute('data-dark')==='1';
   const c=isDark?(entry.d||entry.l):entry.l;
   document.documentElement.style.setProperty('--a',c[0]);
   document.documentElement.style.setProperty('--a2',c[1]);
@@ -753,8 +753,7 @@ function clearAll(){
     if(!ok) return;
     if(cu){ const d=getD(); d.tasks=[]; d.journal=[]; d.calEvs=[]; d.subjects=[]; if(d.prefs){d.prefs.habits=[];d.prefs.habitLog={};d.prefs.pomHistory={};}
     acc[cu]=d; saveAll(); }
-    _mobActiveProj=null; // reset any open project detail view
-    renderAll(); renderMobProjects(); toast('All data cleared');
+    renderAll(); toast('All data cleared');
   });
 }
 
@@ -779,14 +778,14 @@ function goPg(id){
   const SUB=['settings','profile'];
   if(!SUB.includes(id)){
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-    const map={home:'nav-home',tasks:'nav-tasks',projects:'nav-projects',habits:'nav-habits',calendar:'nav-calendar',journal:'nav-journal',timer:'nav-timer',notes:'nav-notes'};
+    const map={home:'nav-home',tasks:'nav-tasks',habits:'nav-habits',calendar:'nav-calendar',journal:'nav-journal',timer:'nav-timer',notes:'nav-notes'};
     const nb=document.getElementById(map[id]); if(nb) nb.classList.add('active');
     if(nav) nav.style.display='';
   } else {
     if(nav) nav.style.display='none';
   }
   if(id==='calendar') renderSchedule();
-  if(id==='projects') renderMobProjects();
+
   if(id==='habits') renderHabitsList();
   if(id==='journal') renderJournalList();
   if(id==='notes') renderNotesList();
@@ -795,9 +794,7 @@ function goPg(id){
   if(id==='profile') renderMobProfile();
   // Show FAB on notes and projects pages
   const notesFab=document.getElementById('notes-fab');
-  const projFab=document.getElementById('proj-fab');
   if(notesFab) notesFab.style.display=(id==='notes')?'flex':'none';
-  if(projFab) projFab.style.display=(id==='projects')?'flex':'none';
   // Show/hide journal compose box with the page transition
   const jwadd=document.querySelector('.jwadd');
   if(jwadd){
@@ -859,157 +856,160 @@ function renderHome(){
   const h=new Date().getHours();
   const greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const name=getD().displayName||(cu&&cu!=='__mobile__'?cu:'there')||'there';
-  document.getElementById('home-greet').textContent=greet+', '+name+'!';
-  document.getElementById('home-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  const q=QUOTES[Math.floor(Math.random()*QUOTES.length)];
-  document.getElementById('hqt').textContent='"'+q.t+'"';
-  document.getElementById('hqa').textContent='— '+q.a;
+  const greetEl=document.getElementById('home-greet');
+  const dateEl=document.getElementById('home-date');
+  if(greetEl) greetEl.textContent=greet+', '+name+'!';
+  if(dateEl) dateEl.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 
   const today=toDay();
-  const tomorrowKey=new Date(new Date().setDate(new Date().getDate()+1)).toISOString().slice(0,10);
-
-  // ── TASKS GLANCE ──
   const tasks=getTasks();
-  const incompleteTasks=sortTasks(tasks.filter(t=>t.col!=='done'&&!t.subjectId));
-  const totalDone=tasks.filter(t=>t.col==='done'&&!t.subjectId).length;
-  const glanceTasks=incompleteTasks.length
-    ? incompleteTasks[0].dueDate
-      ? incompleteTasks.filter(t=>t.dueDate===incompleteTasks[0].dueDate)
-      : incompleteTasks.slice(0,3)
-    : [];
-  let tasksHtml='';
-  if(!glanceTasks.length){
-    tasksHtml=`<div class="gc-empty">${totalDone>0?totalDone+' task'+(totalDone!==1?'s':'')+' done · All clear':'Nothing due yet'}</div>`;
-  } else {
-    const colDot={todo:'#E8A838',inprog:'#5B8DD9',done:'var(--a2)'};
-    tasksHtml=`
-      <div class="gc-meta">${incompleteTasks.length} remaining${totalDone>0?' · '+totalDone+' done':''}</div>
-      <div class="gc-items">${glanceTasks.map(t=>{
-        const due=taskDueInfo(t);
-        return `<div class="gc-item">
-          <div class="gc-dot" style="background:${colDot[t.col]||'var(--bdr)'}"></div>
-          <div class="gc-item-body">
-            <div class="gc-item-title">${esc(t.title||t.text||'')}</div>
-            ${due?`<div class="gc-item-tag ${due.urgent?'gc-tag-urgent':'gc-tag-soon'}">${due.label}</div>`:''}
-          </div>
-        </div>`;
-      }).join('')}</div>
-      ${incompleteTasks.length>glanceTasks.length?`<div class="gc-more">+${incompleteTasks.length-glanceTasks.length} more</div>`:''}
-    `;
-  }
-
-  // ── HABITS GLANCE ──
-  const habits=getP().habits||[]; const log=getP().habitLog||{};
-  const doneToday=habits.filter(hb=>(log[today]||[]).map(Number).includes(+hb.id)).length;
+  const incompleteTasks=tasks.filter(t=>t.col!=='done');
+  const doneTasks=tasks.filter(t=>t.col==='done').length;
+  const habits=getP().habits||[];
+  const log=getP().habitLog||{};
+  const doneHabits=habits.filter(hb=>(log[today]||[]).map(Number).includes(+hb.id)).length;
   const streak=calcStreak();
-  let habitsHtml='';
-  if(!habits.length){
-    habitsHtml=`<div class="gc-empty">No habits yet</div>`;
-  } else {
-    const pct=Math.round(doneToday/habits.length*100);
-    habitsHtml=`
-      <div class="gc-meta">${doneToday} of ${habits.length} done today${streak>0?' · '+streak+' day streak 🔥':''}</div>
-      <div class="gc-prog-wrap">
-        <div class="gc-prog-bar"><div class="gc-prog-fill" style="width:${pct}%"></div></div>
-        <div class="gc-prog-pct">${pct}%</div>
-      </div>
-      <div class="gc-items">${habits.slice(0,4).map(hb=>{
+
+  // ── MOMENTUM STRIP ──
+  const momEl=document.getElementById('home-momentum');
+  if(momEl){
+    const parts=[];
+    // Today's tasks: only due today + recurring (daily/weekly)
+    const todayTasks=tasks.filter(t=>{
+      if(t.dueDate===today) return true;
+      if(t.recurring==='daily'||t.recurring==='weekly') return true;
+      return false;
+    });
+    const todayTasksDone=todayTasks.filter(t=>t.col==='done').length;
+    if(todayTasks.length) parts.push(`${todayTasksDone}/${todayTasks.length} tasks`);
+    if(habits.length) parts.push(`${doneHabits}/${habits.length} habits`);
+    // Use today's tasks for progress bar instead of all tasks
+    const total2=(todayTasks.length)+(habits.length);
+    const done2=todayTasksDone+doneHabits;
+    // Overall progress
+    const total2_=total2||0, done2_=done2||0;
+    const pct=total2_>0?Math.round(done2_/total2_*100):0;
+    momEl.innerHTML=`
+      <div class="home-mom-stats">${parts.join(' · ')||'Nothing tracked yet'}</div>
+      ${total2_>0?`<div class="home-mom-bar"><div class="home-mom-fill" style="width:${pct}%"></div></div>`:''}`;
+  }
+
+  // ── HABIT RINGS ──
+  const metaEl=document.getElementById('home-habit-meta');
+  if(metaEl) metaEl.textContent=habits.length?`${doneHabits}/${habits.length} done${streak>0?' · '+streak+' day streak 🔥':''}`:'' ;
+  const ringsEl=document.getElementById('home-habit-rings');
+  if(ringsEl){
+    if(!habits.length){
+      ringsEl.innerHTML=`<div class="home-habit-empty" onclick="goPg('habits')">No habits yet · <span style="color:var(--a2);font-weight:700;">Add one</span></div>`;
+    } else {
+      ringsEl.innerHTML=habits.map(hb=>{
         const done=(log[today]||[]).map(Number).includes(+hb.id);
-        return `<div class="gc-item">
-          <div class="gc-check${done?' done':''}">${done?'<svg viewBox="0 0 16 16"><path d="M3 8l4 4 6-7"/></svg>':''}</div>
-          <div class="gc-item-title" style="${done?'text-decoration:line-through;opacity:.5;':''}">${esc(hb.name)}</div>
-        </div>`;
-      }).join('')}${habits.length>4?`<div class="gc-more">+${habits.length-4} more</div>`:''}</div>
-    `;
+        const emoji=hb.emoji||'✦';
+        return `<button class="home-habit-ring${done?' done':''}" onclick="mobToggleHabitHome('${hb.id}')" title="${esc(hb.name)}">
+          <div class="home-habit-ring-inner">${done?'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8l4 4 6-7"/></svg>':emoji}</div>
+          <div class="home-habit-ring-name">${esc(hb.name.length>8?hb.name.slice(0,7)+'…':hb.name)}</div>
+        </button>`;
+      }).join('');
+    }
   }
 
-  // ── CALENDAR GLANCE — next 3 days ──
-  const in3days=new Date(); in3days.setDate(in3days.getDate()+3);
-  const in3key=in3days.toISOString().slice(0,10);
-  const allEvs=getCalEvs().sort((a,b)=>a.date>b.date?1:-1);
-  const upcomingEvs=allEvs.filter(e=>e.date>=today&&e.date<=in3key);
-  let evHtml='';
-  if(!upcomingEvs.length){
-    evHtml=`<div class="gc-empty">Nothing in the next 3 days</div>`;
-  } else {
-    evHtml=`
-      <div class="gc-meta">${upcomingEvs.length} event${upcomingEvs.length!==1?'s':''} in the next 3 days</div>
-      <div class="gc-items">${upcomingEvs.slice(0,3).map(e=>{
-        const isToday=e.date===today;
-        const isTmrw=e.date===tomorrowKey;
-        const dLbl=isToday?'Today':isTmrw?'Tomorrow':new Date(e.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
-        return `<div class="gc-item">
-          <div class="gc-dot" style="background:${e.color||'var(--a2)'}"></div>
-          <div class="gc-item-body">
-            <div class="gc-item-title">${esc(e.title)}</div>
-            <div class="gc-item-sub">${dLbl}${e.timeStart?' · '+fmtTime(e.timeStart)+(e.timeEnd?' – '+fmtTime(e.timeEnd):''):''}</div>
+  // ── JOURNAL PROMPT ──
+  const journal=getD().journal||[];
+  const todayEntry=journal.find(j=>j.date&&j.date.includes(new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})));
+  const promptEl=document.getElementById('home-journal-prompt');
+  if(promptEl){
+    if(!todayEntry){
+      const prompts=['How are you feeling today?','What are you grateful for?','What is your intention for today?','What is on your mind?'];
+      const p=prompts[new Date().getDay()%prompts.length];
+      promptEl.style.display='';
+      promptEl.innerHTML=`<div class="home-journal-card" onclick="goPg('journal');setTimeout(()=>document.getElementById('jwta-mob')?.focus(),300)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="width:14px;height:14px;flex-shrink:0;stroke:var(--a2)"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>
+        <span class="home-journal-prompt-text">${p}</span>
+        <span style="font-size:11px;color:var(--a2);font-weight:700;flex-shrink:0;">Write →</span>
+      </div>`;
+    } else {
+      promptEl.style.display='none';
+    }
+  }
+
+  // ── STATS ROW ──
+  const todayEvs=(getCalEvs()||[]).filter(e=>e.date===today);
+  const pomToday=pomGetToday();
+  const setNum=(id,n)=>{const el=document.getElementById(id);if(el)el.textContent=n;};
+  setNum('hstat-tasks', incompleteTasks.length);
+  setNum('hstat-events', todayEvs.length);
+  setNum('hstat-sessions', pomToday);
+  setNum('hstat-streak', streak);
+
+  // ── UPCOMING TASKS — due dates + recurring ──
+  const in7=new Date(); in7.setDate(in7.getDate()+7);
+  const in7key=in7.toISOString().slice(0,10);
+  const tomorrowKey=new Date(new Date().setDate(new Date().getDate()+1)).toISOString().slice(0,10);
+  const fmtDay=d=>d===today?'Today':d===tomorrowKey?'Tomorrow':new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+  const taskItems=[];
+  tasks.filter(t=>t.col!=='done'&&t.dueDate&&t.dueDate>=today&&t.dueDate<=in7key).forEach(t=>{
+    taskItems.push({date:t.dueDate,title:t.title||t.text||'Task',type:'task',sub:fmtDay(t.dueDate)});
+  });
+  tasks.filter(t=>t.col!=='done'&&(t.recurring==='daily'||t.recurring==='weekly')).forEach(t=>{
+    taskItems.push({date:today,title:t.title||t.text||'Task',type:'recurring',sub:t.recurring==='daily'?'Daily':'Weekly'});
+  });
+  taskItems.sort((a,b)=>a.date>b.date?1:-1);
+
+  const taskEl=document.getElementById('home-upcoming-tasks');
+  if(taskEl){
+    if(!taskItems.length){
+      taskEl.innerHTML=`<div class="gc-empty" style="padding:4px 0 8px;">No tasks due this week</div>`;
+    } else {
+      taskEl.innerHTML=taskItems.slice(0,5).map(item=>`
+        <div class="home-ev-item" onclick="goPg('tasks')">
+          <div class="home-ev-dot" style="background:var(--a2);border-radius:3px;"></div>
+          <div class="home-ev-body">
+            <div class="home-ev-title">${esc(item.title)}</div>
+            <div class="home-ev-sub">${item.sub}</div>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── UPCOMING CALENDAR EVENTS ──
+  const evItems=(getCalEvs()||[]).filter(e=>e.date>=today&&e.date<=in7key).sort((a,b)=>a.date>b.date?1:-1);
+  const evEl=document.getElementById('home-events');
+  if(evEl){
+    if(!evItems.length){
+      evEl.innerHTML=`<div class="gc-empty" style="padding:4px 0 8px;">No events this week</div>`;
+    } else {
+      evEl.innerHTML=evItems.slice(0,4).map(e=>{
+        const timeLbl=e.timeStart?fmtTime(e.timeStart)+(e.timeEnd?' – '+fmtTime(e.timeEnd):''):'';
+        return `<div class="home-ev-item" onclick="goPg('calendar')">
+          <div class="home-ev-dot" style="background:${e.color||'var(--a2)'}"></div>
+          <div class="home-ev-body">
+            <div class="home-ev-title">${esc(e.title)}</div>
+            <div class="home-ev-sub">${fmtDay(e.date)}${timeLbl?' · '+timeLbl:''}</div>
           </div>
         </div>`;
-      }).join('')}${upcomingEvs.length>3?`<div class="gc-more">+${upcomingEvs.length-3} more</div>`:''}</div>
-    `;
+      }).join('');
+    }
   }
-
-  // ── PROJECTS GLANCE ──
-  const subjects=getD().subjects||[];
-  const _now2=new Date(); _now2.setHours(0,0,0,0);
-  function _glanceProjUrgency(s){
-    const pt=(getD().tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-    const rem=pt.filter(t=>t.col!=='done').length;
-    if(s.due){const d=new Date(s.due+'T00:00:00');const diff=Math.round((d-_now2)/(86400000));if(diff<0)return -10000+diff;return diff*10-rem;}
-    return 5000-rem;
-  }
-  const activeProjs=subjects.filter(s=>(s.status||'active')==='active').sort((a,b)=>_glanceProjUrgency(a)-_glanceProjUrgency(b));
-  let projHtml='';
-  if(!activeProjs.length){
-    projHtml=`<div class="gc-empty">No active projects</div>`;
-  } else {
-    projHtml=`
-      <div class="gc-meta">${activeProjs.length} active project${activeProjs.length!==1?'s':''}</div>
-      <div class="gc-items">${activeProjs.slice(0,3).map(s=>{
-        const color=_mobProjColor2(s);
-        const prog=getMobProjProgress(s);
-        const d=getD();
-        const projTasks=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-        const remaining=projTasks.filter(t=>t.col!=='done').length;
-        const overdue=s.due&&new Date(s.due+'T00:00:00')<_now2;
-        const dueSoon=s.due&&!overdue&&(new Date(s.due+'T00:00:00')-_now2)<=(3*86400000);
-        const urgent=overdue||dueSoon;
-        const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
-        return `<div class="gc-item" style="align-items:flex-start;">
-          <div class="gc-dot" style="background:${color};margin-top:3px;"></div>
-          <div class="gc-item-body" style="flex:1;min-width:0;">
-            <div class="gc-item-title">${esc(s.name)}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-              <div style="flex:1;height:3px;background:var(--surf2);border-radius:100px;overflow:hidden;">
-                <div style="height:100%;width:${prog}%;background:${color};border-radius:100px;"></div>
-              </div>
-              <span style="font-size:10px;font-weight:700;color:var(--ink4);">${prog}%</span>
-            </div>
-            ${urgent?`<div style="font-size:10px;font-weight:700;color:#E53E3E;margin-top:3px;">${overdue?'Overdue':'Due soon'}${dueStr?' · '+dueStr:''}</div>`
-            :dueStr?`<div class="gc-item-sub">${dueStr}</div>`
-            :remaining>0?`<div class="gc-item-sub">${remaining} task${remaining!==1?'s':''} left</div>`:''}
-          </div>
-        </div>`;
-      }).join('')}${activeProjs.length>3?`<div class="gc-more">+${activeProjs.length-3} more</div>`:''}
-    `;
-  }
-
-  const gc=(icon,label,content,page)=>`
-    <div class="glance-card" onclick="goPg('${page}')">
-      <div class="glance-card-header">
-        <div class="gi">${icon}</div>
-        <div class="gb-lbl">${label}</div>
-        <div class="ga"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></div>
-      </div>
-      <div class="glance-card-body">${content}</div>
-    </div>`;
-
-  document.getElementById('home-glance').innerHTML=
-    gc('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>','Tasks',tasksHtml,'tasks')+
-    gc('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-5"/></svg>','Habits today',habitsHtml,'habits')+
-    gc('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg>','Upcoming',evHtml,'calendar')+
-    gc('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17.5h7M17.5 14v7"/></svg>','Projects',projHtml,'projects');
 }
+function mobToggleHabitHome(id){
+  // Toggle habit from home page ring
+  const today=toDay();
+  const p=getP();
+  const log=p.habitLog||{};
+  const dayLog=(log[today]||[]).map(Number);
+  const idx=dayLog.indexOf(+id);
+  if(idx===-1) dayLog.push(+id); else dayLog.splice(idx,1);
+  log[today]=dayLog;
+  p.habitLog=log;
+  const d=getD(); d.prefs=p;
+  if(cu) acc[cu]=d;
+  saveAll();
+  renderHome();
+  renderHabitsList();
+}
+
+
 function calcStreak(){
   const habits=getP().habits||[];
   if(!habits.length) return 0;
@@ -1207,8 +1207,7 @@ function initProjTaskSwipe(taskId, subjId){
       const d=getD();
       const t=(d.tasks||[]).find(x=>String(x.id)===String(taskId));
       if(t&&t.col!=='done'){ const cols=['todo','inprog','done']; t.col=cols[(cols.indexOf(t.col)+1)%3]; }
-      mobSyncProjStatus();
-      if(cu) acc[cu]=d; saveAll(); renderMobProjects(); renderHome();
+      if(cu) acc[cu]=d; saveAll(); renderHome();
     } else {
       el.style.transform='';
     }
@@ -1237,7 +1236,7 @@ function saveTask(){
     date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
     created:Date.now()
   });
-  if(cu) acc[cu]=d; saveAll(); renderTasks(); closeSheets();
+  if(cu) acc[cu]=d; saveAll(); renderTasks(); renderHome(); closeSheets();
   // Reset sheet
   document.getElementById('task-inp').value='';
   const dv=document.getElementById('task-due-val'); if(dv) dv.value='';
@@ -1960,34 +1959,38 @@ function mobCalDayClick(ds){
 function renderSchedule(){
   const page=document.getElementById('sch-page');
   if(!page) return;
-  // Render mini grid
   mobCalRender();
-  // Upcoming: today + next 3 days
   const today=toDay();
-  const in3=new Date(); in3.setDate(in3.getDate()+3);
-  const in3key=in3.toISOString().slice(0,10);
+  // Show all events for the current viewed month
+  const now=new Date();
+  const base=new Date(now.getFullYear(), now.getMonth()+_mobCalOff, 1);
+  const yr=base.getFullYear(), mo=base.getMonth();
+  const monthStart=`${yr}-${String(mo+1).padStart(2,'0')}-01`;
+  const monthEnd=`${yr}-${String(mo+1).padStart(2,'0')}-${String(new Date(yr,mo+1,0).getDate()).padStart(2,'0')}`;
   const allEvs=getCalEvs().sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:0);
-  const upcoming=allEvs.filter(e=>e.date>=today&&e.date<=in3key);
+  const monthEvs=allEvs.filter(e=>e.date>=monthStart&&e.date<=monthEnd);
 
-  if(!upcoming.length){
-    page.innerHTML=`<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg></div><div class="mob-es-title">Nothing in the next 3 days</div><div class="mob-es-sub">Tap any day to add an event</div></div>`;
+  if(!monthEvs.length){
+    page.innerHTML=`<div class="mob-es" style="padding:28px 0 12px;"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v3M16 2v3"/></svg></div><div class="mob-es-title">No events this month</div><div class="mob-es-sub">Tap any day to add an event</div></div>`;
     return;
   }
 
   let html='';
-  upcoming.forEach(ev=>{
+  monthEvs.forEach(ev=>{
     const isToday=ev.date===today;
     const d=new Date(ev.date+'T12:00:00');
-    const lbl=isToday?'Today':d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const dayNum=d.getDate();
+    const dayName=d.toLocaleDateString('en-US',{weekday:'short'});
+    const monthLbl=d.toLocaleDateString('en-US',{month:'short'});
     html+=`<div class="sev${isToday?' sev-today':''}">
       <div class="sev-date-col">
-        <div class="sev-day-num${isToday?' today':''}">${d.getDate()}</div>
-        <div class="sev-day-name">${lbl==='Today'?'Today':d.toLocaleDateString('en-US',{month:'short'})}</div>
+        <div class="sev-day-num${isToday?' today':''}">${dayNum}</div>
+        <div class="sev-day-name">${isToday?'Today':dayName}</div>
       </div>
       <div class="sev-bar" style="background:${ev.color||'var(--a2)'}"></div>
       <div class="sev-body" style="flex:1;min-width:0;">
         <div class="sev-title">${esc(ev.title)}</div>
-        ${ev.timeStart ? `<div class="sev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' – '+fmtTime(ev.timeEnd):''}</div>` : ''}
+        ${ev.timeStart?`<div class="sev-time">${fmtTime(ev.timeStart)}${ev.timeEnd?' – '+fmtTime(ev.timeEnd):''}</div>`:''}
       </div>
       <button class="sev-del" onclick="mobDelEvent('${ev.id}')">✕</button>
     </div>`;
@@ -2226,7 +2229,7 @@ function fmtDate(iso,short=false){ try{ const d=new Date(iso); if(isNaN(d)) retu
 let _toastTm;
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_toastTm); _toastTm=setTimeout(()=>el.classList.remove('show'),2000); }
 
-function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderMobProjects(); renderNotesList(); }
+function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderNotesList(); }
 
 // ══════════════════════════════════════════════
 // NOTES PAGE
@@ -2871,647 +2874,6 @@ function accentHexConfirm(){
   if(cu){ acc[cu].prefs=p; saveAll(); }
 }
 
-// ══════════════════════════════════════════════
-// PROJECTS (mobile)
-// ══════════════════════════════════════════════
-const _MOB_PROJ_PALETTE=['#3A7D5E','#7C5CBF','#C0693A','#2E86AB','#C47B2B','#B5446E','#5B8C5A','#5B8DD9'];
-let _mobProjColor='#3A7D5E';
-let _mobActiveProj=null; // id of project being viewed in detail
-
-function getSubjects(){ return getD().subjects||[]; }
-
-function _mobProjColor2(s){
-  if(s.color&&s.color!=='var(--a2)') return s.color;
-  const subs=getSubjects();
-  const idx=subs.indexOf(s);
-  return _MOB_PROJ_PALETTE[(idx>=0?idx:0)%_MOB_PROJ_PALETTE.length];
-}
-
-function getMobProjProgress(s){
-  const d=getD();
-  const projTasks=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-  if(!projTasks.length) return s.progress||0;
-  return Math.round(projTasks.filter(t=>t.col==='done').length/projTasks.length*100);
-}
-
-function mobSyncProjStatus(){
-  const d=getD();
-  (d.subjects||[]).forEach(s=>{
-    const pt=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-    if(pt.length){
-      const doneCnt=pt.filter(t=>t.col==='done').length;
-      s.status=doneCnt===pt.length?'done':'active';
-    }
-  });
-}
-
-function renderMobProjects(){
-  const wrap=document.getElementById('mob-proj-list-wrap');
-  const detail=document.getElementById('mob-proj-detail');
-  const titleEl=document.getElementById('mob-proj-title');
-  const addBtn=document.getElementById('mob-proj-add-btn');
-  if(!wrap) return;
-
-  if(_mobActiveProj!==null){
-    const subs=getSubjects();
-    const s=subs.find(x=>String(x.id)===String(_mobActiveProj));
-    if(s){ renderMobProjDetail(s); return; }
-    _mobActiveProj=null;
-  }
-
-  if(titleEl) titleEl.textContent='Projects';
-  wrap.style.display='';
-  if(detail) detail.style.display='none';
-  // Show FAB and header on list view
-  const projFab=document.getElementById('proj-fab');
-  if(projFab) projFab.style.display='flex';
-  const fphdr=document.querySelector('#pg-projects .fphdr');
-  if(fphdr) fphdr.style.display='';
-
-  const subs=getSubjects();
-  if(!subs.length){
-    if(addBtn) addBtn.style.display='none';
-    wrap.innerHTML=`<div class="mob-es mob-es-full"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17.5h7M17.5 14v7"/></svg></div><div class="mob-es-title">No projects yet</div><div class="mob-es-sub">Create your first project to start organizing tasks.</div><button onclick="mobOpenNewProject()" style="margin-top:8px;background:var(--a2);color:#fff;border:none;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">+ New Project</button></div>`;
-    return;
-  }
-  if(addBtn) addBtn.style.display='';
-
-  const now=new Date(); now.setHours(0,0,0,0);
-  function mobProjUrgency(s){
-    const d=getD();
-    const projTasks=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-    const remaining=projTasks.filter(t=>t.col!=='done').length;
-    if(s.due){const due=new Date(s.due+'T00:00:00');const diff=Math.round((due-now)/(1000*60*60*24));if(diff<0)return -10000+diff;return diff*10-remaining;}
-    return 5000-remaining;
-  }
-  function mobSortedProjs(arr){return arr.slice().sort((a,b)=>mobProjUrgency(a)-mobProjUrgency(b));}
-
-  const groups=[
-    {key:'active',label:'Active',   items:mobSortedProjs(subs.filter(s=>(s.status||'active')==='active'))},
-    {key:'done',  label:'Completed',items:subs.filter(s=>s.status==='done')},
-  ].filter(g=>g.items.length);
-
-  wrap.innerHTML=groups.map(grp=>`
-    <div style="margin-bottom:22px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink4);margin-bottom:10px;">${grp.label} <span style="font-weight:400;">${grp.items.length}</span></div>
-      ${grp.items.map(s=>{
-        const color=_mobProjColor2(s);
-        const prog=getMobProjProgress(s);
-        const d=getD();
-        const projTasks=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-        const doneCnt=projTasks.filter(t=>t.col==='done').length;
-        const st=s.status||'active';
-        const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
-        const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
-        const dueDate=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-        const urgent=overdue||dueSoon;
-        const borderColor=urgent?'#E53E3E':'var(--bdr)';
-        const urgencyBadge=urgent
-          ?`<span style="font-size:10px;font-weight:700;color:#E53E3E;background:#FEF2F2;border:1px solid #FECACA;border-radius:100px;padding:2px 8px;white-space:nowrap;flex-shrink:0;">${overdue?'Overdue':'Due soon'}</span>`
-          :'';
-        const statLabel={active:'Ongoing',done:'Completed'};
-        const statColors={active:'var(--a2)',done:'#5B8C5A'};
-        // task pills — show up to 3
-        const shownTasks=projTasks.slice(0,3);
-        const taskPills=shownTasks.map(t=>{
-          const done=t.col==='done';
-          const inprog=t.col==='inprog';
-          const bg=done?color+'22':inprog?color+'44':'var(--surf2)';
-          const border=done?color+'44':inprog?color+'88':'var(--bdr)';
-          return `<div style="display:flex;align-items:center;gap:4px;padding:2px 7px;background:${bg};border:1px solid ${border};border-radius:100px;font-size:11px;font-weight:600;color:var(--ink);max-width:120px;overflow:hidden;flex-shrink:0;">
-            ${done?`<svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"><path d="M2 8l4 4 8-8"/></svg>`
-            :inprog?`<div style="width:5px;height:5px;border-radius:50%;background:${color};flex-shrink:0;"></div>`
-            :`<div style="width:5px;height:5px;border-radius:50%;background:var(--bdr);flex-shrink:0;"></div>`}
-            <span style="${done?'text-decoration:line-through;opacity:.5;':''}white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.text||t.title||'')}</span>
-          </div>`;
-        }).join('');
-        const moreTasks=projTasks.length>3?`<div style="font-size:11px;color:var(--ink4);padding:2px 5px;">+${projTasks.length-3} more</div>`:'';
-        const dueLine=dueDate?`<div style="font-size:11px;font-weight:600;color:${urgent?'#E53E3E':'var(--ink4)'};margin-top:6px;">${overdue?'Was due':'Due'}: ${dueDate}</div>`:'';
-        return `<div onclick="mobOpenProjDetail('${s.id}')" style="background:var(--surf);border:1.5px solid ${borderColor};border-radius:16px;margin-bottom:10px;overflow:hidden;cursor:pointer;${urgent?'box-shadow:0 0 0 1px #E53E3E22;':''}">
-          <div style="height:5px;background:${color};width:100%;"></div>
-          <div style="padding:14px 16px;">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
-              <div style="font-size:15px;font-weight:700;color:var(--ink);flex:1;min-width:0;">${esc(s.name)}</div>
-              ${urgencyBadge||`<span style="font-size:10px;font-weight:700;color:${statColors[st]};background:${statColors[st]}18;border-radius:100px;padding:2px 8px;white-space:nowrap;flex-shrink:0;">${statLabel[st]}</span>`}
-            </div>
-            ${s.desc?`<div style="font-size:12px;color:var(--ink3);margin-bottom:8px;line-height:1.5;">${esc(s.desc)}</div>`:''}
-            <div style="display:flex;align-items:center;gap:8px;margin:8px 0 6px;">
-              <div style="flex:1;height:4px;background:var(--surf2);border-radius:100px;overflow:hidden;">
-                <div style="height:100%;background:${color};width:${prog}%;border-radius:100px;transition:width .3s;"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:var(--ink3);min-width:28px;">${prog}%</span>
-            </div>
-            ${projTasks.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${taskPills}${moreTasks}</div>`:`<div style="font-size:11px;color:var(--ink4);">No tasks yet</div>`}
-            <div style="font-size:11px;color:var(--ink4);margin-top:4px;">${projTasks.length} task${projTasks.length!==1?'s':''} · ${doneCnt} done</div>
-            ${dueLine}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-  `).join('');
-}
-
-
-function renderMobProjDetail(s){
-  const wrap=document.getElementById('mob-proj-list-wrap');
-  const detail=document.getElementById('mob-proj-detail');
-  const inner=document.getElementById('mob-proj-detail-inner');
-  const titleEl=document.getElementById('mob-proj-title');
-  const addBtn=document.getElementById('mob-proj-add-btn');
-  if(!wrap||!detail||!inner) return;
-
-  wrap.style.display='none';
-  detail.style.display='';
-  if(titleEl) titleEl.textContent=s.name;
-  if(addBtn){ addBtn.style.display='none'; }
-  // Hide FAB and header — detail has its own colored header
-  const projFab=document.getElementById('proj-fab');
-  if(projFab) projFab.style.display='none';
-  const fphdr=document.querySelector('#pg-projects .fphdr');
-  if(fphdr) fphdr.style.display='none';
-
-  const color=_mobProjColor2(s);
-  const d=getD();
-  const projTasks=(d.tasks||[]).filter(t=>String(t.subjectId)===String(s.id));
-  const prog=getMobProjProgress(s);
-  const now=new Date(); now.setHours(0,0,0,0);
-  const st=s.status||'active';
-  const overdue=s.due&&st!=='done'&&new Date(s.due+'T00:00:00')<now;
-  const dueSoon=s.due&&st!=='done'&&!overdue&&(new Date(s.due+'T00:00:00')-now)<=(3*86400000);
-  const dueStr=s.due?new Date(s.due+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-  const statLabel={active:'Active',hold:'On Hold',done:'Completed'};
-  const cols=[
-    {key:'todo',   label:'To Do',      dot:'#E8A838', tasks:projTasks.filter(t=>t.col==='todo')},
-    {key:'inprog', label:'In Progress',dot:'#5B8DD9', tasks:projTasks.filter(t=>t.col==='inprog')},
-    {key:'done',   label:'Done',       dot:color,     tasks:projTasks.filter(t=>t.col==='done')},
-  ];
-
-  function projTaskCardHTML(t){
-    const isDone=t.col==='done';
-    const isInProg=t.col==='inprog';
-    const swipeRightHTML=isDone?''
-      :isInProg?`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Done`
-      :`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>In Progress`;
-    return `<div class="task-item" id="pti-${t.id}">
-      <div class="task-behind">
-        ${!isDone?`<div class="swipe-l">${swipeRightHTML}</div>`:'<div class="swipe-l swipe-l-disabled"></div>'}
-      </div>
-      <div class="task-front" id="ptf-${t.id}">
-        <div class="tcheck${isDone?' done':''}">${isDone?`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8l4 4 6-7"/></svg>`:''}</div>
-        <div class="tbody">
-          <div class="tname${isDone?' done':''}">${esc(t.text||t.title||'')}</div>
-          ${t.date?`<div class="tmeta"><span class="tdate">${t.date}</span></div>`:''}
-        </div>
-      </div>
-    </div>`;
-  }
-
-  const urgentBanner=(overdue||dueSoon)?`
-    <div style="height:3px;background:#E53E3E;"></div>
-    <div style="padding:8px 16px;background:#FEF2F2;display:flex;align-items:center;gap:8px;border-bottom:1px solid #FECACA;">
-      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#E53E3E" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
-      <span style="font-size:11px;font-weight:700;color:#E53E3E;">${overdue?'Overdue':'Due soon'}${dueStr?' — '+dueStr:''}</span>
-    </div>`
-    :dueStr?`<div style="padding:7px 16px;background:var(--surf2);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr);">
-      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 7h12M6 1v3M10 1v3"/></svg>
-      <span style="font-size:11px;color:var(--ink3);">Due ${dueStr}</span>
-    </div>`:'';
-
-  inner.innerHTML=`
-    <div style="background:${color};padding:14px 16px 16px;color:#fff;">
-      <button onclick="mobCloseProjDetail()" style="background:rgba(255,255,255,.15);border:none;border-radius:100px;color:#fff;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;font-family:inherit;">← Back</button>
-      <div style="font-size:18px;font-weight:800;margin-bottom:4px;">${esc(s.name)}</div>
-      ${s.desc?`<div style="font-size:12px;opacity:.8;margin-bottom:8px;">${esc(s.desc)}</div>`:''}
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="flex:1;height:5px;background:rgba(255,255,255,.25);border-radius:100px;overflow:hidden;">
-          <div style="height:100%;background:#fff;width:${prog}%;border-radius:100px;"></div>
-        </div>
-        <span style="font-size:12px;font-weight:700;opacity:.9;">${prog}%</span>
-      </div>
-    </div>
-    ${urgentBanner}
-    <div style="padding:14px 14px 0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <span style="font-size:11px;font-weight:700;color:${color};background:${color}18;border-radius:100px;padding:4px 10px;border:1.5px solid ${color}44;">${statLabel[st]||'Ongoing'}</span>
-        <button onclick="mobOpenAddProjTask('${s.id}')" style="background:${color};color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">+ Add Task</button>
-      </div>
-      <div style="font-size:11px;color:var(--ink4);margin-bottom:14px;text-align:center;">← swipe left to delete &nbsp;·&nbsp; swipe right to advance →</div>
-      ${cols.map(col=>`
-        <div style="margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:${col.dot};flex-shrink:0;"></div>
-            <div style="font-size:12px;font-weight:700;color:var(--ink3);">${col.label}</div>
-            <div style="font-size:11px;color:var(--ink4);">${col.tasks.length}</div>
-          </div>
-          ${col.tasks.length?col.tasks.map(t=>projTaskCardHTML(t)).join('')
-            :`<div class="mob-es" style="padding:28px 16px;"><div class="mob-es-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="mob-es-title" style="font-size:13px;">No tasks</div></div>`}
-        </div>
-      `).join('')}
-
-      <button onclick="mobDelProject('${s.id}')" style="width:100%;padding:12px;border:1.5px solid var(--red);background:var(--rl,#FAEBEB);color:var(--red);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;margin-bottom:8px;">Delete Project</button>
-    </div>
-  `;
-  projTasks.forEach(t=>initProjTaskSwipe(t.id, s.id));
-}
-
-
-function mobOpenProjDetail(id){
-  _mobActiveProj=id;
-  renderMobProjects();
-}
-
-function mobCloseProjDetail(){
-  _mobActiveProj=null;
-  renderMobProjects();
-}
-
-function mobCycProjStatus(id){
-  const d=getD();
-  const s=(d.subjects||[]).find(x=>String(x.id)===String(id)); if(!s) return;
-  const cycle={active:'hold',hold:'done',done:'active'};
-  s.status=cycle[s.status||'active'];
-  if(cu){acc[cu]=d;} saveAll();
-  renderMobProjects();
-}
-
-function mobAdvanceProjTask(taskId,subjId){
-  const d=getD();
-  const t=(d.tasks||[]).find(x=>String(x.id)===String(taskId)); if(!t) return;
-  if(t.col==='done') return; // already done, don't cycle back
-  const cols=['todo','inprog','done'];
-  t.col=cols[(cols.indexOf(t.col)+1)%3];
-  if(cu){acc[cu]=d;} saveAll(); renderMobProjects(); renderHome();
-}
-
-function mobDelProjTask(taskId,subjId){
-  appConfirm('Delete this task?','This cannot be undone.').then(ok=>{
-    if(!ok) return;
-    const d=getD();
-    d.tasks=(d.tasks||[]).filter(t=>String(t.id)!==String(taskId));
-    if(cu){acc[cu]=d;} saveAll();
-    renderMobProjects(); renderHome();
-  });
-}
-
-function mobDelProject(id){
-  appConfirm('Delete this project?','All project data will be permanently removed.').then(ok=>{
-    if(!ok) return;
-    const d=getD();
-    d.subjects=(d.subjects||[]).filter(s=>String(s.id)!==String(id));
-    if(_mobActiveProj===id) _mobActiveProj=null;
-    if(cu){acc[cu]=d;} saveAll();
-    renderMobProjects();
-  });
-}
-
-let _mobDraftTasks=[];
-function mobSubAddTask(){
-  const inp=document.getElementById('mob-proj-task-inp'); if(!inp) return;
-  const name=inp.value.trim(); if(!name) return;
-  _mobDraftTasks.push({text:name});
-  inp.value='';
-  mobRenderDraftTasks();
-  inp.focus();
-}
-function mobRenderDraftTasks(){
-  const list=document.getElementById('mob-proj-task-list'); if(!list) return;
-  list.innerHTML=_mobDraftTasks.map((t,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--ink4)" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M3 5h10M3 11h6"/></svg>
-      <span style="flex:1;font-size:13px;color:var(--ink);">${esc(t.text)}</span>
-      <button onclick="mobRemoveDraftTask(${i})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;">&times;</button>
-    </div>`).join('');
-}
-function mobRemoveDraftTask(i){
-  _mobDraftTasks.splice(i,1);
-  mobRenderDraftTasks();
-}
-function mobOpenNewProject(){
-  _mobDraftTasks=[];
-  const taskList=document.getElementById('mob-proj-task-list'); if(taskList) taskList.innerHTML='';
-  const taskInp=document.getElementById('mob-proj-task-inp'); if(taskInp) taskInp.value='';
-  // Pick a color not already used
-  const d=getD();
-  const used=new Set((d.subjects||[]).map(s=>s.color).filter(Boolean));
-  const unused=_MOB_PROJ_PALETTE.filter(c=>!used.has(c));
-  const pool=unused.length?unused:_MOB_PROJ_PALETTE;
-  _mobProjColor=pool[Math.floor(Math.random()*pool.length)];
-
-  const nameEl=document.getElementById('mob-proj-name');
-  const descEl=document.getElementById('mob-proj-desc');
-  if(nameEl) nameEl.value='';
-  if(descEl) descEl.value='';
-  const dv=document.getElementById('mob-proj-due-val'); if(dv) dv.value='';
-  const dl=document.getElementById('mob-proj-due-lbl'); if(dl) dl.textContent='Choose due date';
-  const dBtn=document.getElementById('mob-proj-due-btn');
-  if(dBtn){dBtn.style.borderColor='';dBtn.style.background='';dBtn.style.color='';}
-
-  // Set color bar
-  const bar=document.getElementById('mob-new-proj-bar');
-  if(bar) bar.style.background=_mobProjColor;
-
-  openSheet('sh-new-project');
-  setTimeout(()=>{if(nameEl) nameEl.focus();},300);
-}
-
-function mobPickProjStatus(el){
-  el.closest('div').querySelectorAll('.mob-stat-pill').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function mobAddProject(){
-  const name=document.getElementById('mob-proj-name')?.value.trim(); if(!name) return;
-  const desc=document.getElementById('mob-proj-desc')?.value.trim()||'';
-  const due=document.getElementById('mob-proj-due-val')?.value||'';
-  const d=getD();
-  if(!d.subjects) d.subjects=[];
-  const subjId=uid();
-  d.subjects.push({id:subjId,name,desc,due,status:'active',color:_mobProjColor,progress:0,created:Date.now()});
-  if(!d.tasks) d.tasks=[];
-  _mobDraftTasks.forEach(t=>{
-    d.tasks.unshift({id:uid(),text:t.text,title:t.text,col:'todo',
-      date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
-      dueDate:null,recurring:'none',subjectId:subjId,created:Date.now()});
-  });
-  _mobDraftTasks=[];
-  if(cu){acc[cu]=d;} saveAll();
-  closeSheets();
-  renderMobProjects(); renderHome();
-}
-
-function mobOpenAddProjTask(subjId){
-  const inp=document.getElementById('mob-ptask-name');
-  const sid=document.getElementById('mob-ptask-subjid');
-  if(inp) inp.value='';
-  if(sid) sid.value=subjId;
-  // Set the color bar to the project's color
-  const d=getD();
-  const s=(d.subjects||[]).find(x=>String(x.id)===String(subjId));
-  const color=s?_mobProjColor2(s):'var(--a2)';
-  const bar=document.getElementById('mob-ptask-bar');
-  if(bar) bar.style.background=color;
-  openSheet('sh-proj-task');
-  setTimeout(()=>{if(inp) inp.focus();},300);
-}
-
-function mobPickTaskCol(el){
-  el.closest('div').querySelectorAll('.mob-stat-pill').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function mobAddProjTask(){
-  const name=document.getElementById('mob-ptask-name')?.value.trim(); if(!name) return;
-  const subjId=document.getElementById('mob-ptask-subjid')?.value;
-  const d=getD();
-  d.tasks.unshift({
-    id:uid(), text:name, title:name, col:'todo',
-    date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
-    dueDate:null, recurring:'none', subjectId:subjId, created:Date.now()
-  });
-  // Adding a task always makes the project ongoing again
-  const subj=(d.subjects||[]).find(x=>String(x.id)===String(subjId));
-  if(subj) subj.status='active';
-  mobSyncProjStatus();
-  if(cu){acc[cu]=d;} saveAll();
-  closeSheets();
-  renderMobProjects(); renderHome();
-}
-
-// ══════════════════════════════════════════════
-// DEVICE MANAGEMENT (matches desktop)
-// ══════════════════════════════════════════════
-// ── Device enforcement ─────────────────────────────────────────────────────
-async function checkAndRegisterDevice(username){
-  const myId=getOrCreateDeviceId();
-  const registeredAt=parseInt(localStorage.getItem(_DEVICE_REGISTERED_KEY)||'0',10);
-  const wasPreviouslyRegistered=registeredAt>0&&(Date.now()-registeredAt)<_DEVICE_GRACE_MS;
-
-  if(!sbReady){
-    console.warn('[Prodify] Offline device check — grace:',wasPreviouslyRegistered);
-    return wasPreviouslyRegistered;
-  }
-  try{
-    const {data:row,error}=await sb.from('users').select('active_device_id,is_pro,bypass_device_check').eq('username',username).single();
-    if(error){
-      console.warn('[Prodify] Device check DB error',error.message);
-      return wasPreviouslyRegistered;
-    }
-    if(row?.bypass_device_check) return true;
-    if(row?.is_pro){
-      await sb.from('users').update({active_device_id:myId}).eq('username',username);
-      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
-      return true;
-    }
-    const activeId=row?.active_device_id||null;
-
-    // Slot is free — claim it
-    if(!activeId){
-      await sb.from('users').update({active_device_id:myId}).eq('username',username);
-      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
-      return true;
-    }
-
-    // We are already the registered device — refresh and allow
-    if(activeId===myId){
-      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
-      return true;
-    }
-
-    // Different device ID in DB — but if this browser was previously registered,
-    // the sign-out failed to clear it (RLS/timing race). Reclaim the slot.
-    if(wasPreviouslyRegistered){
-      console.warn('[Prodify] Reclaiming device slot — sign-out likely failed to clear DB');
-      await sb.from('users').update({active_device_id:myId}).eq('username',username);
-      localStorage.setItem(_DEVICE_REGISTERED_KEY,Date.now().toString());
-      return true;
-    }
-
-    // Genuinely a different device — block it
-    localStorage.removeItem(_DEVICE_REGISTERED_KEY);
-    return false;
-  }catch(e){
-    console.warn('[Prodify] Device check exception',e);
-    return wasPreviouslyRegistered;
-  }
-}
-
-function showMobMultiDeviceBlock(){
-  const existing=document.getElementById('mob-multidevice-block');
-  if(existing) return;
-  const el=document.createElement('div');
-  el.id='mob-multidevice-block';
-  el.style.cssText='position:fixed;inset:0;z-index:99999;background:var(--surf);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;';
-  el.innerHTML=`
-    <div style="font-size:52px;margin-bottom:18px;">📱</div>
-    <div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:10px;">Device limit reached</div>
-    <div style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:28px;">Free plan supports <strong>1 active device</strong>.<br/>Sign out on your other device first, then try again.</div>
-    <button onclick="document.getElementById('mob-multidevice-block').style.display='none';showUpgradeModal('Multi-Device Sync');" style="width:100%;max-width:280px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">✦ Upgrade to Pro</button>
-    <button onclick="document.getElementById('mob-multidevice-block').remove();doSignOut();" style="width:100%;max-width:280px;padding:12px;border-radius:14px;border:1.5px solid var(--bdr);background:transparent;color:var(--ink3);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Sign out</button>
-  `;
-  document.body.appendChild(el);
-}
-
-const _DEVICE_KEY = 'pd1_device_id';
-const _DEVICE_REGISTERED_KEY = 'pd1_device_registered_at';
-const _DEVICE_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
-function getOrCreateDeviceId(){ let id=localStorage.getItem(_DEVICE_KEY); if(!id){id='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem(_DEVICE_KEY,id);} return id; }
-function getDeviceName(){ const ua=navigator.userAgent; if(/iPhone/i.test(ua))return'iPhone'; if(/iPad/i.test(ua))return'iPad'; if(/Android.*Mobile/i.test(ua))return'Android Phone'; if(/Android/i.test(ua))return'Android Tablet'; if(/Mac/i.test(ua))return'Mac'; if(/Windows/i.test(ua))return'Windows PC'; return'Browser'; }
-function getDeviceIcon(n){ return /iPhone|Android Phone/i.test(n)?'📱':/iPad|Tablet/i.test(n)?'📟':/Mac/i.test(n)?'💻':/Windows/i.test(n)?'🖥️':'💻'; }
-
-function showDevicesModal(){
-  if(!isPro()){showUpgradeModal('Multi-Device Sync');return;}
-  renderDevicesList(); openSheet('sh-devices');
-}
-async function renderDevicesList(){
-  const el=document.getElementById('sh-devices-list'); if(!el)return;
-  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:12px;">Loading…</div>';
-  if(!sbReady){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;">Not connected.</div>';return;}
-  try{
-    const myId=getOrCreateDeviceId(), myName=getDeviceName(), myIcon=getDeviceIcon(myName);
-    const {data:activeId,error}=await sb.rpc('get_active_device',{p_username:cu});
-    if(error)throw error;
-    if(!activeId||isPro()){
-      el.innerHTML=`<div class="device-row"><div class="device-icon">${myIcon}</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--ink);">${myName} <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span></div><div style="font-size:11px;color:var(--ink4);margin-top:2px;">Currently active</div></div><div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div></div>${isPro()?'<div style="margin-top:10px;padding:10px 12px;background:var(--al);border-radius:10px;font-size:11px;color:var(--a2);font-weight:600;">✦ Pro — unlimited devices</div>':''}`;
-      return;
-    }
-    const isMe=activeId===myId;
-    el.innerHTML=`<div class="device-row"><div class="device-icon">${isMe?myIcon:'💻'}</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--ink);">${isMe?myName:'Another device'}${isMe?' <span style="font-size:10px;color:var(--a2);font-weight:600;">(this device)</span>':''}</div><div style="font-size:11px;color:var(--ink4);margin-top:2px;">${isMe?'Currently active':'Active on another device'}</div></div>${isMe?'<div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>':'<button class="device-remove-btn" onclick="forceRemoveOtherDevice()">Remove</button>'}</div>`;
-  }catch(e){ el.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);">Could not load devices.</div>'; }
-}
-async function forceRemoveOtherDevice(){
-  if(!sbReady||!cu)return;
-  await sb.from('users').update({active_device_id:null}).eq('username',cu);
-  renderDevicesList(); toast('Device removed');
-}
-async function unregisterDevice(username){
-  localStorage.removeItem(_DEVICE_REGISTERED_KEY);
-  if(!sbReady||!username)return;
-  try{
-    // Skip SELECT check — unconditionally clear the slot to avoid RLS silent-fail race condition
-    const {error}=await sb.from('users').update({active_device_id:null}).eq('username',username);
-    if(error) console.warn('[Prodify] unregisterDevice update failed:',error.message);
-  }catch(e){ console.warn('[Prodify] unregisterDevice failed',e); }
-}
-
-
-
-(async ()=>{
-  // Hide all screens initially to prevent flash
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-
-  // Restore persisted _lastSaveTs so trustLocal guard works across reloads
-  try{ _lastSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; }catch(e){}
-
-  // Check for OAuth redirect first
-  const hasOAuthParams = window.location.hash.includes('access_token') || window.location.search.includes('code=');
-  if(hasOAuthParams && sbReady){
-    const handled = await handleGoogleCallback();
-    if(handled) return;
-  }
-  // Check for existing Supabase session (returning user, same browser)
-  if(sbReady){
-    try{
-      const {data} = await sb.auth.getSession();
-      if(data.session){
-        const handled = await handleGoogleCallback();
-        if(handled) return;
-      }
-    }catch(e){}
-  }
-  // Check for existing local session — but still pull cloud to stay in sync
-  if(cu && acc[cu]){
-    // Device check before launching — always run (grace period handles offline)
-    const deviceAllowed = await checkAndRegisterDevice(cu);
-    if(!deviceAllowed){ showScreen('login'); showMobMultiDeviceBlock(); return; }
-    // Launch from local immediately for speed, then sync cloud in background
-    launch();
-    // Pull cloud data after launch — updates UI if cloud is newer
-    if(sbReady){
-      setTimeout(()=>pullFromCloud(), 500);
-    }
-  } else {
-    showScreen('login');
-  }
-})();
-
-// Save on page unload / app backgrounding — matches desktop beforeunload handler
-// pagehide is more reliable than beforeunload on iOS Safari
-window.addEventListener('pagehide', function(){
-  if(!cu || !acc[cu]) return;
-  const d=acc[cu];
-  d._localTs=Date.now();
-  try{ localStorage.setItem('pd1_lastSaveTs', String(d._localTs)); }catch(e){}
-  LS.s('pd1_acc', acc);
-  // Best-effort cloud save on app background
-  if(sbReady){
-    saveAll();
-  }
-});
-window.addEventListener('beforeunload', function(){
-  if(!cu || !acc[cu]) return;
-  const d=acc[cu];
-  d._localTs=Date.now();
-  try{ localStorage.setItem('pd1_lastSaveTs', String(d._localTs)); }catch(e){}
-  LS.s('pd1_acc', acc);
-});
-
-// Register service worker
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  });
-}
-
-// PWA Install prompt
-let _pwaPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  _pwaPrompt=e;
-  if(!localStorage.getItem('pwa-dismissed')){
-    const banner=document.getElementById('pwa-install-banner');
-    if(banner) banner.style.display='flex';
-  }
-});
-window.addEventListener('appinstalled',()=>{
-  const banner=document.getElementById('pwa-install-banner');
-  if(banner) banner.style.display='none';
-  _pwaPrompt=null;
-  toast('Prodify installed! 🎉');
-});
-function pwaInstall(){
-  if(!_pwaPrompt) return;
-  _pwaPrompt.prompt();
-  _pwaPrompt.userChoice.then(r=>{
-    if(r.outcome==='accepted'){
-      const banner=document.getElementById('pwa-install-banner');
-      if(banner) banner.style.display='none';
-    }
-    _pwaPrompt=null;
-  });
-}
-function pwaDismiss(){
-  const banner=document.getElementById('pwa-install-banner');
-  if(banner) banner.style.display='none';
-  localStorage.setItem('pwa-dismissed','1');
-}
-
-// iOS install hint — show once per session on Safari iOS if not installed
-const _isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-const _isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-const _isStandalone=window.navigator.standalone===true;
-if(_isIOS && _isSafari && !_isStandalone && !localStorage.getItem('ios-hint-dismissed')){
-  // Delay slightly so app loads first
-  setTimeout(()=>{
-    const hint=document.getElementById('ios-install-banner');
-    if(hint) hint.style.display='block';
-  }, 3000);
-}
-function iosDismiss(){
-  const hint=document.getElementById('ios-install-banner');
-  if(hint) hint.style.display='none';
-  localStorage.setItem('ios-hint-dismissed','1');
-}
-
 // ═══════════════════════════════════════
 // AI PLANNER — mobile-native implementation
 // (app.js is never loaded on mobile, so these functions live here)
@@ -3749,3 +3111,111 @@ function showMobileConfetti(){
       .onfinish=()=>el.remove();
   }
 }
+
+// ══════════════════════════════════════════════
+// DEVICE MANAGEMENT
+// ══════════════════════════════════════════════
+const _DEVICE_KEY = 'pd1_device_id';
+
+function getOrCreateDeviceId() {
+  let id = localStorage.getItem(_DEVICE_KEY);
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2,10) + '_' + Date.now().toString(36);
+    localStorage.setItem(_DEVICE_KEY, id);
+  }
+  return id;
+}
+
+async function checkAndRegisterDevice(username) {
+  try {
+    if (!sbReady) return true; // offline — fail open
+    const myId = getOrCreateDeviceId();
+    const { data: row, error } = await sb.from('users')
+      .select('active_device_id, is_pro, bypass_device_check')
+      .eq('username', username).single();
+    if (error) return true; // fail open
+    if (row?.bypass_device_check) return true;
+    if (row?.is_pro) {
+      await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+      return true;
+    }
+    const activeId = row?.active_device_id || null;
+    if (activeId && activeId !== myId) return false;
+    await sb.from('users').update({ active_device_id: myId }).eq('username', username);
+    return true;
+  } catch(e) {
+    console.warn('[Prodify] Device check failed, allowing access', e);
+    return true;
+  }
+}
+
+async function unregisterDevice(username) {
+  if (!sbReady || !username) return;
+  try {
+    const myId = getOrCreateDeviceId();
+    const { data } = await sb.from('users').select('active_device_id').eq('username', username).single();
+    if (data && data.active_device_id === myId)
+      await sb.from('users').update({ active_device_id: null }).eq('username', username);
+  } catch(e) {}
+}
+
+function showMobMultiDeviceBlock() {
+  const existing = document.getElementById('mob-multidevice-block');
+  if (existing) return;
+  const el = document.createElement('div');
+  el.id = 'mob-multidevice-block';
+  el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--surf);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;';
+  el.innerHTML = `
+    <div style="font-size:52px;margin-bottom:18px;">📱</div>
+    <div style="font-size:20px;font-weight:800;color:var(--ink);margin-bottom:10px;">Device limit reached</div>
+    <div style="font-size:14px;color:var(--ink3);line-height:1.7;margin-bottom:28px;">Free plan supports <strong>1 active device</strong>.<br/>Sign out on your other device first, then try again.</div>
+    <button onclick="document.getElementById('mob-multidevice-block').style.display='none';showUpgradeModal('Multi-Device Sync');" style="width:100%;max-width:280px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">✦ Upgrade to Pro</button>
+    <button onclick="document.getElementById('mob-multidevice-block').remove();doSignOut();" style="width:100%;max-width:280px;padding:12px;border-radius:14px;border:1.5px solid var(--bdr);background:transparent;color:var(--ink3);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Sign out</button>
+  `;
+  document.body.appendChild(el);
+}
+
+
+// ══════════════════════════════════════════════
+// BOOT — runs once on script load
+// ══════════════════════════════════════════════
+(async () => {
+  try{ _lastSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; }catch(e){}
+
+  // Check for OAuth redirect first
+  const hasOAuthParams = window.location.hash.includes('access_token') || window.location.search.includes('code=');
+  if(hasOAuthParams && sbReady){
+    const handled = await handleGoogleCallback();
+    if(handled) return;
+  }
+  // Check for existing Supabase session (returning user, same browser)
+  if(sbReady){
+    try{
+      const {data} = await sb.auth.getSession();
+      if(data.session){
+        const handled = await handleGoogleCallback();
+        if(handled) return;
+      }
+    }catch(e){}
+  }
+  // Check for existing local session — launch immediately, sync cloud in background
+  if(cu && acc[cu]){
+    if(sbReady){
+      const deviceAllowed = await checkAndRegisterDevice(cu);
+      if(!deviceAllowed){ showScreen('login'); showMobMultiDeviceBlock(); return; }
+    }
+    launch();
+    if(sbReady){ setTimeout(()=>pullFromCloud(), 500); }
+  } else {
+    showScreen('login');
+  }
+})();
+
+// Save on page unload / app backgrounding
+window.addEventListener('pagehide', function(){
+  if(!cu || !acc[cu]) return;
+  const d=acc[cu];
+  d._localTs=Date.now();
+  LS.s('pd1_acc',acc);
+  try{ localStorage.setItem('pd1_lastSaveTs',String(d._localTs)); }catch(e){}
+});
