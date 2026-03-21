@@ -1109,3 +1109,13 @@ button,input,select,textarea{font-family:inherit;}
 /* Accent swatches */
 [data-dark="1"] .accent-swatch{border-color:rgba(255,255,255,.1)!important;}
 [data-dark="1"] .accent-swatch.selected{border-color:#EAE5DC!important;}
+
+/* ═══════════════════════════════════════
+   GUEST MODE
+   ═══════════════════════════════════════ */
+#mob-guest-banner { display: none; }
+body.guest-active #screen-app {
+  top: 44px !important;
+  height: calc(100% - 44px) !important;
+}
+body.guest-active #screen-app .topbar { display: none !important; }

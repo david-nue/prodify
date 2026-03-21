@@ -2506,3 +2506,22 @@ body.in-focus-mob .fcs-mob-inline-exit{display:flex;}
 .fp-back-arrow svg{width:18px;height:18px;}
 [data-dark="1"] .fp-back-arrow{color:#8A8070!important;}
 [data-dark="1"] .fp-back-arrow:hover{background:rgba(255,255,255,.06)!important;color:#EAE5DC!important;}
+
+/* ═══════════════════════════════════════
+   GUEST MODE
+   ═══════════════════════════════════════ */
+
+/* Desktop: shrink app screen down by banner height so canvas starts below it */
+#guest-banner { display: none; }
+body.guest-active #app {
+  top: 44px !important;
+  height: calc(100% - 44px) !important;
+}
+
+/* Mobile: banner at top, push screen-app content down */
+#mob-guest-banner { display: none; }
+body.guest-active #screen-app {
+  top: 44px !important;
+  height: calc(100% - 44px) !important;
+}
+body.guest-active #screen-app .topbar { display: none !important; }

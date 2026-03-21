@@ -13,6 +13,289 @@ if('serviceWorker' in navigator){
 
 
 
+// ══════════════════════════════════════════════════════
+// GUEST MODE
+// ══════════════════════════════════════════════════════
+window._guestMode = false;
+let _guestFreeWrites = {task: 0, journal: 0, note: 0};
+
+// Allow first write of each type freely; gate on subsequent ones
+function guestWriteGuard(type){
+  if(!window._guestMode) return false;
+  if(type && _guestFreeWrites[type] === 0){
+    _guestFreeWrites[type]++;
+    return false; // first action free
+  }
+  guestGuard();
+  return true;
+}
+
+const GUEST_TASKS = [
+  {id:'g1',text:'Finish project proposal',title:'Finish project proposal',col:'todo',date:'Today',dueDate:'',recurring:'none',priority:'high'},
+  {id:'g2',text:'Review pull requests',title:'Review pull requests',col:'inprog',date:'Today',dueDate:'',recurring:'none'},
+  {id:'g3',text:'Send weekly update email',title:'Send weekly update email',col:'todo',date:'Today',dueDate:'',recurring:'none'},
+  {id:'g4',text:'Update documentation',title:'Update documentation',col:'done',date:'Yesterday',dueDate:'',recurring:'none'},
+  {id:'g5',text:'Morning run',title:'Morning run',col:'done',date:'Yesterday',dueDate:'',recurring:'daily'},
+];
+const GUEST_JOURNAL = [
+  {id:'gj1',text:'Focused well today. Got through most of my task list and feeling good about the project direction.',content:'Focused well today. Got through most of my task list and feeling good about the project direction.',mood:'happy',date:'Mon, Mar 18',ts:Date.now()-86400000},
+  {id:'gj2',text:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',content:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',mood:'okay',date:'Sun, Mar 17',ts:Date.now()-172800000},
+];
+const GUEST_NOTES = [
+  {id:'gn1',title:'Ideas for Q2',content:'- Redesign onboarding flow\n- Add keyboard shortcuts\n- Weekly digest email',updated:Date.now()-3600000},
+  {id:'gn2',title:'Meeting notes',content:'Discussed roadmap priorities. Next steps: finalize scope by Friday.',updated:Date.now()-7200000},
+];
+const GUEST_PREFS = {
+  habits:[],
+  habitLog:{},
+  accent:'green', theme:'light',
+};
+const GUEST_EVENTS = [
+  {id:'ge1',title:'Team standup',date:new Date().toISOString().slice(0,10),color:'#3A7D5E',timeStart:'09:00',timeEnd:'09:30',yearly:false},
+  {id:'ge2',title:'Project review',date:new Date().toISOString().slice(0,10),color:'#3B82F6',timeStart:'14:00',timeEnd:'15:00',yearly:false},
+];
+
+function enterGuestMode(){
+  // Guard re-entry — already in guest mode, just go to canvas
+  if(window._guestMode){ show('app'); goPg('canvas',null); return; }
+  window._guestMode = true;
+  // Empty data — no sample entries
+  tasks = [];
+  journal = [];
+  notes = [];
+  prefs = JSON.parse(JSON.stringify(GUEST_PREFS));
+  calEvs = [];
+  subjects = [];
+  widgets = [];
+  cu = '__guest__';
+  // Purge any stale guest data
+  delete acc['__guest__'];
+  acc['__guest__'] = {tasks,journal,notes,prefs,calEvs,subjects,widgets,
+    displayName:'Guest',username:'guest',email:'',avatarUrl:''};
+  // Reset free-write quotas
+  _guestFreeWrites = {task: 0, journal: 0, note: 0};
+  // Clear canvas DOM from any previous session
+  const cvs = document.getElementById('canvas');
+  if(cvs) cvs.innerHTML = '';
+  // Show app and force canvas page
+  document.body.classList.add('in-app');
+  show('app');
+  goPg('canvas', null);
+  // Show guest banner
+  const banner = document.getElementById('guest-banner');
+  if(banner) banner.style.display='flex';
+  document.body.classList.add('guest-active');
+  // Update avatar
+  const av = document.getElementById('sbavt');
+  if(av) av.textContent='G';
+  const ddnm = document.getElementById('ddnm');
+  if(ddnm) ddnm.textContent='Guest';
+  const ddun = document.getElementById('ddun');
+  if(ddun) ddun.textContent='Preview mode';
+  const soLabel = document.getElementById('dsk-dd-signout-label');
+  if(soLabel) soLabel.textContent='Exit preview';
+  // Use exact same widget layout as real new-user canvas
+  setTimeout(()=>{
+    const ts = Date.now();
+    widgets = [
+      { id:'wg-tasks',    type:'tasks',    title:'Task Board',   x:24,  y:24,  w:560, h:400, z:10 },
+      { id:'wg-habits',   type:'habits',   title:'Daily Habits', x:604, y:24,  w:340, h:400, z:11 },
+      { id:'wg-journal',  type:'journal',  title:'Journal',      x:964, y:24,  w:420, h:400, z:12 },
+      { id:'wg-calendar', type:'calendar', title:'Calendar',     x:24,  y:444, w:560, h:420, z:13 },
+      { id:'wg-timer',    type:'timer',    title:'Focus Timer',  x:604, y:444, w:340, h:400, z:14 },
+      { id:'wg-note',     type:'note',     title:'Notes',        x:964, y:444, w:300, h:400, z:15 },
+    ];
+    acc['__guest__'].widgets = widgets;
+    nextZ = 16;
+    renderCanvas();
+    renderCanvasGreeting();
+    updateAllStatsW();
+    if(typeof renderFullCal==='function') renderFullCal();
+    widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
+    setTimeout(_showGuestTooltip, 800);
+  }, 80);
+  // Exit intent
+  window._guestBeforeUnload = function(e){
+    if(!window._guestMode) return;
+    e.preventDefault();
+    e.returnValue = '';
+  };
+  window.addEventListener('beforeunload', window._guestBeforeUnload);
+}
+
+function _showGuestTooltip(){
+  if(!window._guestMode) return;
+  if(document.getElementById('guest-tooltip')) return;
+  const tip = document.createElement('div');
+  tip.id = 'guest-tooltip';
+  tip.style.cssText = [
+    'position:fixed',
+    'bottom:72px',
+    'left:0',
+    'right:0',
+    'margin:0 auto',
+    'width:fit-content',
+    'max-width:90vw',
+    'z-index:7999',
+    'background:var(--surf)',
+    'color:var(--ink3)',
+    'font-size:12px',
+    'font-weight:600',
+    'padding:10px 20px',
+    'border-radius:100px',
+    'border:1.5px solid var(--bdr)',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.08)',
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
+    'white-space:nowrap',
+    'animation:fadeUp .4s cubic-bezier(.16,1,.3,1) both',
+    'pointer-events:none',
+  ].join(';');
+  tip.innerHTML = '<span style="opacity:.5">✦</span> Add a task · Write a journal entry · Track a habit';
+  document.body.appendChild(tip);
+  setTimeout(()=>{ if(tip){ tip.style.transition='opacity .5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); } }, 5000);
+}
+
+function _cleanupGuestMode(){
+  if(window._guestBeforeUnload){
+    window.removeEventListener('beforeunload', window._guestBeforeUnload);
+    window._guestBeforeUnload = null;
+  }
+  const tip = document.getElementById('guest-tooltip');
+  if(tip) tip.remove();
+  const gsiMo = document.getElementById('mo-guest-signin');
+  if(gsiMo) gsiMo.remove();
+  const streakEl = document.getElementById('flt-streak');
+  if(streakEl) streakEl.style.display='none';
+  const cvs = document.getElementById('canvas');
+  if(cvs) cvs.innerHTML = '';
+  const banner = document.getElementById('guest-banner');
+  if(banner) banner.style.display='none';
+  document.body.classList.remove('guest-active');
+  document.body.classList.remove('in-app');
+  const soLabel = document.getElementById('dsk-dd-signout-label');
+  if(soLabel) soLabel.textContent='Sign out';
+}
+
+function exitGuestMode(){
+  appConfirm('Exit preview?', 'Your preview data will be cleared. Sign in instead to save your work.', 'Exit preview').then(ok => {
+    if(!ok) return;
+    document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
+    window._guestMode = false;
+    window._pendingGuestData = null;
+    try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+    cu = null;
+    tasks=[]; journal=[]; notes=[]; prefs={}; calEvs=[]; subjects=[]; widgets=[];
+    _cleanupGuestMode();
+    show('sl');
+  });
+}
+
+function guestGuard(){
+  if(!window._guestMode) return false;
+  const mo = document.getElementById('mo-guest-gate');
+  if(mo) mo.style.display='flex';
+  return true;
+}
+
+function guestGateSignIn(){
+  document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
+  const mo = document.getElementById('mo-guest-gate');
+  if(mo) mo.style.display='none';
+  // Save guest data before showing sign-in modal
+  window._pendingGuestData = {
+    tasks: JSON.parse(JSON.stringify(tasks)),
+    journal: JSON.parse(JSON.stringify(journal)),
+    notes: JSON.parse(JSON.stringify(notes)),
+    prefs: JSON.parse(JSON.stringify(prefs)),
+    calEvs: JSON.parse(JSON.stringify(calEvs)),
+  };
+  // Persist to sessionStorage so it survives magic link page redirect
+  try { sessionStorage.setItem('pd1_guest_data', JSON.stringify(window._pendingGuestData)); } catch(e) {}
+  // Show inline sign-in modal (stays over canvas — no redirect)
+  _showGuestSignInModal();
+}
+
+function _showGuestSignInModal(){
+  if(document.getElementById('mo-guest-signin')) return;
+  const mo = document.createElement('div');
+  mo.id = 'mo-guest-signin';
+  mo.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease both;';
+  mo.innerHTML = `
+    <div style="background:var(--surf);border-radius:20px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 80px rgba(0,0,0,0.2);position:relative;">
+      <button onclick="document.getElementById('mo-guest-signin').remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:20px;line-height:1;padding:4px 8px;border-radius:8px;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'">&times;</button>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:4px;">Save your work</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;line-height:1.6;">Create a free account to keep everything you just built.</div>
+      <div id="gsi-err" class="ferr" style="display:none;margin-bottom:12px;text-align:center;"></div>
+      <button class="btn-google btn-google-lg" onclick="_gsiDoGoogle()" id="gsi-google-btn">
+        <svg width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.33 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.67 14.62 48 24 48z"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div class="auth-divider"><span>or</span></div>
+      <div id="gsi-magic-form">
+        <input type="email" id="gsi-email" class="fi" placeholder="Enter your email address" autocomplete="email" onkeydown="if(event.key==='Enter')_gsiDoMagic()" style="margin-bottom:8px;"/>
+        <div class="ferr" id="gsi-magic-err" style="display:none;margin-bottom:8px;"></div>
+        <button class="btn bfull" onclick="_gsiDoMagic()" id="gsi-magic-btn" style="width:100%;padding:12px;font-size:14px;">Continue with Email</button>
+      </div>
+      <div id="gsi-magic-sent" style="display:none;text-align:center;padding:12px 0;">
+        <div style="font-size:22px;margin-bottom:8px;">📬</div>
+        <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;">Check your inbox</div>
+        <div style="font-size:12px;color:var(--ink3);">We sent a sign-in link to <span id="gsi-sent-email" style="font-weight:700;color:var(--a2);"></span></div>
+        <button onclick="document.getElementById('gsi-magic-sent').style.display='none';document.getElementById('gsi-magic-form').style.display='block';" style="margin-top:12px;background:none;border:none;font-size:12px;color:var(--ink4);cursor:pointer;font-family:inherit;">Use a different email</button>
+      </div>
+      <p class="auth-note" style="margin-top:16px;">Free to start · No credit card needed</p>
+    </div>`;
+  document.body.appendChild(mo);
+  setTimeout(()=>{ const e = document.getElementById('gsi-email'); if(e) e.focus(); }, 100);
+}
+
+async function _gsiDoGoogle(){
+  const btn = document.getElementById('gsi-google-btn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; }
+  // Remove exit-intent listener so the OAuth redirect doesn't trigger "Leave site?"
+  if(window._guestBeforeUnload){
+    window.removeEventListener('beforeunload', window._guestBeforeUnload);
+    window._guestBeforeUnload = null;
+  }
+  await doGoogleAuth();
+}
+
+async function _gsiDoMagic(){
+  const emailEl = document.getElementById('gsi-email');
+  const errEl = document.getElementById('gsi-magic-err');
+  const btn = document.getElementById('gsi-magic-btn');
+  if(!emailEl) return;
+  const email = emailEl.value.trim();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    if(errEl){ errEl.textContent='Please enter a valid email address.'; errEl.style.display='block'; }
+    return;
+  }
+  if(errEl) errEl.style.display='none';
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options:{ emailRedirectTo: window.location.origin + window.location.pathname }
+    });
+    if(error) throw error;
+    document.getElementById('gsi-magic-form').style.display='none';
+    document.getElementById('gsi-magic-sent').style.display='block';
+    const sentEl = document.getElementById('gsi-sent-email');
+    if(sentEl) sentEl.textContent = email;
+  } catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Continue with Email'; }
+    if(errEl){ errEl.textContent = e.message||'Something went wrong. Please try again.'; errEl.style.display='block'; }
+  }
+}
+
+
+
 // ── CUSTOM CONFIRM ──
 let _confirmResolve = null;
 function appConfirm(msg, sub='', okLabel='Delete'){
@@ -526,6 +809,14 @@ const LS={
 // STATE
 // ═══════════════════════════════════════
 let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
+
+// Restore guest data that survived a magic link redirect
+(function(){
+  try {
+    const raw = sessionStorage.getItem('pd1_guest_data');
+    if(raw) { window._pendingGuestData = JSON.parse(raw); }
+  } catch(e) {}
+})();
 // Must be declared before initSupabase() registers onAuthStateChange
 window._oauthRedirectInProgress = false;
 initSupabase();
@@ -689,6 +980,7 @@ function show(id){
 }
 
 function goPg(id,btn){
+  if(window._guestMode && (id==='profile'||id==='settings')){guestGuard();return;}
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
 
   closeWkPicker();
@@ -1367,6 +1659,19 @@ function obFinish() {
   acc[cu].onboarded = true;
   _obSyncGlobals();
 
+  // Merge guest data if user signed in from preview mode
+  if(window._pendingGuestData){
+    const gd = window._pendingGuestData;
+    window._pendingGuestData = null;
+    try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+    if(gd.tasks && gd.tasks.length) acc[cu].tasks = gd.tasks;
+    if(gd.journal && gd.journal.length) acc[cu].journal = gd.journal;
+    if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
+    if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
+    // Merge habit log (don't overwrite new user's default habits)
+    if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
+  }
+
   // Seed pre-built canvas for new users if they have no widgets
   if (!acc[cu].widgets || !acc[cu].widgets.length) {
     const ts = Date.now();
@@ -1387,7 +1692,7 @@ function obFinish() {
 
   LS.s('pd1_acc', acc);
   if (sbReady) dbSaveUser(cu, acc[cu]);
-  // Send welcome email — fire and forget, don't block launch
+  // Send welcome email via Resend — fire and forget, don't block launch
   sendWelcomeEmail(acc[cu].displayName);
   checkAndRegisterDevice(cu).then(allowed => {
     if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
@@ -1395,18 +1700,103 @@ function obFinish() {
   });
 }
 
-async function sendWelcomeEmail(name) {
-  try {
-    if (typeof emailjs === 'undefined') return;
-    // Get email from Supabase auth session
+// ═══════════════════════════════════════
+// RESEND EMAIL
+// ═══════════════════════════════════════
+const RESEND_KEY = 're_8LVswgy6_6Nzp3bMZe73DDnEkLtTBW8Qn';
+const RESEND_FROM = 'Prodify <hello@mail.prodify.cc>';
+const RESEND_REPLY = 'prodifysupport@gmail.com';
+
+async function resendEmail(to, subject, html){
+  try{
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: RESEND_FROM, reply_to: RESEND_REPLY, to, subject, html }),
+    });
+    const data = await res.json();
+    console.log('[Resend]', res.status, JSON.stringify(data));
+    return res.ok;
+  } catch(e){ console.error('[Resend] error:', e); return false; }
+}
+
+function _emailHtmlWrap(bodyContent){
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
+<body style="margin:0;padding:0;background:#F5F3EF;font-family:'Segoe UI',Arial,sans-serif;">
+<div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
+  <div style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);padding:32px 36px;">
+    <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-1px;">Pro<b>dify</b></div>
+  </div>
+  <div style="padding:36px;">${bodyContent}</div>
+  <div style="padding:0 36px 28px;text-align:center;">
+    <p style="font-size:12px;color:#9C978F;margin:0;">Built with ♥ by David N. · <a href="https://prodify.cc" style="color:#3A7D5E;text-decoration:none;">prodify.cc</a></p>
+  </div>
+</div></body></html>`;
+}
+
+async function sendWelcomeEmail(name){
+  try{
     const { data } = await sb.auth.getUser();
     const email = data?.user?.email || '';
-    if (!email) return;
-    emailjs.send('service_4y11evv', 'template_bdxskqn', {
-      name: name || 'there',
-      to_email: email,
-    }).catch(() => {}); // silent fail — never block the user
-  } catch(e) {}
+    if(!email) return;
+    const body = `
+      <h1 style="font-size:22px;font-weight:800;color:#1A1714;margin:0 0 12px;letter-spacing:-.4px;">Welcome, ${name || 'there'}! 👋</h1>
+      <p style="font-size:15px;color:#5A5450;line-height:1.7;margin:0 0 20px;">Your workspace is ready. Here's how to get started:</p>
+      <div style="background:#F5F3EF;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">✅</span><b>Add your first task</b> — drag it across columns as you progress</div>
+        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🔥</span><b>Build a streak</b> — open Prodify daily to keep it growing</div>
+        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">📓</span><b>Write a journal entry</b> — pick a mood and reflect on your day</div>
+        <div style="font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🎯</span><b>Track a habit</b> — check it off daily to build consistency</div>
+      </div>
+      <a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;">Open my workspace</a>`;
+    resendEmail(email, `Welcome to Prodify, ${name || 'there'}!`, _emailHtmlWrap(body));
+  } catch(e){}
+}
+
+async function maybeSendWeeklySummary(){
+  if(!cu || window._guestMode) return;
+  const today = new Date();
+  if(today.getDay() !== 0) return; // Sunday only
+  const weekKey = `pd1_weekly_${today.toISOString().slice(0,10)}`;
+  try{ if(localStorage.getItem(weekKey)) return; localStorage.setItem(weekKey, '1'); } catch(e){ return; }
+  try{
+    const { data } = await sb.auth.getUser();
+    const email = data?.user?.email || '';
+    if(!email) return;
+    const name = (acc[cu]?.displayName || cu || 'there').split(' ')[0];
+    const streak = getAppStreak();
+    const sv = streakVisual(streak);
+    const completedTasks = tasks.filter(t => t.col === 'done').length;
+    const weekAgo = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    const journalCount = journal.filter(j => (j.date || '') >= weekAgo).length;
+    const upcoming = calEvs
+      .filter(e => e.date >= today.toISOString().slice(0,10))
+      .sort((a,b) => a.date > b.date ? 1 : -1)
+      .slice(0, 3);
+    const upcomingHtml = upcoming.length
+      ? upcoming.map(e => `<div style="padding:10px 14px;background:#F5F3EF;border-radius:8px;margin-bottom:8px;font-size:13px;color:#1A1714;"><b>${e.title}</b>${e.timeStart ? ` <span style="color:#9C978F;">· ${e.timeStart}</span>` : ''} <span style="color:#9C978F;">· ${e.date}</span></div>`).join('')
+      : '<p style="font-size:13px;color:#9C978F;margin:0;">No upcoming events.</p>';
+    const body = `
+      <p style="font-size:15px;color:#5A5450;margin:0 0 24px;">Hey ${name}, here's your week in review:</p>
+      <div style="display:flex;gap:12px;margin-bottom:28px;">
+        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:#1A1714;">${completedTasks}</div>
+          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">TASKS DONE</div>
+        </div>
+        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:#1A1714;">${journalCount}</div>
+          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">ENTRIES</div>
+        </div>
+        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:#1A1714;">${streak}</div>
+          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">${sv.icon} STREAK</div>
+        </div>
+      </div>
+      ${upcoming.length ? `<div style="margin-bottom:24px;"><div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;margin-bottom:10px;">COMING UP</div>${upcomingHtml}</div>` : ''}
+      <a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;margin-bottom:16px;">Open Prodify</a>
+      <p style="font-size:12px;color:#9C978F;text-align:center;margin:0;">Have a great week ahead.</p>`;
+    resendEmail(email, `Your Prodify week in review, ${name} 📊`, _emailHtmlWrap(body));
+  } catch(e){}
 }
 
 // Legacy — keep for any stray calls
@@ -1487,6 +1877,7 @@ async function _silentSignOut() {
 }
 
 async function doSO(){
+  if(window._guestMode){ exitGuestMode(); return; }
   const ok = await appConfirm('Sign out?', 'You will be returned to the landing page.', 'Sign out');
   if(!ok) return;
   const _cu = cu;
@@ -1602,6 +1993,7 @@ function renderCanvasGreeting(){
   const h=new Date().getHours();
   const g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   el.textContent=name?`${g}, ${name}.`:`${g}.`;
+  renderCanvasStreak();
 }
 
 function launch(){
@@ -1620,6 +2012,19 @@ function launch(){
     renderHabitAddForm('habit-add-form'); renderHabitAddForm('mob-habit-add-form');
   }, msToMidnight);
   const d=acc[cu];
+  // Merge guest data if user signed in from preview mode
+  if(window._pendingGuestData){
+    const gd = window._pendingGuestData;
+    window._pendingGuestData = null;
+    try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+    if(gd.tasks && gd.tasks.length) d.tasks = [...gd.tasks, ...(d.tasks||[])];
+    if(gd.journal && gd.journal.length) d.journal = [...gd.journal, ...(d.journal||[])];
+    if(gd.notes && gd.notes.length) d.notes = [...gd.notes, ...(d.notes||[])];
+    if(gd.calEvs && gd.calEvs.length) d.calEvs = [...gd.calEvs, ...(d.calEvs||[])];
+    acc[cu] = d;
+    LS.s('pd1_acc', acc);
+    if(sbReady) dbSaveUser(cu, d).catch(()=>{});
+  }
   tasks=d.tasks||[];journal=d.journal||[];subjects=d.subjects||[];
   calEvs=d.calEvs||[];widgets=d.widgets||[];notes=migrateNotes(d.notes||[]);prefs=d.prefs||{dark:false};
   // avatarUrl lives inside prefs — already set before launch() is called in doSI
@@ -1646,6 +2051,9 @@ function launch(){
   goPg('canvas',null); // always start on dashboard
   renderCanvas();
   renderCanvasGreeting();
+  renderCanvasStreak();
+  // Weekly summary — delayed so it doesn't block app load
+  setTimeout(maybeSendWeeklySummary, 2000);
   // Show first-time canvas hint for new users
   if(acc[cu]&&acc[cu]._newUser){
     delete acc[cu]._newUser;
@@ -1736,14 +2144,22 @@ async function submitFeedback(isDesktop=false){
   const btn=$(btnId);
   if(btn){btn.disabled=true;btn.textContent='Sending…';}
   try{
-    // Send email via EmailJS
-    await emailjs.send('service_4y11evv','template_nsoadni',{
-      user: cu||'anonymous',
-      type: _fbType,
-      rating: _fbStar||'No rating',
-      message: msg,
-      ts: new Date().toLocaleString()
-    });
+    // Send feedback via Resend
+    const feedbackHtml = _emailHtmlWrap(`
+      <h2 style="font-size:18px;font-weight:800;color:#1A1714;margin:0 0 16px;">New Feedback</h2>
+      <div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">FROM</div>
+        <div style="font-size:14px;color:#1A1714;">${cu||'anonymous'}</div>
+      </div>
+      <div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">TYPE · RATING</div>
+        <div style="font-size:14px;color:#1A1714;">${_fbType} · ${_fbStar?'⭐'.repeat(_fbStar):'No rating'}</div>
+      </div>
+      <div style="background:#F5F3EF;border-radius:12px;padding:16px;">
+        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">MESSAGE</div>
+        <div style="font-size:14px;color:#1A1714;line-height:1.6;">${msg}</div>
+      </div>`);
+    await resendEmail(RESEND_REPLY, `Prodify Feedback — ${_fbType}`, feedbackHtml);
     // Also save to Supabase for records
     if(sbReady){
       await sb.from('feedback').insert({
@@ -1884,6 +2300,7 @@ async function submitFeedback(isDesktop=false){
 // PERSIST
 // ═══════════════════════════════════════
 function persist(){
+  if(window._guestMode) return;
   if(!cu)return;
   // Snapshot before writing so all direct persist() calls get a backup,
   // not just calls that go through window.persist (the old monkey-patch approach
@@ -3175,6 +3592,8 @@ function tmStartEdit(wid){
   if(_hi)_hi.value=_h||''; if(_mi)_mi.value=_m||''; if(_si)_si.value=_s||'';
   timeEl.classList.add('hide');
   inpEl.classList.add('show');
+  // Hide start button while editing
+  const btn=$('tmbtn-'+wid);if(btn)btn.style.display='none';
   setTimeout(()=>{if(_hi)_hi.focus();},50);
 }
 function tmInputFmt(e){
@@ -3209,6 +3628,7 @@ function tmCancelEdit(wid){
   const inpEl=$('tminputs-'+wid);
   if(timeEl)timeEl.classList.remove('hide');
   if(inpEl)inpEl.classList.remove('show');
+  const btn=$('tmbtn-'+wid);if(btn)btn.style.display='';
 }
 function setTMode(wid,m){
   const ts=TMS[wid];if(!ts)return;
@@ -3247,6 +3667,11 @@ function toggleTimer(wid){
     clearInterval(ts.iv);ts.running=false;
     const b=$('tmbtn-'+wid);if(b){b.textContent='Start';b.classList.remove('stop');}
   } else {
+    // Custom mode: if time not set, open the editor instead of starting
+    if(!TMODES[ts.mode]?.locked && ts.sec<=0){
+      tmStartEdit(wid);
+      return;
+    }
     if(ts.sec<=0){ts.sec=ts.custom[ts.mode];}
     ts.running=true;
     ts.iv=setInterval(()=>tickTimer(wid),1000);
@@ -3408,6 +3833,7 @@ function saveNoteField(wid, nid, field, val){
   _noteTimer=setTimeout(()=>persistSilent(),800);
 }
 function persistSilent(){
+  if(window._guestMode) return;
   if(!cu)return;
   const d=acc[cu];
   d.tasks=tasks;d.journal=journal;d.subjects=subjects;d.calEvs=calEvs;
@@ -4984,6 +5410,7 @@ async function delAcc(){
 function habitToday(){ return new Date().toISOString().slice(0,10); }
 
 function habitSave(){
+  if(window._guestMode) return;
   if(cu){ acc[cu].prefs=prefs; LS.s('pd1_acc',acc); if(typeof sbReady!=='undefined'&&sbReady) dbSaveUser(cu,acc[cu]); }
 }
 
@@ -6109,6 +6536,7 @@ function _fcsEditTime(wid) {
   const _fhi=document.getElementById('tminp-hr-fcs'),_fmi=document.getElementById('tminp-min-fcs'),_fsi=document.getElementById('tminp-sec-fcs');
   if(_fhi)_fhi.value=_fh||''; if(_fmi)_fmi.value=_fm||''; if(_fsi)_fsi.value=_fs||'';
   t.classList.add('hide'); inp.classList.add('show');
+  const fcsbtn=document.getElementById('fcs-btn');if(fcsbtn)fcsbtn.style.display='none';
   setTimeout(()=>{if(_fhi)_fhi.focus();},50);
 }
 function _fcsConfirm(wid) {
@@ -6118,6 +6546,7 @@ function _fcsConfirm(wid) {
   const total=Math.min(_cfh*3600+_cfm*60+_cfs,86399); if(total<1) return;
   const ts=TMS[wid]; if(!ts) return;
   ts.custom[ts.mode]=total; ts.sec=total;
+  const fcsbtn=document.getElementById('fcs-btn');if(fcsbtn)fcsbtn.style.display='';
   const b=document.getElementById('fcs-body'); if(b)_fcsBuild(wid,b);
 }
 function _fcsInpKey(e,wid) {
@@ -6125,6 +6554,7 @@ function _fcsInpKey(e,wid) {
   if(e.key==='Escape'){
     document.getElementById('fcs-time')?.classList.remove('hide');
     document.getElementById('fcs-inputs')?.classList.remove('show');
+    const fcsbtn=document.getElementById('fcs-btn');if(fcsbtn)fcsbtn.style.display='';
   }
 }
 
@@ -6624,4 +7054,67 @@ function showProWelcome() {
     ], { duration, delay, easing: 'cubic-bezier(.25,.46,.45,.94)', fill: 'forwards' })
       .onfinish = () => el.remove();
   }
+}
+
+// ═══════════════════════════════════════
+// APP STREAK
+// ═══════════════════════════════════════
+const STREAK_KEY = 'pd1_app_streak';
+const STREAK_LAST_KEY = 'pd1_app_streak_last';
+
+function getAppStreak(){
+  try{
+    const streak = parseInt(localStorage.getItem(STREAK_KEY)||'0',10)||0;
+    const last = localStorage.getItem(STREAK_LAST_KEY)||'';
+    const today = new Date().toISOString().slice(0,10);
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if(last===today) return streak; // already opened today
+    if(last===yesterday){
+      // consecutive day — increment
+      const newStreak = streak+1;
+      localStorage.setItem(STREAK_KEY, String(newStreak));
+      localStorage.setItem(STREAK_LAST_KEY, today);
+      return newStreak;
+    }
+    // missed a day — reset
+    localStorage.setItem(STREAK_KEY, '1');
+    localStorage.setItem(STREAK_LAST_KEY, today);
+    return 1;
+  }catch(e){ return 0; }
+}
+
+function streakVisual(n){
+  if(n<=0) return {icon:'🔥', color:'var(--ink4)', label:'0 day streak'};
+  if(n<7)  return {icon:'🔥', color:'var(--ink3)',  label: n===1?'1 day streak':`${n} day streak`};
+  if(n<30) return {icon:'🔥', color:'#D97706',      label:`${n} day streak`};
+  if(n<100)return {icon:'🔥', color:'var(--a2)',     label:`${n} day streak`};
+  return           {icon:'✨', color:'#B45309',      label:`${n} day streak`};
+}
+
+function renderCanvasStreak(){
+  if(window._guestMode) return;
+  const n = getAppStreak();
+  const el = document.getElementById('flt-streak');
+  if(!el) return;
+  const v = streakVisual(n);
+  el.innerHTML = `<span style="font-size:16px;line-height:1;">${v.icon}</span><span style="font-size:12px;font-weight:700;color:${v.color};letter-spacing:-.2px;">${v.label}</span>`;
+  el.style.display = 'flex';
+  if([7,30,100,365].includes(n)){
+    setTimeout(()=>_showStreakMilestone(n), 600);
+  }
+}
+
+function _showStreakMilestone(n){
+  const msgs = {
+    7:   {e:'🔥', t:'One week streak!',     s:"7 days in a row. Your streak is heating up — keep going and watch it change."},
+    30:  {e:'🔥', t:'30 day streak!',        s:"A full month. Your streak just turned green. Don't stop now."},
+    100: {e:'✨', t:'100 day streak!',       s:"Gold. You've earned it. This is exceptional."},
+    365: {e:'👑', t:'One year streak!',      s:"A full year. Prodify is part of your life now."},
+  };
+  const m = msgs[n]; if(!m) return;
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;padding:14px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:flex;align-items:center;gap:12px;white-space:nowrap;animation:fadeUp .4s cubic-bezier(.16,1,.3,1) both;';
+  toast.innerHTML = `<span style="font-size:24px;">${m.e}</span><div><div style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;">${m.t}</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">${m.s}</div></div>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{ toast.style.transition='opacity .5s'; toast.style.opacity='0'; setTimeout(()=>toast.remove(),500); }, 4000);
 }

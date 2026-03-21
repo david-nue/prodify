@@ -1,3 +1,186 @@
+// ══════════════════════════════════════════════════════
+// GUEST MODE (mobile)
+// ══════════════════════════════════════════════════════
+window._guestMode = window._guestMode || false;
+
+const MOB_GUEST_TASKS = [
+  {id:'g1',text:'Finish project proposal',title:'Finish project proposal',col:'todo',date:'Today',dueDate:'',recurring:'none',priority:'high'},
+  {id:'g2',text:'Review pull requests',title:'Review pull requests',col:'inprog',date:'Today',dueDate:'',recurring:'none'},
+  {id:'g3',text:'Send weekly update email',title:'Send weekly update email',col:'todo',date:'Today',dueDate:'',recurring:'none'},
+  {id:'g4',text:'Update documentation',title:'Update documentation',col:'done',date:'Yesterday',dueDate:'',recurring:'none'},
+  {id:'g5',text:'Morning run',title:'Morning run',col:'done',date:'Yesterday',dueDate:'',recurring:'daily'},
+];
+const MOB_GUEST_JOURNAL = [
+  {id:'gj1',content:'Focused well today. Got through most of my task list and feeling good about the project direction.',text:'Focused well today. Got through most of my task list and feeling good about the project direction.',mood:'😊',date:'Mon, Mar 18',ts:Date.now()-86400000},
+  {id:'gj2',content:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',text:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',mood:'😐',date:'Sun, Mar 17',ts:Date.now()-172800000},
+];
+const MOB_GUEST_NOTES = [
+  {id:'gn1',title:'Ideas for Q2',content:'- Redesign onboarding flow\n- Add keyboard shortcuts\n- Weekly digest email',updated:Date.now()-3600000},
+  {id:'gn2',title:'Meeting notes',content:'Discussed roadmap priorities. Next steps: finalize scope by Friday.',updated:Date.now()-7200000},
+];
+const MOB_GUEST_PREFS = {
+  habits:[],
+  habitLog:{},
+  accent:'green',theme:'light',
+};
+const MOB_GUEST_EVENTS = [
+  {id:'ge1',title:'Team standup',date:new Date().toISOString().slice(0,10),color:'#3A7D5E',timeStart:'09:00',timeEnd:'09:30',yearly:false},
+  {id:'ge2',title:'Project review',date:new Date().toISOString().slice(0,10),color:'#3B82F6',timeStart:'14:00',timeEnd:'15:00',yearly:false},
+];
+
+let _mobGuestFreeWrites = {task: 0, journal: 0, note: 0};
+
+function mobGuestWriteGuard(type){
+  if(!window._guestMode) return false;
+  if(type && _mobGuestFreeWrites[type] === 0){
+    _mobGuestFreeWrites[type]++;
+    return false; // first action free
+  }
+  mobGuestGuard();
+  return true;
+}
+
+function _showMobGuestTooltip(){
+  if(!window._guestMode) return;
+  if(document.getElementById('mob-guest-tip')) return;
+  const tip = document.createElement('div');
+  tip.id = 'mob-guest-tip';
+  tip.style.cssText = [
+    'position:fixed',
+    'bottom:130px',
+    'left:0',
+    'right:0',
+    'margin:0 auto',
+    'width:fit-content',
+    'max-width:90vw',
+    'z-index:7500',
+    'background:rgba(30,25,20,0.88)',
+    'backdrop-filter:blur(12px)',
+    '-webkit-backdrop-filter:blur(12px)',
+    'color:rgba(255,255,255,0.9)',
+    'font-size:12px',
+    'font-weight:600',
+    'padding:10px 20px',
+    'border-radius:100px',
+    'border:1px solid rgba(255,255,255,0.1)',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.15)',
+    'white-space:nowrap',
+    'pointer-events:none',
+    'animation:fadeIn .4s ease both',
+  ].join(';');
+  tip.textContent = '✦ Add a task · Write a journal entry · Track a habit';
+  document.body.appendChild(tip);
+  setTimeout(()=>{ if(tip){ tip.style.transition='opacity .5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); } }, 5000);
+}
+
+function mobEnterGuestMode(){
+  // Guard re-entry
+  if(window._guestMode){ showScreen('app'); goPg('home'); return; }
+  window._guestMode = true;
+  const gd = {
+    tasks: [],
+    journal: [],
+    notes: [],
+    prefs: JSON.parse(JSON.stringify(MOB_GUEST_PREFS)),
+    calEvs: [],
+    subjects:[],widgets:[],
+    displayName:'Guest',username:'guest',email:'',avatarUrl:'',
+  };
+  acc['__guest__'] = gd;
+  cu = '__guest__';
+  showScreen('app');
+  goPg('home');
+  const b = document.getElementById('mob-guest-banner');
+  if(b) b.style.display='flex';
+  document.body.classList.add('guest-active');
+  _mobGuestFreeWrites = {task: 0, journal: 0, note: 0};
+  if(typeof renderAll==='function') renderAll();
+  setTimeout(_showMobGuestTooltip, 1000);
+}
+
+function mobGuestGuard(){
+  if(!window._guestMode) return false;
+  const sheet = document.getElementById('sh-guest-gate');
+  const overlay = document.getElementById('sh-overlay');
+  if(sheet) sheet.classList.add('open');
+  if(overlay) overlay.classList.add('open');
+  return true;
+}
+
+async function _mobGsiDoGoogle(){
+  // Remove exit-intent listener so OAuth redirect doesn't trigger "Leave site?"
+  if(window._guestBeforeUnload){
+    window.removeEventListener('beforeunload', window._guestBeforeUnload);
+    window._guestBeforeUnload = null;
+  }
+  closeSheets();
+  await doGoogleAuth();
+}
+
+async function _mobGsiDoMagic(){
+  const emailEl = document.getElementById('mob-gsi-email');
+  const errEl = document.getElementById('mob-gsi-magic-err');
+  const btn = document.getElementById('mob-gsi-btn');
+  if(!emailEl) return;
+  const email = emailEl.value.trim();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    if(errEl){ errEl.textContent='Please enter a valid email address.'; errEl.style.display='block'; }
+    return;
+  }
+  if(errEl) errEl.style.display='none';
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options:{ emailRedirectTo: window.location.origin + window.location.pathname }
+    });
+    if(error) throw error;
+    document.getElementById('mob-gsi-form').style.display='none';
+    document.getElementById('mob-gsi-sent').style.display='block';
+    const sentEl = document.getElementById('mob-gsi-sent-email');
+    if(sentEl) sentEl.textContent = email;
+  } catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Continue with Email'; }
+    if(errEl){ errEl.textContent = e.message||'Something went wrong. Please try again.'; errEl.style.display='block'; }
+  }
+}
+
+function mobGuestGateSignIn(){
+  // Save guest data before sign-in
+  const d = acc['__guest__'] || {};
+  window._pendingGuestData = {
+    tasks: JSON.parse(JSON.stringify(d.tasks||[])),
+    journal: JSON.parse(JSON.stringify(d.journal||[])),
+    notes: JSON.parse(JSON.stringify(d.notes||[])),
+    prefs: JSON.parse(JSON.stringify(d.prefs||{})),
+    calEvs: JSON.parse(JSON.stringify(d.calEvs||[])),
+  };
+  // Persist to sessionStorage so it survives magic link redirect
+  try { sessionStorage.setItem('pd1_guest_data', JSON.stringify(window._pendingGuestData)); } catch(e) {}
+  // Close any open sheets
+  closeSheets();
+  // Show the inline sign-in sheet over the app (no redirect)
+  const sheet = document.getElementById('sh-guest-signin');
+  const overlay = document.getElementById('sh-overlay');
+  if(sheet) sheet.classList.add('open');
+  if(overlay) overlay.classList.add('open');
+}
+
+function mobExitGuestMode(){
+  appConfirm('Exit preview?', 'Your preview data will be cleared. Sign in instead to save your work.', 'Exit preview').then(ok => {
+    if(!ok) return;
+    window._guestMode = false;
+    window._pendingGuestData = null;
+    try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+    cu = null;
+    const tip = document.getElementById('mob-guest-tip');
+    if(tip) tip.remove();
+    document.getElementById('mob-guest-banner') && (document.getElementById('mob-guest-banner').style.display='none');
+    document.body.classList.remove('guest-active');
+    showScreen('login');
+  });
+}
+
 // ══════════════════════════════════════════════
 // SUPABASE — same credentials as desktop
 // ══════════════════════════════════════════════
@@ -32,6 +215,14 @@ const LS = {
 let acc = LS.g('pd1_acc',{});
 let cu  = LS.g('pd1_cur', null);
 
+// Restore guest data that survived a magic link redirect
+(function(){
+  try {
+    const raw = sessionStorage.getItem('pd1_guest_data');
+    if(raw) { window._pendingGuestData = JSON.parse(raw); }
+  } catch(e) {}
+})();
+
 function getD(){
   if(cu && acc[cu]){
     if(acc[cu].tasks)   acc[cu].tasks   = normalizeTasks(acc[cu].tasks);
@@ -45,7 +236,7 @@ function getTasks(){ return getD().tasks || []; }
 function getJournal(){ return getD().journal || []; }
 function getCalEvs(){ return getD().calEvs || []; }
 function getNotes(){ return migrateNotes(getD().notes); }
-function saveNotes(arr){ const d=getD(); d.notes=arr; if(cu) acc[cu]=d; saveAll(); }
+function saveNotes(arr){ if(window._guestMode) return; const d=getD(); d.notes=arr; if(cu) acc[cu]=d; saveAll(); }
 
 let _saveTimer=null;
 let _lastSaveTs=0;
@@ -53,6 +244,7 @@ let _realtimeChannel=null;
 let _pendingGoogleSession=null; // holds authUser/email/googleName while username picker is open
 
 function saveAll(){
+  if(window._guestMode) return;
   if(!cu) return;
   acc[cu]=getD();
   acc[cu]._localTs=Date.now();
@@ -585,6 +777,17 @@ function obNext(step){
 
 async function obFinish(){
   if(cu){
+    // Merge guest data if signed in from preview mode
+    if(window._pendingGuestData){
+      const gd = window._pendingGuestData;
+      window._pendingGuestData = null;
+      try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+      if(gd.tasks && gd.tasks.length) acc[cu].tasks = gd.tasks;
+      if(gd.journal && gd.journal.length) acc[cu].journal = gd.journal;
+      if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
+      if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
+      if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
+    }
     acc[cu].onboarded=true;
     const d=acc[cu];
     acc[cu]=d;
@@ -614,16 +817,61 @@ async function obFinish(){
   launch();
 }
 
+// ═══════════════════════════════════════
+// RESEND EMAIL (mobile)
+// ═══════════════════════════════════════
+const RESEND_KEY = 're_8LVswgy6_6Nzp3bMZe73DDnEkLtTBW8Qn';
+const RESEND_FROM = 'Prodify <hello@mail.prodify.cc>';
+const RESEND_REPLY = 'prodifysupport@gmail.com';
+
+async function resendEmail(to, subject, html){
+  try{
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: RESEND_FROM, reply_to: RESEND_REPLY, to, subject, html }),
+    });
+    const data = await res.json();
+    console.log('[Resend]', res.status, JSON.stringify(data));
+    return res.ok;
+  } catch(e){ console.error('[Resend] error:', e); return false; }
+}
+
+function _emailHtmlWrap(bodyContent){
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head><body style="margin:0;padding:0;background:#F5F3EF;font-family:'Segoe UI',Arial,sans-serif;"><div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);"><div style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);padding:32px 36px;"><div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-1px;">Pro<b>dify</b></div></div><div style="padding:36px;">${bodyContent}</div><div style="padding:0 36px 28px;text-align:center;"><p style="font-size:12px;color:#9C978F;margin:0;">Built with ♥ by David N. · <a href="https://prodify.cc" style="color:#3A7D5E;text-decoration:none;">prodify.cc</a></p></div></div></body></html>`;
+}
+
 async function sendWelcomeEmail(name){
   try{
-    if(typeof emailjs==='undefined') return;
     const {data}=await sb.auth.getUser();
     const email=data?.user?.email||'';
     if(!email) return;
-    emailjs.send('service_4y11evv','template_bdxskqn',{
-      name:name||'there',
-      to_email:email,
-    }).catch(()=>{});
+    const body=`<h1 style="font-size:22px;font-weight:800;color:#1A1714;margin:0 0 12px;letter-spacing:-.4px;">Welcome, ${name||'there'}! 👋</h1><p style="font-size:15px;color:#5A5450;line-height:1.7;margin:0 0 20px;">Your workspace is ready. Here's how to get started:</p><div style="background:#F5F3EF;border-radius:12px;padding:20px;margin-bottom:24px;"><div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">✅</span><b>Add your first task</b></div><div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🔥</span><b>Build a streak</b> — open Prodify daily</div><div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">📓</span><b>Write a journal entry</b></div><div style="font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🎯</span><b>Track a habit</b></div></div><a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;">Open my workspace</a>`;
+    resendEmail(email,`Welcome to Prodify, ${name||'there'}!`,_emailHtmlWrap(body));
+  }catch(e){}
+}
+
+async function maybeSendWeeklySummary(){
+  if(!cu||window._guestMode) return;
+  const today=new Date();
+  if(today.getDay()!==0) return;
+  const weekKey=`pd1_weekly_${today.toISOString().slice(0,10)}`;
+  try{ if(localStorage.getItem(weekKey)) return; localStorage.setItem(weekKey,'1'); }catch(e){ return; }
+  try{
+    const {data}=await sb.auth.getUser();
+    const email=data?.user?.email||'';
+    if(!email) return;
+    const d=getD();
+    const name=(d.displayName||cu||'there').split(' ')[0];
+    const streak=getAppStreak();
+    const sv=streakVisual(streak);
+    const completedTasks=(d.tasks||[]).filter(t=>t.col==='done').length;
+    const weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+    const journalCount=(d.journal||[]).filter(j=>(j.date||'')>=weekAgo).length;
+    const upcoming=(d.calEvs||[]).filter(e=>e.date>=today.toISOString().slice(0,10)).sort((a,b)=>a.date>b.date?1:-1).slice(0,3);
+    const upcomingHtml=upcoming.length?upcoming.map(e=>`<div style="padding:10px 14px;background:#F5F3EF;border-radius:8px;margin-bottom:8px;font-size:13px;color:#1A1714;"><b>${e.title}</b>${e.timeStart?` <span style="color:#9C978F;">· ${e.timeStart}</span>`:''} <span style="color:#9C978F;">· ${e.date}</span></div>`).join(''):'<p style="font-size:13px;color:#9C978F;margin:0;">No upcoming events.</p>';
+    const body=`<p style="font-size:15px;color:#5A5450;margin:0 0 24px;">Hey ${name}, here's your week in review:</p><div style="display:flex;gap:12px;margin-bottom:28px;"><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${completedTasks}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">TASKS DONE</div></div><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${journalCount}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">ENTRIES</div></div><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${streak}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">${sv.icon} STREAK</div></div></div>${upcoming.length?`<div style="margin-bottom:24px;"><div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;margin-bottom:10px;">COMING UP</div>${upcomingHtml}</div>`:''}<a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;margin-bottom:16px;">Open Prodify</a><p style="font-size:12px;color:#9C978F;text-align:center;margin:0;">Have a great week ahead.</p>`;
+    resendEmail(email,`Your Prodify week in review, ${name} 📊`,_emailHtmlWrap(body));
   }catch(e){}
 }
 
@@ -631,6 +879,27 @@ async function sendWelcomeEmail(name){
 // LAUNCH
 // ══════════════════════════════════════════════
 function launch(){
+  // Merge guest data if signed in from preview mode
+  if(window._pendingGuestData && cu){
+    const gd = window._pendingGuestData;
+    window._pendingGuestData = null;
+    try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
+    const d = acc[cu] || {};
+    if(gd.tasks && gd.tasks.length) d.tasks = [...gd.tasks, ...(d.tasks||[])];
+    if(gd.journal && gd.journal.length) d.journal = [...gd.journal, ...(d.journal||[])];
+    if(gd.notes && gd.notes.length) d.notes = [...gd.notes, ...(d.notes||[])];
+    if(gd.calEvs && gd.calEvs.length) d.calEvs = [...gd.calEvs, ...(d.calEvs||[])];
+    acc[cu] = d;
+    LS.s('pd1_acc', acc);
+    if(sbReady) saveAll();
+  }
+  // Clear guest mode if still active
+  if(window._guestMode){
+    window._guestMode = false;
+    const b = document.getElementById('mob-guest-banner');
+    if(b) b.style.display='none';
+    document.body.classList.remove('guest-active');
+  }
   applySettings();
   scheduleRecurringCheck(); // reset daily/weekly tasks — matches desktop
   renderAll();
@@ -639,6 +908,8 @@ function launch(){
   if(isPro()) backupSnapshotToday();
   checkWaitlist();
   renderMobileProBadge();
+  // Weekly summary email — delayed so it doesn't block app load
+  setTimeout(maybeSendWeeklySummary, 2000);
   // Start cloud sync
   if(cu){
     startRealtimeSync(cu);
@@ -769,6 +1040,7 @@ function clearAll(){
 // ══════════════════════════════════════════════
 const SUB_PAGES=['settings'];
 function goPg(id){
+  if(window._guestMode && (id==='profile'||id==='settings')){ mobGuestGuard(); return; }
   _track('page_view', { page: id });
   // Close AI planner panel when navigating
   const aipPanel = document.getElementById('mob-aip-panel');
@@ -875,7 +1147,6 @@ function renderHome(){
   const habits=getP().habits||[];
   const log=getP().habitLog||{};
   const doneHabits=habits.filter(hb=>(log[today]||[]).map(Number).includes(+hb.id)).length;
-  const streak=calcStreak();
 
   // ── MOMENTUM STRIP ──
   const momEl=document.getElementById('home-momentum');
@@ -903,7 +1174,7 @@ function renderHome(){
 
   // ── HABIT RINGS ──
   const metaEl=document.getElementById('home-habit-meta');
-  if(metaEl) metaEl.textContent=habits.length?`${doneHabits}/${habits.length} done${streak>0?' · '+streak+' day streak 🔥':''}`:'' ;
+  if(metaEl) metaEl.textContent=habits.length?`${doneHabits}/${habits.length} done`:'';
   const ringsEl=document.getElementById('home-habit-rings');
   if(ringsEl){
     if(!habits.length){
@@ -946,7 +1217,7 @@ function renderHome(){
   setNum('hstat-tasks', incompleteTasks.length);
   setNum('hstat-events', todayEvs.length);
   setNum('hstat-sessions', pomToday);
-  setNum('hstat-streak', streak);
+  renderHomeStreak();
 
   // ── UPCOMING TASKS — due dates + recurring ──
   const in7=new Date(); in7.setDate(in7.getDate()+7);
@@ -1231,6 +1502,7 @@ function initProjTaskSwipe(taskId, subjId){
 }
 
 function saveTask(){
+  
   const title=document.getElementById('task-inp')?.value?.trim(); if(!title) return;
   const col='todo';
   const dueDate=document.getElementById('task-due-val')?.value||null;
@@ -1542,6 +1814,7 @@ function jwClearAll(){
   });
 }
 function jwSave(){
+  
   const ta=document.getElementById('jwta-mob'); if(!ta) return;
   const text=ta.value.trim(); if(!text) return;
   const d=getD(); d.journal=d.journal||[];
@@ -1806,11 +2079,14 @@ function mobStartEdit(){
   if(secInp) secInp.value=s?String(s):'';
   ring.classList.add('hide');
   inpEl.classList.add('show');
+  // Hide start button while editing
+  const btn=document.getElementById('tmbtn-mob');if(btn)btn.style.display='none';
   setTimeout(()=>{if(hrInp) hrInp.focus();},50);
 }
 function mobCancelEdit(){
   document.getElementById('timer-ring-wrap')?.classList.remove('hide');
   document.getElementById('tminputs-mob')?.classList.remove('show');
+  const btn=document.getElementById('tmbtn-mob');if(btn)btn.style.display='';
 }
 function mobConfirmEdit(){
   const h=parseInt(document.getElementById('tminp-hr')?.value)||0;
@@ -1830,6 +2106,11 @@ function mobTimerBtn(){
     clearInterval(_mobIv); _mobRunning=false;
     const btn=document.getElementById('tmbtn-mob'); if(btn){btn.textContent='Start';btn.classList.remove('stop');}
   } else {
+    // Custom mode: if time not set, open editor instead of starting
+    if(!MOB_TMODES[_mobTMode].locked && _mobSec<=0){
+      mobStartEdit();
+      return;
+    }
     if(_mobSec<=0){ _mobSec=_mobCustomSec[_mobTMode]; _mobTotal=_mobSec; }
     _mobRunning=true;
     _mobIv=setInterval(()=>{
@@ -2452,6 +2733,7 @@ function notesBack(){
 
 function mobNewNote(){ notesNew(); }
 function notesNew(){
+  
   const notes = getNotes();
   const n = {id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:'', content:'', updated:Date.now()};
   notes.unshift(n);
@@ -2461,6 +2743,7 @@ function notesNew(){
 }
 
 function noteEditorInput(){
+  if(window._guestMode) return;
   if(!_notesOpenId) return;
   const titleInp = document.getElementById('mob-note-title-inp');
   const contentTa = document.getElementById('mob-note-content-ta');
@@ -2515,15 +2798,8 @@ async function submitFeedback(isDesktop) {
   const succEl = document.getElementById('fb-success');
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   try {
-    if (typeof emailjs !== 'undefined') {
-      await emailjs.send('service_4y11evv', 'template_nsoadni', {
-        user: cu || 'anonymous',
-        type: 'general',
-        rating: _fbStar || 'No rating',
-        message: msg,
-        ts: new Date().toLocaleString()
-      });
-    }
+    const feedbackHtml = _emailHtmlWrap(`<h2 style="font-size:18px;font-weight:800;color:#1A1714;margin:0 0 16px;">New Feedback</h2><div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:#9C978F;margin-bottom:6px;">FROM</div><div style="font-size:14px;color:#1A1714;">${cu||'anonymous'}</div></div><div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:#9C978F;margin-bottom:6px;">RATING</div><div style="font-size:14px;color:#1A1714;">${_fbStar?'⭐'.repeat(_fbStar):'No rating'}</div></div><div style="background:#F5F3EF;border-radius:12px;padding:16px;"><div style="font-size:12px;font-weight:700;color:#9C978F;margin-bottom:6px;">MESSAGE</div><div style="font-size:14px;color:#1A1714;line-height:1.6;">${msg}</div></div>`);
+    await resendEmail(RESEND_REPLY, 'Prodify Feedback (mobile)', feedbackHtml);
     if (sbReady) {
       await sb.from('feedback').insert({
         username: cu || null,
@@ -2535,7 +2811,6 @@ async function submitFeedback(isDesktop) {
     if (succEl) succEl.style.display = 'block';
     if (document.getElementById('fb-msg')) document.getElementById('fb-msg').value = '';
     _fbStar = 0;
-    // Reset stars visually
     const container = document.getElementById('fb-stars');
     if (container) container.querySelectorAll('.fbs').forEach(s => {
       s.setAttribute('fill', 'var(--bdr)');
@@ -2585,6 +2860,18 @@ const FEAT_DESCS = {
 let _waitlistChecked=false, _onWaitlist=false, _waitlistPos=null;
 
 function showUpgradeModal(featureName){
+  // In guest mode, redirect to sign-in instead of upgrade
+  if(window._guestMode){
+    const sheet = document.getElementById('sh-guest-gate');
+    const overlay = document.getElementById('sh-overlay');
+    const titleEl = sheet && sheet.querySelector('div[style*="font-size:18px"]');
+    const bodyEl = sheet && sheet.querySelectorAll('div[style*="font-size:13px"]')[0];
+    if(titleEl) titleEl.textContent = 'Sign in to unlock this';
+    if(bodyEl) bodyEl.textContent = 'This is a Pro feature. Create a free account first, then upgrade whenever you\'re ready.';
+    if(sheet) sheet.classList.add('open');
+    if(overlay) overlay.classList.add('open');
+    return;
+  }
   const sub = document.getElementById('mo-upgrade-sub');
   if(sub){
     const desc = featureName && FEAT_DESCS[featureName];
@@ -3299,3 +3586,67 @@ window.addEventListener('pagehide', function(){
   LS.s('pd1_acc',acc);
   try{ localStorage.setItem('pd1_lastSaveTs',String(d._localTs)); }catch(e){}
 });
+
+// ═══════════════════════════════════════
+// APP STREAK (mobile)
+// ═══════════════════════════════════════
+const MOB_STREAK_KEY = 'pd1_app_streak';
+const MOB_STREAK_LAST_KEY = 'pd1_app_streak_last';
+
+function getAppStreak(){
+  if(window._guestMode) return 0;
+  try{
+    const streak = parseInt(localStorage.getItem(MOB_STREAK_KEY)||'0',10)||0;
+    const last = localStorage.getItem(MOB_STREAK_LAST_KEY)||'';
+    const today = new Date().toISOString().slice(0,10);
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if(last===today) return streak;
+    if(last===yesterday){
+      const newStreak = streak+1;
+      localStorage.setItem(MOB_STREAK_KEY, String(newStreak));
+      localStorage.setItem(MOB_STREAK_LAST_KEY, today);
+      return newStreak;
+    }
+    localStorage.setItem(MOB_STREAK_KEY, '1');
+    localStorage.setItem(MOB_STREAK_LAST_KEY, today);
+    return 1;
+  }catch(e){ return 0; }
+}
+
+function streakVisual(n){
+  if(n<=0) return {icon:'🔥', color:'var(--ink4)'};
+  if(n<7)  return {icon:'🔥', color:'var(--ink3)'};
+  if(n<30) return {icon:'🔥', color:'#D97706'};
+  if(n<100)return {icon:'🔥', color:'var(--a2)'};
+  return           {icon:'✨', color:'#B45309'};
+}
+
+function renderHomeStreak(){
+  if(window._guestMode) return;
+  const n = getAppStreak();
+  const numEl = document.getElementById('hstat-streak');
+  const lblEl = numEl && numEl.nextElementSibling;
+  if(!numEl) return;
+  const v = streakVisual(n);
+  numEl.textContent = n;
+  numEl.style.color = v.color;
+  if(lblEl){ lblEl.textContent = v.icon + ' day streak'; }
+  if([7,30,100,365].includes(n)){
+    setTimeout(()=>_showMobStreakMilestone(n), 800);
+  }
+}
+
+function _showMobStreakMilestone(n){
+  const msgs = {
+    7:   {e:'🔥', t:'One week streak!',   s:'7 days in a row. Your streak is heating up — keep going and watch it change.'},
+    30:  {e:'🔥', t:'30 day streak!',      s:"A full month. Your streak just turned green. Don't stop now."},
+    100: {e:'✨', t:'100 day streak!',     s:"Gold. You've earned it. This is exceptional."},
+    365: {e:'👑', t:'One year streak!',    s:'A full year with Prodify.'},
+  };
+  const m = msgs[n]; if(!m) return;
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;padding:14px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:flex;align-items:center;gap:12px;white-space:nowrap;animation:fadeIn .4s ease both;max-width:90vw;';
+  t.innerHTML = `<span style="font-size:24px;">${m.e}</span><div><div style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;">${m.t}</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">${m.s}</div></div>`;
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 4000);
+}
