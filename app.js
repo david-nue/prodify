@@ -40,6 +40,32 @@ function enterGuestMode(){
   // Guard re-entry — already in guest mode, just go to canvas
   if(window._guestMode){ show('app'); goPg('canvas',null); return; }
   window._guestMode = true;
+  window._guestStartTime = Date.now();
+
+  // Track guest mode entry
+  _track('guest_mode_entered', { source: 'preview_button' });
+
+  // 30-minute nudge — reuse sign-in modal with loss aversion copy
+  window._guestNudgeTimer = setTimeout(()=>{
+    if(!window._guestMode) return;
+    // Count what they've built
+    const taskCount = tasks.length;
+    const journalCount = journal.length;
+    const habitCount = (prefs.habits||[]).length;
+    const parts = [];
+    if(taskCount) parts.push(`${taskCount} task${taskCount>1?'s':''}`);
+    if(journalCount) parts.push(`${journalCount} journal entr${journalCount>1?'ies':'y'}`);
+    if(habitCount) parts.push(`${habitCount} habit${habitCount>1?'s':''}`);
+    const lostMsg = parts.length
+      ? `You've built ${parts.join(', ')} — it all disappears when you close this tab.`
+      : `You've been here 30 minutes — everything disappears when you close this tab.`;
+    // Show sign-in modal with updated copy
+    _showGuestSignInModal(
+      "⏱️ Don't lose your work",
+      lostMsg
+    );
+    _track('guest_nudge_shown', { minutes: 30, items_built: parts.length });
+  }, 30 * 60 * 1000);
   // Empty data — no sample entries
   tasks = [];
   journal = [];
@@ -143,10 +169,17 @@ function _cleanupGuestMode(){
     window.removeEventListener('beforeunload', window._guestBeforeUnload);
     window._guestBeforeUnload = null;
   }
+  // Clear 30-min nudge timer
+  if(window._guestNudgeTimer){
+    clearTimeout(window._guestNudgeTimer);
+    window._guestNudgeTimer = null;
+  }
   const tip = document.getElementById('guest-tooltip');
   if(tip) tip.remove();
   const gsiMo = document.getElementById('mo-guest-signin');
   if(gsiMo) gsiMo.remove();
+  const nudgeMo = document.getElementById('mo-guest-nudge');
+  if(nudgeMo) nudgeMo.remove();
   const streakEl = document.getElementById('flt-streak');
   if(streakEl) streakEl.style.display='none';
   const cvs = document.getElementById('canvas');
@@ -159,10 +192,22 @@ function _cleanupGuestMode(){
   if(soLabel) soLabel.textContent='Sign out';
 }
 
+function _trackGuestExit(converted){
+  const spent = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 1000) : 0;
+  const minutes = Math.round(spent / 60);
+  if(converted){
+    _track('guest_converted', { minutes_spent: minutes });
+  } else {
+    _track('guest_exited', { minutes_spent: minutes });
+  }
+  window._guestStartTime = null;
+}
+
 function exitGuestMode(){
   appConfirm('Exit preview?', 'Your preview data will be cleared. Sign in instead to save your work.', 'Exit preview').then(ok => {
     if(!ok) return;
     document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
+    _trackGuestExit(false);
     window._guestMode = false;
     window._pendingGuestData = null;
     try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
@@ -184,6 +229,8 @@ function guestGateSignIn(){
   document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
   const mo = document.getElementById('mo-guest-gate');
   if(mo) mo.style.display='none';
+  // Track conversion with time spent
+  _trackGuestExit(true);
   // Save guest data before showing sign-in modal
   window._pendingGuestData = {
     tasks: JSON.parse(JSON.stringify(tasks)),
@@ -198,16 +245,25 @@ function guestGateSignIn(){
   _showGuestSignInModal();
 }
 
-function _showGuestSignInModal(){
-  if(document.getElementById('mo-guest-signin')) return;
+function _showGuestSignInModal(title, subtitle){
+  const _title = title || 'Save your work';
+  const _subtitle = subtitle || 'Create a free account to keep everything you just built.';
+  if(document.getElementById('mo-guest-signin')) {
+    // Already open — just update the text
+    const t = document.querySelector('#mo-guest-signin div[style*="font-size:22px"]');
+    const s = document.querySelector('#mo-guest-signin div[style*="margin-bottom:24px"]');
+    if(t) t.textContent = _title;
+    if(s) s.textContent = _subtitle;
+    return;
+  }
   const mo = document.createElement('div');
   mo.id = 'mo-guest-signin';
   mo.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s ease both;';
   mo.innerHTML = `
     <div style="background:var(--surf);border-radius:20px;padding:36px 32px 28px;max-width:400px;width:92%;box-shadow:0 24px 80px rgba(0,0,0,0.2);position:relative;">
       <button onclick="document.getElementById('mo-guest-signin').remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--ink3);font-size:20px;line-height:1;padding:4px 8px;border-radius:8px;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'">&times;</button>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:4px;">Save your work</div>
-      <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;line-height:1.6;">Create a free account to keep everything you just built.</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:4px;">${_title}</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:24px;line-height:1.6;">${_subtitle}</div>
       <div id="gsi-err" class="ferr" style="display:none;margin-bottom:12px;text-align:center;"></div>
       <button class="btn-google btn-google-lg" onclick="_gsiDoGoogle()" id="gsi-google-btn">
         <svg width="18" height="18" viewBox="0 0 48 48">

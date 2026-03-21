@@ -62,6 +62,37 @@ function mobEnterGuestMode(){
   // Guard re-entry
   if(window._guestMode){ showScreen('app'); goPg('home'); return; }
   window._guestMode = true;
+  window._guestStartTime = Date.now();
+
+  // Track entry
+  _track('guest_mode_entered', { source: 'preview_button', platform: 'mobile' });
+
+  // 30-minute nudge — reuse sign-in sheet with personalized loss text
+  window._guestNudgeTimer = setTimeout(()=>{
+    if(!window._guestMode) return;
+    const d = acc['__guest__'] || {};
+    const taskCount = (d.tasks||[]).length;
+    const journalCount = (d.journal||[]).length;
+    const habitCount = (d.prefs?.habits||[]).length;
+    const parts = [];
+    if(taskCount) parts.push(`${taskCount} task${taskCount>1?'s':''}`);
+    if(journalCount) parts.push(`${journalCount} journal entr${journalCount>1?'ies':'y'}`);
+    if(habitCount) parts.push(`${habitCount} habit${habitCount>1?'s':''}`);
+    const lossText = parts.length
+      ? `You'll lose ${parts.join(', ')} when you close this tab.`
+      : `Everything you've built disappears when you close this tab.`;
+    // Update sign-in sheet title and subtitle
+    const titleEl = document.getElementById('mob-gsi-title');
+    const subtitleEl = document.getElementById('mob-gsi-subtitle');
+    if(titleEl) titleEl.textContent = "Don't lose your work";
+    if(subtitleEl) subtitleEl.textContent = `${lossText} Sign up in 10 seconds — it's free.`;
+    // Open sign-in sheet
+    const sh = document.getElementById('sh-guest-signin');
+    const overlay = document.getElementById('sh-overlay');
+    if(sh) sh.classList.add('open');
+    if(overlay) overlay.classList.add('open');
+    _track('guest_nudge_shown', { minutes: 30, items_built: parts.length, platform: 'mobile' });
+  }, 30 * 60 * 1000);
   const gd = {
     tasks: [],
     journal: [],
@@ -130,7 +161,16 @@ async function _mobGsiDoMagic(){
   }
 }
 
+function _trackGuestExit(converted){
+  const spent = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 1000) : 0;
+  const minutes = Math.round(spent / 60);
+  _track(converted ? 'guest_converted' : 'guest_exited', { minutes_spent: minutes, platform: 'mobile' });
+  window._guestStartTime = null;
+  if(window._guestNudgeTimer){ clearTimeout(window._guestNudgeTimer); window._guestNudgeTimer = null; }
+}
+
 function mobGuestGateSignIn(){
+  _trackGuestExit(true);
   // Save guest data before sign-in
   const d = acc['__guest__'] || {};
   window._pendingGuestData = {
@@ -154,6 +194,7 @@ function mobGuestGateSignIn(){
 function mobExitGuestMode(){
   appConfirm('Exit preview?', 'Your preview data will be cleared. Sign in instead to save your work.', 'Exit preview').then(ok => {
     if(!ok) return;
+    _trackGuestExit(false);
     window._guestMode = false;
     window._pendingGuestData = null;
     try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
