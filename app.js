@@ -229,8 +229,6 @@ function guestGateSignIn(){
   document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
   const mo = document.getElementById('mo-guest-gate');
   if(mo) mo.style.display='none';
-  // Track conversion with time spent
-  _trackGuestExit(true);
   // Save guest data before showing sign-in modal
   window._pendingGuestData = {
     tasks: JSON.parse(JSON.stringify(tasks)),
@@ -1705,8 +1703,11 @@ function obFinish() {
     if(gd.journal && gd.journal.length) acc[cu].journal = gd.journal;
     if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
     if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
-    // Merge habit log (don't overwrite new user's default habits)
     if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
+    // New user converted from guest mode — track it
+    const minutes = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 60000) : 0;
+    _track('guest_converted', { minutes_spent: minutes });
+    window._guestStartTime = null;
   }
 
   // Seed pre-built canvas for new users if they have no widgets

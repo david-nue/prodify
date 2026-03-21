@@ -170,7 +170,6 @@ function _trackGuestExit(converted){
 }
 
 function mobGuestGateSignIn(){
-  _trackGuestExit(true);
   // Save guest data before sign-in
   const d = acc['__guest__'] || {};
   window._pendingGuestData = {
@@ -813,6 +812,10 @@ async function obFinish(){
       if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
       if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
       if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
+      // New user converted from guest mode — track it
+      const minutes = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 60000) : 0;
+      _track('guest_converted', { minutes_spent: minutes, platform: 'mobile' });
+      window._guestStartTime = null;
     }
     acc[cu].onboarded=true;
     const d=acc[cu];
