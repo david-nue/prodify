@@ -847,19 +847,13 @@
           <!-- scrollable canvas -->
           <div class="canvas-wrap">
             <div class="canvas-scroll" id="canvas-scroll">
-              <!-- Logo — top-right fixed on canvas -->
-              <div style="position:fixed;top:16px;right:18px;z-index:10;pointer-events:none;user-select:none;display:flex;align-items:center;">
+              <!-- Logo — top-left fixed on canvas -->
+              <div style="position:fixed;top:16px;left:18px;z-index:10;pointer-events:none;user-select:none;display:flex;align-items:center;">
                 <img src="/icons/logo.png" style="width:28px;height:28px;opacity:.35;" alt="Prodify">
               </div>
               <div
                 style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">
                 Built by <span style="color:var(--ink3);">David N.</span></div>
-              <!-- Greeting — sits behind all widgets, only visible on empty/sparse canvas -->
-              <div id="canvas-greeting"
-                style="position:absolute;top:28px;left:36px;z-index:0;pointer-events:none;user-select:none;">
-                <div id="canvas-greeting-text"
-                  style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink2);opacity:.45;"></div>
-              </div>
               <div class="canvas" id="canvas"></div>
             </div><!-- /canvas-scroll -->
           </div>
