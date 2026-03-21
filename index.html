@@ -1536,24 +1536,17 @@
         var gBtn = root.querySelector('#btn-google');
         if (gBtn) gBtn.disabled = true;
 
-        // Load Supabase then EmailJS then mobile JS
+        // Load Supabase then mobile JS
         var sbScript = document.createElement('script');
         sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
         sbScript.onload = function () {
-          ;
-            document.body.appendChild(mjs);
+          var mjs = document.createElement('script');
+          mjs.src = '/app-mobile.js?v=192';
+          mjs.onload = function () {
+            var gBtn2 = document.getElementById('btn-google');
+            if (gBtn2) gBtn2.disabled = false;
           };
-          ejsScript.onerror = function () {
-            // EmailJS failed to load — proceed without it (feedback will use Supabase only)
-            var mjs = document.createElement('script');
-            mjs.src = '/app-mobile.js?v=192';
-            mjs.onload = function () {
-              var gBtn2 = document.getElementById('btn-google');
-              if (gBtn2) gBtn2.disabled = false;
-            };
-            document.body.appendChild(mjs);
-          };
-          document.head.appendChild(ejsScript);
+          document.body.appendChild(mjs);
         };
         document.head.appendChild(sbScript);
       });
