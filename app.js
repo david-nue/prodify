@@ -1720,18 +1720,44 @@ async function resendEmail(to, subject, html){
   } catch(e){ console.error('[Resend] error:', e); return false; }
 }
 
-function _emailHtmlWrap(bodyContent){
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/></head>
-<body style="margin:0;padding:0;background:#F5F3EF;font-family:'Segoe UI',Arial,sans-serif;">
-<div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
-  <div style="background:linear-gradient(135deg,#2A5C44,#3A7D5E);padding:32px 36px;">
-    <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:-1px;">Pro<b>dify</b></div>
-  </div>
-  <div style="padding:36px;">${bodyContent}</div>
-  <div style="padding:0 36px 28px;text-align:center;">
-    <p style="font-size:12px;color:#9C978F;margin:0;">Built with ♥ by David N. · <a href="https://prodify.cc" style="color:#3A7D5E;text-decoration:none;">prodify.cc</a></p>
-  </div>
-</div></body></html>`;
+function _emailHtmlWrap(bodyContent, previewText=''){
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="color-scheme" content="light"/>
+<title>Prodify</title>
+</head>
+<body style="margin:0;padding:0;background:#F7F5F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+${previewText?`<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${previewText}</div>`:''}
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F5F2;padding:40px 16px;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+      <!-- HEADER -->
+      <tr><td style="padding-bottom:28px;text-align:center;">
+        <div style="display:inline-block;">
+          <span style="font-size:32px;font-weight:900;letter-spacing:-1.5px;color:#1A1714;">Pro</span><span style="font-size:32px;font-weight:900;letter-spacing:-1.5px;color:#3A7D5E;">dify</span>
+        </div>
+      </td></tr>
+
+      <!-- CARD -->
+      <tr><td style="background:#ffffff;border-radius:20px;padding:40px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+        ${bodyContent}
+      </td></tr>
+
+      <!-- FOOTER -->
+      <tr><td style="padding:24px 0 8px;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#B0A898;line-height:1.6;">
+          © 2026 Prodify · Built by David N.<br/>
+          <a href="https://prodify.cc" style="color:#3A7D5E;text-decoration:none;">prodify.cc</a> · <a href="https://prodify.cc/blog/" style="color:#B0A898;text-decoration:none;">Blog</a> · <a href="https://prodify.cc/privacy.html" style="color:#B0A898;text-decoration:none;">Privacy</a>
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
 }
 
 async function sendWelcomeEmail(name){
@@ -1740,16 +1766,35 @@ async function sendWelcomeEmail(name){
     const email = data?.user?.email || '';
     if(!email) return;
     const body = `
-      <h1 style="font-size:22px;font-weight:800;color:#1A1714;margin:0 0 12px;letter-spacing:-.4px;">Welcome, ${name || 'there'}! 👋</h1>
-      <p style="font-size:15px;color:#5A5450;line-height:1.7;margin:0 0 20px;">Your workspace is ready. Here's how to get started:</p>
-      <div style="background:#F5F3EF;border-radius:12px;padding:20px;margin-bottom:24px;">
-        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">✅</span><b>Add your first task</b> — drag it across columns as you progress</div>
-        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🔥</span><b>Build a streak</b> — open Prodify daily to keep it growing</div>
-        <div style="margin-bottom:12px;font-size:14px;color:#1A1714;"><span style="margin-right:8px;">📓</span><b>Write a journal entry</b> — pick a mood and reflect on your day</div>
-        <div style="font-size:14px;color:#1A1714;"><span style="margin-right:8px;">🎯</span><b>Track a habit</b> — check it off daily to build consistency</div>
-      </div>
-      <a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;">Open my workspace</a>`;
-    resendEmail(email, `Welcome to Prodify, ${name || 'there'}!`, _emailHtmlWrap(body));
+      <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#3A7D5E;letter-spacing:.5px;text-transform:uppercase;">Welcome</p>
+      <h1 style="margin:0 0 16px;font-size:26px;font-weight:800;color:#1A1714;letter-spacing:-.6px;line-height:1.2;">Hey ${name || 'there'} 👋</h1>
+      <p style="margin:0 0 28px;font-size:15px;color:#6B6460;line-height:1.7;">Your Prodify workspace is ready. Here are a few things to try first:</p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+        <tr><td style="padding:14px 0;border-bottom:1px solid #F0EDE8;">
+          <span style="font-size:18px;vertical-align:middle;margin-right:12px;">✅</span>
+          <span style="font-size:14px;color:#1A1714;font-weight:600;">Add your first task</span>
+          <span style="font-size:14px;color:#9C978F;"> — drag it to done when finished</span>
+        </td></tr>
+        <tr><td style="padding:14px 0;border-bottom:1px solid #F0EDE8;">
+          <span style="font-size:18px;vertical-align:middle;margin-right:12px;">🔥</span>
+          <span style="font-size:14px;color:#1A1714;font-weight:600;">Start your streak</span>
+          <span style="font-size:14px;color:#9C978F;"> — open Prodify every day to keep it going</span>
+        </td></tr>
+        <tr><td style="padding:14px 0;border-bottom:1px solid #F0EDE8;">
+          <span style="font-size:18px;vertical-align:middle;margin-right:12px;">🎯</span>
+          <span style="font-size:14px;color:#1A1714;font-weight:600;">Track a habit</span>
+          <span style="font-size:14px;color:#9C978F;"> — check it off daily to build consistency</span>
+        </td></tr>
+        <tr><td style="padding:14px 0;">
+          <span style="font-size:18px;vertical-align:middle;margin-right:12px;">📓</span>
+          <span style="font-size:14px;color:#1A1714;font-weight:600;">Write a journal entry</span>
+          <span style="font-size:14px;color:#9C978F;"> — pick a mood, reflect on your day</span>
+        </td></tr>
+      </table>
+
+      <a href="https://prodify.cc" style="display:block;background:#1A1714;color:#fff;text-align:center;padding:15px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:-.2px;">Open my workspace</a>`;
+    resendEmail(email, `Welcome to Prodify, ${name || 'there'}!`, _emailHtmlWrap(body, `Your workspace is ready — let's get started.`));
   } catch(e){}
 }
 
@@ -1774,28 +1819,42 @@ async function maybeSendWeeklySummary(){
       .sort((a,b) => a.date > b.date ? 1 : -1)
       .slice(0, 3);
     const upcomingHtml = upcoming.length
-      ? upcoming.map(e => `<div style="padding:10px 14px;background:#F5F3EF;border-radius:8px;margin-bottom:8px;font-size:13px;color:#1A1714;"><b>${e.title}</b>${e.timeStart ? ` <span style="color:#9C978F;">· ${e.timeStart}</span>` : ''} <span style="color:#9C978F;">· ${e.date}</span></div>`).join('')
-      : '<p style="font-size:13px;color:#9C978F;margin:0;">No upcoming events.</p>';
+      ? upcoming.map(e => `
+        <tr><td style="padding:12px 0;border-bottom:1px solid #F0EDE8;">
+          <span style="font-size:14px;font-weight:600;color:#1A1714;">${e.title}</span>
+          <span style="font-size:13px;color:#9C978F;"> · ${e.date}${e.timeStart ? ' at ' + e.timeStart : ''}</span>
+        </td></tr>`).join('')
+      : '<tr><td style="padding:12px 0;font-size:14px;color:#9C978F;">No upcoming events.</td></tr>';
     const body = `
-      <p style="font-size:15px;color:#5A5450;margin:0 0 24px;">Hey ${name}, here's your week in review:</p>
-      <div style="display:flex;gap:12px;margin-bottom:28px;">
-        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
-          <div style="font-size:32px;font-weight:900;color:#1A1714;">${completedTasks}</div>
-          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">TASKS DONE</div>
-        </div>
-        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
-          <div style="font-size:32px;font-weight:900;color:#1A1714;">${journalCount}</div>
-          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">ENTRIES</div>
-        </div>
-        <div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;">
-          <div style="font-size:32px;font-weight:900;color:#1A1714;">${streak}</div>
-          <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.5px;">${sv.icon} STREAK</div>
-        </div>
-      </div>
-      ${upcoming.length ? `<div style="margin-bottom:24px;"><div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;margin-bottom:10px;">COMING UP</div>${upcomingHtml}</div>` : ''}
-      <a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;margin-bottom:16px;">Open Prodify</a>
-      <p style="font-size:12px;color:#9C978F;text-align:center;margin:0;">Have a great week ahead.</p>`;
-    resendEmail(email, `Your Prodify week in review, ${name} 📊`, _emailHtmlWrap(body));
+      <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#3A7D5E;letter-spacing:.5px;text-transform:uppercase;">Weekly Summary</p>
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#1A1714;letter-spacing:-.5px;">Your week in review</h1>
+      <p style="margin:0 0 28px;font-size:14px;color:#9C978F;">${today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+        <tr>
+          <td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;">
+            <div style="font-size:36px;font-weight:900;color:#1A1714;letter-spacing:-1px;">${completedTasks}</div>
+            <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">Tasks done</div>
+          </td>
+          <td width="4%"></td>
+          <td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;">
+            <div style="font-size:36px;font-weight:900;color:#1A1714;letter-spacing:-1px;">${journalCount}</div>
+            <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">Journal entries</div>
+          </td>
+          <td width="4%"></td>
+          <td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;">
+            <div style="font-size:36px;font-weight:900;color:${streak>=30?'#3A7D5E':streak>=7?'#D97706':'#1A1714'};letter-spacing:-1px;">${streak}</div>
+            <div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">${sv.icon} Day streak</div>
+          </td>
+        </tr>
+      </table>
+
+      ${upcoming.length ? `
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;text-transform:uppercase;">Coming up</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">${upcomingHtml}</table>` : ''}
+
+      <a href="https://prodify.cc" style="display:block;background:#1A1714;color:#fff;text-align:center;padding:15px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:-.2px;">Open Prodify</a>`;
+    resendEmail(email, `Your week in review, ${name} 📊`, _emailHtmlWrap(body, `${completedTasks} tasks done · ${streak} day streak — here's your week.`));
   } catch(e){}
 }
 
@@ -2146,19 +2205,23 @@ async function submitFeedback(isDesktop=false){
   try{
     // Send feedback via Resend
     const feedbackHtml = _emailHtmlWrap(`
-      <h2 style="font-size:18px;font-weight:800;color:#1A1714;margin:0 0 16px;">New Feedback</h2>
-      <div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">FROM</div>
-        <div style="font-size:14px;color:#1A1714;">${cu||'anonymous'}</div>
-      </div>
-      <div style="background:#F5F3EF;border-radius:12px;padding:16px;margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">TYPE · RATING</div>
-        <div style="font-size:14px;color:#1A1714;">${_fbType} · ${_fbStar?'⭐'.repeat(_fbStar):'No rating'}</div>
-      </div>
-      <div style="background:#F5F3EF;border-radius:12px;padding:16px;">
-        <div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.5px;margin-bottom:6px;">MESSAGE</div>
-        <div style="font-size:14px;color:#1A1714;line-height:1.6;">${msg}</div>
-      </div>`);
+      <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#3A7D5E;letter-spacing:.5px;text-transform:uppercase;">Feedback received</p>
+      <h1 style="margin:0 0 28px;font-size:24px;font-weight:800;color:#1A1714;letter-spacing:-.5px;">${_fbType.charAt(0).toUpperCase()+_fbType.slice(1)} feedback</h1>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:14px 0;border-bottom:1px solid #F0EDE8;">
+          <div style="font-size:11px;font-weight:700;color:#9C978F;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;">From</div>
+          <div style="font-size:14px;color:#1A1714;font-weight:600;">${cu||'anonymous'}</div>
+        </td></tr>
+        <tr><td style="padding:14px 0;border-bottom:1px solid #F0EDE8;">
+          <div style="font-size:11px;font-weight:700;color:#9C978F;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px;">Rating</div>
+          <div style="font-size:20px;">${_fbStar ? '⭐'.repeat(_fbStar) : '<span style="font-size:14px;color:#9C978F;">No rating</span>'}</div>
+        </td></tr>
+        <tr><td style="padding:14px 0;">
+          <div style="font-size:11px;font-weight:700;color:#9C978F;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">Message</div>
+          <div style="font-size:15px;color:#1A1714;line-height:1.7;">${msg}</div>
+        </td></tr>
+      </table>`, `New ${_fbType} feedback from ${cu||'anonymous'}`);
     await resendEmail(RESEND_REPLY, `Prodify Feedback — ${_fbType}`, feedbackHtml);
     // Also save to Supabase for records
     if(sbReady){
