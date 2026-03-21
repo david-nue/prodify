@@ -3,21 +3,6 @@
 // ══════════════════════════════════════════════════════
 window._guestMode = window._guestMode || false;
 
-const MOB_GUEST_TASKS = [
-  {id:'g1',text:'Finish project proposal',title:'Finish project proposal',col:'todo',date:'Today',dueDate:'',recurring:'none',priority:'high'},
-  {id:'g2',text:'Review pull requests',title:'Review pull requests',col:'inprog',date:'Today',dueDate:'',recurring:'none'},
-  {id:'g3',text:'Send weekly update email',title:'Send weekly update email',col:'todo',date:'Today',dueDate:'',recurring:'none'},
-  {id:'g4',text:'Update documentation',title:'Update documentation',col:'done',date:'Yesterday',dueDate:'',recurring:'none'},
-  {id:'g5',text:'Morning run',title:'Morning run',col:'done',date:'Yesterday',dueDate:'',recurring:'daily'},
-];
-const MOB_GUEST_JOURNAL = [
-  {id:'gj1',content:'Focused well today. Got through most of my task list and feeling good about the project direction.',text:'Focused well today. Got through most of my task list and feeling good about the project direction.',mood:'😊',date:'Mon, Mar 18',ts:Date.now()-86400000},
-  {id:'gj2',content:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',text:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',mood:'😐',date:'Sun, Mar 17',ts:Date.now()-172800000},
-];
-const MOB_GUEST_NOTES = [
-  {id:'gn1',title:'Ideas for Q2',content:'- Redesign onboarding flow\n- Add keyboard shortcuts\n- Weekly digest email',updated:Date.now()-3600000},
-  {id:'gn2',title:'Meeting notes',content:'Discussed roadmap priorities. Next steps: finalize scope by Friday.',updated:Date.now()-7200000},
-];
 const MOB_GUEST_PREFS = {
   habits:[],
   habitLog:{},
@@ -869,9 +854,10 @@ async function maybeSendWeeklySummary(){
     const weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
     const journalCount=(d.journal||[]).filter(j=>(j.date||'')>=weekAgo).length;
     const upcoming=(d.calEvs||[]).filter(e=>e.date>=today.toISOString().slice(0,10)).sort((a,b)=>a.date>b.date?1:-1).slice(0,3);
-    const upcomingHtml=upcoming.length?upcoming.map(e=>`<div style="padding:10px 14px;background:#F5F3EF;border-radius:8px;margin-bottom:8px;font-size:13px;color:#1A1714;"><b>${e.title}</b>${e.timeStart?` <span style="color:#9C978F;">· ${e.timeStart}</span>`:''} <span style="color:#9C978F;">· ${e.date}</span></div>`).join(''):'<p style="font-size:13px;color:#9C978F;margin:0;">No upcoming events.</p>';
-    const body=`<p style="font-size:15px;color:#5A5450;margin:0 0 24px;">Hey ${name}, here's your week in review:</p><div style="display:flex;gap:12px;margin-bottom:28px;"><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${completedTasks}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">TASKS DONE</div></div><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${journalCount}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">ENTRIES</div></div><div style="flex:1;background:#F5F3EF;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:32px;font-weight:900;color:#1A1714;">${streak}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;">${sv.icon} STREAK</div></div></div>${upcoming.length?`<div style="margin-bottom:24px;"><div style="font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;margin-bottom:10px;">COMING UP</div>${upcomingHtml}</div>`:''}<a href="https://prodify.cc" style="display:block;background:#3A7D5E;color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;margin-bottom:16px;">Open Prodify</a><p style="font-size:12px;color:#9C978F;text-align:center;margin:0;">Have a great week ahead.</p>`;
-    resendEmail(email,`Your Prodify week in review, ${name} 📊`,_emailHtmlWrap(body));
+    const upcomingRows=upcoming.length?upcoming.map(e=>`<tr><td style="padding:12px 0;border-bottom:1px solid #F0EDE8;"><span style="font-size:14px;font-weight:600;color:#1A1714;">${e.title}</span><span style="font-size:13px;color:#9C978F;"> · ${e.date}${e.timeStart?' at '+e.timeStart:''}</span></td></tr>`).join(''):'<tr><td style="padding:12px 0;font-size:14px;color:#9C978F;">No upcoming events.</td></tr>';
+    const streakColor=streak>=30?'#3A7D5E':streak>=7?'#D97706':'#1A1714';
+    const body=`<p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#3A7D5E;letter-spacing:.5px;text-transform:uppercase;">Weekly Summary</p><h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#1A1714;letter-spacing:-.5px;">Your week in review</h1><p style="margin:0 0 28px;font-size:14px;color:#9C978F;">${today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;"><tr><td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;"><div style="font-size:36px;font-weight:900;color:#1A1714;letter-spacing:-1px;">${completedTasks}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">Tasks done</div></td><td width="4%"></td><td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;"><div style="font-size:36px;font-weight:900;color:#1A1714;letter-spacing:-1px;">${journalCount}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">Journal entries</div></td><td width="4%"></td><td width="33%" style="text-align:center;padding:20px 8px;background:#F7F5F2;border-radius:12px;"><div style="font-size:36px;font-weight:900;color:${streakColor};letter-spacing:-1px;">${streak}</div><div style="font-size:11px;font-weight:700;color:#9C978F;margin-top:4px;letter-spacing:.8px;text-transform:uppercase;">${sv.icon} Day streak</div></td></tr></table>${upcoming.length?`<p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#9C978F;letter-spacing:.8px;text-transform:uppercase;">Coming up</p><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">${upcomingRows}</table>`:''}<a href="https://prodify.cc" style="display:block;background:#1A1714;color:#fff;text-align:center;padding:15px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:-.2px;">Open Prodify</a>`;
+    resendEmail(email,`Your week in review, ${name} 📊`,_emailHtmlWrap(body,`${completedTasks} tasks done · ${streak} day streak — here's your week.`));
   }catch(e){}
 }
 

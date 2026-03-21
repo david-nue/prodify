@@ -30,30 +30,11 @@ function guestWriteGuard(type){
   return true;
 }
 
-const GUEST_TASKS = [
-  {id:'g1',text:'Finish project proposal',title:'Finish project proposal',col:'todo',date:'Today',dueDate:'',recurring:'none',priority:'high'},
-  {id:'g2',text:'Review pull requests',title:'Review pull requests',col:'inprog',date:'Today',dueDate:'',recurring:'none'},
-  {id:'g3',text:'Send weekly update email',title:'Send weekly update email',col:'todo',date:'Today',dueDate:'',recurring:'none'},
-  {id:'g4',text:'Update documentation',title:'Update documentation',col:'done',date:'Yesterday',dueDate:'',recurring:'none'},
-  {id:'g5',text:'Morning run',title:'Morning run',col:'done',date:'Yesterday',dueDate:'',recurring:'daily'},
-];
-const GUEST_JOURNAL = [
-  {id:'gj1',text:'Focused well today. Got through most of my task list and feeling good about the project direction.',content:'Focused well today. Got through most of my task list and feeling good about the project direction.',mood:'happy',date:'Mon, Mar 18',ts:Date.now()-86400000},
-  {id:'gj2',text:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',content:'Had a slow start but picked up momentum after lunch. Need to prioritize better tomorrow.',mood:'okay',date:'Sun, Mar 17',ts:Date.now()-172800000},
-];
-const GUEST_NOTES = [
-  {id:'gn1',title:'Ideas for Q2',content:'- Redesign onboarding flow\n- Add keyboard shortcuts\n- Weekly digest email',updated:Date.now()-3600000},
-  {id:'gn2',title:'Meeting notes',content:'Discussed roadmap priorities. Next steps: finalize scope by Friday.',updated:Date.now()-7200000},
-];
 const GUEST_PREFS = {
   habits:[],
   habitLog:{},
   accent:'green', theme:'light',
 };
-const GUEST_EVENTS = [
-  {id:'ge1',title:'Team standup',date:new Date().toISOString().slice(0,10),color:'#3A7D5E',timeStart:'09:00',timeEnd:'09:30',yearly:false},
-  {id:'ge2',title:'Project review',date:new Date().toISOString().slice(0,10),color:'#3B82F6',timeStart:'14:00',timeEnd:'15:00',yearly:false},
-];
 
 function enterGuestMode(){
   // Guard re-entry — already in guest mode, just go to canvas
