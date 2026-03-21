@@ -23,7 +23,7 @@
 .wrsz{cursor:se-resize;}
 
 /* Canvas pan cursor */
-.canvas{cursor:grab;}
+.canvas{cursor:default;}
 .canvas.panning{cursor:grabbing;}
 
 /* Calendar event drag clone */
@@ -503,12 +503,10 @@ to{opacity:1;transform:translateY(0);}
 .wt-clr{color:var(--red)!important;border-color:var(--rl)!important;}
 .wt-clr:hover{background:var(--rl)!important;border-color:var(--red)!important;}
 
-/* CANVAS AREA */
-.canvas-wrap{position:absolute;left:0;top:0;right:0;bottom:0;overflow:auto;}
-.canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
-.canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;cursor:grab;transform-origin:0 0;user-select:none;}
+/* CANVAS AREA — bounded to viewport, no infinite scroll */
+.canvas-wrap{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;}
+.canvas-scroll{position:absolute;inset:0;overflow:hidden;}
+.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:grab;transform-origin:0 0;user-select:none;overflow:hidden;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
    WIDGETS
@@ -1049,12 +1047,10 @@ to{opacity:1;transform:translateY(0);}
 }
 .hide{display:none!important;}
 
-/* ── CANVAS WRAP fix ── */
+/* ── CANVAS WRAP fix — bounded to viewport ── */
 .canvas-wrap{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;}
-.canvas-wrap::-webkit-scrollbar{width:6px;height:6px;}
-.canvas-wrap::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas-scroll{position:absolute;inset:0;overflow:scroll;}.canvas-scroll::-webkit-scrollbar{width:6px;height:6px;}.canvas-scroll::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
-.canvas{position:relative;width:2400px;height:1800px;cursor:grab;transform-origin:0 0;user-select:none;}
+.canvas-scroll{position:absolute;inset:0;overflow:hidden;}
+.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:grab;transform-origin:0 0;user-select:none;overflow:hidden;}
 
 /* ── JOURNAL EMOJI PICKER ── */
 .jwemoji-wrap{position:relative;flex-shrink:0;}

@@ -357,63 +357,16 @@ document.addEventListener('click', function(e){
   if(mo && e.target === mo) confirmResolve(false);
 });
 
-// ── Canvas drag-to-pan (mouse + touch) ──
+// ── Canvas: bounded to viewport, no pan/scroll ──
 (function(){
   const scroll = document.getElementById('canvas-scroll');
   const cvs    = document.getElementById('canvas');
   if(!scroll || !cvs) return;
 
-  let active = false, startX, startY, scrollX, scrollY;
+  // No pan — canvas is fixed to viewport size
+  window._canvasScale = 1;
 
-  function isWidget(t){
-    return t.closest('.widget') || t.closest('.wtray') || t.closest('.canvas-topbar');
-  }
-
-  // MOUSE
-  cvs.addEventListener('mousedown', function(e){
-    if(isWidget(e.target)) return;
-    if(e.button !== 0) return;
-    active = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    scrollX = scroll.scrollLeft;
-    scrollY = scroll.scrollTop;
-    cvs.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', function(e){
-    if(!active) return;
-    requestAnimationFrame(()=>{
-      scroll.scrollLeft = scrollX - (e.clientX - startX);
-      scroll.scrollTop  = scrollY - (e.clientY - startY);
-    });
-  });
-  document.addEventListener('mouseup', function(){
-    if(!active) return;
-    active = false;
-    cvs.style.cursor = 'grab';
-  });
-
-  // ── ZOOM STATE ──
-  let _scale = 1;
-  window._canvasScale = 1; // exposed for drag/resize coordinate math
-  const MIN_SCALE = 0.3, MAX_SCALE = 2.5;
-
-  function applyZoom(newScale, originX, originY){
-    // originX/Y are coordinates relative to scroll viewport
-    const prevScale = _scale;
-    _scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScale));
-    // Adjust scroll so zoom centres on the origin point
-    const ratio = _scale / prevScale;
-    scroll.scrollLeft = (scroll.scrollLeft + originX) * ratio - originX;
-    scroll.scrollTop  = (scroll.scrollTop  + originY) * ratio - originY;
-    cvs.style.transformOrigin = '0 0';
-    cvs.style.transform = `scale(${_scale})`;
-    window._canvasScale = _scale;
-    // Keep scroll container aware of scaled size
-    cvs.style.width  = (2400 * _scale) + 'px';
-    cvs.style.height = (1800 * _scale) + 'px';
-  }
+  function applyZoom(){ /* zoom disabled on bounded canvas */ }
 
   // ── SCROLL WHEEL ZOOM — disabled for now, will be a toggle in settings ──
 
@@ -2769,6 +2722,12 @@ function buildWidgetEl(w){
   const el=document.createElement('div');
   el.className='widget';el.id=w.id;
   el.dataset.type=w.type;
+  // Clamp saved position to canvas bounds so no widget is off-screen on load
+  const _cvs=document.getElementById('canvas');
+  if(_cvs){
+    w.x=Math.min(Math.max(0,w.x), Math.max(0,_cvs.clientWidth  - w.w));
+    w.y=Math.min(Math.max(0,w.y), Math.max(0,_cvs.clientHeight - w.h));
+  }
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
   el.innerHTML=`
     <div class="whead" id="wh-${w.id}">
@@ -3013,8 +2972,11 @@ function startDrag(e,id){
 
   const mm=e=>{
     if(!active)return;
-    pendingX=Math.max(0,e.clientX/scale-startX);
-    pendingY=Math.max(0,e.clientY/scale-startY);
+    const cvs=document.getElementById('canvas');
+    const maxX=cvs ? Math.max(0, cvs.clientWidth  - w.w) : 99999;
+    const maxY=cvs ? Math.max(0, cvs.clientHeight - w.h) : 99999;
+    pendingX=Math.min(Math.max(0,e.clientX/scale-startX), maxX);
+    pendingY=Math.min(Math.max(0,e.clientY/scale-startY), maxY);
     if(rafId)return;
     rafId=requestAnimationFrame(()=>{
       w.x=pendingX;w.y=pendingY;
@@ -3054,8 +3016,8 @@ function startResize(e,id){
     note:   {w:280, h:180},
   };
   const wm=WMIN[w.type]||{w:180,h:130};
-  const minW=wm.w,maxW=99999;
-  const minH=wm.h,maxH=99999;
+  const minW=wm.w;
+  const minH=wm.h;
   let rafId=null,pendingW=w.w,pendingH=w.h;
   let active=true;
 
@@ -3076,6 +3038,9 @@ function startResize(e,id){
 
   const mm=e=>{
     if(!active)return;
+    const cvs=document.getElementById('canvas');
+    const maxW=cvs ? Math.max(minW, cvs.clientWidth  - w.x) : 99999;
+    const maxH=cvs ? Math.max(minH, cvs.clientHeight - w.y) : 99999;
     pendingW=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
     pendingH=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
     if(rafId)return;
