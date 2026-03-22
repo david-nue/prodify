@@ -3543,6 +3543,13 @@
 
   <!-- AI PLANNER SHEET (mobile) -->
 
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        navigator.serviceWorker.register('/sw.js').catch(function(e){ console.warn('[SW] Registration failed:', e); });
+      });
+    }
+  </script>
 </body>
 
 </html>
