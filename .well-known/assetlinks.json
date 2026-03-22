@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "cc.prodify.www.twa",
-        "sha256_cert_fingerprints": ["96:27:B2:08:EB:64:4A:69:69:18:78:97:DE:27:61:01:7A:53:C9:2F:33:F1:0A:82:77:F0:39:F1:81:9F:95:B9"]
+        "sha256_cert_fingerprints": ["36:9B:BC:B5:09:36:3E:A7:8C:C0:54:61:B0:8E:48:04:B1:26:27:54:8F:40:92:6F:F1:D7:E8:C0:16:DD:B0:BB"]
       }
     }]
