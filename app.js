@@ -1649,7 +1649,6 @@ function obFinish() {
 // ═══════════════════════════════════════
 // RESEND EMAIL
 // ═══════════════════════════════════════
-const RESEND_KEY = 're_8LVswgy6_6Nzp3bMZe73DDnEkLtTBW8Qn';
 const RESEND_FROM = 'Prodify <hello@mail.prodify.cc>';
 const RESEND_REPLY = 'prodifysupport@gmail.com';
 

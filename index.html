@@ -1864,10 +1864,7 @@
       <!-- NAV -->
       <div class="mob-lnav">
         <div style="display:flex;align-items:center;"><img src="/icons/logo.png" style="width:28px;height:28px;" alt="Prodify"></div>
-        <div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
-          <button class="mob-lnav-cta" onclick="document.getElementById('mob-cta-anchor').scrollIntoView({behavior:'smooth'})" style="background:var(--a2,#3A7D5E);border-color:var(--a2,#3A7D5E);color:#fff;">Sign in</button>
-          <button onclick="mobEnterGuestMode()" class="mob-lnav-cta">Preview the app</button>
-        </div>
+
       </div>
 
       <!-- HERO -->
@@ -1885,6 +1882,16 @@
           <video src="https://res.cloudinary.com/dsf7xd8th/video/upload/v1774006649/prodifydemo-1774006495067_oqxfcg.mp4"
             autoplay muted loop playsinline preload="metadata" style="width:100%;display:block;"></video>
         </div>
+      </div>
+
+      <!-- HERO CTAs -->
+      <div style="display:flex;flex-direction:column;gap:8px;padding:16px 24px 4px;">
+        <button onclick="document.getElementById('mob-cta-anchor').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:10px;border-radius:12px;border:none;background:var(--a2,#3A7D5E);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Sign in</button>
+        <a href="https://github.com/david-nue/prodify/releases/download/v1.0.0/Prodify.apk" style="width:100%;padding:10px;border-radius:12px;border:1px solid rgba(58,125,94,0.35);background:rgba(58,125,94,0.07);color:rgba(255,255,255,0.6);font-size:12px;font-weight:600;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Android App
+        </a>
+        <button onclick="mobEnterGuestMode()" style="width:100%;padding:9px;border-radius:12px;border:none;background:none;color:rgba(255,255,255,0.3);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;">Preview the app</button>
       </div>
 
       <!-- FEATURES -->
@@ -2031,13 +2038,8 @@
         </div>
         <div class="login-err" id="login-err"></div>
         <div class="login-note">Free to start · No credit card needed</div>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
-          <button onclick="mobEnterGuestMode()" style="background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.8);font-size:14px;font-weight:700;padding:12px 24px;border-radius:100px;cursor:pointer;font-family:inherit;">Preview the app</button>
-          <a href="https://github.com/david-nue/prodify/releases/download/v1.0.0/Prodify.apk" style="display:inline-flex;align-items:center;gap:7px;background:rgba(58,125,94,0.25);border:1.5px solid rgba(58,125,94,0.5);color:rgba(255,255,255,0.8);font-size:14px;font-weight:700;padding:12px 24px;border-radius:100px;text-decoration:none;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download App
-          </a>
-        </div>
+
+
       </div>
 
       <!-- FOOTER -->
@@ -3113,6 +3115,10 @@
         <div style="font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px;letter-spacing:-0.3px;">Sign in to do that</div>
         <div style="font-size:13px;color:var(--ink3);line-height:1.65;margin-bottom:24px;">Everything you just did exists only in this preview. Sign in to save it permanently — it takes 10 seconds and it's free.</div>
         <button onclick="mobGuestGateSignIn()" style="width:100%;padding:14px;border-radius:14px;border:none;background:var(--a2,#3A7D5E);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;">Sign in — it's free</button>
+        <a href="https://github.com/david-nue/prodify/releases/download/v1.0.0/Prodify.apk" style="width:100%;padding:13px;border-radius:14px;border:1.5px solid rgba(58,125,94,0.35);background:rgba(58,125,94,0.07);color:var(--ink);font-size:13px;font-weight:700;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px;box-sizing:border-box;margin-bottom:10px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Android App
+        </a>
         <button onclick="closeSheets()" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--bdr);background:none;color:var(--ink3);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:6px;">Continue previewing</button>
         <button onclick="closeSheets();mobExitGuestMode()" style="width:100%;padding:8px;border-radius:14px;border:none;background:none;color:var(--ink4);font-size:12px;cursor:pointer;font-family:inherit;">Exit preview</button>
       </div>
