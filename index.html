@@ -1892,7 +1892,12 @@
           Download for Android
         </a>
         <script>
-          if(window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || navigator.standalone){
+          var isTWA = document.referrer.includes('android-app://') ||
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            navigator.standalone ||
+            /cc\.prodify\.twa/i.test(navigator.userAgent);
+          if(isTWA){
             var dl = document.getElementById('mob-dl-btn');
             if(dl) dl.style.display = 'none';
           }
