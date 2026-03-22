@@ -3030,10 +3030,10 @@
     <div class="sh-overlay" id="sh-overlay" onclick="closeSheets()"></div>
 
     <!-- GUEST BANNER (mobile) -->
-    <div id="mob-guest-banner" style="position:fixed;top:0;left:0;right:0;z-index:7000;background:rgba(30,25,20,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.08);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:8px;">
-      <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+    <div id="mob-guest-banner" style="position:fixed;top:0;left:0;right:0;z-index:7000;background:rgba(30,25,20,0.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.08);padding:10px 16px;display:none;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 auto;">
         <span style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.8);white-space:nowrap;">👀 Preview mode</span>
-        <span style="font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">· Sign in to keep your changes</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.35);white-space:nowrap;">· Sign in to keep your changes</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
         <button onclick="mobExitGuestMode()" style="background:none;border:none;font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;font-family:inherit;padding:4px 6px;white-space:nowrap;">Exit preview</button>
