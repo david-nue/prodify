@@ -61,18 +61,5 @@
         }
       ]
     }
-  ],
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "prodify.cc"
-        }
-      ],
-      "destination": "https://www.prodify.cc/$1",
-      "permanent": true
-    }
   ]
 }
