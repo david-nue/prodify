@@ -3,13 +3,14 @@
 
 <head>
   <meta charset="UTF-8" />
+  <link rel="manifest" href="/manifest.json" />
 
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover" />
 
-  <title>Prodify — Your Free All-in-One Productivity Workspace</title>
+  <title>Prodify | Free All-in-One Productivity Workspace</title>
 
   <meta name="theme-color" content="#3A7D5E" />
   <meta name="description"
@@ -56,7 +57,7 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://prodify.cc" />
-  <meta property="og:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
+  <meta property="og:title" content="Prodify | Free All-in-One Productivity Workspace" />
   <meta property="og:description"
     content="Stop juggling apps. Prodify is your free all-in-one productivity workspace. Tasks, journal, focus timer, habits and calendar in one place." />
   <meta property="og:image" content="https://prodify.cc/og-preview.png" />
@@ -67,7 +68,7 @@
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://prodify.cc" />
-  <meta name="twitter:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
+  <meta name="twitter:title" content="Prodify | Free All-in-One Productivity Workspace" />
   <meta name="twitter:description"
     content="Stop juggling apps. Prodify is your free all-in-one productivity workspace. Tasks, journal, focus timer, habits and calendar in one place." />
   <meta name="twitter:image" content="https://prodify.cc/og-preview.png" />
@@ -847,13 +848,19 @@
           <!-- scrollable canvas -->
           <div class="canvas-wrap">
             <div class="canvas-scroll" id="canvas-scroll">
-              <!-- Logo — top-left fixed on canvas -->
-              <div style="position:fixed;top:16px;left:18px;z-index:10;pointer-events:none;user-select:none;display:flex;align-items:center;">
+              <!-- Logo — top-right fixed on canvas -->
+              <div style="position:fixed;top:16px;right:18px;z-index:10;pointer-events:none;user-select:none;display:flex;align-items:center;">
                 <img src="/icons/logo.png" style="width:28px;height:28px;opacity:.35;" alt="Prodify">
               </div>
               <div
                 style="position:fixed;bottom:10px;right:14px;font-size:10px;color:var(--ink4);font-weight:600;letter-spacing:.3px;pointer-events:none;z-index:10;">
                 Built by <span style="color:var(--ink3);">David N.</span></div>
+              <!-- Greeting — sits behind all widgets, only visible on empty/sparse canvas -->
+              <div id="canvas-greeting"
+                style="position:absolute;top:28px;left:36px;z-index:0;pointer-events:none;user-select:none;">
+                <div id="canvas-greeting-text"
+                  style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--ink2);opacity:.45;"></div>
+              </div>
               <div class="canvas" id="canvas"></div>
             </div><!-- /canvas-scroll -->
           </div>
@@ -2277,11 +2284,14 @@
           <div class="page active" id="pg-home"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:100px;">
 
-            <!-- Header -->
+            <!-- iOS large title header -->
             <div class="home-header">
+              <div class="home-date" id="home-date">Saturday, March 21</div>
               <div class="home-greet" id="home-greet">Good morning!</div>
-              <div class="home-date" id="home-date">—</div>
             </div>
+
+            <!-- Streak pill -->
+            <div id="home-streak-wrap"></div>
 
             <!-- Momentum strip -->
             <div class="home-section" style="margin-top:2px;">
@@ -2314,7 +2324,7 @@
                 <div class="home-stat-num" id="hstat-sessions">0</div>
                 <div class="home-stat-lbl">sessions</div>
               </div>
-              <div class="home-stat-card" style="cursor:default;">
+              <div class="home-stat-card" onclick="goPg('journal')">
                 <div class="home-stat-num" id="hstat-streak">0</div>
                 <div class="home-stat-lbl">day streak</div>
               </div>
@@ -2341,10 +2351,7 @@
 
           <!-- TASKS -->
           <div class="page" id="pg-tasks" style="padding-bottom:100px;">
-            <div class="page-header">
-              <div class="page-header-title">Tasks</div>
-              <div class="page-header-sub" id="mob-tasks-header-sub">Your to-do list</div>
-            </div>
+            <div class="page-title-wrap"><p class="page-title">Tasks</p></div>
             <div id="task-list"></div>
             <button class="fab" onclick="openSheet('sh-task')">
               <svg viewBox="0 0 24 24">
@@ -2355,16 +2362,6 @@
 
           <!-- JOURNAL -->
           <div class="page" id="pg-journal" style="bottom:240px;">
-            <div class="page-header">
-              <div class="page-header-title">Journal
-                <span style="float:right;position:relative;z-index:1;">
-                  <button id="jw-search-toggle" onclick="jwToggleSearch()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:rgba(255,255,255,.7);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                  </button>
-                </span>
-              </div>
-              <div class="page-header-sub" id="mob-journal-header-sub">Your daily reflections</div>
-            </div>
             <div class="jw-search-bar" id="jw-search-bar" style="display:none;">
               <div class="jw-search-inner">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5"
@@ -2436,29 +2433,42 @@
                 Templates
               </button>
               <button class="jwutil-btn" onclick="jwShufflePrompt()">✨ Prompt</button>
+              <button class="jwutil-btn" id="jw-search-toggle" onclick="jwToggleSearch()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </button>
               <button class="jwsave-btn" onclick="jwSave()">Save</button>
             </div>
           </div>
 
           <!-- NOTES -->
           <div class="page" id="pg-notes" style="padding-bottom:88px;position:relative;">
+            <div class="page-title-wrap"><p class="page-title">Notes</p></div>
             <button class="fab" id="notes-fab" onclick="mobNewNote()">
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
             </button>
             <!-- List view -->
             <div id="mob-notes-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0;">
-              <div class="page-header">
-                <div class="page-header-title">Notes
-                  <span style="float:right;display:flex;gap:10px;align-items:center;position:relative;z-index:1;">
-                    <button id="notes-search-btn" onclick="notesToggleSearch()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:rgba(255,255,255,.7);">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    </button>
-                    <button id="notes-sort-btn" onclick="notesToggleSort()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:rgba(255,255,255,.7);">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-                    </button>
-                  </span>
+              <div class="fphdr">
+                <div class="fptit">Notes</div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button id="notes-search-btn" class="jwutil-btn" onclick="notesToggleSearch()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                  </button>
+                  <button id="notes-sort-btn" class="jwutil-btn" onclick="notesToggleSort()" title="Sort A–Z">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                      stroke-linecap="round">
+                      <path d="M3 6h18M7 12h10M11 18h2" />
+                    </svg>
+                  </button>
                 </div>
-                <div class="page-header-sub">Your quick notes</div>
               </div>
               <!-- Search bar (hidden by default) -->
               <div id="notes-search-bar" class="jw-search-bar" style="display:none;">
@@ -2484,33 +2494,37 @@
             </div>
             <!-- Editor view -->
             <div id="mob-notes-editor-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
-              <div class="page-header">
-                <div class="page-header-row">
-                  <button onclick="notesBack()" class="page-header-back">
-                    <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Notes
-                  </button>
-                  <button onclick="deleteNote()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:rgba(255,255,255,.7);position:relative;z-index:1;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
-                  </button>
-                </div>
-                <div id="mob-note-editor-hdr" class="page-header-title" contenteditable="true" spellcheck="false" style="outline:none;min-width:40px;font-size:17px;" oninput="noteEditorInput()" data-placeholder="Untitled"></div>
+              <div class="fphdr">
+                <button onclick="notesBack()" class="set-back" style="min-width:60px;">
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round">
+                    <path d="M10 3L5 8l5 5" />
+                  </svg>Notes
+                </button>
+                <div id="mob-note-editor-hdr" class="fptit"
+                  style="flex:1;text-align:center;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px;">
+                  Untitled</div>
+                <button onclick="deleteNote()"
+                  style="min-width:60px;display:flex;justify-content:flex-end;align-items:center;background:none;border:none;cursor:pointer;color:var(--ink4);padding:0 4px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                  </svg>
+                </button>
               </div>
               <input id="mob-note-title-inp" class="mob-note-title-inp" type="text" placeholder="Title…"
-                oninput="noteEditorInput()" autocomplete="off" style="display:none;" />
+                oninput="noteEditorInput()" autocomplete="off" />
               <textarea id="mob-note-content-ta" class="mob-note-content-ta" placeholder="Start writing…"
-                oninput="noteEditorInput()" style="padding-top:16px;"></textarea>
+                oninput="noteEditorInput()"></textarea>
               <div style="padding:12px 16px;border-top:1px solid var(--bdr);background:var(--surf);flex-shrink:0;">
-                <button onclick="noteSave()" style="width:100%;padding:13px;background:var(--a2);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>
+                <button onclick="notesBack()" style="width:100%;padding:13px;background:var(--a2);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>
               </div>
             </div>
           </div>
 
           <!-- HABITS -->
           <div class="page" id="pg-habits" style="padding-bottom:100px;">
-            <div class="page-header">
-              <div class="page-header-title">Daily Habits</div>
-              <div class="page-header-sub" id="mob-habits-header-sub">Build your streak</div>
-            </div>
+            <div class="page-title-wrap"><p class="page-title">Habits</p></div>
             <div id="hab-list" class="hab-list-scroll"></div>
             <div class="hab-wfoot">
               <div class="hab-emoji-row" id="hab-emoji-row">
@@ -2533,10 +2547,7 @@
 
           <!-- TIMER -->
           <div class="page" id="pg-timer" style="padding-bottom:100px;">
-            <div class="page-header">
-              <div class="page-header-title">Focus Timer</div>
-              <div class="page-header-sub" id="mob-timer-header-sub">Stay in the zone</div>
-            </div>
+            <div class="page-title-wrap" style="padding-bottom:0;"><p class="page-title">Focus Timer</p></div>
             <div class="tmbody">
               <div class="tmmodes">
                 <button class="tmm on" id="tmm-0" onclick="mobSetTMode(0)">Pomodoro</button>
@@ -2545,6 +2556,12 @@
               <div class="tmdis">
                 <div class="timer-ring" id="timer-ring-wrap" onclick="mobStartEdit()">
                   <svg class="timer-ring-svg" viewBox="0 0 220 220">
+                    <defs>
+                      <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#2A5C44"/>
+                        <stop offset="100%" stop-color="#4A9D74"/>
+                      </linearGradient>
+                    </defs>
                     <circle class="ring-bg" cx="110" cy="110" r="98" />
                     <circle class="ring-prog" id="ring-prog-mob" cx="110" cy="110" r="98" stroke-dasharray="615.75"
                       stroke-dashoffset="0" />
@@ -2608,10 +2625,6 @@
           <!-- CALENDAR -->
           <div class="page" id="mob-pg-calendar"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-            <div class="page-header">
-              <div class="page-header-title">Calendar</div>
-              <div class="page-header-sub" id="mob-cal-header-sub">Your schedule</div>
-            </div>
             <!-- Mini monthly grid -->
             <div class="mob-cal-grid-wrap">
               <div class="mob-cal-nav">
@@ -2663,14 +2676,13 @@
           <!-- AI PLANNER PAGE (mobile) -->
           <div class="page" id="mob-pg-aiplanner"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-            <div class="page-header">
-              <div class="page-header-row">
-                <button class="page-header-back" onclick="goPg('home')">
-                  <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Back
-                </button>
-              </div>
-              <div class="page-header-title">AI Planner</div>
-              <div class="page-header-sub">Plan your day with AI</div>
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">AI Planner</div>
+              <div style="min-width:60px;"></div>
             </div>
             <div
               style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;">
@@ -2689,13 +2701,13 @@
 
           <div class="page" id="mob-pg-profile"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-            <div class="page-header">
-              <div class="page-header-row">
-                <button class="page-header-back" onclick="goPg('home')">
-                  <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Back
-                </button>
-              </div>
-              <div class="page-header-title">Profile</div>
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">Profile</div>
+              <div style="min-width:60px;"></div>
             </div>
             <div style="padding:20px 18px;">
               <!-- Banner -->
@@ -2720,13 +2732,13 @@
 
           <div class="page" id="mob-pg-settings"
             style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:88px;">
-            <div class="page-header">
-              <div class="page-header-row">
-                <button class="page-header-back" onclick="goPg('home')">
-                  <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Back
-                </button>
-              </div>
-              <div class="page-header-title">Settings</div>
+            <div class="fphdr">
+              <button class="set-back" onclick="goPg('home')" style="min-width:60px;"><svg viewBox="0 0 16 16"
+                  width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <path d="M10 3L5 8l5 5" />
+                </svg>Back</button>
+              <div class="fptit" style="flex:1;text-align:center;">Settings</div>
+              <div style="min-width:60px;"></div>
             </div>
             <div class="fpscroll" style="padding:22px;">
               <div style="width:min(640px,100%);margin:0 auto;display:flex;flex-direction:column;gap:11px;">
