@@ -8,7 +8,6 @@ const ASSETS = [
   '/app-mobile.css',
   '/manifest.json',
   '/icons/logo.png',
-  '/icons/logo.png',
 ];
 
 // Install — cache only local assets
