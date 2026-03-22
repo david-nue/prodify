@@ -1887,16 +1887,15 @@
       <!-- HERO CTAs -->
       <div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px 4px;align-items:center;">
         <button onclick="document.getElementById('mob-cta-anchor').scrollIntoView({behavior:'smooth'})" style="padding:13px 44px;border-radius:100px;border:none;background:var(--a2,#3A7D5E);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:-.2px;box-shadow:0 4px 24px rgba(58,125,94,0.45);">Get started free</button>
-        <a id="mob-dl-btn" href="https://github.com/david-nue/prodify/releases/download/v1.0.0/Prodify.apk" style="padding:9px 22px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.55);font-size:12px;font-weight:600;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download for Android
-        </a>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <a id="mob-dl-btn" href="https://github.com/david-nue/prodify/releases/download/v1.0.0/Prodify.apk" style="padding:9px 22px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.55);font-size:12px;font-weight:600;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Get the Android app
+          </a>
+          <span style="font-size:10px;color:rgba(255,255,255,0.2);">Already installed? Just sign in above.</span>
+        </div>
         <script>
-          var isTWA = document.referrer.includes('android-app://') ||
-            window.matchMedia('(display-mode: standalone)').matches ||
-            window.matchMedia('(display-mode: fullscreen)').matches ||
-            navigator.standalone ||
-            /cc\.prodify\.twa/i.test(navigator.userAgent);
+          var isTWA = new URLSearchParams(window.location.search).get('source') === 'twa';
           if(isTWA){
             var dl = document.getElementById('mob-dl-btn');
             if(dl) dl.style.display = 'none';
