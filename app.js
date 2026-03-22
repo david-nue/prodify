@@ -101,15 +101,25 @@ function enterGuestMode(){
   if(ddun) ddun.textContent='Preview mode';
   const soLabel = document.getElementById('dsk-dd-signout-label');
   if(soLabel) soLabel.textContent='Exit preview';
-  // Guest preview starts with empty canvas too — they build it themselves
+  // Use exact same widget layout as real new-user canvas
   setTimeout(()=>{
-    widgets = [];
+    const ts = Date.now();
+    widgets = [
+      { id:'wg-tasks',    type:'tasks',    title:'Task Board',   x:24,  y:24,  w:560, h:400, z:10 },
+      { id:'wg-habits',   type:'habits',   title:'Daily Habits', x:604, y:24,  w:340, h:400, z:11 },
+      { id:'wg-journal',  type:'journal',  title:'Journal',      x:964, y:24,  w:420, h:400, z:12 },
+      { id:'wg-calendar', type:'calendar', title:'Calendar',     x:24,  y:444, w:560, h:420, z:13 },
+      { id:'wg-timer',    type:'timer',    title:'Focus Timer',  x:604, y:444, w:340, h:400, z:14 },
+      { id:'wg-note',     type:'note',     title:'Notes',        x:964, y:444, w:300, h:400, z:15 },
+    ];
     acc['__guest__'].widgets = widgets;
-    nextZ = 10;
+    nextZ = 16;
     renderCanvas();
     renderCanvasGreeting();
     updateAllStatsW();
     if(typeof renderFullCal==='function') renderFullCal();
+    widgets.filter(w=>w.type==='habits').forEach(w=>renderHabitW(w.id));
+    setTimeout(_showGuestTooltip, 800);
   }, 80);
   // Exit intent
   window._guestBeforeUnload = function(e){
@@ -118,6 +128,40 @@ function enterGuestMode(){
     e.returnValue = '';
   };
   window.addEventListener('beforeunload', window._guestBeforeUnload);
+}
+
+function _showGuestTooltip(){
+  if(!window._guestMode) return;
+  if(document.getElementById('guest-tooltip')) return;
+  const tip = document.createElement('div');
+  tip.id = 'guest-tooltip';
+  tip.style.cssText = [
+    'position:fixed',
+    'bottom:72px',
+    'left:0',
+    'right:0',
+    'margin:0 auto',
+    'width:fit-content',
+    'max-width:90vw',
+    'z-index:7999',
+    'background:var(--surf)',
+    'color:var(--ink3)',
+    'font-size:12px',
+    'font-weight:600',
+    'padding:10px 20px',
+    'border-radius:100px',
+    'border:1.5px solid var(--bdr)',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.08)',
+    'display:flex',
+    'align-items:center',
+    'gap:8px',
+    'white-space:nowrap',
+    'animation:fadeUp .4s cubic-bezier(.16,1,.3,1) both',
+    'pointer-events:none',
+  ].join(';');
+  tip.innerHTML = '<span style="opacity:.5">✦</span> Add a task · Write a journal entry · Track a habit';
+  document.body.appendChild(tip);
+  setTimeout(()=>{ if(tip){ tip.style.transition='opacity .5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); } }, 5000);
 }
 
 function _cleanupGuestMode(){
@@ -185,14 +229,13 @@ function guestGateSignIn(){
   document.querySelectorAll('.ov.open').forEach(o => o.classList.remove('open'));
   const mo = document.getElementById('mo-guest-gate');
   if(mo) mo.style.display='none';
-  // Save ALL guest data before showing sign-in modal
+  // Save guest data before showing sign-in modal
   window._pendingGuestData = {
-    tasks:    JSON.parse(JSON.stringify(tasks)),
-    journal:  JSON.parse(JSON.stringify(journal)),
-    notes:    JSON.parse(JSON.stringify(notes)),
-    prefs:    JSON.parse(JSON.stringify(prefs)),
-    calEvs:   JSON.parse(JSON.stringify(calEvs)),
-    widgets:  JSON.parse(JSON.stringify(widgets)),
+    tasks: JSON.parse(JSON.stringify(tasks)),
+    journal: JSON.parse(JSON.stringify(journal)),
+    notes: JSON.parse(JSON.stringify(notes)),
+    prefs: JSON.parse(JSON.stringify(prefs)),
+    calEvs: JSON.parse(JSON.stringify(calEvs)),
   };
   // Persist to sessionStorage so it survives magic link page redirect
   try { sessionStorage.setItem('pd1_guest_data', JSON.stringify(window._pendingGuestData)); } catch(e) {}
@@ -314,16 +357,63 @@ document.addEventListener('click', function(e){
   if(mo && e.target === mo) confirmResolve(false);
 });
 
-// ── Canvas: bounded to viewport, no pan/scroll ──
+// ── Canvas drag-to-pan (mouse + touch) ──
 (function(){
   const scroll = document.getElementById('canvas-scroll');
   const cvs    = document.getElementById('canvas');
   if(!scroll || !cvs) return;
 
-  // No pan — canvas is fixed to viewport size
-  window._canvasScale = 1;
+  let active = false, startX, startY, scrollX, scrollY;
 
-  function applyZoom(){ /* zoom disabled on bounded canvas */ }
+  function isWidget(t){
+    return t.closest('.widget') || t.closest('.wtray') || t.closest('.canvas-topbar');
+  }
+
+  // MOUSE
+  cvs.addEventListener('mousedown', function(e){
+    if(isWidget(e.target)) return;
+    if(e.button !== 0) return;
+    active = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollX = scroll.scrollLeft;
+    scrollY = scroll.scrollTop;
+    cvs.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!active) return;
+    requestAnimationFrame(()=>{
+      scroll.scrollLeft = scrollX - (e.clientX - startX);
+      scroll.scrollTop  = scrollY - (e.clientY - startY);
+    });
+  });
+  document.addEventListener('mouseup', function(){
+    if(!active) return;
+    active = false;
+    cvs.style.cursor = 'grab';
+  });
+
+  // ── ZOOM STATE ──
+  let _scale = 1;
+  window._canvasScale = 1; // exposed for drag/resize coordinate math
+  const MIN_SCALE = 0.3, MAX_SCALE = 2.5;
+
+  function applyZoom(newScale, originX, originY){
+    // originX/Y are coordinates relative to scroll viewport
+    const prevScale = _scale;
+    _scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScale));
+    // Adjust scroll so zoom centres on the origin point
+    const ratio = _scale / prevScale;
+    scroll.scrollLeft = (scroll.scrollLeft + originX) * ratio - originX;
+    scroll.scrollTop  = (scroll.scrollTop  + originY) * ratio - originY;
+    cvs.style.transformOrigin = '0 0';
+    cvs.style.transform = `scale(${_scale})`;
+    window._canvasScale = _scale;
+    // Keep scroll container aware of scaled size
+    cvs.style.width  = (2400 * _scale) + 'px';
+    cvs.style.height = (1800 * _scale) + 'px';
+  }
 
   // ── SCROLL WHEEL ZOOM — disabled for now, will be a toggle in settings ──
 
@@ -1082,6 +1172,7 @@ async function doSI(){
   }
   clearLoginAttempts(u);
   cu=u;LS.s('pd1_cur',u);
+  startRealtimeSync(u);
   if(!acc[u].displayName||acc[u].displayName.trim()===''){
     const _d=acc[u];
     tasks=_d.tasks||[];journal=_d.journal||[];subjects=_d.subjects||[];
@@ -1089,7 +1180,6 @@ async function doSI(){
     show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);
   }
   else {
-    startRealtimeSync(u);
     checkAndRegisterDevice(u).then(allowed => {
       if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
       launch();
@@ -1255,6 +1345,7 @@ async function handleGoogleCallback(passedSession = null) {
       }
       LS.s('pd1_acc', acc);
       cu = u; LS.s('pd1_cur', u);
+      startRealtimeSync(u);
       if (!acc[u].displayName || acc[u].displayName.trim() === '') {
         // Hydrate globals from the loaded account data BEFORE entering onboarding.
         // Without this, tasks/journal/widgets are still [] from app init,
@@ -1269,7 +1360,6 @@ async function handleGoogleCallback(passedSession = null) {
         prefs    = _d.prefs    || { dark: false };
         show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
       } else {
-        startRealtimeSync(u);
         checkAndRegisterDevice(u).then(allowed => {
           if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
           launch();
@@ -1368,7 +1458,8 @@ async function doGoogleUsername() {
     LS.s('pd1_acc', acc);
     cu = u; LS.s('pd1_cur', u);
     _pendingGoogleSession = null;
-    // New user — send to onboarding (startRealtimeSync called in launch() after obFinish)
+    startRealtimeSync(u);
+    // New user — send to onboarding
     show('sn'); _obApplyAccent('green'); setTimeout(() => obGo(0), 80);
 
   } catch(e) {
@@ -1432,9 +1523,9 @@ async function submitMigrateEmail(){
 
     _mergeSignInData(u, dbUser);
     cu=u;LS.s('pd1_cur',u);
+    startRealtimeSync(u);
     if(!acc[u].displayName||acc[u].displayName.trim()===''){show('sn');_obApplyAccent('green');setTimeout(()=>obGo(0),80);}
     else {
-      startRealtimeSync(u);
       checkAndRegisterDevice(u).then(allowed=>{
         if(!allowed){showMultiDeviceBlock();_silentSignOut();return;}
         launch();
@@ -1608,37 +1699,33 @@ function obFinish() {
     const gd = window._pendingGuestData;
     window._pendingGuestData = null;
     try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
-
-    if(gd.tasks    && gd.tasks.length)    acc[cu].tasks    = gd.tasks;
-    if(gd.journal  && gd.journal.length)  acc[cu].journal  = gd.journal;
-    if(gd.notes    && gd.notes.length)    acc[cu].notes    = gd.notes;
-    if(gd.calEvs   && gd.calEvs.length)   acc[cu].calEvs   = gd.calEvs;
-    if(gd.widgets  && gd.widgets.length)  acc[cu].widgets  = gd.widgets;
-
-    // Merge prefs selectively — keep onboarding choices (color, dark, useCase)
-    // but bring over habits, habitLog and pomHistory from the guest session
-    if(gd.prefs){
-      const p = acc[cu].prefs || {};
-      if(gd.prefs.habits    && gd.prefs.habits.length)  p.habits    = gd.prefs.habits;
-      if(gd.prefs.habitLog  && Object.keys(gd.prefs.habitLog).length) p.habitLog  = gd.prefs.habitLog;
-      if(gd.prefs.pomHistory && Object.keys(gd.prefs.pomHistory).length) p.pomHistory = gd.prefs.pomHistory;
-      acc[cu].prefs = p;
-    }
-
+    if(gd.tasks && gd.tasks.length) acc[cu].tasks = gd.tasks;
+    if(gd.journal && gd.journal.length) acc[cu].journal = gd.journal;
+    if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
+    if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
+    if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
     // New user converted from guest mode — track it
     const minutes = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 60000) : 0;
     _track('guest_converted', { minutes_spent: minutes });
     window._guestStartTime = null;
   }
 
-  // New users start with an empty canvas — they build it themselves
-  // Only set _newUser if they genuinely have no widgets (not converting from guest)
+  // Seed pre-built canvas for new users if they have no widgets
   if (!acc[cu].widgets || !acc[cu].widgets.length) {
-    acc[cu].widgets = [];
-    widgets = [];
-    acc[cu]._newUser = true; // flag for first-time empty state hint
-  } else {
+    const ts = Date.now();
+    acc[cu].widgets = [
+      // Row 1: Task board | Habits | Journal
+      { id:'w-default-tasks',    type:'tasks',    title:'Task Board',   x:24,  y:24,  w:560, h:400, z:10 },
+      { id:'w-default-habits',   type:'habits',   title:'Daily Habits', x:604, y:24,  w:340, h:400, z:11 },
+      { id:'w-default-journal',  type:'journal',  title:'Journal',      x:964, y:24,  w:420, h:400, z:12 },
+      // Row 2: Calendar | Timer | Notes
+      { id:'w-default-calendar', type:'calendar', title:'Calendar',     x:24,  y:444, w:560, h:420, z:13 },
+      { id:'w-default-timer',    type:'timer',    title:'Focus Timer',  x:604, y:444, w:340, h:400, z:14 },
+      { id:'w-default-note',     type:'note',     title:'Notes',        x:964, y:444, w:300, h:400, z:15 },
+    ];
     widgets = acc[cu].widgets;
+    acc[cu].hasAddedWidget = true;
+    acc[cu]._newUser = true; // flag for first-time canvas hint
   }
 
   LS.s('pd1_acc', acc);
@@ -1753,6 +1840,9 @@ async function maybeSendWeeklySummary(){
   if(!cu || window._guestMode) return;
   const today = new Date();
   if(today.getDay() !== 0) return; // Sunday only
+  // Only send if user joined more than 7 days ago
+  const joined = acc[cu]?.joined || Date.now();
+  if(Date.now() - joined < 7 * 86400000) return;
   const weekKey = `pd1_weekly_${today.toISOString().slice(0,10)}`;
   try{ if(localStorage.getItem(weekKey)) return; localStorage.setItem(weekKey, '1'); } catch(e){ return; }
   try{
@@ -2022,23 +2112,15 @@ function launch(){
     renderHabitAddForm('habit-add-form'); renderHabitAddForm('mob-habit-add-form');
   }, msToMidnight);
   const d=acc[cu];
-  // Merge guest data if user signed in from preview mode (returning user path)
+  // Merge guest data if user signed in from preview mode
   if(window._pendingGuestData){
     const gd = window._pendingGuestData;
     window._pendingGuestData = null;
     try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
-    if(gd.tasks    && gd.tasks.length)    d.tasks    = [...gd.tasks,    ...(d.tasks||[])];
-    if(gd.journal  && gd.journal.length)  d.journal  = [...gd.journal,  ...(d.journal||[])];
-    if(gd.notes    && gd.notes.length)    d.notes    = [...gd.notes,    ...(d.notes||[])];
-    if(gd.calEvs   && gd.calEvs.length)   d.calEvs   = [...gd.calEvs,   ...(d.calEvs||[])];
-    if(gd.widgets  && gd.widgets.length)  d.widgets  = gd.widgets;
-    if(gd.prefs){
-      const p = d.prefs || {};
-      if(gd.prefs.habits     && gd.prefs.habits.length)                   p.habits     = gd.prefs.habits;
-      if(gd.prefs.habitLog   && Object.keys(gd.prefs.habitLog).length)    p.habitLog   = gd.prefs.habitLog;
-      if(gd.prefs.pomHistory && Object.keys(gd.prefs.pomHistory).length)  p.pomHistory = gd.prefs.pomHistory;
-      d.prefs = p;
-    }
+    if(gd.tasks && gd.tasks.length) d.tasks = [...gd.tasks, ...(d.tasks||[])];
+    if(gd.journal && gd.journal.length) d.journal = [...gd.journal, ...(d.journal||[])];
+    if(gd.notes && gd.notes.length) d.notes = [...gd.notes, ...(d.notes||[])];
+    if(gd.calEvs && gd.calEvs.length) d.calEvs = [...gd.calEvs, ...(d.calEvs||[])];
     acc[cu] = d;
     LS.s('pd1_acc', acc);
     if(sbReady) dbSaveUser(cu, d).catch(()=>{});
@@ -2072,6 +2154,19 @@ function launch(){
   renderCanvasStreak();
   // Weekly summary — delayed so it doesn't block app load
   setTimeout(maybeSendWeeklySummary, 2000);
+  // Show first-time canvas hint for new users
+  if(acc[cu]&&acc[cu]._newUser){
+    delete acc[cu]._newUser;
+    setTimeout(()=>{
+      const hint=document.createElement('div');
+      hint.id='canvas-first-hint';
+      hint.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:999;animation:fadeIn .4s ease;';
+      hint.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:10px 18px;box-shadow:var(--sh2);font-size:12px;color:var(--ink3);font-weight:500;white-space:nowrap;">Drag to rearrange · Resize from any corner</div>'
+        +'<svg width="12" height="8" viewBox="0 0 12 8" fill="none" style="color:var(--bdr);"><path d="M6 8L0 0h12L6 8z" fill="currentColor"/></svg>';
+      document.body.appendChild(hint);
+      setTimeout(()=>{ hint.style.transition='opacity .6s'; hint.style.opacity='0'; setTimeout(()=>hint.remove(),600); },4000);
+    },800);
+  }
   updateFixedStats();
   if (snEl && appEl) {
     // Stage app: visible in DOM but fully transparent, no transform
@@ -2610,7 +2705,6 @@ function addW(type,opts={}) {
   widgets.push(ent);
   if(cu&&acc[cu]) acc[cu].hasAddedWidget=true; // mark without triggering extra persist
   const hint=$('canvas-hint');if(hint)hint.remove();
-  const emptyState=document.getElementById('canvas-empty-state');if(emptyState)emptyState.remove();
   persist(); // single persist — removed duplicate call
   buildWidgetEl(ent);
 }
@@ -2627,39 +2721,35 @@ async function removeW(id){
   }
   persist();
   updateWToggleStates();
-  if(!widgets.length) renderCanvas(); // show empty state if canvas is now empty
 }
 
 async function clearCanvas(){
   closeWkPicker();
   if(!await appConfirm('Clear the canvas?','All widgets will be removed. Your data is still saved — you can add them back anytime.','Clear'))return;
   widgets.forEach(w=>{if(TMS[w.id]){clearInterval(TMS[w.id].iv);if(TMS[w.id].alarmActive)stopAlarm();delete TMS[w.id];}});
-  widgets=[];persist();renderCanvas();
+  widgets=[];persist();$('canvas').innerHTML='';
 }
 
 function renderCanvas(){
   $('canvas').innerHTML='';
   if(!widgets.length){
     nextZ=10;
-    // Empty state — only shown when no widgets are present
-    const name=(acc[cu]?.displayName||'').split(' ')[0];
-    const h=new Date().getHours();
-    const g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
-    const greeting=name?`${g}, ${name}.`:`${g}.`;
-    const empty=document.createElement('div');
-    empty.id='canvas-empty-state';
-    empty.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;gap:10px;padding-bottom:80px;';
-    empty.innerHTML=`
-      <div style="font-size:28px;font-weight:800;letter-spacing:-.6px;color:var(--ink2);opacity:.55;">${greeting}</div>
-      <div style="font-size:13px;color:var(--ink4);font-weight:500;">Your workspace is empty — add a widget to get started.</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-        <span style="font-size:11px;color:var(--ink4);font-weight:600;letter-spacing:.3px;">USE THE TOOLBAR BELOW TO ADD WIDGETS</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-      </div>`;
-    const canvas=$('canvas');
-    if(canvas) canvas.appendChild(empty);
     return;
+  }
+  // Show subtle canvas hint for first few sessions
+  const _hintShown=parseInt(LS.g('pd1_canvas_hint_count','0')||'0',10);
+  if(_hintShown<4){
+    LS.s('pd1_canvas_hint_count',String(_hintShown+1));
+    setTimeout(()=>{
+      if(document.getElementById('canvas-hint')) return;
+      const div=document.createElement('div');
+      div.id='canvas-hint';
+      div.style.cssText='position:fixed;bottom:76px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:50;animation:fadeIn .4s ease both;';
+      div.innerHTML='<div style="background:var(--surf);border:1.5px solid var(--bdr);border-radius:var(--r14);padding:9px 16px;box-shadow:var(--sh2);font-size:11px;color:var(--ink3);font-weight:600;white-space:nowrap;">Drag to rearrange · Resize from any corner</div>'
+        +'<svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--bdr);"><path d="M6 8L0 0h12L6 8z" fill="currentColor"/></svg>';
+      const canvas=$('canvas'); if(canvas) canvas.appendChild(div);
+      setTimeout(()=>{ const h=document.getElementById('canvas-hint'); if(h){h.style.transition='opacity .5s';h.style.opacity='0';setTimeout(()=>h.remove(),500);} },4000);
+    },600);
   }
   // Always sync nextZ from the actual highest stored z — prevents new widgets spawning behind existing ones
   const mz=widgets.reduce((m,w)=>Math.max(m,w.z||10),10);
@@ -2682,12 +2772,6 @@ function buildWidgetEl(w){
   const el=document.createElement('div');
   el.className='widget';el.id=w.id;
   el.dataset.type=w.type;
-  // Clamp saved position to canvas bounds so no widget is off-screen on load
-  const _cvs=document.getElementById('canvas');
-  if(_cvs){
-    w.x=Math.min(Math.max(0,w.x), Math.max(0,_cvs.clientWidth  - w.w));
-    w.y=Math.min(Math.max(0,w.y), Math.max(0,_cvs.clientHeight - w.h));
-  }
   el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
   el.innerHTML=`
     <div class="whead" id="wh-${w.id}">
@@ -2932,11 +3016,8 @@ function startDrag(e,id){
 
   const mm=e=>{
     if(!active)return;
-    const cvs=document.getElementById('canvas');
-    const maxX=cvs ? Math.max(0, cvs.clientWidth  - w.w) : 99999;
-    const maxY=cvs ? Math.max(0, cvs.clientHeight - w.h) : 99999;
-    pendingX=Math.min(Math.max(0,e.clientX/scale-startX), maxX);
-    pendingY=Math.min(Math.max(0,e.clientY/scale-startY), maxY);
+    pendingX=Math.max(0,e.clientX/scale-startX);
+    pendingY=Math.max(0,e.clientY/scale-startY);
     if(rafId)return;
     rafId=requestAnimationFrame(()=>{
       w.x=pendingX;w.y=pendingY;
@@ -2976,8 +3057,8 @@ function startResize(e,id){
     note:   {w:280, h:180},
   };
   const wm=WMIN[w.type]||{w:180,h:130};
-  const minW=wm.w;
-  const minH=wm.h;
+  const minW=wm.w,maxW=99999;
+  const minH=wm.h,maxH=99999;
   let rafId=null,pendingW=w.w,pendingH=w.h;
   let active=true;
 
@@ -2998,9 +3079,6 @@ function startResize(e,id){
 
   const mm=e=>{
     if(!active)return;
-    const cvs=document.getElementById('canvas');
-    const maxW=cvs ? Math.max(minW, cvs.clientWidth  - w.x) : 99999;
-    const maxH=cvs ? Math.max(minH, cvs.clientHeight - w.y) : 99999;
     pendingW=Math.min(maxW,Math.max(minW,startW+(e.clientX/scale-startX)));
     pendingH=Math.min(maxH,Math.max(minH,startH+(e.clientY/scale-startY)));
     if(rafId)return;

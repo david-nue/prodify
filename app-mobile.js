@@ -1,4 +1,16 @@
 // ══════════════════════════════════════════════════════
+// HAPTIC FEEDBACK — iOS HIG interaction feedback
+// ══════════════════════════════════════════════════════
+function haptic(type='light'){
+  // Web Vibration API fallback (Android + some iOS PWA)
+  try{
+    if(!navigator.vibrate) return;
+    const patterns={light:[5],medium:[10],heavy:[20],selection:[3],success:[5,50,5]};
+    navigator.vibrate(patterns[type]||patterns.light);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════════════════
 // GUEST MODE (mobile)
 // ══════════════════════════════════════════════════════
 window._guestMode = window._guestMode || false;
@@ -25,6 +37,38 @@ function mobGuestWriteGuard(type){
   return true;
 }
 
+function _showMobGuestTooltip(){
+  if(!window._guestMode) return;
+  if(document.getElementById('mob-guest-tip')) return;
+  const tip = document.createElement('div');
+  tip.id = 'mob-guest-tip';
+  tip.style.cssText = [
+    'position:fixed',
+    'bottom:130px',
+    'left:0',
+    'right:0',
+    'margin:0 auto',
+    'width:fit-content',
+    'max-width:90vw',
+    'z-index:7500',
+    'background:rgba(30,25,20,0.88)',
+    'backdrop-filter:blur(12px)',
+    '-webkit-backdrop-filter:blur(12px)',
+    'color:rgba(255,255,255,0.9)',
+    'font-size:12px',
+    'font-weight:600',
+    'padding:10px 20px',
+    'border-radius:100px',
+    'border:1px solid rgba(255,255,255,0.1)',
+    'box-shadow:0 4px 24px rgba(0,0,0,0.15)',
+    'white-space:nowrap',
+    'pointer-events:none',
+    'animation:fadeIn .4s ease both',
+  ].join(';');
+  tip.textContent = '✦ Add a task · Write a journal entry · Track a habit';
+  document.body.appendChild(tip);
+  setTimeout(()=>{ if(tip){ tip.style.transition='opacity .5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); } }, 5000);
+}
 
 function mobEnterGuestMode(){
   // Guard re-entry
@@ -79,6 +123,7 @@ function mobEnterGuestMode(){
   document.body.classList.add('guest-active');
   _mobGuestFreeWrites = {task: 0, journal: 0, note: 0};
   if(typeof renderAll==='function') renderAll();
+  setTimeout(_showMobGuestTooltip, 1000);
 }
 
 function mobGuestGuard(){
@@ -137,15 +182,14 @@ function _trackGuestExit(converted){
 }
 
 function mobGuestGateSignIn(){
-  // Save ALL guest data before sign-in
+  // Save guest data before sign-in
   const d = acc['__guest__'] || {};
   window._pendingGuestData = {
-    tasks:   JSON.parse(JSON.stringify(d.tasks||[])),
+    tasks: JSON.parse(JSON.stringify(d.tasks||[])),
     journal: JSON.parse(JSON.stringify(d.journal||[])),
-    notes:   JSON.parse(JSON.stringify(d.notes||[])),
-    prefs:   JSON.parse(JSON.stringify(d.prefs||{})),
-    calEvs:  JSON.parse(JSON.stringify(d.calEvs||[])),
-    widgets: JSON.parse(JSON.stringify(d.widgets||[])),
+    notes: JSON.parse(JSON.stringify(d.notes||[])),
+    prefs: JSON.parse(JSON.stringify(d.prefs||{})),
+    calEvs: JSON.parse(JSON.stringify(d.calEvs||[])),
   };
   // Persist to sessionStorage so it survives magic link redirect
   try { sessionStorage.setItem('pd1_guest_data', JSON.stringify(window._pendingGuestData)); } catch(e) {}
@@ -229,12 +273,7 @@ function getTasks(){ return getD().tasks || []; }
 function getJournal(){ return getD().journal || []; }
 function getCalEvs(){ return getD().calEvs || []; }
 function getNotes(){ return migrateNotes(getD().notes); }
-function saveNotes(arr){
-  const d=getD();
-  d.notes=arr;
-  if(cu) acc[cu]=d;
-  if(!window._guestMode) saveAll();
-}
+function saveNotes(arr){ if(window._guestMode) return; const d=getD(); d.notes=arr; if(cu) acc[cu]=d; saveAll(); }
 
 let _saveTimer=null;
 let _lastSaveTs=0;
@@ -780,18 +819,11 @@ async function obFinish(){
       const gd = window._pendingGuestData;
       window._pendingGuestData = null;
       try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
-      if(gd.tasks    && gd.tasks.length)   acc[cu].tasks   = gd.tasks;
-      if(gd.journal  && gd.journal.length) acc[cu].journal = gd.journal;
-      if(gd.notes    && gd.notes.length)   acc[cu].notes   = gd.notes;
-      if(gd.calEvs   && gd.calEvs.length)  acc[cu].calEvs  = gd.calEvs;
-      if(gd.widgets  && gd.widgets.length) acc[cu].widgets = gd.widgets;
-      if(gd.prefs){
-        const p = acc[cu].prefs || {};
-        if(gd.prefs.habits     && gd.prefs.habits.length)                       p.habits     = gd.prefs.habits;
-        if(gd.prefs.habitLog   && Object.keys(gd.prefs.habitLog||{}).length)    p.habitLog   = gd.prefs.habitLog;
-        if(gd.prefs.pomHistory && Object.keys(gd.prefs.pomHistory||{}).length)  p.pomHistory = gd.prefs.pomHistory;
-        acc[cu].prefs = p;
-      }
+      if(gd.tasks && gd.tasks.length) acc[cu].tasks = gd.tasks;
+      if(gd.journal && gd.journal.length) acc[cu].journal = gd.journal;
+      if(gd.notes && gd.notes.length) acc[cu].notes = gd.notes;
+      if(gd.calEvs && gd.calEvs.length) acc[cu].calEvs = gd.calEvs;
+      if(gd.prefs && gd.prefs.habitLog) acc[cu].prefs = Object.assign(acc[cu].prefs||{}, {habitLog: gd.prefs.habitLog});
       // New user converted from guest mode — track it
       const minutes = window._guestStartTime ? Math.round((Date.now() - window._guestStartTime) / 60000) : 0;
       _track('guest_converted', { minutes_spent: minutes, platform: 'mobile' });
@@ -864,6 +896,9 @@ async function maybeSendWeeklySummary(){
   if(!cu||window._guestMode) return;
   const today=new Date();
   if(today.getDay()!==0) return;
+  // Only send if user joined more than 7 days ago
+  const joined=acc[cu]?.joined||Date.now();
+  if(Date.now()-joined < 7*86400000) return;
   const weekKey=`pd1_weekly_${today.toISOString().slice(0,10)}`;
   try{ if(localStorage.getItem(weekKey)) return; localStorage.setItem(weekKey,'1'); }catch(e){ return; }
   try{
@@ -895,18 +930,10 @@ function launch(){
     window._pendingGuestData = null;
     try { sessionStorage.removeItem('pd1_guest_data'); } catch(e) {}
     const d = acc[cu] || {};
-    if(gd.tasks    && gd.tasks.length)   d.tasks   = [...gd.tasks,   ...(d.tasks||[])];
-    if(gd.journal  && gd.journal.length) d.journal = [...gd.journal, ...(d.journal||[])];
-    if(gd.notes    && gd.notes.length)   d.notes   = [...gd.notes,   ...(d.notes||[])];
-    if(gd.calEvs   && gd.calEvs.length)  d.calEvs  = [...gd.calEvs,  ...(d.calEvs||[])];
-    if(gd.widgets  && gd.widgets.length) d.widgets = gd.widgets;
-    if(gd.prefs){
-      const p = d.prefs || {};
-      if(gd.prefs.habits     && gd.prefs.habits.length)                       p.habits     = gd.prefs.habits;
-      if(gd.prefs.habitLog   && Object.keys(gd.prefs.habitLog||{}).length)    p.habitLog   = gd.prefs.habitLog;
-      if(gd.prefs.pomHistory && Object.keys(gd.prefs.pomHistory||{}).length)  p.pomHistory = gd.prefs.pomHistory;
-      d.prefs = p;
-    }
+    if(gd.tasks && gd.tasks.length) d.tasks = [...gd.tasks, ...(d.tasks||[])];
+    if(gd.journal && gd.journal.length) d.journal = [...gd.journal, ...(d.journal||[])];
+    if(gd.notes && gd.notes.length) d.notes = [...gd.notes, ...(d.notes||[])];
+    if(gd.calEvs && gd.calEvs.length) d.calEvs = [...gd.calEvs, ...(d.calEvs||[])];
     acc[cu] = d;
     LS.s('pd1_acc', acc);
     if(sbReady) saveAll();
@@ -1058,6 +1085,7 @@ function clearAll(){
 // ══════════════════════════════════════════════
 const SUB_PAGES=['settings'];
 function goPg(id){
+  haptic('selection');
   if(window._guestMode && (id==='profile'||id==='settings')){ mobGuestGuard(); return; }
   _track('page_view', { page: id });
   // Close AI planner panel when navigating
@@ -1153,10 +1181,20 @@ function renderHome(){
   const h=new Date().getHours();
   const greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const name=getD().displayName||(cu&&cu!=='__mobile__'?cu:'there')||'there';
+  const firstName=name.split(' ')[0];
   const greetEl=document.getElementById('home-greet');
   const dateEl=document.getElementById('home-date');
-  if(greetEl) greetEl.textContent=greet+', '+name+'!';
+  if(greetEl) greetEl.textContent=greet+', '+firstName+'!';
   if(dateEl) dateEl.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // Streak pill
+  const streakWrap=document.getElementById('home-streak-wrap');
+  if(streakWrap && !window._guestMode){
+    const n=getAppStreak();
+    const v=streakVisual(n);
+    if(n>0) streakWrap.innerHTML=`<div class="home-streak-pill"><span style="font-size:15px;">${v.icon}</span><span>${n} day streak</span></div>`;
+    else streakWrap.innerHTML='';
+  }
 
   const today=toDay();
   const tasks=getTasks();
@@ -1963,6 +2001,7 @@ function habStreak(id){
 }
 function habitToggle(id){
   id=+id; // always compare as number
+  haptic('medium');
   // pulse the circle before re-render
   const btn=document.querySelector(`.hab-circle-btn[onclick="habitToggle('${id}')"]`);
   if(btn){ btn.classList.add('pulse'); }
@@ -2119,6 +2158,7 @@ function mobConfirmEdit(){
   mobCancelEdit(); mobUpdateDisp();
 }
 function mobTimerBtn(){
+  haptic('heavy');
   if(_mobAlarmActive){ mobStopAlarm(); _mobAlarmActive=false; _mobSec=_mobCustomSec[_mobTMode]; _mobTotal=_mobSec; mobUpdateDisp(); const btn=document.getElementById('tmbtn-mob'); if(btn){btn.textContent='Start';btn.classList.remove('stop');} return; }
   if(_mobRunning){
     clearInterval(_mobIv); _mobRunning=false;
@@ -2606,42 +2646,9 @@ function selEmoji(btn){ document.querySelectorAll('.emoji-btn').forEach(b=>b.cla
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(iso,short=false){ try{ const d=new Date(iso); if(isNaN(d)) return iso||''; return short?d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch(e){return iso||'';} }
 let _toastTm;
-function toast(msg){ /* toasts removed */ }
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_toastTm); _toastTm=setTimeout(()=>el.classList.remove('show'),2000); }
 
-function updatePageHeaders(){
-  const tasks = getTasks();
-  const todo  = tasks.filter(t=>t.col==='todo').length;
-  const done  = tasks.filter(t=>t.col==='done').length;
-  const taskSub = document.getElementById('mob-tasks-header-sub');
-  if(taskSub) taskSub.textContent = tasks.length
-    ? `${todo} remaining · ${done} done`
-    : 'Nothing on your list yet';
-
-  const journal = getJournal();
-  const todayStr = toDay();
-  const hasEntry = journal.some(e => e.date === todayStr);
-  const journalSub = document.getElementById('mob-journal-header-sub');
-  if(journalSub) journalSub.textContent = hasEntry
-    ? `Entry written today · ${journal.length} total`
-    : `${journal.length} entr${journal.length===1?'y':'ies'} · Write today's`;
-
-  const habits = getP().habits||[];
-  const log    = getP().habitLog||{};
-  const doneH  = habits.filter(h=>(log[todayStr]||[]).map(Number).includes(+h.id)).length;
-  const habitSub = document.getElementById('mob-habits-header-sub');
-  if(habitSub) habitSub.textContent = habits.length
-    ? `${doneH}/${habits.length} done today`
-    : 'Start building your routine';
-
-  const calEvs = getCalEvs();
-  const todayEvs = calEvs.filter(e=>e.date===todayStr).length;
-  const calSub = document.getElementById('mob-cal-header-sub');
-  if(calSub) calSub.textContent = todayEvs
-    ? `${todayEvs} event${todayEvs===1?'':'s'} today`
-    : 'Your schedule';
-}
-
-function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderNotesList(); updatePageHeaders(); }
+function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHabitsList(); renderSchedule(); renderNotesList(); }
 
 // ══════════════════════════════════════════════
 // NOTES PAGE
@@ -2649,7 +2656,6 @@ function renderAll(){ renderHome(); renderTasks(); renderJournalList(); renderHa
 let _notesView = 'list';
 let _notesOpenId = null;
 let _notesSaveTimer = null;
-let _notesIsNew = false;
 let _notesSearchQ = '';
 let _notesSortMode = 'updated'; // 'updated' | 'title'
 
@@ -2742,24 +2748,38 @@ function openNote(id){
   const note = notes.find(n=>n.id===id);
   if(!note) return;
   _notesOpenId = id;
-  _notesIsNew = false;
   _notesView = 'editor';
   const listView = document.getElementById('mob-notes-list-view');
   const editorView = document.getElementById('mob-notes-editor-view');
   if(listView) listView.style.display='none';
   if(editorView) editorView.style.display='flex';
+  const titleInp = document.getElementById('mob-note-title-inp');
   const contentTa = document.getElementById('mob-note-content-ta');
+  if(titleInp) titleInp.value = note.title || '';
   if(contentTa) contentTa.value = note.content || '';
   const hdrTitle = document.getElementById('mob-note-editor-hdr');
-  if(hdrTitle){ hdrTitle.textContent = note.title || ''; }
+  if(hdrTitle) hdrTitle.textContent = note.title || 'Untitled';
 }
 
 function notesBack(){
-  // Discard unsaved changes — only Save button commits
-  clearTimeout(_notesSaveTimer);
+  // Flush any pending debounced save before navigating away
+  if(_notesOpenId){
+    clearTimeout(_notesSaveTimer);
+    const titleInp = document.getElementById('mob-note-title-inp');
+    const contentTa = document.getElementById('mob-note-content-ta');
+    const title = titleInp ? titleInp.value : '';
+    const content = contentTa ? contentTa.value : '';
+    const notes = getNotes();
+    const n = notes.find(x=>x.id===_notesOpenId);
+    if(n){
+      n.title = title;
+      n.content = content;
+      n.updated = Date.now();
+      saveNotes(notes);
+    }
+  }
   _notesView = 'list';
   _notesOpenId = null;
-  _notesIsNew = false;
   const listView = document.getElementById('mob-notes-list-view');
   const editorView = document.getElementById('mob-notes-editor-view');
   if(listView) listView.style.display='flex';
@@ -2771,43 +2791,34 @@ function notesBack(){
 
 function mobNewNote(){ notesNew(); }
 function notesNew(){
-  // Generate a temp ID but don't save yet — only saved when user presses Save
-  _notesOpenId = 'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  _notesIsNew = true;
-  const listView = document.getElementById('mob-notes-list-view');
-  const editorView = document.getElementById('mob-notes-editor-view');
-  if(listView) listView.style.display='none';
-  if(editorView) editorView.style.display='flex';
-  const hdrTitle = document.getElementById('mob-note-editor-hdr');
-  const contentTa = document.getElementById('mob-note-content-ta');
-  if(hdrTitle){ hdrTitle.textContent = ''; hdrTitle.focus(); }
-  if(contentTa) contentTa.value = '';
-  const notesFab=document.getElementById('notes-fab');
-  if(notesFab) notesFab.style.display='none';
+  
+  const notes = getNotes();
+  const n = {id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:'', content:'', updated:Date.now()};
+  notes.unshift(n);
+  saveNotes(notes);
+  openNote(n.id);
+  setTimeout(()=>{ const t=document.getElementById('mob-note-title-inp'); if(t) t.focus(); },100);
 }
 
 function noteEditorInput(){
+  if(window._guestMode) return;
   if(!_notesOpenId) return;
-  // Only update the displayed title — no auto-save, Save button commits
-}
-
-function noteSave(){
-  if(!_notesOpenId) return;
-  const hdrTitle = document.getElementById('mob-note-editor-hdr');
+  const titleInp = document.getElementById('mob-note-title-inp');
   const contentTa = document.getElementById('mob-note-content-ta');
-  const title = hdrTitle ? hdrTitle.textContent.trim() : '';
-  const content = contentTa ? contentTa.value.trim() : '';
-  // Don't save if completely empty
-  if(!title && !content){ notesBack(); return; }
-  const notes = getNotes();
-  if(_notesIsNew){
-    notes.unshift({id:_notesOpenId, title, content, updated:Date.now()});
-  } else {
+  const title = titleInp ? titleInp.value : '';
+  const content = contentTa ? contentTa.value : '';
+  const hdrTitle = document.getElementById('mob-note-editor-hdr');
+  if(hdrTitle) hdrTitle.textContent = title || 'Untitled';
+  clearTimeout(_notesSaveTimer);
+  _notesSaveTimer = setTimeout(()=>{
+    const notes = getNotes();
     const n = notes.find(x=>x.id===_notesOpenId);
-    if(n){ n.title=title; n.content=content; n.updated=Date.now(); }
-  }
-  saveNotes(notes);
-  notesBack();
+    if(!n) return;
+    n.title = title;
+    n.content = content;
+    n.updated = Date.now();
+    saveNotes(notes);
+  }, 400);
 }
 
 async function deleteNote(){
