@@ -13,7 +13,7 @@
   "theme_color": "#3A7D5E",
   "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "/icons/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/logo.png", "sizes": "2000x2000", "type": "image/png", "purpose": "any maskable" }
   ],
   "screenshots": [
     { "src": "/icons/screenshot-wide.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Prodify Dashboard" },
@@ -24,7 +24,7 @@
       "name": "Dashboard",
       "url": "/",
       "description": "Open your productivity dashboard",
-      "icons": [{ "src": "/icons/logo.png", "sizes": "512x512", "type": "image/png" }]
+      "icons": [{ "src": "/icons/logo.png", "sizes": "2000x2000", "type": "image/png" }]
     }
   ]
 }
