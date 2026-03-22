@@ -1,7 +1,7 @@
 {
   "name": "Prodify",
   "short_name": "Prodify",
-  "description": "Your personal productivity space \u2014 tasks, journal, focus timer and more.",
+  "description": "Your personal productivity space. Tasks, journal, focus timer and more.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
