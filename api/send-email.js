@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const RESEND_KEY = 're_8LVswgy6_6Nzp3bMZe73DDnEkLtTBW8Qn';
+const RESEND_KEY = process.env.RESEND_API_KEY;
 
 export default async function handler(req) {
   // Only allow POST
