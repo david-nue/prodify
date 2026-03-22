@@ -3058,7 +3058,11 @@
           </svg>
           <span>Continue with Google</span>
         </button>
-        <div class="mob-auth-divider"><span>or</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--ink4);font-size:12px;font-weight:600;">
+          <span style="flex:1;height:1px;background:var(--bdr);display:block;"></span>
+          <span>or</span>
+          <span style="flex:1;height:1px;background:var(--bdr);display:block;"></span>
+        </div>
         <div id="mob-gsi-form">
           <input type="email" id="mob-gsi-email" placeholder="Enter your email address" autocomplete="email"
             onkeydown="if(event.key==='Enter')_mobGsiDoMagic()"
