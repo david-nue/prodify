@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "cc.prodify.twa",
+        "sha256_cert_fingerprints": ["83:19:1D:D8:70:C0:E4:08:D0:07:81:38:B2:B9:62:2E:BC:F7:4B:1F:6B:78:83:8B:AD:91:08:01:6C:79:90:A9"]
+      }
+    }]
