@@ -293,6 +293,16 @@ function applyRemoteData(row){
   LS.s('pd1_acc',acc);
   renderAll();
   applySettings();
+  // Refresh open note editor if synced
+  if (_notesView === 'editor' && _notesOpenId) {
+    const updatedNote = getNotes().find(n => n.id === _notesOpenId);
+    if (updatedNote) {
+      const contentTa = document.getElementById('mob-note-content-ta');
+      const hdrTitle = document.getElementById('mob-note-editor-hdr');
+      if (contentTa && contentTa.tagName !== 'TEXTAREA') contentTa.innerHTML = updatedNote.content || '';
+      if (hdrTitle) hdrTitle.textContent = updatedNote.title || '';
+    }
+  }
 }
 
 // Pull latest data from cloud
@@ -301,7 +311,7 @@ async function pullFromCloud(){
   const localTs=(acc[cu]||{})._localTs||0;
   if(localTs>0 && Date.now()-localTs<3000) return; // local change too recent — matches desktop threshold
   try{
-    const {data,error}=await sb.from('users').select('display_name,tasks,journal,subjects,cal_evs,notes,prefs,widgets,avatar_url').eq('username',cu).single();
+    const {data,error}=await sb.from('users').select('display_name,tasks,journal,subjects,cal_evs,notes,prefs,widgets,avatar_url').eq('username',cu).maybeSingle();
     if(error||!data) return;
     // Re-check after async fetch
     const localTs2=(acc[cu]||{})._localTs||0;
@@ -317,9 +327,7 @@ function startRealtimeSync(username){
   _realtimeChannel=sb.channel('prodify-user-'+username)
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'users',filter:'username=eq.'+username},
       payload=>{
-        if(Date.now()-_lastSaveTs<2000) return; // ignore echo from our own save — matches desktop
-        const localTs=(acc[cu]||{})._localTs||0;
-        if(localTs>0 && localTs>_lastSaveTs) return; // local is newer
+        if(Date.now()-_lastSaveTs<1500) return; // ignore echo from our own save
         applyRemoteData(payload.new);
       })
     .subscribe();
@@ -500,9 +508,7 @@ async function handleGoogleCallback(){
       // Respect _localTs — if local is fresher than last known cloud save, keep local
       const loc=acc[u]||{};
       const localTs=loc._localTs||0;
-      // _lastSaveTs persisted across reloads in localStorage
-      const persistedSaveTs=parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0;
-      _lastSaveTs=Math.max(_lastSaveTs,persistedSaveTs);
+      // _lastSaveTs is in-memory only — don't load from localStorage to avoid blocking cross-device updates
       const trustLocal=localTs>0 && localTs>=_lastSaveTs && Object.keys(loc).length>3;
 
       const cP=JSON.parse(existingUser.prefs||'{}');
@@ -1906,14 +1912,30 @@ function habShowEmojis(){
       const btn=document.createElement('button');
       btn.textContent=e; btn.dataset.e=e;
       if(i===0) btn.classList.add('sel');
-      btn.onclick=function(){ document.querySelectorAll('#hab-emojis button').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); _habSelEmoji=e; };
+      btn.onmousedown=function(ev){
+        ev.preventDefault(); // prevent input blur
+        document.querySelectorAll('#hab-emojis button').forEach(b=>b.classList.remove('sel'));
+        btn.classList.add('sel');
+        _habSelEmoji=e;
+        const preview=document.getElementById('hab-emoji-preview');
+        if(preview) preview.textContent=e;
+        row.classList.add('open');
+      };
       wrap.appendChild(btn);
     });
   }
   row.classList.add('open');
 }
 function habHideEmojis(){
-  setTimeout(()=>{ const row=document.getElementById('hab-emoji-row'); if(row) row.classList.remove('open'); },160);
+  setTimeout(()=>{
+    // Don't hide if focus is inside emoji picker
+    const row=document.getElementById('hab-emoji-row');
+    if(!row) return;
+    if(row.contains(document.activeElement)) return;
+    const inp = document.getElementById('hab-inp');
+    if(inp && inp.value.trim().length > 0) return;
+    row.classList.remove('open');
+  },160);
 }
 
 function renderHabitsList(){
@@ -2005,6 +2027,7 @@ function saveHabit(){
   inp.value=''; inp.blur(); toast('Habit added!');
   _habSelEmoji=HAB_EMOJIS[0];
   document.querySelectorAll('#hab-emojis button').forEach((b,i)=>b.classList.toggle('sel',i===0));
+  const preview=document.getElementById('hab-emoji-preview'); if(preview) preview.textContent='';
 }
 function deleteHabit(id){
   id=+id;
@@ -2688,7 +2711,8 @@ function renderNotesList(){
     return;
   }
   list.innerHTML = hdr + filtered.map(n=>{
-    const preview = (n.content||'').split('\n').find(l=>l.trim()) || '';
+    const _plainContent = (n.content||'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+    const preview = _plainContent.slice(0,100);
     const d = n.updated ? new Date(n.updated) : new Date();
     const dateStr = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const titleHtml = hl(esc(n.title)) || '<span style="color:var(--ink4);font-style:italic;">Untitled</span>';
@@ -2698,7 +2722,7 @@ function renderNotesList(){
         <div class="mob-note-card-title">${titleHtml}</div>
         <div class="mob-note-card-date">${dateStr}</div>
       </div>
-      ${previewHtml ? `<div class="mob-note-card-preview">${previewHtml}</div>` : ''}
+
     </div>`;
   }).join('');
 }
@@ -2747,7 +2771,10 @@ function openNote(id){
   if(listView) listView.style.display='none';
   if(editorView) editorView.style.display='flex';
   const contentTa = document.getElementById('mob-note-content-ta');
-  if(contentTa) contentTa.value = note.content || '';
+  if(contentTa){
+    if(contentTa.tagName==='TEXTAREA'){ contentTa.value = note.content || ''; }
+    else { contentTa.innerHTML = note.content || ''; }
+  }
   const hdrTitle = document.getElementById('mob-note-editor-hdr');
   if(hdrTitle){ hdrTitle.textContent = note.title || ''; }
 }
@@ -2779,33 +2806,35 @@ function notesNew(){
   const hdrTitle = document.getElementById('mob-note-editor-hdr');
   const contentTa = document.getElementById('mob-note-content-ta');
   if(hdrTitle){ hdrTitle.textContent = ''; hdrTitle.focus(); }
-  if(contentTa) contentTa.value = '';
+  if(contentTa){ if(contentTa.tagName==='TEXTAREA'){ contentTa.value=''; } else { contentTa.innerHTML=''; } }
   const notesFab=document.getElementById('notes-fab');
   if(notesFab) notesFab.style.display='none';
 }
 
 function noteEditorInput(){
   if(!_notesOpenId) return;
-  // Only update the displayed title — no auto-save, Save button commits
+  // Auto-save on input
+  clearTimeout(_notesSaveTimer);
+  _notesSaveTimer = setTimeout(() => { noteSave(true); }, 800);
 }
 
-function noteSave(){
+function noteSave(silent){
   if(!_notesOpenId) return;
   const hdrTitle = document.getElementById('mob-note-editor-hdr');
   const contentTa = document.getElementById('mob-note-content-ta');
   const title = hdrTitle ? hdrTitle.textContent.trim() : '';
-  const content = contentTa ? contentTa.value.trim() : '';
-  // Don't save if completely empty
-  if(!title && !content){ notesBack(); return; }
+  const content = contentTa ? (contentTa.tagName==='TEXTAREA' ? contentTa.value.trim() : contentTa.innerHTML.trim()) : '';
+  if(!title && !content){ if(!silent) notesBack(); return; }
   const notes = getNotes();
   if(_notesIsNew){
     notes.unshift({id:_notesOpenId, title, content, updated:Date.now()});
+    _notesIsNew = false;
   } else {
     const n = notes.find(x=>x.id===_notesOpenId);
     if(n){ n.title=title; n.content=content; n.updated=Date.now(); }
   }
   saveNotes(notes);
-  notesBack();
+  if(!silent) notesBack();
 }
 
 async function deleteNote(){
@@ -2991,7 +3020,7 @@ async function joinWaitlist(){
     const email=user?.email||''; if(!email) throw new Error('no_email');
     const {data:existing}=await sb.from('waitlist').select('id,position').eq('email',email).maybeSingle();
     if(existing){_onWaitlist=true;_waitlistPos=existing.position;if(btn){btn.textContent='Join the waitlist';btn.disabled=false;}_syncWaitlistUI();return;}
-    const {data:inserted,error}=await sb.from('waitlist').insert({email,username:cu,joined_at:new Date().toISOString()}).select('id,position').single();
+    const {data:inserted,error}=await sb.from('waitlist').insert({email,username:cu,joined_at:new Date().toISOString()}).select('id,position').maybeSingle();
     if(error&&error.code==='23505'){const {data:rw}=await sb.from('waitlist').select('id,position').eq('email',email).maybeSingle();if(rw){_onWaitlist=true;_waitlistPos=rw.position;if(btn){btn.textContent='Join the waitlist';btn.disabled=false;}_syncWaitlistUI();return;}}
     if(error) throw error;
     _onWaitlist=true;_waitlistPos=inserted?.position||null;
@@ -3544,7 +3573,7 @@ async function checkAndRegisterDevice(username) {
     const myId = getOrCreateDeviceId();
     const { data: row, error } = await sb.from('users')
       .select('active_device_id, is_pro, bypass_device_check')
-      .eq('username', username).single();
+      .eq('username', username).maybeSingle();
     if (error) return true; // fail open
     if (row?.bypass_device_check) return true;
     if (row?.is_pro) {
@@ -3565,7 +3594,7 @@ async function unregisterDevice(username) {
   if (!sbReady || !username) return;
   try {
     const myId = getOrCreateDeviceId();
-    const { data } = await sb.from('users').select('active_device_id').eq('username', username).single();
+    const { data } = await sb.from('users').select('active_device_id').eq('username', username).maybeSingle();
     if (data && data.active_device_id === myId)
       await sb.from('users').update({ active_device_id: null }).eq('username', username);
   } catch(e) {}
@@ -3878,3 +3907,52 @@ function jwEditReflection(id) {
   if (mindEl) mindEl.value = mind;
   if (tomorrowEl) tomorrowEl.value = tomorrow;
 }
+
+function mobInsertChecklist() {
+  const el = document.getElementById('mob-note-content-ta');
+  if (!el) return;
+  el.focus();
+  const item = '<div class="note-check-item"><input type="checkbox" onchange="this.parentNode.style.textDecoration=this.checked?\'line-through\':\'none\';this.parentNode.style.opacity=this.checked?\'0.5\':\'1\'"> <span contenteditable="true">To do</span></div>';
+  document.execCommand('insertHTML', false, item);
+}
+
+// ── NOTES COLOR PICKER (mobile) ──
+let _mobNoteActiveColor = null;
+
+function mobToggleColorPicker() {
+  const picker = document.getElementById('mob-note-color-picker');
+  if (!picker) return;
+  picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function mobApplyColor(color) {
+  _mobNoteActiveColor = color;
+  const circle = document.getElementById('mob-color-circle');
+  if (circle) circle.setAttribute('fill', color);
+  const el = document.getElementById('mob-note-content-ta');
+  if (el) { el.focus(); document.execCommand('foreColor', false, color); }
+  const picker = document.getElementById('mob-note-color-picker');
+  if (picker) picker.style.display = 'none';
+}
+
+function mobResetColor() {
+  _mobNoteActiveColor = null;
+  const circle = document.getElementById('mob-color-circle');
+  if (circle) circle.setAttribute('fill', 'var(--ink)');
+  const el = document.getElementById('mob-note-content-ta');
+  if (el) { el.focus(); document.execCommand('removeFormat'); }
+  const picker = document.getElementById('mob-note-color-picker');
+  if (picker) picker.style.display = 'none';
+}
+
+function mobNoteKeydown(e) {
+  // placeholder — reserved for future key handling
+}
+
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('mob-note-color-picker');
+  const btn = document.getElementById('mob-color-btn');
+  if (picker && picker.style.display === 'flex' && !picker.contains(e.target) && !btn?.contains(e.target)) {
+    picker.style.display = 'none';
+  }
+});

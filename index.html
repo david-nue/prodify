@@ -90,7 +90,7 @@
   <!-- style.css only for desktop — mobile uses app-mobile.css loaded dynamically -->
   <script>
     if (!window.PRODIFY_IS_MOBILE) {
-      document.write('<link rel="stylesheet" href="style.css?v=198" />');
+      document.write('<link rel="stylesheet" href="style.css?v=221" />');
     }
   </script>
 
@@ -781,6 +781,12 @@
   <div class="screen off" id="app">
     <!-- FLOATING BOTTOM TOOLBAR -->
     <div class="fltbar" id="sb">
+      <!-- Back button — shown when on profile/settings -->
+      <button id="sb-back-btn" onclick="goPg('canvas',null)" style="display:none;align-items:center;gap:5px;background:none;border:none;cursor:pointer;color:var(--ink2);font-size:12px;font-weight:700;font-family:inherit;padding:4px 8px 4px 4px;border-radius:100px;transition:background .15s;white-space:nowrap;" onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='none'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <div id="sb-main-btns" style="display:contents;">
       <!-- Widget toggle buttons — click to add/focus each widget -->
       <button class="sbb" onclick="toggleW('tasks')" id="wtb-tasks">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -818,6 +824,7 @@
         </svg>
         <span class="fltlbl">Notes</span>
       </button>
+      </div><!-- /sb-main-btns -->
       <div class="flt-div"></div>
       <div class="sbav" id="sbav" onclick="toggleDD()">
         <span id="sbavt">S</span>
@@ -1480,7 +1487,7 @@
       // Load app.js after Supabase is ready
       _s1.onload = function () {
         var _sa = document.createElement('script');
-        _sa.src = 'app.js?v=200';
+        _sa.src = 'app.js?v=221';
         _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
         document.body.appendChild(_sa);
       };
@@ -1551,7 +1558,7 @@
         sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
         sbScript.onload = function () {
           var mjs = document.createElement('script');
-          mjs.src = '/app-mobile.js?v=199';
+          mjs.src = '/app-mobile.js?v=220';
           mjs.onload = function () {
             var gBtn2 = document.getElementById('btn-google');
             if (gBtn2) gBtn2.disabled = false;
@@ -2542,7 +2549,7 @@
             <div id="mob-notes-editor-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
               <div class="page-header">
                 <div class="page-header-row">
-                  <button onclick="notesBack()" class="page-header-back">
+                  <button onclick="noteSave();notesBack()" class="page-header-back">
                     <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Notes
                   </button>
                   <button onclick="deleteNote()" style="background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:rgba(255,255,255,.7);position:relative;z-index:1;">
@@ -2553,11 +2560,44 @@
               </div>
               <input id="mob-note-title-inp" class="mob-note-title-inp" type="text" placeholder="Title…"
                 oninput="noteEditorInput()" autocomplete="off" style="display:none;" />
-              <textarea id="mob-note-content-ta" class="mob-note-content-ta" placeholder="Start writing…"
-                oninput="noteEditorInput()" style="padding-top:16px;"></textarea>
-              <div style="padding:12px 16px;border-top:1px solid var(--bdr);background:var(--surf);flex-shrink:0;">
-                <button onclick="noteSave()" style="width:100%;padding:13px;background:var(--a2);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Save</button>
+              <!-- Rich text toolbar -->
+              <!-- Custom color picker popup -->
+              <div id="mob-note-color-picker" style="display:none;position:absolute;top:52px;left:16px;right:16px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:16px;padding:12px;box-shadow:var(--sh3);z-index:100;flex-wrap:wrap;gap:8px;align-items:center;">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;flex:1;">
+                  <button class="mob-color-swatch" style="background:#1a1a1a;" onmousedown="event.preventDefault();mobApplyColor('#1a1a1a')"></button>
+                  <button class="mob-color-swatch" style="background:#ef4444;" onmousedown="event.preventDefault();mobApplyColor('#ef4444')"></button>
+                  <button class="mob-color-swatch" style="background:#f97316;" onmousedown="event.preventDefault();mobApplyColor('#f97316')"></button>
+                  <button class="mob-color-swatch" style="background:#eab308;" onmousedown="event.preventDefault();mobApplyColor('#eab308')"></button>
+                  <button class="mob-color-swatch" style="background:#22c55e;" onmousedown="event.preventDefault();mobApplyColor('#22c55e')"></button>
+                  <button class="mob-color-swatch" style="background:#3b82f6;" onmousedown="event.preventDefault();mobApplyColor('#3b82f6')"></button>
+                  <button class="mob-color-swatch" style="background:#8b5cf6;" onmousedown="event.preventDefault();mobApplyColor('#8b5cf6')"></button>
+                  <button class="mob-color-swatch" style="background:#ec4899;" onmousedown="event.preventDefault();mobApplyColor('#ec4899')"></button>
+                  <button class="mob-color-swatch" style="background:#3A7D5E;" onmousedown="event.preventDefault();mobApplyColor('#3A7D5E')"></button>
+                  <button class="mob-color-swatch" style="background:#6b7280;" onmousedown="event.preventDefault();mobApplyColor('#6b7280')"></button>
+                </div>
+                <button onmousedown="event.preventDefault();mobResetColor()" style="font-size:10px;font-weight:700;color:var(--ink4);background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:4px 10px;cursor:pointer;font-family:inherit;white-space:nowrap;">Reset</button>
               </div>
+              <div id="mob-note-toolbar" style="display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--bdr);flex-shrink:0;flex-wrap:wrap;position:relative;">
+                <button onmousedown="event.preventDefault();document.execCommand('bold')" class="mob-note-tb-btn" title="Bold"><b>B</b></button>
+                <button onmousedown="event.preventDefault();document.execCommand('italic')" class="mob-note-tb-btn" title="Italic"><i>I</i></button>
+                <button onmousedown="event.preventDefault();document.execCommand('underline')" class="mob-note-tb-btn" title="Underline"><u>U</u></button>
+                <button onmousedown="event.preventDefault();document.execCommand('strikeThrough')" class="mob-note-tb-btn" title="Strikethrough"><s>S</s></button>
+                <button id="mob-color-btn" onmousedown="event.preventDefault();mobToggleColorPicker()" class="mob-note-tb-btn" title="Text color" style="padding:0;">
+                  <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7" id="mob-color-circle" fill="var(--ink)" stroke="none"/><circle cx="11" cy="11" r="9" fill="none" stroke="var(--bdr)" stroke-width="1.5"/></svg>
+                </button>
+                <div style="width:1px;background:var(--bdr);margin:2px 4px;"></div>
+                <button onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" class="mob-note-tb-btn" title="Bullet list">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+                </button>
+                <button onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" class="mob-note-tb-btn" title="Numbered list">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="2" y="8" font-size="7" fill="currentColor" stroke="none">1</text><text x="2" y="14" font-size="7" fill="currentColor" stroke="none">2</text><text x="2" y="20" font-size="7" fill="currentColor" stroke="none">3</text></svg>
+                </button>
+                <div style="width:1px;background:var(--bdr);margin:2px 4px;"></div>
+                <button onmousedown="event.preventDefault();document.execCommand('removeFormat');mobResetColor()" class="mob-note-tb-btn" title="Clear formatting">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h12M8 3l4 6m0 0l4-6M12 9v12M5 21h7"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
+                </button>
+              </div>
+              <div id="mob-note-content-ta" class="mob-note-content-ta" contenteditable="true" spellcheck="true" placeholder="Start writing…" style="padding-top:16px;padding-bottom:32px;" oninput="noteEditorInput()" onkeydown="mobNoteKeydown(event)"></div>
             </div>
           </div>
 
@@ -2574,6 +2614,7 @@
               </div>
               <div id="hab-wfoot-inner">
                 <div class="hab-input-row">
+                  <span id="hab-emoji-preview" style="font-size:18px;line-height:1;flex-shrink:0;min-width:24px;display:flex;align-items:center;justify-content:center;"></span>
                   <input class="hab-inp" id="hab-inp" type="text" placeholder="Add a habit…" maxlength="40"
                     onfocus="habShowEmojis()" onblur="habHideEmojis()" onkeydown="if(event.key==='Enter')saveHabit()" />
                   <button class="hab-add-btn" onclick="saveHabit()">

@@ -506,7 +506,7 @@ to{opacity:1;transform:translateY(0);}
 /* CANVAS AREA — bounded to viewport, no infinite scroll */
 .canvas-wrap{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;}
 .canvas-scroll{position:absolute;inset:0;overflow:hidden;}
-.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:grab;transform-origin:0 0;user-select:none;overflow:hidden;}
+.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:default;transform-origin:0 0;user-select:none;overflow:hidden;}
 
 /* \\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550
    WIDGETS
@@ -528,20 +528,23 @@ to{opacity:1;transform:translateY(0);}
 .tmtime{ flex-shrink:0; }
 /* widget header \\u2014 drag handle */
 .whead{touch-action:none;
-  padding:9px 12px 8px;border-bottom:1px solid var(--bdr);
+  padding:10px 14px 10px;border-bottom:none;
   flex-shrink:0;cursor:grab;display:flex;align-items:center;gap:7px;
-  background:var(--surf2);
+  background:linear-gradient(155deg,var(--a) 0%,var(--a2) 100%);
+  position:relative;overflow:hidden;min-height:38px;
 }
+.whead::before{content:'';position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.07);top:-40px;right:-30px;pointer-events:none;}
+.whead::after{content:'';position:absolute;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.04);bottom:-30px;left:-20px;pointer-events:none;}
 .whead:active{cursor:grabbing;}
-.whtit{font-size:13px;font-weight:700;color:var(--ink);flex:1;pointer-events:none;}
+.whtit{font-size:13px;font-weight:800;color:#fff;flex:1;pointer-events:none;letter-spacing:-.2px;position:relative;z-index:1;}
 .wclose{
-  width:20px;height:20px;border-radius:50%;background:none;border:none;
-  color:var(--ink3);cursor:pointer;
+  width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;
+  color:rgba(255,255,255,0.7);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .2s,background .15s,color .15s;padding:0;flex-shrink:0;
+  opacity:0;transition:opacity .2s,background .15s,color .15s;padding:0;flex-shrink:0;position:relative;z-index:1;
 }
 .widget:hover .wclose{opacity:1;}
-.wclose:hover{background:var(--rl);color:var(--red);}
+.wclose:hover{background:rgba(255,255,255,0.25);color:#fff;}
 .wclose svg{width:8px;height:8px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;pointer-events:none;}
 /* resize corner */
 .wrsz{
@@ -551,7 +554,7 @@ to{opacity:1;transform:translateY(0);}
 }
 .widget:hover .wrsz,.widget.wresize .wrsz{opacity:1;}
 .wrsz svg{width:8px;height:8px;stroke:var(--ink3);fill:none;stroke-width:2;stroke-linecap:round;}
-.wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;container-type:size;}
+.wbody{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;container-type:size;cursor:default;}
 
 /* \\u2500\\u2500 TASK WIDGET \\u2500\\u2500 */
 
@@ -1050,7 +1053,7 @@ to{opacity:1;transform:translateY(0);}
 /* ── CANVAS WRAP fix — bounded to viewport ── */
 .canvas-wrap{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;}
 .canvas-scroll{position:absolute;inset:0;overflow:hidden;}
-.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:grab;transform-origin:0 0;user-select:none;overflow:hidden;}
+.canvas{position:absolute;inset:0;width:100% !important;height:100% !important;cursor:default;transform-origin:0 0;user-select:none;overflow:hidden;}
 
 /* ── JOURNAL EMOJI PICKER ── */
 .jwemoji-wrap{position:relative;flex-shrink:0;}
@@ -2437,7 +2440,7 @@ body.in-focus-mob .fcs-mob-inline-exit{display:flex;}
 
 /* Widgets */
 [data-dark="1"] .widget{background:#1C1A14!important;border-color:#2C2820!important;}
-[data-dark="1"] .whead{background:#1C1A14!important;border-color:#2C2820!important;}
+[data-dark="1"] .whead{background:linear-gradient(155deg,var(--a) 0%,var(--a2) 100%)!important;border-color:transparent!important;}
 
 /* Task board */
 [data-dark="1"] .twchd{background:#231F18!important;border-color:#2C2820!important;}
@@ -2543,3 +2546,110 @@ body.guest-active #screen-app .topbar { display: none !important; }
 .jw-ref-done-icon{font-size:20px;flex-shrink:0;}
 .jw-ref-done-text{font-size:12px;font-weight:600;color:var(--ink2);flex:1;}
 .jw-ref-done-edit{background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0;}
+
+/* ── NOTE RICH TEXT TOOLBAR (desktop) ── */
+.nw-toolbar{display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--bdr);flex-shrink:0;flex-wrap:nowrap;align-items:center;width:100%;box-sizing:border-box;}
+.nw-tb-btn{background:none;border:1.5px solid var(--bdr);border-radius:6px;padding:0;font-size:11px;color:var(--ink2);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;flex:1;height:24px;min-width:0;transition:all .15s;}
+.nw-tb-btn:hover{background:var(--al);border-color:var(--a2);color:var(--a2);}
+.nw-tb-btn:active{background:var(--al);border-color:var(--a2);color:var(--a2);}
+.nw-content-ta[contenteditable]{background:none;border:none;outline:none;flex:1;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--ink);font-family:inherit;padding:12px;resize:none;min-height:0;}
+.nw-content-ta[contenteditable]:empty::before{content:attr(placeholder);color:var(--ink4);pointer-events:none;}
+.nw-content-ta[contenteditable] ul{padding-left:20px;margin:2px 0;}
+.nw-content-ta[contenteditable] ol{padding-left:20px;margin:2px 0;}
+.nw-content-ta[contenteditable] li{margin:1px 0;}
+
+/* Note checklist items */
+.note-check-item{display:flex;align-items:center;gap:6px;margin:2px 0;padding:2px 0;line-height:1.6;}
+.note-check-item input[type="checkbox"]{flex-shrink:0;accent-color:var(--a2);width:14px;height:14px;cursor:pointer;margin:0;}
+.note-check-item span{flex:1;outline:none;}
+.note-check-item.checked span{text-decoration:line-through;opacity:0.5;}
+.note-check-item label{display:flex;align-items:center;gap:6px;width:100%;cursor:pointer;}
+
+/* ── NOTE CHECKLIST CIRCLE STYLE ── */
+.note-check-item{display:flex;align-items:flex-start;margin:3px 0;padding:1px 0;line-height:1.6;}
+.note-check-item label{display:flex;align-items:flex-start;gap:8px;width:100%;cursor:default;}
+.nci-circle{flex-shrink:0;width:18px;height:18px;cursor:pointer;color:var(--ink3);transition:color .15s;margin-top:2px;}
+.nci-circle:hover{color:var(--a2);}
+.nci-check{opacity:0;transition:opacity .15s;}
+.note-check-item.checked .nci-circle{color:var(--a2);}
+.note-check-item.checked .nci-check{opacity:1;}
+.note-check-item.checked .nci-text{text-decoration:line-through;opacity:0.45;}
+.nci-text{flex:1;outline:none;min-width:20px;}
+/* Color swatches */
+.nw-color-swatch,.mob-color-swatch{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.nw-color-swatch:hover,.mob-color-swatch:hover{transform:scale(1.2);border-color:rgba(255,255,255,0.4);}
+.nw-color-picker{display:none;}
+.mob-note-color-picker{display:none;}
+
+.nw-toolbar > div[style*='width:1px'], #mob-note-toolbar > div[style*='width:1px']{flex:0 0 1px;}
+
+/* ── STICKY NOTE WIDGET ── */
+#canvas .widget[data-type="sticky"] {
+  border-radius: 10px !important;
+  box-shadow: 2px 4px 16px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.1) !important;
+  border: none !important;
+}
+#canvas .widget[data-type="sticky"] .whead {
+  border-radius: 10px 10px 0 0;
+  min-height: 28px;
+  padding: 5px 8px;
+  background: var(--sticky-color, #fef9c3) !important;
+}
+#canvas .widget[data-type="sticky"] .whead::before,
+#canvas .widget[data-type="sticky"] .whead::after { display: none; }
+#canvas .widget[data-type="sticky"] .whtit { color: rgba(0,0,0,0.5) !important; font-size: 11px; }
+#canvas .widget[data-type="sticky"] .wclose { background: rgba(0,0,0,0.08) !important; color: rgba(0,0,0,0.4) !important; }
+#canvas .widget[data-type="sticky"] .wclose:hover { background: rgba(0,0,0,0.15) !important; color: rgba(0,0,0,0.7) !important; }
+#canvas .widget[data-type="sticky"] .wbody {
+  border-radius: 0 0 10px 10px;
+}
+#canvas .widget[data-type="sticky"] [contenteditable]:empty::before {
+  content: 'Start typing…';
+  color: rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+#canvas .widget[data-type="sticky"] ul{padding-left:20px;margin:2px 0;}
+#canvas .widget[data-type="sticky"] ol{padding-left:20px;margin:2px 0;}
+#canvas .widget[data-type="sticky"] li{margin:1px 0;}
+
+/* ── JOURNAL WIDGET RESIZE FIX ── */
+.widget[data-type="journal"] .wbody {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.widget[data-type="journal"] .jw-reflection-wrap {
+  flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 60%;
+}
+.widget[data-type="journal"] .jw-reflection-card {
+  overflow-y: auto;
+}
+.widget[data-type="journal"] .jwlist {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.widget[data-type="journal"] .jw-ref-ta {
+  min-height: 40px;
+  max-height: 80px;
+  resize: none;
+  overflow-y: auto;
+}
+
+/* Widget header button overrides for green gradient */
+.whead .nw-del-btn, .whead button:not(.wclose) {
+  color: rgba(255,255,255,0.7) !important;
+  position: relative;
+  z-index: 1;
+}
+.whead .nw-del-btn:hover, .whead button:not(.wclose):hover {
+  color: #fff !important;
+}
+
+/* Sticky note always on top */
+#canvas .widget[data-type="sticky"] {
+  z-index: 500 !important;
+}

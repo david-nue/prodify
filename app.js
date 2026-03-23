@@ -577,7 +577,7 @@ async function dbDeleteUser(username){
 let _realtimeChannel = null;
 // Persisted across page reloads so the trustLocal heuristic doesn't always
 // default to trusting local on a fresh tab open (module-level 0 caused that).
-let _lastSaveTs = (() => { try { return parseInt(localStorage.getItem('pd1_lastSaveTs')||'0',10)||0; } catch(e){ return 0; } })();
+let _lastSaveTs = 0;
 
 function startRealtimeSync(username){
   if(!sbReady || !sb || !username) return;
@@ -591,8 +591,8 @@ function startRealtimeSync(username){
       table:'users',
       filter:'username=eq.'+username
     }, payload=>{
-      // Block echo from our own save for 2s (Supabase realtime delivers in ~100-300ms)
-      if(Date.now()-_lastSaveTs < 2000) return;
+      // Only block echo from THIS device's own save (in-memory only, not localStorage)
+      if(Date.now()-_lastSaveTs < 1500) return;
       applyRemoteData(payload.new);
     })
     .subscribe(status=>{
@@ -690,6 +690,7 @@ function applyRemoteData(row){
     if(row.journal  != null) renderAllJournalW();
     if(row.subjects != null) { renderSubFull(); renderAllSubW(); }
     if(row.cal_evs  != null) renderFullCal();
+    if(row.notes    != null) { widgets.filter(w=>w.type==='note').forEach(w=>{ const body=$('wb-'+w.id); if(body){body.innerHTML='';_renderNoteW(body,w);} }); }
     if(row.prefs    != null) {
       applyTheme();
       renderProBadge();
@@ -860,7 +861,7 @@ const TMODES=[{l:'Pomodoro',s:25*60,locked:true},{l:'Custom',s:20*60,locked:fals
 // ═══════════════════════════════════════
 const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function hp(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString(16);}
+async function hp(p){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 function fe(id,m){const e=$(id);e.textContent=m;e.style.display=m?'block':'none';}
 function safePhotoSrc(photo){if(!photo)return null;if(!photo.startsWith('data:image/'))return null;return photo;}
 
@@ -921,7 +922,12 @@ function show(id){
 function goPg(id,btn){
   if(window._guestMode && (id==='profile'||id==='settings')){guestGuard();return;}
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('off',p.id!=='pg-'+id));
-
+  // Show back button on profile/settings, hide main nav buttons
+  const backBtn = document.getElementById('sb-back-btn');
+  const mainBtns = document.getElementById('sb-main-btns');
+  const isSubPage = id==='profile'||id==='settings';
+  if(backBtn) backBtn.style.display = isSubPage ? 'flex' : 'none';
+  if(mainBtns) mainBtns.style.display = isSubPage ? 'none' : 'contents';
   closeWkPicker();
   if(id==='canvas'){renderCanvasGreeting();}
   if(id==='profile')renderProfile();
@@ -955,7 +961,7 @@ async function doSU(){
   if(p!==p2){fe('sp2e','Passwords do not match.');ok=false;}
   if(!ok)return;
   if(!sbReady){fe('sue','Sync unavailable, please try again.');return;}
-  const newUser={passHash:hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{dark:false},joined:Date.now()};
+  const newUser={passHash:await hp(p),displayName:'',tasks:[],journal:[],subjects:[],calEvs:[],widgets:[],notes:[],prefs:{dark:false},joined:Date.now()};
   if(sbReady){
     // Use RPC to check username + email availability before doing anything else
     // Both checks use SECURITY DEFINER so RLS cannot block them
@@ -978,7 +984,7 @@ async function doSU(){
       return;
     }
     const authId=authUser?.id||null;
-    const createOk=await dbCreateUser(u,hp(p),'',authId,e);
+    const createOk=await dbCreateUser(u,await hp(p),'',authId,e);
     if(!createOk){
       fe('sue','Account could not be created. Please try again.');
       return;
@@ -1037,7 +1043,7 @@ async function doSI(){
   if(!sbReady){fe('sie','Sync unavailable, try again.');return;}
   if(sbReady){
     // Use RPC to verify username + password server-side — works before Auth session exists
-    const {data,error}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:hp(p)});
+    const {data,error}=await sb.rpc('get_user_for_login',{p_username:u,p_pass_hash:await hp(p)});
     const dbUser=data&&data[0]||null;
     if(!dbUser){
       recordLoginFailure(u);
@@ -1072,7 +1078,7 @@ async function doSI(){
 
     _mergeSignInData(u, dbUser);
   } else {
-    if(!acc[u]||acc[u].passHash!==hp(p)){recordLoginFailure(u);fe('sie','Invalid username or password.');return;}
+    if(!acc[u]||acc[u].passHash!==await hp(p)){recordLoginFailure(u);fe('sie','Invalid username or password.');return;}
   }
   clearLoginAttempts(u);
   cu=u;LS.s('pd1_cur',u);
@@ -1412,7 +1418,7 @@ async function submitMigrateEmail(){
     // Step 3: Write auth_id + email via RPC (security definer — verified by pass_hash)
     const {error:rpcErr}=await sb.rpc('set_auth_id_for_user',{
       p_username:u,
-      p_pass_hash:hp(p),
+      p_pass_hash:await hp(p),
       p_auth_id:authId,
       p_email:email
     });
@@ -1653,9 +1659,11 @@ const RESEND_REPLY = 'prodifysupport@gmail.com';
 
 async function resendEmail(to, subject, html){
   try{
+    const { data: { session: _reSess } } = await sb.auth.getSession().catch(() => ({ data: { session: null } }));
+    const _reToken = _reSess?.access_token || '';
     const res = await fetch('/api/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_reToken}` },
       body: JSON.stringify({ from: RESEND_FROM, reply_to: RESEND_REPLY, to, subject, html }),
     });
     const data = await res.json();
@@ -2522,6 +2530,7 @@ const WD={
   quote:{w:280,h:160,title:'Quote'},
   calendar:{w:540,h:420,title:'Calendar'},
   habits:{w:340,h:380,title:'Daily Habits'},
+  sticky:{w:220,h:200,title:'Sticky'},
 };
 
 function bringToFront(id) {
@@ -2681,14 +2690,16 @@ function buildWidgetEl(w){
     w.x=Math.min(Math.max(0,w.x), Math.max(0,_cvs.clientWidth  - w.w));
     w.y=Math.min(Math.max(0,w.y), Math.max(0,_cvs.clientHeight - w.h));
   }
-  el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};`;
+  const isSticky = w.type === 'sticky';
+  el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;z-index:${w.z||10};${isSticky?`--sticky-color:${w.color||'#fef9c3'};`:''}`;
+
   el.innerHTML=`
-    <div class="whead" id="wh-${w.id}">
-      <span class="whtit">${esc(w.title&&w.title!=='undefined'?w.title:(WD[w.type]?.title||w.type))}</span>
-      ${w.type==='journal'?`<button class="whead-search-btn" id="jwsib-${w.id}" onclick="jwToggleSearch('${w.id}')" data-tip="Search"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>`:''}
+    <div class="whead" id="wh-${w.id}" style="${isSticky ? `background:${w.color||'#fef9c3'};border-bottom:1px solid rgba(0,0,0,0.08);` : ''}">
+      ${isSticky ? `<span style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.4);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(w.title||'Sticky')}</span>` : `<span class="whtit">${esc(w.title&&w.title!=='undefined'?w.title:(WD[w.type]?.title||w.type))}</span>`}
+      ${!isSticky && w.type==='journal'?`<button class="whead-search-btn" id="jwsib-${w.id}" onclick="jwToggleSearch('${w.id}')" data-tip="Search"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>`:''}
       <button class="wclose" onclick="removeW('${w.id}')" data-tip="Remove"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button>
     </div>
-    <div class="wbody" id="wb-${w.id}"></div>
+    <div class="wbody" id="wb-${w.id}" style="${isSticky ? `background:${w.color||'#fef9c3'};` : ''}"></div>
     <div class="wrsz" onpointerdown="startResize(event,'${w.id}')">
       <svg viewBox="0 0 8 8"><path d="M7 1L1 7"/><path d="M7 4L4 7"/></svg>
     </div>`;
@@ -2710,6 +2721,7 @@ function fillWBody(w){
   else if(w.type==='journal')buildJournalW(body,w);
   else if(w.type==='timer')buildTimerW(body,w);
   else if(w.type==='note')buildNoteW(body,w);
+  else if(w.type==='sticky')buildStickyW(body,w);
   else if(w.type==='stats')buildStatsW(body,w);
   else if(w.type==='quote')buildQuoteW(body,w);
   else if(w.type==='calendar')buildCalW(body,w);
@@ -2740,7 +2752,7 @@ function buildHabitW(body,w){
     btn.textContent=e;
     btn.style.cssText='flex:1;min-width:0;aspect-ratio:1;border-radius:6px;border:none;background:var(--surf2);cursor:pointer;font-size:11px;transition:background .1s;outline:none;';
     if(i===0) btn.style.outline='2px solid var(--a2)';
-    btn.onclick=function(){habitWSelectEmoji(this,wid);};
+    btn.onmousedown=function(e){e.preventDefault();habitWSelectEmoji(this,wid);};
     emojiWrap.appendChild(btn);
   });
   emojiWrap._sel=HABIT_EMOJIS[0];
@@ -2754,8 +2766,11 @@ function buildHabitW(body,w){
     emojiWrap.style.paddingTop='6px';
     emojiWrap.style.paddingBottom='6px';
   };
-  inp.onblur=function(){
+  inp.onblur=function(e){
     setTimeout(()=>{
+      // Don't hide if focus moved to emoji picker
+      if(emojiWrap.contains(document.activeElement)) return;
+      if(inp.value.trim().length > 0) return;
       emojiWrap.style.height='0';
       emojiWrap.style.opacity='0';
       emojiWrap.style.paddingTop='0';
@@ -2882,6 +2897,11 @@ function habitWSubmit(wid){
   prefs.habits.push({id:Date.now(),name:inp.value.trim(),emoji:selectedEmoji,created:habitToday()});
   habitSave();
   inp.value='';
+  // Reset emoji selection to first
+  if(emojiWrap){
+    emojiWrap._sel=HABIT_EMOJIS[0];
+    emojiWrap.querySelectorAll('button').forEach((b,i)=>{b.style.outline=i===0?'2px solid var(--a2)':'none';});
+  }
   inp.blur();
   renderHabitW(wid);
   widgets.filter(w=>w.type==='habits'&&w.id!==wid).forEach(w=>renderHabitW(w.id));
@@ -3753,7 +3773,7 @@ function _renderNoteW(body, w){
           sorted.map(n=>`
             <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${w.id}','${n.id}')">
               <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
-              <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
+
             </div>
           `).join('')}
           <button class="nw-add-btn" onclick="noteWAdd('${w.id}')">
@@ -3766,12 +3786,44 @@ function _renderNoteW(body, w){
         <div class="nw-editor-head">
           <input class="nw-title-inp" id="nwti-${w.id}" placeholder="Title…" value="${esc(open.title)}"
             oninput="saveNoteField('${w.id}','${open.id}','title',this.value)"/>
+          <button onclick="pinStickyNote('${w.id}','${open.id}')" title="Pin as sticky note" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--ink4);display:flex;align-items:center;border-radius:5px;transition:color .15s;" onmouseover="this.style.color='var(--a2)'" onmouseout="this.style.color='var(--ink4)'">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
           <button class="nw-del-btn" onclick="noteWDel('${w.id}','${open.id}')" title="Delete note">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
           </button>
         </div>
-        <textarea class="nw-content-ta" id="nwta-${w.id}" placeholder="Start writing…"
-          oninput="saveNoteField('${w.id}','${open.id}','content',this.value)">${esc(open.content)}</textarea>
+        <div class="nw-color-picker" id="nwcp-${w.id}" style="display:none;position:absolute;top:36px;left:8px;background:var(--surf);border:1.5px solid var(--bdr);border-radius:14px;padding:10px;box-shadow:var(--sh3);z-index:100;flex-wrap:wrap;gap:6px;align-items:center;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;flex:1;">
+            <button class="nw-color-swatch" style="background:#1a1a1a;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#1a1a1a')"></button>
+            <button class="nw-color-swatch" style="background:#ef4444;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#ef4444')"></button>
+            <button class="nw-color-swatch" style="background:#f97316;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#f97316')"></button>
+            <button class="nw-color-swatch" style="background:#eab308;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#eab308')"></button>
+            <button class="nw-color-swatch" style="background:#22c55e;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#22c55e')"></button>
+            <button class="nw-color-swatch" style="background:#3b82f6;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#3b82f6')"></button>
+            <button class="nw-color-swatch" style="background:#8b5cf6;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#8b5cf6')"></button>
+            <button class="nw-color-swatch" style="background:#ec4899;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#ec4899')"></button>
+            <button class="nw-color-swatch" style="background:#3A7D5E;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#3A7D5E')"></button>
+            <button class="nw-color-swatch" style="background:#6b7280;" onmousedown="event.preventDefault();dskApplyColor('${w.id}','#6b7280')"></button>
+          </div>
+          <button onmousedown="event.preventDefault();dskResetColor('${w.id}')" style="font-size:10px;font-weight:700;color:var(--ink4);background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:3px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;">Reset</button>
+        </div>
+        <div class="nw-toolbar" id="nwtb-${w.id}" style="position:relative;">
+          <button onmousedown="event.preventDefault();document.execCommand('bold')" class="nw-tb-btn" title="Bold"><b>B</b></button>
+          <button onmousedown="event.preventDefault();document.execCommand('italic')" class="nw-tb-btn" title="Italic"><i>I</i></button>
+          <button onmousedown="event.preventDefault();document.execCommand('underline')" class="nw-tb-btn" title="Underline"><u>U</u></button>
+          <button onmousedown="event.preventDefault();document.execCommand('strikeThrough')" class="nw-tb-btn" title="Strikethrough"><s>S</s></button>
+          <button id="nw-color-btn-${w.id}" onmousedown="event.preventDefault();dskToggleColorPicker('${w.id}')" class="nw-tb-btn" title="Text color" style="padding:0;width:26px;">
+            <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="5" id="nw-color-circle-${w.id}" fill="var(--ink)" stroke="none"/><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--bdr)" stroke-width="1.2"/></svg>
+          </button>
+          <div style="width:1px;background:var(--bdr);margin:2px 3px;"></div>
+          <button onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" class="nw-tb-btn" title="Bullet list"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg></button>
+          <button onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" class="nw-tb-btn" title="Numbered list"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="2" y="8" font-size="7" fill="currentColor" stroke="none">1</text><text x="2" y="14" font-size="7" fill="currentColor" stroke="none">2</text><text x="2" y="20" font-size="7" fill="currentColor" stroke="none">3</text></svg></button>
+          <div style="width:1px;background:var(--bdr);margin:2px 3px;"></div>
+          <button onmousedown="event.preventDefault();document.execCommand('removeFormat');dskResetColor('${w.id}')" class="nw-tb-btn" title="Clear formatting"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h12M8 3l4 6m0 0l4-6M12 9v12M5 21h7"/><line x1="17" y1="17" x2="21" y2="21"/></svg></button>
+        </div>
+        <div class="nw-content-ta" id="nwta-${w.id}" contenteditable="true" spellcheck="true" placeholder="Start writing…"
+          oninput="saveNoteFieldHtml('${w.id}','${open.id}',this.innerHTML)">${open.content}</div>
       </div>
     </div>`;
 }
@@ -3820,15 +3872,44 @@ function _renderNoteList(wid){
     : sorted.map(n=>`
         <div class="nw-list-item${n.id===w._noteOpen?' active':''}" onclick="noteWOpen('${wid}','${n.id}')">
           <div class="nw-list-title">${esc(n.title)||'<span style="color:var(--ink4);font-style:italic;">Untitled</span>'}</div>
-          <div class="nw-list-preview">${esc((n.content||'').split('\n')[0].slice(0,60))||'<span style="color:var(--ink4);">No content</span>'}</div>
         </div>`).join('')
   )+`<button class="nw-add-btn" onclick="noteWAdd('${wid}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New note</button>`;
+}
+function saveNoteFieldHtml(wid, nid, html){
+  const n=notes.find(x=>x.id===nid); if(!n) return;
+  n.content=html;
+  n.updated=Date.now();
+  _renderNoteList(wid);
+  // Sync to pinned sticky note if exists
+  const sticky = widgets.find(w => w.type === 'sticky' && w.noteRef === nid);
+  if (sticky) {
+    sticky.content = html;
+    sticky.title = n.title || 'Sticky';
+    const stickyContent = document.getElementById('sticky-content-' + sticky.id);
+    if (stickyContent) stickyContent.innerHTML = html;
+    const stickyHead = document.getElementById('wh-' + sticky.id);
+    if (stickyHead) {
+      const titleEl = stickyHead.querySelector('span');
+      if (titleEl) titleEl.textContent = n.title || 'Sticky';
+    }
+  }
+  clearTimeout(_noteTimer);
+  _noteTimer=setTimeout(()=>persistSilent(),800);
 }
 function saveNoteField(wid, nid, field, val){
   const n=notes.find(x=>x.id===nid); if(!n) return;
   n[field]=val;
   n.updated=Date.now();
   _renderNoteList(wid);
+  // Sync title to sticky if exists
+  if (field === 'title') {
+    const sticky = widgets.find(w => w.type === 'sticky' && w.noteRef === nid);
+    if (sticky) {
+      sticky.title = val || 'Sticky';
+      const stickyHead = document.getElementById('wh-' + sticky.id);
+      if (stickyHead) { const titleEl = stickyHead.querySelector('span'); if (titleEl) titleEl.textContent = val || 'Sticky'; }
+    }
+  }
   clearTimeout(_noteTimer);
   _noteTimer=setTimeout(()=>persistSilent(),800);
 }
@@ -5993,7 +6074,7 @@ function isPro() { return !!(prefs.pro); }
 async function checkWaitlist() {
   try {
     if (!sbReady || !cu) return;
-    const { data: row } = await sb.from('users').select('is_pro').eq('username', cu).single();
+    const { data: row } = await sb.from('users').select('is_pro').eq('username', cu).maybeSingle();
     if (!row) return;
     const serverPro = !!(row.is_pro);
     if (serverPro !== !!(prefs.pro)) {
@@ -6736,7 +6817,7 @@ async function checkAndRegisterDevice(username) {
     const { data: row, error } = await sb.from('users')
       .select('active_device_id, is_pro, bypass_device_check')
       .eq('username', username)
-      .single();
+      .maybeSingle();
 
     // DB error — fail closed. Grace period still applies.
     if (error) {
@@ -6981,7 +7062,7 @@ async function lwSubmit() {
       .from('waitlist')
       .insert({ email, joined_at: new Date().toISOString() })
       .select('id, position')
-      .single();
+      .maybeSingle();
 
     if (error) {
       // Race condition: unique constraint hit
@@ -7183,4 +7264,148 @@ function dskEditReflection(id, wid) {
   if (wellIdx !== -1) document.getElementById('jw-ref-well-' + wid).value = extractPart('What went well: ', text);
   if (mindIdx !== -1) document.getElementById('jw-ref-mind-' + wid).value = extractPart("What's on my mind: ", text);
   if (tomorrowIdx !== -1) document.getElementById('jw-ref-tomorrow-' + wid).value = extractPart('Tomorrow: ', text);
+}
+
+function dskInsertChecklist(wid) {
+  const el = document.getElementById('nwta-' + wid);
+  if (!el) return;
+  el.focus();
+  document.execCommand('insertHTML', false, '<div class="note-check-item"><label><input type="checkbox" onchange="this.closest(\'.note-check-item\').classList.toggle(\'checked\',this.checked)"><span> To do</span></label></div><br>');
+}
+
+// ── NOTES COLOR PICKER (desktop) ──
+const _dskNoteActiveColors = {};
+
+function dskToggleColorPicker(wid) {
+  const picker = document.getElementById('nwcp-' + wid);
+  if (!picker) return;
+  const isOpen = picker.style.display === 'flex';
+  // Close all other pickers first
+  document.querySelectorAll('[id^="nwcp-"]').forEach(p => p.style.display = 'none');
+  picker.style.display = isOpen ? 'none' : 'flex';
+}
+
+function dskApplyColor(wid, color) {
+  _dskNoteActiveColors[wid] = color;
+  const circle = document.getElementById('nw-color-circle-' + wid);
+  if (circle) circle.setAttribute('fill', color);
+  const el = document.getElementById('nwta-' + wid);
+  if (el) { el.focus(); document.execCommand('foreColor', false, color); }
+  const picker = document.getElementById('nwcp-' + wid);
+  if (picker) picker.style.display = 'none';
+}
+
+function dskResetColor(wid) {
+  _dskNoteActiveColors[wid] = null;
+  const circle = document.getElementById('nw-color-circle-' + wid);
+  if (circle) circle.setAttribute('fill', 'var(--ink)');
+  const el = document.getElementById('nwta-' + wid);
+  if (el) { el.focus(); document.execCommand('removeFormat'); }
+  const picker = document.getElementById('nwcp-' + wid);
+  if (picker) picker.style.display = 'none';
+}
+
+// Close color picker on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('[id^="nwcp-"]') && !e.target.closest('[id^="nw-color-btn-"]')) {
+    document.querySelectorAll('[id^="nwcp-"]').forEach(p => p.style.display = 'none');
+  }
+});
+
+
+function showDskToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--a2);color:#fff;font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;z-index:99999;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .3s;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 1800); }, 10);
+}
+
+// ── STICKY NOTE ──
+const STICKY_COLORS = ['#fef9c3','#dcfce7','#dbeafe','#fce7f3','#ede9fe','#ffedd5'];
+
+function pinStickyNote(wid, nid) {
+  const note = notes.find(n => n.id === nid);
+  if (!note) return;
+  // Only 1 sticky per note — check if one already exists
+  const existing = widgets.find(w => w.type === 'sticky' && w.noteRef === nid);
+  if (existing) {
+    // Highlight existing sticky
+    const el = document.getElementById(existing.id);
+    if (el) { el.style.outline = '2px solid var(--a2)'; setTimeout(() => el.style.outline = '', 1000); }
+    showDskToast('Sticky already pinned!');
+    return;
+  }
+  const srcW = widgets.find(w => w.id === wid);
+  const x = srcW ? srcW.x + srcW.w + 20 : 100;
+  const y = srcW ? srcW.y : 100;
+  const stickyId = 'w' + Date.now().toString(36);
+  const sticky = {
+    id: stickyId, type: 'sticky',
+    title: note.title || 'Sticky',
+    content: note.content || '',
+    noteRef: nid,
+    color: STICKY_COLORS[Math.floor(Math.random() * STICKY_COLORS.length)],
+    x, y, w: 220, h: 200, z: 500
+  };
+  widgets.push(sticky);
+  persist();
+  buildWidgetEl(sticky);
+  showDskToast('Pinned as sticky note!');
+}
+
+function buildStickyW(body, w) {
+  body.style.display = 'flex';
+  body.style.flexDirection = 'column';
+  body.style.background = w.color || '#fef9c3';
+  body.style.borderRadius = '0 0 10px 10px';
+  // Color picker row
+  const colorDots = STICKY_COLORS.map(c =>
+    `<button onmousedown="event.preventDefault();changeStickyColor('${w.id}','${c}')" style="width:14px;height:14px;border-radius:50%;background:${c};border:${c===w.color?'2px solid #333':'1.5px solid rgba(0,0,0,0.15)'};cursor:pointer;flex-shrink:0;transition:transform .15s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></button>`
+  ).join('');
+  body.innerHTML = `
+    <div style="display:flex;gap:4px;padding:6px 8px 4px;flex-wrap:wrap;align-items:center;border-bottom:1px solid rgba(0,0,0,0.08);">
+      ${colorDots}
+    </div>
+    <div id="sticky-content-${w.id}" contenteditable="true" spellcheck="true"
+      style="flex:1;padding:10px 12px 10px 24px;font-size:13px;line-height:1.6;outline:none;overflow:auto;font-family:inherit;color:#1a1a14;background:transparent;word-break:break-word;"
+      oninput="saveStickyContent('${w.id}',this.innerHTML)"
+      placeholder="Start typing…">${w.content || ''}</div>`;
+}
+
+function changeStickyColor(wid, color) {
+  const w = widgets.find(x => x.id === wid);
+  if (!w) return;
+  w.color = color;
+  persist();
+  // Update CSS variable on widget element — drives both header and body via CSS
+  const widgetEl = document.getElementById(wid);
+  if (widgetEl) widgetEl.style.setProperty('--sticky-color', color);
+  // Rebuild body with new color
+  const body = document.getElementById('wb-' + wid);
+  if (body) { body.innerHTML = ''; buildStickyW(body, w); body.style.background = color; }
+  // Update header color to match
+  const head = document.getElementById('wh-' + wid);
+  if (head) head.style.background = color;
+}
+
+function saveStickyContent(wid, html) {
+  const w = widgets.find(x => x.id === wid);
+  if (!w) return;
+  w.content = html;
+  // Sync back to note
+  if (w.noteRef) {
+    const n = notes.find(x => x.id === w.noteRef);
+    if (n) {
+      n.content = html;
+      n.updated = Date.now();
+      // Update note editor if open
+      widgets.filter(nw => nw.type === 'note').forEach(nw => {
+        const ta = document.getElementById('nwta-' + nw.id);
+        if (ta && nw._noteOpen === w.noteRef) ta.innerHTML = html;
+      });
+    }
+  }
+  clearTimeout(_noteTimer);
+  _noteTimer = setTimeout(() => persistSilent(), 800);
 }

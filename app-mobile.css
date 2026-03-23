@@ -1151,3 +1151,36 @@ body.guest-active #screen-app .topbar { display: none !important; }
 .jw-ref-done-icon{font-size:22px;flex-shrink:0;}
 .jw-ref-done-text{font-size:13px;font-weight:600;color:var(--ink2);flex:1;}
 .jw-ref-done-edit{background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0;position:relative;z-index:3;-webkit-tap-highlight-color:transparent;}
+
+/* ── NOTE RICH TEXT TOOLBAR ── */
+.mob-note-tb-btn{background:none;border:1.5px solid var(--bdr);border-radius:8px;padding:0;font-size:13px;color:var(--ink2);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;flex:1;height:32px;min-width:0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.mob-note-tb-btn:active{background:var(--al);border-color:var(--a2);color:var(--a2);}
+.mob-note-content-ta[contenteditable]{background:none;border:none;outline:none;flex:1;overflow-y:auto;font-size:15px;line-height:1.7;color:var(--ink);font-family:inherit;padding:16px 16px 32px;-webkit-overflow-scrolling:touch;min-height:0;}
+.mob-note-content-ta[contenteditable]:empty::before{content:attr(placeholder);color:var(--ink4);pointer-events:none;}
+.mob-note-content-ta[contenteditable] ul{padding-left:20px;}
+.mob-note-content-ta[contenteditable] ol{padding-left:20px;}
+
+/* Note checklist items (mobile) */
+.note-check-item{display:flex;align-items:center;gap:8px;margin:3px 0;padding:2px 0;line-height:1.6;}
+.note-check-item input[type="checkbox"]{flex-shrink:0;accent-color:var(--a2);width:16px;height:16px;cursor:pointer;margin:0;}
+.note-check-item span{flex:1;outline:none;}
+.note-check-item.checked span{text-decoration:line-through;opacity:0.5;}
+.note-check-item label{display:flex;align-items:center;gap:8px;width:100%;cursor:pointer;}
+
+/* ── NOTE CHECKLIST CIRCLE STYLE ── */
+.note-check-item{display:flex;align-items:flex-start;margin:3px 0;padding:1px 0;line-height:1.6;}
+.note-check-item label{display:flex;align-items:flex-start;gap:8px;width:100%;cursor:default;}
+.nci-circle{flex-shrink:0;width:22px;height:22px;cursor:pointer;color:var(--ink3);transition:color .15s;margin-top:2px;}
+.nci-circle:hover{color:var(--a2);}
+.nci-check{opacity:0;transition:opacity .15s;}
+.note-check-item.checked .nci-circle{color:var(--a2);}
+.note-check-item.checked .nci-check{opacity:1;}
+.note-check-item.checked .nci-text{text-decoration:line-through;opacity:0.45;}
+.nci-text{flex:1;outline:none;min-width:20px;}
+/* Color swatches */
+.nw-color-swatch,.mob-color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.nw-color-swatch:hover,.mob-color-swatch:hover{transform:scale(1.2);border-color:rgba(255,255,255,0.4);}
+.nw-color-picker{display:none;}
+.mob-note-color-picker{display:none;}
+
+.nw-toolbar > div[style*='width:1px'], #mob-note-toolbar > div[style*='width:1px']{flex:0 0 1px;}
