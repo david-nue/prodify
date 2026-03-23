@@ -730,7 +730,6 @@ const MLAB=[
   {e:'😰',l:'Anxious'},
   {e:'🔥',l:'Pumped'},
   {e:'🧘',l:'Calm'},
-  {e:'😤',l:'Frustrated'},
   {e:'🥰',l:'In Love'},
 ];
 const PRIORITY_ORDER={high:0,medium:1,low:2,undefined:3};
@@ -3330,7 +3329,22 @@ function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forE
 /* ── JOURNAL ── */
 function buildJournalW(body,w){
   body.style.display='flex';body.style.flexDirection='column';
+  // Reflection card data
+  const _todayKey=new Date().toISOString().slice(0,10);
+  const _todayStr=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const _prefs=acc[cu]?.prefs||{};
+  const _habits=_prefs.habits||[];
+  const _habitLog=_prefs.habitLog||{};
+  const _doneHabits=_habits.filter(h=>_habitLog[h.id]&&_habitLog[h.id][_todayKey]).length;
+  const _sessions=((_prefs.pomHistory||{})[_todayKey]||[]).length;
+  const _doneTasks=tasks.filter(t=>t.col==='done').length;
+  const _statsHtml=[_doneTasks?`<span class="jw-ref-stat">${_doneTasks} task${_doneTasks>1?'s':''} done</span>`:'',_habits.length?`<span class="jw-ref-stat">${_doneHabits}/${_habits.length} habits</span>`:'',_sessions?`<span class="jw-ref-stat">${_sessions} focus session${_sessions>1?'s':''}</span>`:''].filter(Boolean).join('');
+  if(!(_dskRefMoods[w.id]>=0)) _dskRefMoods[w.id]=0;
+  const _moodsHtml=MLAB.map((m,i)=>`<button class="jw-ref-mood-btn${i===_dskRefMoods[w.id]?' selected':''}" onclick="dskRefPickMood(${i},'${w.id}')">${m.e}</button>`).join('');
+  const _todayRef=(journal||[]).find(j=>j.date===_todayStr&&j.isReflection);
+  const _refHtml=_todayRef?`<div class="jw-ref-done"><div class="jw-ref-done-icon">${MLAB[_todayRef.mood||0].e}</div><div class="jw-ref-done-text">Today's reflection saved</div><button class="jw-ref-done-edit" onclick="dskEditReflection('${_todayRef.id}','${w.id}')">Edit</button></div>`:`<div class="jw-reflection-card" id="jw-reflection-card-${w.id}"><div class="jw-ref-date">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>${_statsHtml?`<div class="jw-ref-stats">${_statsHtml}</div>`:''}<div class="jw-ref-mood-row"><span class="jw-ref-label">How are you feeling?</span><div class="jw-ref-moods" id="jw-ref-moods-${w.id}">${_moodsHtml}</div></div><div class="jw-ref-q"><label class="jw-ref-label">What went well today?</label><textarea class="jw-ref-ta" id="jw-ref-well-${w.id}" placeholder="Something you're proud of..."></textarea></div><div class="jw-ref-q"><label class="jw-ref-label">What's on your mind?</label><textarea class="jw-ref-ta" id="jw-ref-mind-${w.id}" placeholder="Thoughts, feelings, anything..."></textarea></div><div class="jw-ref-q"><label class="jw-ref-label">What would make tomorrow better?</label><textarea class="jw-ref-ta" id="jw-ref-tomorrow-${w.id}" placeholder="One thing to focus on..."></textarea></div><button class="jw-ref-save" onclick="dskSaveReflection('${w.id}')">Save Reflection</button></div>`;
   body.innerHTML=`
+    <div class="jw-reflection-wrap" id="jw-ref-wrap-${w.id}">${_refHtml}</div>
     <div class="jwsearch-bar" id="jwsbar-${w.id}" style="display:none;">
       <div class="jwsearch-inner">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -3340,42 +3354,8 @@ function buildJournalW(body,w){
         </button>
       </div>
     </div>
-    <div class="jwlist" id="jwl-${w.id}"></div>
-    <div class="jwadd">
-      <div class="jwtpl-row" id="jwtpl-${w.id}" style="display:none;">
-        ${JOURNAL_TEMPLATES.map((t,i)=>`<button class="jw-tpl-chip" onclick="dskUseTemplate(${i},'${w.id}')" title="${t.fullLabel}">${t.icon} ${t.label}</button>`).join('')}
-      </div>
-      <textarea class="jwta" id="jwta-${w.id}" rows="2" placeholder="${getJournalPrompt()}"></textarea>
-      <div class="jwmood-row" id="jwmood-row-${w.id}">
-        <span class="jwmood-cur-lbl">Mood:</span>
-        <button class="jwmood-cur-btn" id="jwmcur-${w.id}" onclick="jwToggleMoodPop('${w.id}')">
-          ${MLAB[0].e} <span class="jwmood-cur-txt" id="jwmcurtxt-${w.id}">${MLAB[0].l}</span>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="jwmood-pop" id="jwmpop-${w.id}">
-          ${MLAB.map((m,i)=>`<button class="jwmpop-btn${i===0?' on':''}" data-m="${i}" onclick="pickMoodW(${i},'${w.id}')">${m.e}<span class="jwmpop-lbl">${m.l}</span></button>`).join('')}
-        </div>
-      </div>
-      <div class="jwfoot">
-        <button class="jwutil-btn" onclick="jwToggleTpl('${w.id}')" title="Templates">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          Templates
-        </button>
-        <button class="jwutil-btn" onclick="dskShufflePrompt('${w.id}')">✨ Prompt</button>
-        <button class="jwcancel-edit-btn" id="jwcancel-${w.id}" onclick="jwCancelEdit('${w.id}')" style="display:none;">Cancel</button>
-        <button class="jwsave-btn" id="jwsave-${w.id}" onclick="addJournal('${w.id}')">Save</button>
-      </div>
-    </div>`;
+    <div class="jwlist" id="jwl-${w.id}"></div>`;
   renderJournalW(w.id);
-  // auto-resize textarea on input
-  const ta=document.getElementById('jwta-'+w.id);
-  if(ta){
-    ta.addEventListener('input',()=>jwAutoResize(ta));
-    ta.addEventListener('focus',()=>jwAutoResize(ta));
-    ta.addEventListener('keydown',(e)=>{
-      if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addJournal(w.id);}
-    });
-  }
 }
 
 function jwAutoResize(ta){
@@ -3508,7 +3488,7 @@ function renderJournalW(wid){
   const filtered=q?journal.filter(j=>(j.text||j.content||'').toLowerCase().includes(q)):journal;
   if(!journal.length){el.innerHTML='<div class="es"><div class="es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6M8 15h4"/></svg></div><div class="es-title">No journal entries yet</div><div class="es-hint">Write your first entry below.</div></div>';return;}
   if(!filtered.length){el.innerHTML='<div class="jwempty">No entries match your search.</div>';return;}
-  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span><button onclick="clrJournalW('${wid}')" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.15s;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 6px;"><span style="font-size:10px;color:var(--ink4);letter-spacing:0.04em;">${filtered.length} of ${journal.length} entr${journal.length>1?'ies':'y'}</span></div>`;
   const escQ=q?esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'';
   const hl=(txt)=>escQ?txt.replace(new RegExp('('+escQ+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
   el.innerHTML=hdr+filtered.map(j=>{
@@ -3516,8 +3496,10 @@ function renderJournalW(wid){
     const _jtext=j.text||j.content||'';
     const preview=_jtext.length>120?_jtext.slice(0,120)+'…':_jtext;
     const wc=_jtext.trim().split(/\s+/).filter(Boolean).length;
-    const moodColors={'😊':'#2A7D5E','😔':'#5A7AAA','😤':'#C44040','😌':'#7A5EA8','😐':'#888888','🤩':'#D97706','😴':'#6B7280','😰':'#DC2626'};
-    const borderCol=moodColors[m.e]||'var(--a2)';
+    const _moodColors={0:'#2A7D5E',1:'#4A9D74',2:'#888888',3:'#5A7AAA',4:'#6B7280',5:'#C44040',6:'#DC2626',7:'#D97706',8:'#7A5EA8',9:'#E11D48'};
+    const borderCol=_moodColors[j.mood??0]||'var(--a2)';
+    const _todayStr2=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const _isToday2=j.date===_todayStr2;
     return `<div class="jwje" style="border-left-color:${borderCol};" data-id="${j.id}">
       <div class="jwjehd">
         <span class="jwm" title="${m.l}">${m.e}</span>
@@ -3525,9 +3507,7 @@ function renderJournalW(wid){
           <div class="jwdt">${j.date}</div>
           <div class="jwmood-lbl">${m.l}</div>
         </div>
-        <span class="jwwc">${wc}w</span>
-        <button class="jwedit" title="Edit" onclick="jwEditEntry('${j.id}','${wid}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="jwdel" onclick="delJournal('${j.id}')">&times;</button>
+        ${_isToday2 ? '' : `<button class="jwdel" onclick="delJournal('${j.id}')">&times;</button>`}
       </div>
       <div class="jwtx">${hl(esc(preview))}</div>
     </div>`;
@@ -7137,4 +7117,70 @@ function _showStreakMilestone(n){
   toast.innerHTML = `<span style="font-size:24px;">${m.e}</span><div><div style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;">${m.t}</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">${m.s}</div></div>`;
   document.body.appendChild(toast);
   setTimeout(()=>{ toast.style.transition='opacity .5s'; toast.style.opacity='0'; setTimeout(()=>toast.remove(),500); }, 4000);
+}
+
+// ── DESKTOP JOURNAL REFLECTION CARD ──
+const _dskRefMoods = {};
+
+function dskRefPickMood(m, wid) {
+  _dskRefMoods[wid] = m;
+  document.querySelectorAll(`#jw-ref-moods-${wid} .jw-ref-mood-btn`).forEach((btn, i) => {
+    btn.classList.toggle('selected', i === m);
+  });
+}
+
+function dskSaveReflection(wid) {
+  const well = document.getElementById('jw-ref-well-' + wid)?.value.trim() || '';
+  const mind = document.getElementById('jw-ref-mind-' + wid)?.value.trim() || '';
+  const tomorrow = document.getElementById('jw-ref-tomorrow-' + wid)?.value.trim() || '';
+  if (!well && !mind && !tomorrow) { showToast('Write at least one thought'); return; }
+  const parts = [];
+  if (well) parts.push('What went well: ' + well);
+  if (mind) parts.push("What's on my mind: " + mind);
+  if (tomorrow) parts.push('Tomorrow: ' + tomorrow);
+  const text = parts.join('\n\n');
+  const mood = _dskRefMoods[wid] || 0;
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  journal = journal.filter(j => !(j.date === todayStr && j.isReflection));
+  const entry = { id: 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), date: todayStr, content: text, text: text, mood, ts: Date.now(), isReflection: true };
+  journal.unshift(entry);
+  persist(); renderAllJournalW(); updateAllStatsW(); updateFixedStats();
+  const _t=document.createElement('div');_t.style.cssText='position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--a2);color:#fff;font-size:13px;font-weight:700;padding:10px 22px;border-radius:100px;z-index:99999;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .3s;';_t.textContent='Reflection saved!';document.body.appendChild(_t);setTimeout(()=>{_t.style.opacity='1';setTimeout(()=>{_t.style.opacity='0';setTimeout(()=>_t.remove(),300);},1800);},10);
+  // Show done state
+  const wrap = document.getElementById('jw-ref-wrap-' + wid);
+  if (wrap) {
+    wrap.innerHTML = `<div class="jw-ref-done"><div class="jw-ref-done-icon">${MLAB[mood].e}</div><div class="jw-ref-done-text">Today's reflection saved</div><button class="jw-ref-done-edit" onclick="dskEditReflection('${entry.id}','${wid}')">Edit</button></div>`;
+  }
+}
+
+function dskEditReflection(id, wid) {
+  const entry = (journal || []).find(e => e.id === id);
+  if (!entry) return;
+  _dskRefMoods[wid] = entry.mood || 0;
+  const moodsHtml = MLAB.map((m, i) => `<button class="jw-ref-mood-btn${i === (entry.mood||0) ? ' selected' : ''}" onclick="dskRefPickMood(${i},'${wid}')">${m.e}</button>`).join('');
+  const wrap = document.getElementById('jw-ref-wrap-' + wid);
+  if (!wrap) return;
+  wrap.innerHTML = `<div class="jw-reflection-card" id="jw-reflection-card-${wid}">
+    <div class="jw-ref-date">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+    <div class="jw-ref-mood-row"><span class="jw-ref-label">How are you feeling?</span><div class="jw-ref-moods" id="jw-ref-moods-${wid}">${moodsHtml}</div></div>
+    <div class="jw-ref-q"><label class="jw-ref-label">What went well today?</label><textarea class="jw-ref-ta" id="jw-ref-well-${wid}" placeholder="Something you're proud of..."></textarea></div>
+    <div class="jw-ref-q"><label class="jw-ref-label">What's on your mind?</label><textarea class="jw-ref-ta" id="jw-ref-mind-${wid}" placeholder="Thoughts, feelings, anything..."></textarea></div>
+    <div class="jw-ref-q"><label class="jw-ref-label">What would make tomorrow better?</label><textarea class="jw-ref-ta" id="jw-ref-tomorrow-${wid}" placeholder="One thing to focus on..."></textarea></div>
+    <button class="jw-ref-save" onclick="dskSaveReflection('${wid}')">Save Reflection</button>
+  </div>`;
+  const text = entry.content || '';
+  const sep = '\n\n';
+  const wellIdx = text.indexOf('What went well: ');
+  const mindIdx = text.indexOf("What's on my mind: ");
+  const tomorrowIdx = text.indexOf('Tomorrow: ');
+  function extractPart(startLabel, txt) {
+    const idx = txt.indexOf(startLabel);
+    if (idx === -1) return '';
+    const after = txt.slice(idx + startLabel.length);
+    const end = after.indexOf('\n\n');
+    return end === -1 ? after : after.slice(0, end);
+  }
+  if (wellIdx !== -1) document.getElementById('jw-ref-well-' + wid).value = extractPart('What went well: ', text);
+  if (mindIdx !== -1) document.getElementById('jw-ref-mind-' + wid).value = extractPart("What's on my mind: ", text);
+  if (tomorrowIdx !== -1) document.getElementById('jw-ref-tomorrow-' + wid).value = extractPart('Tomorrow: ', text);
 }

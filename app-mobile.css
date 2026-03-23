@@ -1129,3 +1129,25 @@ body.guest-active #screen-app {
   height: calc(100% - 44px) !important;
 }
 body.guest-active #screen-app .topbar { display: none !important; }
+
+/* ── JOURNAL REFLECTION CARD ── */
+.jw-reflection-wrap{padding:12px 18px 4px;flex-shrink:0;}
+.jw-reflection-card{background:var(--surf);border:1.5px solid var(--bdr);border-radius:20px;padding:18px 16px;box-shadow:var(--sh2);}
+.jw-ref-date{font-size:11px;font-weight:700;color:var(--ink4);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;}
+.jw-ref-stats{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.jw-ref-stat{background:var(--al);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--a2);}
+.jw-ref-mood-row{margin-bottom:14px;}
+.jw-ref-label{display:block;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.3px;margin-bottom:7px;}
+.jw-ref-moods{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.jw-ref-mood-btn{font-size:20px;background:none;border:2px solid transparent;border-radius:10px;padding:4px;cursor:pointer;transition:all .15s;line-height:1;text-align:center;width:100%;}
+.jw-ref-mood-btn.selected{border-color:var(--a2);background:var(--al);}
+.jw-ref-q{margin-bottom:12px;}
+.jw-ref-ta{width:100%;background:var(--surf2);border:1.5px solid var(--bdr);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);outline:none;resize:none;line-height:1.6;font-family:inherit;transition:border-color .2s;box-sizing:border-box;min-height:56px;}
+.jw-ref-ta:focus{border-color:var(--a2);}
+.jw-ref-ta::placeholder{color:var(--ink4);font-style:italic;}
+.jw-ref-save{width:100%;padding:12px;border-radius:14px;border:none;background:var(--a2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px;transition:opacity .2s;}
+.jw-ref-save:active{opacity:.8;}
+.jw-ref-done{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:16px;padding:14px 16px;margin:12px 18px 4px;display:flex;align-items:center;gap:10px;position:relative;z-index:2;}
+.jw-ref-done-icon{font-size:22px;flex-shrink:0;}
+.jw-ref-done-text{font-size:13px;font-weight:600;color:var(--ink2);flex:1;}
+.jw-ref-done-edit{background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0;position:relative;z-index:3;-webkit-tap-highlight-color:transparent;}

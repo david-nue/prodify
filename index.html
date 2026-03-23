@@ -90,7 +90,7 @@
   <!-- style.css only for desktop — mobile uses app-mobile.css loaded dynamically -->
   <script>
     if (!window.PRODIFY_IS_MOBILE) {
-      document.write('<link rel="stylesheet" href="style.css?v=192" />');
+      document.write('<link rel="stylesheet" href="style.css?v=198" />');
     }
   </script>
 
@@ -1480,7 +1480,7 @@
       // Load app.js after Supabase is ready
       _s1.onload = function () {
         var _sa = document.createElement('script');
-        _sa.src = 'app.js?v=192';
+        _sa.src = 'app.js?v=200';
         _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
         document.body.appendChild(_sa);
       };
@@ -1526,7 +1526,7 @@
         // Load mobile CSS — reveal root only after CSS is loaded to prevent flash
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/app-mobile.css?v=192';
+        link.href = '/app-mobile.css?v=194';
         link.onload = function() {
           setTimeout(function() {
             root.classList.add('ready');
@@ -1551,7 +1551,7 @@
         sbScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
         sbScript.onload = function () {
           var mjs = document.createElement('script');
-          mjs.src = '/app-mobile.js?v=192';
+          mjs.src = '/app-mobile.js?v=199';
           mjs.onload = function () {
             var gBtn2 = document.getElementById('btn-google');
             if (gBtn2) gBtn2.disabled = false;
@@ -2386,7 +2386,7 @@
           </div>
 
           <!-- JOURNAL -->
-          <div class="page" id="pg-journal" style="bottom:240px;">
+          <div class="page" id="pg-journal" style="bottom:88px;">
             <div class="page-header">
               <div class="page-header-title">Journal
                 <span style="float:right;position:relative;z-index:1;">
@@ -2412,6 +2412,30 @@
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
+              </div>
+            </div>
+            <!-- REFLECTION CARD -->
+            <div class="jw-reflection-wrap" id="jw-reflection-wrap">
+              <div class="jw-reflection-card" id="jw-reflection-card">
+                <div class="jw-ref-date" id="jw-ref-date"></div>
+                <div class="jw-ref-stats" id="jw-ref-stats"></div>
+                <div class="jw-ref-mood-row">
+                  <span class="jw-ref-label">How are you feeling?</span>
+                  <div class="jw-ref-moods" id="jw-ref-moods"></div>
+                </div>
+                <div class="jw-ref-q">
+                  <label class="jw-ref-label">What went well today?</label>
+                  <textarea class="jw-ref-ta" id="jw-ref-well" placeholder="Something you're proud of..."></textarea>
+                </div>
+                <div class="jw-ref-q">
+                  <label class="jw-ref-label">What's on your mind?</label>
+                  <textarea class="jw-ref-ta" id="jw-ref-mind" placeholder="Thoughts, feelings, anything..."></textarea>
+                </div>
+                <div class="jw-ref-q">
+                  <label class="jw-ref-label">What would make tomorrow better?</label>
+                  <textarea class="jw-ref-ta" id="jw-ref-tomorrow" placeholder="One thing to focus on..."></textarea>
+                </div>
+                <button class="jw-ref-save" onclick="jwSaveReflection()">Save Reflection</button>
               </div>
             </div>
             <div class="jwlist" id="journal-list"></div>

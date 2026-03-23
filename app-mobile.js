@@ -1083,7 +1083,7 @@ function goPg(id){
   if(id==='calendar') renderSchedule();
 
   if(id==='habits') renderHabitsList();
-  if(id==='journal') renderJournalList();
+  if(id==='journal'){ renderJournalList(); jwInitReflection(); }
   if(id==='notes') renderNotesList();
   if(id==='timer'){ mobSetTMode(_mobTMode); }
   if(id==='settings') renderSettingsPage();
@@ -1091,15 +1091,9 @@ function goPg(id){
   // Show FAB on notes and projects pages
   const notesFab=document.getElementById('notes-fab');
   if(notesFab) notesFab.style.display=(id==='notes')?'flex':'none';
-  // Show/hide journal compose box with the page transition
+  // Old compose box always hidden — replaced by reflection card
   const jwadd=document.querySelector('.jwadd');
-  if(jwadd){
-    if(id==='journal'){
-      jwadd.classList.remove('hidden');
-    } else {
-      jwadd.classList.add('hidden');
-    }
-  }
+  if(jwadd){ jwadd.classList.add('hidden'); }
 }
 function renderMobProfile(){
   const d=getD(), nm=d.displayName||cu||'User';
@@ -1765,6 +1759,11 @@ function jwClearSearch(){
 }
 
 function renderJournalList(){
+  // Refresh done state emoji in case desktop updated it
+  const _todayStr2 = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const _freshEntry = getJournal().find(j => j.date === _todayStr2 && j.isReflection);
+  const _iconEl = document.querySelector('.jw-ref-done-icon');
+  if (_freshEntry && _iconEl) _iconEl.textContent = MLAB[_freshEntry.mood || 0].e;
   const list=document.getElementById('journal-list');
   if(!list) return;
   const entries=getJournal();
@@ -1777,7 +1776,7 @@ function renderJournalList(){
   // hl must run on already-escaped text, using the escaped query to match correctly
   const escQ=q?esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):'';
   const hl=txt=>escQ?txt.replace(new RegExp('('+escQ+')','gi'),'<mark style="background:var(--al);color:var(--a2);border-radius:2px;padding:0 1px;">$1</mark>'):txt;
-  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 8px;"><span style="font-size:10px;color:var(--ink4);">${filtered.length} of ${entries.length} entr${entries.length>1?'ies':'y'}</span><button onclick="jwClearAll()" style="background:none;border:none;font-size:10px;color:var(--ink4);cursor:pointer;padding:2px 4px;border-radius:4px;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--ink4)'">Clear all</button></div>`;
+  const hdr=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 2px 8px;"><span style="font-size:10px;color:var(--ink4);">${filtered.length} of ${entries.length} entr${entries.length>1?'ies':'y'}</span></div>`;
   if(!filtered.length){ list.innerHTML=hdr+`<div class="mob-es"><div class="mob-es-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8M8 11h6M8 15h4"/></svg></div><div class="mob-es-title">No results</div><div class="mob-es-sub">No entries match your search.</div></div>`; return; }
   list.innerHTML=hdr+filtered.map(j=>{
     const m=MLAB[j.mood??0]||MLAB[0];
@@ -1785,6 +1784,8 @@ function renderJournalList(){
     const text=j.content||j.text||'';
     const preview=text.slice(0,160);
     const wc=text.trim().split(/\s+/).filter(Boolean).length;
+    const _todayStr=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const _isToday=j.date===_todayStr;
     return `<div class="jwje" style="border-left-color:${borderCol};" data-id="${j.id}">
       <div class="jwjehd">
         <span class="jwm">${m.e}</span>
@@ -1792,9 +1793,7 @@ function renderJournalList(){
           <div class="jwdt">${fmtDate(j.date,true)}</div>
           <div class="jwmood-lbl">${m.l}</div>
         </div>
-        <span class="jwwc">${wc}w</span>
-        <button class="jwedit-mob" title="Edit" onclick="jwEdit('${j.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-        <button class="jwdel" onclick="jwDel('${j.id}')">&times;</button>
+        ${_isToday ? '' : `<button class="jwdel" onclick="jwDel('${j.id}')">&times;</button>`}
       </div>
       <div class="jwtx">${hl(esc(preview))}${text.length>160?'…':''}</div>
     </div>`;
@@ -3695,4 +3694,187 @@ function _showMobStreakMilestone(n){
   t.innerHTML = `<span style="font-size:24px;">${m.e}</span><div><div style="font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.3px;">${m.t}</div><div style="font-size:12px;color:var(--ink3);margin-top:2px;">${m.s}</div></div>`;
   document.body.appendChild(t);
   setTimeout(()=>{ t.style.transition='opacity .5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 4000);
+}
+
+// ── JOURNAL REFLECTION CARD ──
+let _jwRefMood = 0;
+
+function jwInitReflection() {
+  // Set date
+  const dateEl = document.getElementById('jw-ref-date');
+  if (dateEl) {
+    dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+
+  // Set today stats
+  const statsEl = document.getElementById('jw-ref-stats');
+  if (statsEl) {
+    const d = getD();
+    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const doneTasks = (d.tasks || []).filter(t => t.col === 'done' && (t.updated || '').includes(today)).length;
+    const prefs = d.prefs || {};
+    const habits = prefs.habits || [];
+    const habitLog = prefs.habitLog || {};
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const doneHabits = habits.filter(h => habitLog[h.id] && habitLog[h.id][todayKey]).length;
+    const pomHistory = prefs.pomHistory || {};
+    const sessions = (pomHistory[todayKey] || []).length;
+
+    const stats = [];
+    if (doneTasks > 0) stats.push(`${doneTasks} task${doneTasks > 1 ? 's' : ''} done`);
+    if (habits.length > 0) stats.push(`${doneHabits}/${habits.length} habits`);
+    if (sessions > 0) stats.push(`${sessions} focus session${sessions > 1 ? 's' : ''}`);
+
+    if (stats.length) {
+      statsEl.innerHTML = stats.map(s => `<span class="jw-ref-stat">${s}</span>`).join('');
+      statsEl.style.display = 'flex';
+    } else {
+      statsEl.style.display = 'none';
+    }
+  }
+
+  // Mood buttons
+  const moodsEl = document.getElementById('jw-ref-moods');
+  if (moodsEl) {
+    moodsEl.innerHTML = MLAB.map((m, i) =>
+      `<button class="jw-ref-mood-btn${i === _jwRefMood ? ' selected' : ''}" onclick="jwRefPickMood(${i})">${m.e}</button>`
+    ).join('');
+  }
+
+  // Check if already reflected today
+  const journal = getJournal();
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const todayEntry = journal.find(j => j.date === todayStr && j.isReflection);
+
+  const wrap = document.getElementById('jw-reflection-wrap');
+  if (todayEntry && wrap) {
+    // Re-read fresh from storage to get latest mood
+    const _fresh = getJournal().find(j => j.date === todayStr && j.isReflection) || todayEntry;
+    wrap.innerHTML = `<div class="jw-ref-done">
+      <div class="jw-ref-done-icon">${MLAB[_fresh.mood || 0].e}</div>
+      <div class="jw-ref-done-text">Today's reflection saved</div>
+      <button class="jw-ref-done-edit" onclick="jwEditTodayReflection()">Edit</button>
+    </div>`;
+  }
+}
+
+function jwRefPickMood(m) {
+  _jwRefMood = m;
+  document.querySelectorAll('.jw-ref-mood-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === m);
+  });
+}
+
+function jwSaveReflection() {
+  const well = document.getElementById('jw-ref-well')?.value.trim() || '';
+  const mind = document.getElementById('jw-ref-mind')?.value.trim() || '';
+  const tomorrow = document.getElementById('jw-ref-tomorrow')?.value.trim() || '';
+
+  if (!well && !mind && !tomorrow) { toast('Write at least one thought'); return; }
+
+  const parts = [];
+  if (well) parts.push('What went well: ' + well);
+  if (mind) parts.push("What's on my mind: " + mind);
+  if (tomorrow) parts.push('Tomorrow: ' + tomorrow);
+  const text = parts.join('\n\n');
+
+  const d = getD(); d.journal = d.journal || [];
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Remove existing today reflection if any
+  d.journal = d.journal.filter(j => !(j.date === todayStr && j.isReflection));
+
+  d.journal.unshift({
+    id: uid(), date: todayStr, content: text, text: text,
+    mood: _jwRefMood, ts: Date.now(), isReflection: true
+  });
+
+  if (cu) acc[cu] = d;
+  saveAll();
+  renderJournalList();
+  toast('Reflection saved!');
+
+  // Show done state
+  const wrap = document.getElementById('jw-reflection-wrap');
+  if (wrap) {
+    wrap.innerHTML = `<div class="jw-ref-done">
+      <div class="jw-ref-done-icon">${MLAB[_jwRefMood].e}</div>
+      <div class="jw-ref-done-text">Today's reflection saved</div>
+      <button class="jw-ref-done-edit" onclick="jwEditTodayReflection()">Edit</button>
+    </div>`;
+  }
+}
+
+function jwEditTodayReflection() {
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const entry = getJournal().find(j => j.date === todayStr && j.isReflection);
+  if (!entry) return;
+  jwEditReflection(entry.id);
+}
+
+function jwEditReflection(id) {
+  const d = getD();
+  const entry = (d.journal || []).find(e => e.id === id);
+  if (!entry) return;
+
+  // Restore the card
+  const wrap = document.getElementById('jw-reflection-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `<div class="jw-reflection-card" id="jw-reflection-card">
+    <div class="jw-ref-date" id="jw-ref-date"></div>
+    <div class="jw-ref-stats" id="jw-ref-stats"></div>
+    <div class="jw-ref-mood-row">
+      <span class="jw-ref-label">How are you feeling?</span>
+      <div class="jw-ref-moods" id="jw-ref-moods"></div>
+    </div>
+    <div class="jw-ref-q">
+      <label class="jw-ref-label">What went well today?</label>
+      <textarea class="jw-ref-ta" id="jw-ref-well" placeholder="Something you're proud of..."></textarea>
+    </div>
+    <div class="jw-ref-q">
+      <label class="jw-ref-label">What's on your mind?</label>
+      <textarea class="jw-ref-ta" id="jw-ref-mind" placeholder="Thoughts, feelings, anything..."></textarea>
+    </div>
+    <div class="jw-ref-q">
+      <label class="jw-ref-label">What would make tomorrow better?</label>
+      <textarea class="jw-ref-ta" id="jw-ref-tomorrow" placeholder="One thing to focus on..."></textarea>
+    </div>
+    <button class="jw-ref-save" onclick="jwSaveReflection()">Save Reflection</button>
+  </div>`;
+
+  // Set mood and init (skip today check so card stays visible)
+  _jwRefMood = entry.mood || 0;
+
+  // Parse content and fill fields after render
+  const text = entry.content || '';
+  function extractPart(label, txt) {
+    const idx = txt.indexOf(label);
+    if (idx === -1) return '';
+    const after = txt.slice(idx + label.length);
+    const end = after.indexOf('\n\n');
+    return end === -1 ? after : after.slice(0, end);
+  }
+  const well = extractPart('What went well: ', text);
+  const mind = extractPart("What's on my mind: ", text);
+  const tomorrow = extractPart('Tomorrow: ', text);
+
+  // Render mood buttons with correct selected state
+  const moodsEl = document.getElementById('jw-ref-moods');
+  if (moodsEl) {
+    moodsEl.innerHTML = MLAB.map((m, i) =>
+      `<button class="jw-ref-mood-btn${i === _jwRefMood ? ' selected' : ''}" onclick="jwRefPickMood(${i})">${m.e}</button>`
+    ).join('');
+  }
+
+  // Set date
+  const dateEl = document.getElementById('jw-ref-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  // Set field values
+  const wellEl = document.getElementById('jw-ref-well');
+  const mindEl = document.getElementById('jw-ref-mind');
+  const tomorrowEl = document.getElementById('jw-ref-tomorrow');
+  if (wellEl) wellEl.value = well;
+  if (mindEl) mindEl.value = mind;
+  if (tomorrowEl) tomorrowEl.value = tomorrow;
 }

@@ -2521,3 +2521,25 @@ body.guest-active #screen-app {
   height: calc(100% - 44px) !important;
 }
 body.guest-active #screen-app .topbar { display: none !important; }
+
+/* ── JOURNAL REFLECTION CARD (desktop) ── */
+.jw-reflection-wrap{padding:12px 14px 4px;flex-shrink:0;}
+.jw-reflection-card{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:16px;padding:16px 14px;}
+.jw-ref-date{font-size:11px;font-weight:700;color:var(--ink4);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.jw-ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.jw-ref-stat{background:var(--al);border-radius:100px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--a2);}
+.jw-ref-mood-row{margin-bottom:12px;}
+.jw-ref-label{display:block;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.3px;margin-bottom:6px;}
+.jw-ref-moods{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
+.jw-ref-mood-btn{font-size:18px;background:none;border:2px solid transparent;border-radius:8px;padding:4px;cursor:pointer;transition:all .15s;line-height:1;text-align:center;width:100%;}
+.jw-ref-mood-btn.selected{border-color:var(--a2);background:var(--al);}
+.jw-ref-q{margin-bottom:10px;}
+.jw-ref-ta{width:100%;background:var(--surf);border:1.5px solid var(--bdr);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--ink);outline:none;resize:none;line-height:1.6;font-family:inherit;transition:border-color .2s;box-sizing:border-box;min-height:48px;}
+.jw-ref-ta:focus{border-color:var(--a2);}
+.jw-ref-ta::placeholder{color:var(--ink4);font-style:italic;}
+.jw-ref-save{width:100%;padding:10px;border-radius:12px;border:none;background:var(--a2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:2px;transition:opacity .2s;}
+.jw-ref-save:active{opacity:.8;}
+.jw-ref-done{background:var(--surf2);border:1.5px solid var(--bdr);border-radius:14px;padding:12px 14px;margin:12px 14px 4px;display:flex;align-items:center;gap:10px;}
+.jw-ref-done-icon{font-size:20px;flex-shrink:0;}
+.jw-ref-done-text{font-size:12px;font-weight:600;color:var(--ink2);flex:1;}
+.jw-ref-done-edit{background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0;}
