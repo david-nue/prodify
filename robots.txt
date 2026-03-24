@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://prodify.cc/sitemap.xml
+Sitemap: https://www.prodify.cc/sitemap.xml
