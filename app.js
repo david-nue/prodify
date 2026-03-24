@@ -408,7 +408,7 @@ function initSupabase(){
       sbReady=false; return;
     }
     sb = supabase.createClient(SB_URL.trim(), SB_KEY.trim(), {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
     sbReady = true;
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
