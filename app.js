@@ -413,7 +413,7 @@ function initSupabase(){
     sbReady = true;
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
 
-    // Listen for auth state changes — catches Google OAuth redirect session
+    // Listen for auth state changes — catches Google OAuth and magic link redirect sessions
     let _googleCallbackHandled = false;
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session && !_googleCallbackHandled) {
@@ -424,7 +424,17 @@ function initSupabase(){
         _googleCallbackHandled = true;
         window._oauthRedirectInProgress = false;
         window.history.replaceState({}, document.title, window.location.pathname);
-        await handleGoogleCallback(session);
+
+        // Determine if this is a Google OAuth or a magic link (email OTP) sign-in.
+        // Magic link users have 'email' as their provider, not 'google'.
+        const provider = session.user?.app_metadata?.provider || '';
+        const isMagicLink = provider === 'email' || provider === '';
+
+        if (isMagicLink) {
+          await handleMagicLinkCallback(session);
+        } else {
+          await handleGoogleCallback(session);
+        }
       }
     });
   }catch(e){
@@ -757,8 +767,13 @@ let acc=LS.g('pd1_acc',{}), cu=LS.g('pd1_cur',null);
     if(raw) { window._pendingGuestData = JSON.parse(raw); }
   } catch(e) {}
 })();
-// Must be declared before initSupabase() registers onAuthStateChange
-window._oauthRedirectInProgress = false;
+// Detect OAuth redirect BEFORE initSupabase() registers onAuthStateChange.
+// With PKCE + detectSessionInUrl:true, Supabase processes the `code=` param
+// immediately on createClient(), so SIGNED_IN can fire before boot() runs.
+// Setting the flag here ensures the onAuthStateChange handler sees it in time.
+window._oauthRedirectInProgress =
+  window.location.hash.includes('access_token') ||
+  window.location.search.includes('code=');
 initSupabase();
 let tasks=[],journal=[],subjects=[],calEvs=[],widgets=[],notes=[];
 let _jwSearch={},_mobJSearch='';
@@ -1133,6 +1148,106 @@ async function doMagicLink() {
   } catch (err) {
     if (errEl) { errEl.textContent = err.message || 'Could not send link. Please try again.'; errEl.style.display = 'block'; }
     if (btn) { btn.disabled = false; btn.textContent = 'Continue with Email'; }
+  }
+}
+
+// ── MAGIC LINK CALLBACK ───────────────────────────────────────────────────────
+// Called after a user clicks their email sign-in link and lands back on the app.
+// Unlike Google OAuth, the user already has a Prodify account (magic links are
+// only sent to existing sign-in forms, not the sign-up flow). We just need to
+// look them up by email and launch the app.
+async function handleMagicLinkCallback(passedSession = null) {
+  if (!sbReady) { show('sl'); return; }
+  try {
+    let session = passedSession;
+    if (!session) {
+      const { data, error } = await sb.auth.getSession();
+      if (error || !data.session) { show('sl'); return; }
+      session = data.session;
+    }
+
+    const authUser = session.user;
+    const email = authUser.email || '';
+
+    // Look up the Prodify user by email
+    let existingUser = null;
+    try {
+      const { data: rpcRows, error: rpcErr } = await sb.rpc('get_user_by_email', { p_email: email });
+      if (!rpcErr && rpcRows && rpcRows[0]) {
+        existingUser = rpcRows[0];
+      } else {
+        const { data: directRow } = await sb.from('users').select('*').eq('email', email).maybeSingle();
+        if (directRow) existingUser = directRow;
+      }
+    } catch(lookupErr) {
+      console.warn('[Prodify] magic link email lookup error:', lookupErr);
+    }
+
+    if (!existingUser) {
+      // No Prodify account found for this email — treat as new user via Google-username picker
+      // (edge case: they clicked a stale magic link for an account that was deleted)
+      console.warn('[Prodify] Magic link: no existing user found for email', email);
+      show('sl');
+      return;
+    }
+
+    // Link auth_id if not already linked
+    if (!existingUser.auth_id && authUser.id) {
+      try {
+        await sb.rpc('set_auth_id_for_user', {
+          p_username: existingUser.username,
+          p_pass_hash: existingUser.pass_hash || '',
+          p_auth_id: authUser.id,
+          p_email: email
+        });
+      } catch(e) {
+        console.warn('[Prodify] magic link auth_id link exception:', e);
+      }
+    }
+
+    const u = existingUser.username;
+    const loc = acc[u] || {};
+    const localTs = loc._localTs || 0;
+    const trustLocal = localTs > 0 && localTs >= (_lastSaveTs || 0) && Object.keys(loc).length > 3;
+    const cP = JSON.parse(existingUser.prefs || '{}');
+    if (existingUser.avatar_url) cP.avatarUrl = existingUser.avatar_url;
+
+    if (trustLocal) {
+      acc[u] = Object.assign({}, loc, {
+        passHash: existingUser.pass_hash || loc.passHash || '',
+        displayName: existingUser.display_name || loc.displayName || '',
+        joined: new Date(existingUser.joined_at).getTime() || loc.joined || Date.now(),
+      });
+      if (sbReady) dbSaveUser(u, acc[u]).catch(() => {});
+    } else {
+      acc[u] = {
+        passHash: existingUser.pass_hash || '',
+        displayName: existingUser.display_name || '',
+        tasks: JSON.parse(existingUser.tasks || '[]'),
+        journal: JSON.parse(existingUser.journal || '[]'),
+        subjects: JSON.parse(existingUser.subjects || '[]'),
+        calEvs: JSON.parse(existingUser.cal_evs || '[]'),
+        widgets: JSON.parse(existingUser.widgets || '[]'),
+        notes: migrateNotes(JSON.parse(existingUser.notes || '[]')),
+        prefs: cP,
+        joined: new Date(existingUser.joined_at).getTime() || Date.now(),
+        _localTs: 0,
+      };
+    }
+
+    LS.s('pd1_acc', acc);
+    cu = u;
+    LS.s('pd1_cur', u);
+
+    startRealtimeSync(u);
+    checkAndRegisterDevice(u).then(allowed => {
+      if (!allowed) { showMultiDeviceBlock(); _silentSignOut(); return; }
+      launch();
+    });
+
+  } catch(e) {
+    console.error('[Prodify] Magic link callback error:', e);
+    show('sl');
   }
 }
 
