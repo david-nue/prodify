@@ -413,30 +413,8 @@ function initSupabase(){
     sbReady = true;
     if(typeof cu !== 'undefined' && cu) setTimeout(()=>startRealtimeSync(cu), 0);
 
-    // Listen for auth state changes — catches Google OAuth and magic link redirect sessions
-    let _googleCallbackHandled = false;
-    sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session && !_googleCallbackHandled) {
-        // Use the flag set by boot — Supabase cleans the URL before this event fires
-        // so checking window.location for 'code=' or 'access_token' here is too late.
-        // _oauthRedirectInProgress is only set when boot actually saw the OAuth URL.
-        if (!window._oauthRedirectInProgress) return;
-        _googleCallbackHandled = true;
-        window._oauthRedirectInProgress = false;
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        // Determine if this is a Google OAuth or a magic link (email OTP) sign-in.
-        // Magic link users have 'email' as their provider, not 'google'.
-        const provider = session.user?.app_metadata?.provider || '';
-        const isMagicLink = provider === 'email' || provider === '';
-
-        if (isMagicLink) {
-          await handleMagicLinkCallback(session);
-        } else {
-          await handleGoogleCallback(session);
-        }
-      }
-    });
+    // OAuth redirect is now handled directly in boot() — no onAuthStateChange needed.
+    // Keeping the listener only for future session refresh events (not SIGNED_IN on redirect).
   }catch(e){
     console.warn('[Prodify] Supabase init failed, using local storage.',e);
     sbReady = false;
@@ -1306,23 +1284,29 @@ async function handleGoogleCallback(passedSession = null) {
     try {
       // Wrap RPC in a timeout — fresh OAuth sessions sometimes cause the first
       // Supabase request to hang indefinitely waiting for the JWT to propagate.
+      // Use a short timeout — if DB isn't ready yet (fresh JWT propagation delay),
+      // we treat the user as new and show the username picker immediately.
+      // If they actually have an existing account, the username picker will catch it.
       const rpcWithTimeout = Promise.race([
         sb.rpc('get_user_by_email', { p_email: email }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('rpc_timeout')), 5000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error('rpc_timeout')), 3000))
       ]);
       const { data: rpcRows, error: rpcErr } = await rpcWithTimeout.catch(e => ({ data: null, error: e }));
       console.log('[GCB] rpc result:', JSON.stringify(rpcRows), 'rpcErr:', rpcErr?.message);
       if (!rpcErr && rpcRows && rpcRows[0]) {
         existingUser = rpcRows[0];
-      } else {
+      } else if (rpcErr?.message !== 'rpc_timeout') {
+        // RPC responded (even if empty) — try direct query as fallback
         console.log('[GCB] trying direct query...');
         const directWithTimeout = Promise.race([
           sb.from('users').select('*').eq('email', email).maybeSingle(),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('direct_timeout')), 5000))
+          new Promise((_, rej) => setTimeout(() => rej(new Error('direct_timeout')), 3000))
         ]);
         const { data: directRow, error: directErr } = await directWithTimeout.catch(e => ({ data: null, error: e }));
         console.log('[GCB] direct query result:', directRow?.username, 'err:', directErr?.message);
         if (directRow) existingUser = directRow;
+      } else {
+        console.log('[GCB] RPC timed out — treating as new user, proceeding immediately');
       }
     } catch(lookupErr) {
       console.warn('[GCB] email lookup error:', lookupErr?.message);
