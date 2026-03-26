@@ -1275,19 +1275,20 @@ async function doGoogleAuth() {
 
 // Called on page load — handles the redirect back from Google OAuth
 async function handleGoogleCallback(passedSession = null) {
-  if (!sbReady) return;
+  if (!sbReady) { console.warn('[GCB] sbReady is false, aborting'); show('sl'); return; }
   try {
     let session = passedSession;
     if (!session) {
-      // Poll for session — PKCE code exchange is async and may not be done yet
-      // on the first call immediately after redirect landing.
+      console.log('[GCB] polling for session...');
       for (let i = 0; i < 50; i++) {
         const { data, error } = await sb.auth.getSession();
+        console.log('[GCB] poll', i, 'session:', !!data?.session, 'error:', error?.message);
         if (!error && data && data.session) { session = data.session; break; }
         await new Promise(r => setTimeout(r, 100));
       }
-      if (!session) { show('sl'); return; }
+      if (!session) { console.warn('[GCB] no session after polling, going to landing'); show('sl'); return; }
     }
+    console.log('[GCB] got session, user:', session.user?.email, 'provider:', session.user?.app_metadata?.provider);
     // Clean URL if still dirty
     if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -1313,6 +1314,7 @@ async function handleGoogleCallback(passedSession = null) {
       console.warn('[Prodify] email lookup error:', lookupErr);
     }
 
+    console.log('[GCB] existingUser:', existingUser ? existingUser.username : 'null (new user)');
     if (existingUser) {
       // Existing user — link their Google auth_id if not already linked, then log in.
       // MUST use the set_auth_id_for_user RPC (SECURITY DEFINER) — not a direct update.
@@ -1397,6 +1399,7 @@ async function handleGoogleCallback(passedSession = null) {
       }
     } else {
       // New Google user — let them pick a username first
+      console.log('[GCB] new user — showing username picker');
       _pendingGoogleSession = { authUser, email, googleName };
       showGoogleUsernamePicker();
     }
@@ -1423,7 +1426,9 @@ function showGoogleUsernamePicker() {
   if (inp && suggestion.length >= 3) inp.value = suggestion;
   const errEl = document.getElementById('gue');
   if (errEl) errEl.textContent = '';
+  console.log('[GCB] calling show(sg)');
   show('sg');
+  console.log('[GCB] show(sg) called, #sg classes:', document.getElementById('sg')?.className);
   setTimeout(() => { if (inp) inp.focus(); }, 300);
 }
 
@@ -2330,10 +2335,13 @@ async function submitFeedback(isDesktop=false){
   const isOAuthRedirect = window.location.hash.includes('access_token') ||
                           window.location.search.includes('code=');
   if (isOAuthRedirect && sbReady) {
+    console.log('[BOOT] OAuth redirect detected, sbReady:', sbReady);
     document.querySelectorAll('.screen').forEach(s => s.classList.add('off'));
     await handleGoogleCallback();
+    console.log('[BOOT] handleGoogleCallback finished');
     return;
   }
+  console.log('[BOOT] isOAuthRedirect:', isOAuthRedirect, 'sbReady:', sbReady);
 
   // ── RETURNING USER with an active Supabase session ────────────────────────
   // Also mirrors mobile: if there's already a live session, run handleGoogleCallback
