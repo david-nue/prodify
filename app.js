@@ -1304,18 +1304,30 @@ async function handleGoogleCallback(passedSession = null) {
     let existingUser = null;
     console.log('[GCB] looking up email:', email);
     try {
-      const { data: rpcRows, error: rpcErr } = await sb.rpc('get_user_by_email', { p_email: email });
+      // Wrap RPC in a timeout — fresh OAuth sessions sometimes cause the first
+      // Supabase request to hang indefinitely waiting for the JWT to propagate.
+      const rpcWithTimeout = Promise.race([
+        sb.rpc('get_user_by_email', { p_email: email }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('rpc_timeout')), 5000))
+      ]);
+      const { data: rpcRows, error: rpcErr } = await rpcWithTimeout.catch(e => ({ data: null, error: e }));
       console.log('[GCB] rpc result:', JSON.stringify(rpcRows), 'rpcErr:', rpcErr?.message);
       if (!rpcErr && rpcRows && rpcRows[0]) {
         existingUser = rpcRows[0];
       } else {
-        const { data: directRow, error: directErr } = await sb.from('users').select('*').eq('email', email).maybeSingle();
+        console.log('[GCB] trying direct query...');
+        const directWithTimeout = Promise.race([
+          sb.from('users').select('*').eq('email', email).maybeSingle(),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('direct_timeout')), 5000))
+        ]);
+        const { data: directRow, error: directErr } = await directWithTimeout.catch(e => ({ data: null, error: e }));
         console.log('[GCB] direct query result:', directRow?.username, 'err:', directErr?.message);
         if (directRow) existingUser = directRow;
       }
     } catch(lookupErr) {
-      console.warn('[GCB] email lookup error:', lookupErr);
+      console.warn('[GCB] email lookup error:', lookupErr?.message);
     }
+    console.log('[GCB] lookup done, existingUser:', existingUser ? existingUser.username : 'none (new user)');
 
     console.log('[GCB] existingUser:', existingUser ? existingUser.username : 'null (new user)');
     if (existingUser) {
