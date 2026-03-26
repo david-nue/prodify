@@ -1253,21 +1253,17 @@ async function doGoogleAuth() {
 
 // Called on page load — handles the redirect back from Google OAuth
 async function handleGoogleCallback(passedSession = null) {
-  if (!sbReady) { console.warn('[GCB] sbReady is false, aborting'); show('sl'); return; }
+  if (!sbReady) { show('sl'); return; }
   try {
     let session = passedSession;
     if (!session) {
-      console.log('[GCB] polling for session...');
       for (let i = 0; i < 50; i++) {
         const { data, error } = await sb.auth.getSession();
-        console.log('[GCB] poll', i, 'session:', !!data?.session, 'error:', error?.message);
         if (!error && data && data.session) { session = data.session; break; }
         await new Promise(r => setTimeout(r, 100));
       }
-      if (!session) { console.warn('[GCB] no session after polling, going to landing'); show('sl'); return; }
+      if (!session) { show('sl'); return; }
     }
-    console.log('[GCB] got session, user:', session.user?.email, 'provider:', session.user?.app_metadata?.provider);
-    console.log('[GCB] cleaning URL...');
     // Clean URL if still dirty
     if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -1280,7 +1276,6 @@ async function handleGoogleCallback(passedSession = null) {
     // Check if a Prodify user row already exists for this email
     // Try RPC first (bypasses RLS), fall back to direct query if RPC not yet created
     let existingUser = null;
-    console.log('[GCB] looking up email:', email);
     try {
       // Wrap RPC in a timeout — fresh OAuth sessions sometimes cause the first
       // Supabase request to hang indefinitely waiting for the JWT to propagate.
@@ -1292,28 +1287,20 @@ async function handleGoogleCallback(passedSession = null) {
         new Promise((_, rej) => setTimeout(() => rej(new Error('rpc_timeout')), 3000))
       ]);
       const { data: rpcRows, error: rpcErr } = await rpcWithTimeout.catch(e => ({ data: null, error: e }));
-      console.log('[GCB] rpc result:', JSON.stringify(rpcRows), 'rpcErr:', rpcErr?.message);
       if (!rpcErr && rpcRows && rpcRows[0]) {
         existingUser = rpcRows[0];
       } else if (rpcErr?.message !== 'rpc_timeout') {
         // RPC responded (even if empty) — try direct query as fallback
-        console.log('[GCB] trying direct query...');
         const directWithTimeout = Promise.race([
           sb.from('users').select('*').eq('email', email).maybeSingle(),
           new Promise((_, rej) => setTimeout(() => rej(new Error('direct_timeout')), 3000))
         ]);
-        const { data: directRow, error: directErr } = await directWithTimeout.catch(e => ({ data: null, error: e }));
-        console.log('[GCB] direct query result:', directRow?.username, 'err:', directErr?.message);
+        const { data: directRow } = await directWithTimeout.catch(e => ({ data: null, error: e }));
         if (directRow) existingUser = directRow;
-      } else {
-        console.log('[GCB] RPC timed out — treating as new user, proceeding immediately');
       }
     } catch(lookupErr) {
-      console.warn('[GCB] email lookup error:', lookupErr?.message);
+      console.warn('[Prodify] Google auth email lookup error:', lookupErr?.message);
     }
-    console.log('[GCB] lookup done, existingUser:', existingUser ? existingUser.username : 'none (new user)');
-
-    console.log('[GCB] existingUser:', existingUser ? existingUser.username : 'null (new user)');
     if (existingUser) {
       // Existing user — link their Google auth_id if not already linked, then log in.
       // MUST use the set_auth_id_for_user RPC (SECURITY DEFINER) — not a direct update.
@@ -1398,12 +1385,11 @@ async function handleGoogleCallback(passedSession = null) {
       }
     } else {
       // New Google user — let them pick a username first
-      console.log('[GCB] new user — showing username picker');
       _pendingGoogleSession = { authUser, email, googleName };
       showGoogleUsernamePicker();
     }
   } catch(e) {
-    console.error('[GCB] FATAL ERROR:', e?.message, e?.stack);
+    console.error('[Prodify] Google auth callback error:', e?.message);
     show('sl');
   }
 }
@@ -1426,9 +1412,7 @@ function showGoogleUsernamePicker() {
   if (inp && suggestion.length >= 3) inp.value = suggestion;
   const errEl = document.getElementById('gue');
   if (errEl) errEl.textContent = '';
-  console.log('[GCB] calling show(sg)');
   show('sg');
-  console.log('[GCB] show(sg) called, #sg classes:', document.getElementById('sg')?.className);
   setTimeout(() => { if (inp) inp.focus(); }, 300);
 }
 
@@ -1800,7 +1784,6 @@ async function resendEmail(to, subject, html){
       body: JSON.stringify({ from: RESEND_FROM, reply_to: RESEND_REPLY, to, subject, html }),
     });
     const data = await res.json();
-    console.log('[Resend]', res.status, JSON.stringify(data));
     return res.ok;
   } catch(e){ console.error('[Resend] error:', e); return false; }
 }
@@ -2335,13 +2318,10 @@ async function submitFeedback(isDesktop=false){
   const isOAuthRedirect = window.location.hash.includes('access_token') ||
                           window.location.search.includes('code=');
   if (isOAuthRedirect && sbReady) {
-    console.log('[BOOT] OAuth redirect detected, sbReady:', sbReady);
     document.querySelectorAll('.screen').forEach(s => s.classList.add('off'));
     await handleGoogleCallback();
-    console.log('[BOOT] handleGoogleCallback finished');
     return;
   }
-  console.log('[BOOT] isOAuthRedirect:', isOAuthRedirect, 'sbReady:', sbReady);
 
   // ── RETURNING USER with an active Supabase session ────────────────────────
   // Also mirrors mobile: if there's already a live session, run handleGoogleCallback
