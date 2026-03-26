@@ -1289,6 +1289,7 @@ async function handleGoogleCallback(passedSession = null) {
       if (!session) { console.warn('[GCB] no session after polling, going to landing'); show('sl'); return; }
     }
     console.log('[GCB] got session, user:', session.user?.email, 'provider:', session.user?.app_metadata?.provider);
+    console.log('[GCB] cleaning URL...');
     // Clean URL if still dirty
     if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -1301,17 +1302,19 @@ async function handleGoogleCallback(passedSession = null) {
     // Check if a Prodify user row already exists for this email
     // Try RPC first (bypasses RLS), fall back to direct query if RPC not yet created
     let existingUser = null;
+    console.log('[GCB] looking up email:', email);
     try {
       const { data: rpcRows, error: rpcErr } = await sb.rpc('get_user_by_email', { p_email: email });
+      console.log('[GCB] rpc result:', JSON.stringify(rpcRows), 'rpcErr:', rpcErr?.message);
       if (!rpcErr && rpcRows && rpcRows[0]) {
         existingUser = rpcRows[0];
       } else {
-        // Fallback: direct query (works if auth_id already linked or RLS allows it)
-        const { data: directRow } = await sb.from('users').select('*').eq('email', email).maybeSingle();
+        const { data: directRow, error: directErr } = await sb.from('users').select('*').eq('email', email).maybeSingle();
+        console.log('[GCB] direct query result:', directRow?.username, 'err:', directErr?.message);
         if (directRow) existingUser = directRow;
       }
     } catch(lookupErr) {
-      console.warn('[Prodify] email lookup error:', lookupErr);
+      console.warn('[GCB] email lookup error:', lookupErr);
     }
 
     console.log('[GCB] existingUser:', existingUser ? existingUser.username : 'null (new user)');
@@ -1404,7 +1407,8 @@ async function handleGoogleCallback(passedSession = null) {
       showGoogleUsernamePicker();
     }
   } catch(e) {
-    console.error('[Prodify] Google callback error:', e);
+    console.error('[GCB] FATAL ERROR:', e?.message, e?.stack);
+    show('sl');
   }
 }
 
