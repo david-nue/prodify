@@ -2310,38 +2310,32 @@ async function submitFeedback(isDesktop=false){
 // Boot: load local first, sync cloud silently after
 (async function boot(){
   document.documentElement.setAttribute('data-dark',''); // start light until app loads
-  // If this is an OAuth redirect (Google or magic link), hide all screens and handle directly.
-  // We poll for the session instead of relying on onAuthStateChange — with PKCE +
-  // detectSessionInUrl:true the event timing is unreliable and can be missed.
+
+  // ── OAUTH REDIRECT (Google sign-in lands here with code= in URL) ──────────
+  // Mirror the mobile approach exactly: call handleGoogleCallback() directly
+  // rather than waiting for onAuthStateChange, which is unreliable on desktop.
   const isOAuthRedirect = window.location.hash.includes('access_token') ||
                           window.location.search.includes('code=');
-  if (isOAuthRedirect) {
-    window._oauthRedirectInProgress = true;
+  if (isOAuthRedirect && sbReady) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('off'));
-    // Wait for Supabase client to be ready (loaded async before app.js)
-    await new Promise(resolve => {
-      if (sbReady) return resolve();
-      const t = setInterval(() => { if (sbReady) { clearInterval(t); resolve(); } }, 50);
-      setTimeout(() => { clearInterval(t); resolve(); }, 5000);
-    });
-    if (!sbReady) { show('sl'); return; }
-    // Poll for Supabase to finish the PKCE code exchange and return a session
-    let session = null;
-    for (let i = 0; i < 40; i++) {
-      const { data } = await sb.auth.getSession();
-      if (data && data.session) { session = data.session; break; }
-      await new Promise(r => setTimeout(r, 100));
-    }
-    window._oauthRedirectInProgress = false;
-    if (!session) { show('sl'); return; } // exchange failed — go back to landing
-    // Route to correct handler based on auth provider
-    const provider = session.user && session.user.app_metadata && session.user.app_metadata.provider || '';
-    if (provider === 'email' || provider === '') {
-      await handleMagicLinkCallback(session);
-    } else {
-      await handleGoogleCallback(session);
-    }
+    await handleGoogleCallback();
     return;
+  }
+
+  // ── RETURNING USER with an active Supabase session ────────────────────────
+  // Also mirrors mobile: if there's already a live session, run handleGoogleCallback
+  // which handles both existing and new-account flows correctly.
+  if (sbReady) {
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session && !LS.g('pd1_cur', null)) {
+        // Session exists but no local user — came from OAuth on another tab or
+        // cleared localStorage. Let handleGoogleCallback sort it out.
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('off'));
+        await handleGoogleCallback();
+        return;
+      }
+    } catch(e) {}
   }
   const u=LS.g('pd1_cur',null);
   if(!u){show('sl');return;}
