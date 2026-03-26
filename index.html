@@ -476,12 +476,13 @@
       </div>
     </div>
     <div class="ar sl-dk">
+      <button class="abk" onclick="cancelGoogleSignIn()" style="margin-bottom:8px;"><svg viewBox="0 0 12 12"><path d="M8 2L3 6l5 4"/></svg>Use a different account</button>
       <div class="auh">One last thing</div>
       <div class="aus">Choose a username for your account. You can't change this later.</div>
       <div class="fd">
         <label class="fl">Username</label>
         <input class="fi" id="gu-u" type="text" placeholder="e.g. alex_work" autocomplete="off"
-          onkeydown="if(event.key==='Enter')doGoogleUsername()" oninput="guValidate(this)" />
+          onkeydown="if(event.key='Enter')doGoogleUsername()" oninput="guValidate(this)" />
         <div class="ferr" id="gue"></div>
         <div style="font-size:11px;color:var(--ink4);margin-top:5px;">Letters, numbers, and underscores only · Min 3
           characters</div>
@@ -1487,7 +1488,7 @@
       // Load app.js after Supabase is ready
       _s1.onload = function () {
         var _sa = document.createElement('script');
-        _sa.src = 'app.js?v=224';
+        _sa.src = 'app.js?v=225';
         _sa.onload = function () { if (window._landingStubFlush) window._landingStubFlush(); };
         document.body.appendChild(_sa);
       };

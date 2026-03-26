@@ -1279,9 +1279,14 @@ async function handleGoogleCallback(passedSession = null) {
   try {
     let session = passedSession;
     if (!session) {
-      const { data, error } = await sb.auth.getSession();
-      if (error || !data.session) return;
-      session = data.session;
+      // Poll for session — PKCE code exchange is async and may not be done yet
+      // on the first call immediately after redirect landing.
+      for (let i = 0; i < 50; i++) {
+        const { data, error } = await sb.auth.getSession();
+        if (!error && data && data.session) { session = data.session; break; }
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (!session) { show('sl'); return; }
     }
     // Clean URL if still dirty
     if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
@@ -1401,6 +1406,14 @@ async function handleGoogleCallback(passedSession = null) {
 }
 
 // ── GOOGLE USERNAME PICKER ───────────────────────────────────────────────────
+async function cancelGoogleSignIn() {
+  // User wants to use a different Google account — sign out of Supabase,
+  // clear the pending session, and return to the landing page.
+  _pendingGoogleSession = null;
+  try { await sb.auth.signOut(); } catch(e) {}
+  show('sl');
+}
+
 function showGoogleUsernamePicker() {
   // Pre-fill a suggestion based on Google name/email
   const { googleName, email } = _pendingGoogleSession || {};
