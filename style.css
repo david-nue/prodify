@@ -2547,7 +2547,16 @@ body.guest-active #screen-app .topbar { display: none !important; }
 .jw-ref-done-text{font-size:12px;font-weight:600;color:var(--ink2);flex:1;}
 .jw-ref-done-edit{background:none;border:1.5px solid var(--bdr);border-radius:100px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;flex-shrink:0;}
 
-/* ── NOTE RICH TEXT TOOLBAR (desktop) ── */
+/* ── JOURNAL WIDGET TABS ── */
+.jw-tabs{display:flex;gap:2px;padding:8px 10px 0;flex-shrink:0;border-bottom:1px solid var(--bdr);}
+.jw-tab{flex:1;padding:6px 0;border:none;background:none;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;transition:color .15s,background .15s;}
+.jw-tab.active{color:var(--a2);border-bottom:2px solid var(--a2);background:none;}
+.jw-tab:hover:not(.active){color:var(--ink);background:var(--surf2);}
+.jw-tab-panel{flex:1;min-height:0;overflow-y:auto;}
+.jw-tab-panel::-webkit-scrollbar{width:2px;}
+.jw-tab-panel::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
+
+
 .nw-toolbar{display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--bdr);flex-shrink:0;flex-wrap:nowrap;align-items:center;width:100%;box-sizing:border-box;}
 .nw-tb-btn{background:none;border:1.5px solid var(--bdr);border-radius:6px;padding:0;font-size:11px;color:var(--ink2);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;flex:1;height:24px;min-width:0;transition:all .15s;}
 .nw-tb-btn:hover{background:var(--al);border-color:var(--a2);color:var(--a2);}
@@ -2617,19 +2626,6 @@ body.guest-active #screen-app .topbar { display: none !important; }
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-}
-.widget[data-type="journal"] .jw-reflection-wrap {
-  flex-shrink: 0;
-  overflow-y: auto;
-  max-height: 60%;
-}
-.widget[data-type="journal"] .jw-reflection-card {
-  overflow-y: auto;
-}
-.widget[data-type="journal"] .jwlist {
-  flex: 1;
-  overflow-y: auto;
   min-height: 0;
 }
 .widget[data-type="journal"] .jw-ref-ta {

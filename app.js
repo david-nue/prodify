@@ -3483,7 +3483,7 @@ function drp(e,col){e.preventDefault();document.querySelectorAll('.twbody').forE
 
 /* ── JOURNAL ── */
 function buildJournalW(body,w){
-  body.style.display='flex';body.style.flexDirection='column';
+  body.style.display='flex';body.style.flexDirection='column';body.style.overflow='hidden';
   // Reflection card data
   const _todayKey=new Date().toISOString().slice(0,10);
   const _todayStr=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
@@ -3499,18 +3499,46 @@ function buildJournalW(body,w){
   const _todayRef=(journal||[]).find(j=>j.date===_todayStr&&j.isReflection);
   const _refHtml=_todayRef?`<div class="jw-ref-done"><div class="jw-ref-done-icon">${MLAB[_todayRef.mood||0].e}</div><div class="jw-ref-done-text">Today's reflection saved</div><button class="jw-ref-done-edit" onclick="dskEditReflection('${_todayRef.id}','${w.id}')">Edit</button></div>`:`<div class="jw-reflection-card" id="jw-reflection-card-${w.id}"><div class="jw-ref-date">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>${_statsHtml?`<div class="jw-ref-stats">${_statsHtml}</div>`:''}<div class="jw-ref-mood-row"><span class="jw-ref-label">How are you feeling?</span><div class="jw-ref-moods" id="jw-ref-moods-${w.id}">${_moodsHtml}</div></div><div class="jw-ref-q"><label class="jw-ref-label">What went well today?</label><textarea class="jw-ref-ta" id="jw-ref-well-${w.id}" placeholder="Something you're proud of..."></textarea></div><div class="jw-ref-q"><label class="jw-ref-label">What's on your mind?</label><textarea class="jw-ref-ta" id="jw-ref-mind-${w.id}" placeholder="Thoughts, feelings, anything..."></textarea></div><div class="jw-ref-q"><label class="jw-ref-label">What would make tomorrow better?</label><textarea class="jw-ref-ta" id="jw-ref-tomorrow-${w.id}" placeholder="One thing to focus on..."></textarea></div><button class="jw-ref-save" onclick="dskSaveReflection('${w.id}')">Save Reflection</button></div>`;
   body.innerHTML=`
-    <div class="jw-reflection-wrap" id="jw-ref-wrap-${w.id}">${_refHtml}</div>
-    <div class="jwsearch-bar" id="jwsbar-${w.id}" style="display:none;">
-      <div class="jwsearch-inner">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
-        <button class="jwsearch-clear" id="jwscl-${w.id}" onclick="jwClearSearch('${w.id}')" style="display:none;">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
+    <div class="jw-tabs" id="jw-tabs-${w.id}">
+      <button class="jw-tab active" id="jwtab-today-${w.id}" onclick="jwSwitchTab('today','${w.id}')">Today</button>
+      <button class="jw-tab" id="jwtab-entries-${w.id}" onclick="jwSwitchTab('entries','${w.id}')">Entries</button>
     </div>
-    <div class="jwlist" id="jwl-${w.id}"></div>`;
+    <div class="jw-tab-panel" id="jw-panel-today-${w.id}" style="flex:1;overflow-y:auto;padding:12px 14px;">
+      <div class="jw-reflection-wrap" id="jw-ref-wrap-${w.id}">${_refHtml}</div>
+    </div>
+    <div class="jw-tab-panel" id="jw-panel-entries-${w.id}" style="flex:1;overflow-y:auto;display:none;padding:4px 0 0;">
+      <div class="jwsearch-bar" id="jwsbar-${w.id}">
+        <div class="jwsearch-inner">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input class="jwsearch" id="jws-${w.id}" type="text" placeholder="Search entries…" oninput="onJwSearch('${w.id}',this.value)"/>
+          <button class="jwsearch-clear" id="jwscl-${w.id}" onclick="jwClearSearch('${w.id}')" style="display:none;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="jwlist" id="jwl-${w.id}"></div>
+    </div>`;
   renderJournalW(w.id);
+}
+
+function jwSwitchTab(tab, wid){
+  const todayPanel=$('jw-panel-today-'+wid);
+  const entriesPanel=$('jw-panel-entries-'+wid);
+  const todayBtn=$('jwtab-today-'+wid);
+  const entriesBtn=$('jwtab-entries-'+wid);
+  if(!todayPanel||!entriesPanel) return;
+  if(tab==='today'){
+    todayPanel.style.display='';
+    entriesPanel.style.display='none';
+    todayBtn.classList.add('active');
+    entriesBtn.classList.remove('active');
+  } else {
+    todayPanel.style.display='none';
+    entriesPanel.style.display='';
+    todayBtn.classList.remove('active');
+    entriesBtn.classList.add('active');
+    renderJournalW(wid);
+  }
 }
 
 function jwAutoResize(ta){

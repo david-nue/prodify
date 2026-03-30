@@ -28,7 +28,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Prodify",
-    "url": "https://prodify.cc",
+    "url": "https://www.prodify.cc",
     "description": "Stop juggling apps. Prodify is your free all-in-one productivity workspace. Tasks, journal, focus timer, habits and calendar in one place.",
     "applicationCategory": "ProductivityApplication",
     "operatingSystem": "Web",
@@ -45,7 +45,7 @@
       "Calendar",
       "Widget Canvas"
     ],
-    "screenshot": "https://prodify.cc/og-preview.png",
+    "screenshot": "https://www.prodify.cc/og-preview.png",
     "author": {
       "@type": "Person",
       "name": "David Nueva"
@@ -55,7 +55,7 @@
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://prodify.cc" />
+  <meta property="og:url" content="https://www.prodify.cc" />
   <meta property="og:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
   <meta property="og:description"
     content="Stop juggling apps. Prodify is your free all-in-one productivity workspace. Tasks, journal, focus timer, habits and calendar in one place." />
@@ -66,7 +66,7 @@
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content="https://prodify.cc" />
+  <meta name="twitter:url" content="https://www.prodify.cc" />
   <meta name="twitter:title" content="Prodify — Your Free All-in-One Productivity Workspace" />
   <meta name="twitter:description"
     content="Stop juggling apps. Prodify is your free all-in-one productivity workspace. Tasks, journal, focus timer, habits and calendar in one place." />
@@ -164,8 +164,8 @@
     <nav class="lnav">
       <div class="logo" style="color:#fff;display:flex;align-items:center;gap:8px;"><img src="/icons/logo.png" style="width:34px;height:34px;" alt="Prodify"><span style="font-size:17px;font-weight:800;letter-spacing:-.3px;color:#fff;">Prodify</span></div>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button class="btn bgw lbtn-cta" id="nav-cta" onclick="showAuth()" style="font-size:13px;padding:10px 22px;box-shadow:none;">Sign in</button>
-        <button class="btn ba lbtn-cta" style="font-size:13px;padding:10px 22px;" onclick="enterGuestMode()">Preview the app</button>
+        <button class="btn bgw lbtn-cta" style="font-size:13px;padding:10px 22px;box-shadow:none;" onclick="enterGuestMode()">Preview the app</button>
+        <button class="btn ba lbtn-cta" id="nav-cta" onclick="showAuth()" style="font-size:13px;padding:10px 22px;">Sign in</button>
       </div>
     </nav>
 
@@ -256,6 +256,15 @@
         <div class="sl-feat-card">
           <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
               stroke-linecap="round">
+              <circle cx="10" cy="10" r="7" />
+              <path d="M7 10l2 2 4-4" />
+            </svg></div>
+          <div class="sl-feat-name">Habit Tracker</div>
+          <div class="sl-feat-desc">Check off daily habits, pick an emoji, and watch your streak grow. Free plan includes 3 habits — Pro unlocks unlimited. Small wins, every day.</div>
+        </div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
               <rect x="2" y="2" width="7" height="7" rx="1.5" />
               <rect x="11" y="2" width="7" height="7" rx="1.5" />
               <rect x="2" y="11" width="7" height="7" rx="1.5" />
@@ -274,10 +283,15 @@
           <div class="sl-feat-name">Notes</div>
           <div class="sl-feat-desc">Quick notes that live right inside your workspace. Jot down ideas, meeting notes, or anything you need to capture fast — no separate app needed.</div>
         </div>
-        <div class="sl-feat-card" style="border-style:dashed;opacity:.5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;">
-          <div style="font-size:22px;">✦</div>
-          <div class="sl-feat-name" style="font-size:14px;">More coming soon</div>
-          <div class="sl-feat-desc" style="font-size:12px;">New features are in the works. Stay tuned.</div>
+        <div class="sl-feat-card">
+          <div class="sl-feat-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <rect x="2" y="2" width="16" height="16" rx="2" />
+              <path d="M6 7h8M6 11h5" />
+              <path d="M13 14l3-3-3-3" />
+            </svg></div>
+          <div class="sl-feat-name">Sticky Notes</div>
+          <div class="sl-feat-desc">Pin colorful sticky notes anywhere on your canvas. Resize them, recolor them, or pin a note straight from your Notes widget — your canvas, your clutter.</div>
         </div>
       </div>
     </section>
@@ -407,7 +421,7 @@
             <div class="lfvp-check">✓</div>3 accent colors
           </div>
           <div class="lfvp-item">
-            <div class="lfvp-check">✓</div>1 device
+            <div class="lfvp-check">✓</div>1 device <span style="font-size:11px;color:var(--ink4);font-weight:500;">· upgrade for more</span>
           </div>
         </div>
         <div class="lfvp-card lfvp-pro">
@@ -457,6 +471,7 @@
         <a href="/blog/" style="color:rgba(255,255,255,.45);font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.45)'">Blog</a>
         <a href="/privacy.html" style="color:rgba(255,255,255,.5);font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.5)'">Privacy</a>
         <a href="/terms.html" style="color:rgba(255,255,255,.5);font-size:13px;font-weight:600;text-decoration:none;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.5)'">Terms</a>
+        <a href="https://github.com/david-nue/prodify" target="_blank" rel="noopener" style="color:rgba(255,255,255,.4);font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.4)'"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/></svg>GitHub</a>
       </div>
       <p style="font-size:11px;color:rgba(255,255,255,.18);text-align:right;">© 2026 Designed &amp; built by <span style="color:rgba(255,255,255,.3);font-weight:600;">David N.</span></p>
     </footer>
@@ -1999,7 +2014,7 @@
               <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>Calendar</div>
               <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>3 habits</div>
               <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>3 accent colors</div>
-              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>1 device</div>
+              <div class="mob-lprice-item"><span class="mob-lprice-check">✓</span>1 device <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:500;">· upgrade for more</span></div>
             </div>
           </div>
           <div class="mob-lprice-card mob-lprice-pro">
